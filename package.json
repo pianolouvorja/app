@@ -1,0 +1,60 @@
+{
+  "name": "centralja",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "version:major": "npm version major",
+    "version:minor": "npm version minor",
+    "version:patch": "npm version patch",
+    "version:max": "npm version major",
+    "version:min": "npm version minor",
+    "version:bug": "npm version patch",
+    "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "preview": "vite preview",
+    "host": "vite --host",
+    "files": "node node/server.js",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "git:tag": "git tag -a -f v%npm_package_version% -m \"Versão %npm_package_version%\" && git push origin -f v%npm_package_version% && git push -u origin main",
+    "git:publish": "git pull origin main && git checkout main && git merge develop && git push -u origin main && git checkout develop",
+    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "vite build --base=./ && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "@tailwindcss/vite": "^4.3.2",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
+    "pinia": "^3.0.4",
+    "sass": "^1.101.0",
+    "tailwindcss": "^4.3.2",
+    "vue": "^3.5.38",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^4.6.4",
+    "vuetify": "^4.1.4"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.13.2",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/tsconfig": "^0.9.1",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "npm-run-all2": "^9.0.2",
+    "typescript": "~6.0.0",
+    "vite": "^8.0.16",
+    "vite-plugin-electron": "^1.1.0",
+    "vite-plugin-electron-renderer": "^1.0.0",
+    "vite-plugin-vue-devtools": "^8.1.2",
+    "vue-tsc": "^3.3.5",
+    "wait-on": "^9.0.10"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.12.0"
+  }
+}
