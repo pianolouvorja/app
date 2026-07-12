@@ -1,0 +1,30 @@
+import { blur, colors, radius, spacing } from '@design-system/tokens'
+
+export const luminousClarity = {
+  id: 'luminous-clarity',
+  key: 'luminousClarity',
+  label: 'Luminous Clarity',
+  mode: 'light',
+  description: 'Tema claro e suave (sem branco puro)',
+  cssVars: {
+    '--ds-color-primary': colors.primary,
+    '--ds-color-primary-soft': colors.primary,
+    '--ds-color-secondary': colors.secondary,
+    '--ds-color-brand-yellow': colors.brandYellow,
+    '--ds-color-background': colors.light.background,
+    '--ds-color-surface': colors.light.surface,
+    '--ds-color-surface-elevated': colors.light.surfaceElevated,
+    '--ds-color-surface-card': colors.light.surfaceCard,
+    '--ds-color-on-surface': colors.light.onSurface,
+    '--ds-color-on-surface-variant': colors.light.onSurfaceVariant,
+    '--ds-color-outline': colors.light.outline,
+    '--ds-color-outline-strong': colors.light.outlineStrong,
+    '--ds-radius-sm': radius.sm,
+    '--ds-radius-md': radius.md,
+    '--ds-radius-lg': radius.lg,
+    '--ds-radius-full': radius.full,
+    '--ds-blur-default': blur.default,
+    '--ds-spacing-page': spacing.marginPage,
+    '--ds-dock-height': spacing.bottomNavHeight,
+  },
+} as const

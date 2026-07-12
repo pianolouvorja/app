@@ -1,0 +1,30 @@
+import { blur, colors, radius, spacing } from '@design-system/tokens'
+
+export const etherealLumens = {
+  id: 'ethereal-lumens',
+  key: 'etherealLumens',
+  label: 'Ethereal Lumens',
+  mode: 'dark',
+  description: 'Tema escuro para projeção e baixa luminosidade',
+  cssVars: {
+    '--ds-color-primary': colors.primary,
+    '--ds-color-primary-soft': colors.primarySoft,
+    '--ds-color-secondary': colors.secondary,
+    '--ds-color-brand-yellow': colors.brandYellow,
+    '--ds-color-background': colors.dark.background,
+    '--ds-color-surface': colors.dark.surface,
+    '--ds-color-surface-elevated': colors.dark.surfaceElevated,
+    '--ds-color-surface-card': colors.dark.surfaceCard,
+    '--ds-color-on-surface': colors.dark.onSurface,
+    '--ds-color-on-surface-variant': colors.dark.onSurfaceVariant,
+    '--ds-color-outline': colors.dark.outline,
+    '--ds-color-outline-strong': colors.dark.outlineStrong,
+    '--ds-radius-sm': radius.sm,
+    '--ds-radius-md': radius.md,
+    '--ds-radius-lg': radius.lg,
+    '--ds-radius-full': radius.full,
+    '--ds-blur-default': blur.default,
+    '--ds-spacing-page': spacing.marginPage,
+    '--ds-dock-height': spacing.bottomNavHeight,
+  },
+} as const
