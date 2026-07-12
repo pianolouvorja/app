@@ -3,5 +3,5 @@ export const mainNavRoutes = [
   { key: 'albums', labelKey: 'nav.albums', icon: 'mdi-music-box-multiple', to: '/albums' },
   { key: 'bible', labelKey: 'nav.bible', icon: 'mdi-book-open-page-variant', to: '/bible' },
   { key: 'utilities', labelKey: 'nav.utilities', icon: 'mdi-hammer-wrench', to: '/utilities' },
-  { key: 'settings', labelKey: 'nav.settings', icon: 'mdi-cog', to: '/settings' },
+  { key: 'settings', labelKey: 'nav.settings', icon: 'mdi-cog', to: '/settings/appearance' },
 ] as const
