@@ -11,28 +11,70 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      /* Splash estático — visível antes do Vue montar (first-boot / cold start). */
+      /* Splash estático — mesmo fundo do GradientBackground (home / páginas internas). */
+      :root {
+        --boot-bg: #131313;
+        --boot-primary: #2196f3;
+        --boot-on-surface: #e5e2e1;
+      }
       html, body {
         height: 100%;
         margin: 0;
-        background: #12121c;
-        color: #fff;
+        background: var(--boot-bg);
+        color: var(--boot-on-surface);
         font-family: Inter, system-ui, sans-serif;
       }
       #boot-splash {
         position: fixed;
         inset: 0;
         z-index: 99999;
+        isolation: isolate;
+        overflow: hidden;
+        background: var(--boot-bg);
+        text-align: center;
+      }
+      #boot-splash[hidden] {
+        display: none !important;
+      }
+      #boot-splash .boot-splash__glow {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle at 50% 45%,
+            color-mix(in srgb, var(--boot-primary) 10%, transparent) 0%,
+            color-mix(in srgb, var(--boot-primary) 5%, transparent) 28%,
+            color-mix(in srgb, var(--boot-primary) 2%, transparent) 48%,
+            transparent 68%
+          ),
+          radial-gradient(
+            circle at 50% 48%,
+            color-mix(in srgb, #ffffff 3.2%, var(--boot-bg)) 0%,
+            var(--boot-bg) 62%
+          );
+      }
+      #boot-splash .boot-splash__dither {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.055;
+        mix-blend-mode: soft-light;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 160px 160px;
+      }
+      #boot-splash .boot-splash__content {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 2rem;
-        background: #12121c;
-        text-align: center;
-      }
-      #boot-splash[hidden] {
-        display: none !important;
       }
       #boot-splash img {
         width: 80px;
@@ -95,15 +137,19 @@
   </head>
   <body>
     <div id="boot-splash" aria-live="polite" aria-busy="true">
-      <img src="./ico/favicon.svg" width="80" height="80" alt="Louvor JA">
-      <h1>Iniciando o Louvor JA</h1>
-      <p>Aguarde instantes enquanto organizamos tudo para você.</p>
-      <div class="boot-progress">
-        <div class="boot-labels">
-          <span>Iniciando...</span>
-          <span class="boot-percent">…</span>
+      <div class="boot-splash__glow" aria-hidden="true"></div>
+      <div class="boot-splash__dither" aria-hidden="true"></div>
+      <div class="boot-splash__content">
+        <img src="./ico/favicon.svg" width="80" height="80" alt="Louvor JA">
+        <h1>Iniciando o Louvor JA</h1>
+        <p>Aguarde instantes enquanto organizamos tudo para você.</p>
+        <div class="boot-progress">
+          <div class="boot-labels">
+            <span>Iniciando...</span>
+            <span class="boot-percent">…</span>
+          </div>
+          <div class="boot-track"><div class="boot-fill"></div></div>
         </div>
-        <div class="boot-track"><div class="boot-fill"></div></div>
       </div>
     </div>
     <div id="app"></div>

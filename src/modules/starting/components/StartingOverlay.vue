@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { GradientBackground } from '@design-system/index'
 import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 
@@ -26,59 +27,61 @@ const {
         aria-live="polite"
         :aria-busy="!hasError"
       >
-        <Transition name="starting-fade" appear>
-          <main
-            v-if="showContent"
-            class="starting-overlay__content"
-          >
-            <div class="starting-overlay__brand">
-              <img
-                class="starting-overlay__logo"
-                :src="logoUrl"
-                :alt="t('app.name')"
-                width="80"
-                height="80"
-              >
-              <h1 class="starting-overlay__title">
-                {{ isFirstBoot ? t('starting.titleFirstBoot') : t('starting.titleWarmBoot') }}
-              </h1>
-              <p class="starting-overlay__subtitle">
-                {{ t('starting.subtitle') }}
-              </p>
-            </div>
-
-            <section class="starting-overlay__progress">
-              <div class="starting-overlay__labels">
-                <span class="starting-overlay__status">
-                  {{ t(statusKey) }}
-                </span>
-                <span class="starting-overlay__percent">
-                  {{ hasError ? '!' : `${progress}%` }}
-                </span>
+        <GradientBackground class="starting-overlay__bg">
+          <Transition name="starting-fade" appear>
+            <main
+              v-if="showContent"
+              class="starting-overlay__content"
+            >
+              <div class="starting-overlay__brand">
+                <img
+                  class="starting-overlay__logo"
+                  :src="logoUrl"
+                  :alt="t('app.name')"
+                  width="80"
+                  height="80"
+                >
+                <h1 class="starting-overlay__title">
+                  {{ isFirstBoot ? t('starting.titleFirstBoot') : t('starting.titleWarmBoot') }}
+                </h1>
+                <p class="starting-overlay__subtitle">
+                  {{ t('starting.subtitle') }}
+                </p>
               </div>
 
-              <div
-                v-if="!hasError"
-                class="starting-overlay__track"
-                aria-hidden="true"
-              >
+              <section class="starting-overlay__progress">
+                <div class="starting-overlay__labels">
+                  <span class="starting-overlay__status">
+                    {{ t(statusKey) }}
+                  </span>
+                  <span class="starting-overlay__percent">
+                    {{ hasError ? '!' : `${progress}%` }}
+                  </span>
+                </div>
+
                 <div
-                  class="starting-overlay__fill"
-                  :style="{ width: `${Math.max(progress, 4)}%` }"
-                />
-              </div>
+                  v-if="!hasError"
+                  class="starting-overlay__track"
+                  aria-hidden="true"
+                >
+                  <div
+                    class="starting-overlay__fill"
+                    :style="{ width: `${Math.max(progress, 4)}%` }"
+                  />
+                </div>
 
-              <v-btn
-                v-else
-                color="primary"
-                class="starting-overlay__retry"
-                @click="retryBootstrap"
-              >
-                {{ t('starting.retry') }}
-              </v-btn>
-            </section>
-          </main>
-        </Transition>
+                <v-btn
+                  v-else
+                  color="primary"
+                  class="starting-overlay__retry"
+                  @click="retryBootstrap"
+                >
+                  {{ t('starting.retry') }}
+                </v-btn>
+              </section>
+            </main>
+          </Transition>
+        </GradientBackground>
       </div>
     </Transition>
   </Teleport>
@@ -89,12 +92,19 @@ const {
   position: fixed;
   inset: 0;
   z-index: 100000;
+  color: var(--ds-color-on-surface);
+}
+
+.starting-overlay__bg {
+  height: 100%;
+}
+
+.starting-overlay__bg :deep(.ds-gradient-bg__content) {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   padding: 2rem;
-  background-color: #12121c;
-  color: #ffffff;
 }
 
 .starting-overlay__content {
