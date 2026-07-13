@@ -31,5 +31,13 @@ export default {
       media: 'Configurações de áudio, vídeo e player em breve.',
       projection: 'Configurações de projeção e telas em breve.',
     },
+    general: {
+      dataTitle: 'Dados locais',
+      dataHint:
+        'Remove o catálogo, mídias baixadas e preferências salvas na pasta {product}. O app reinicia o setup na próxima abertura.',
+      clearData: 'Apagar todos os dados',
+      clearError: 'Não foi possível limpar os dados. Tente novamente.',
+      desktopOnly: 'Disponível apenas no aplicativo desktop.',
+    },
   },
 }

@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "basic-ftp": "^6.0.1",
     "pinia": "^3.0.4",
     "vue": "^3.5.38",
     "vue-i18n": "^11.4.6",
@@ -58,7 +59,7 @@
   },
   "build": {
     "appId": "com.louvorja.centralja",
-    "productName": "Louvor JA",
+    "productName": "Central Adoração",
     "directories": {
       "output": "dist-electron"
     },
@@ -106,6 +107,6 @@
       "allowToChangeInstallationDirectory": true
     }
   },
-  "description": "Louvor JA — aplicativo desktop para gerenciamento de culto",
+  "description": "Central Adoração — aplicativo desktop para gerenciamento de culto",
   "author": "Kiki Solutions"
 }

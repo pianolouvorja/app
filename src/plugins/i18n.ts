@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 import ptBR from '@locales/pt-BR'
 import settingsPtBR from '@modules/settings/locales/pt-BR'
+import startingPtBR from '@modules/starting/locales/pt-BR'
 
 export default createI18n({
   legacy: false,
@@ -11,6 +12,7 @@ export default createI18n({
     'pt-BR': {
       ...ptBR,
       ...settingsPtBR,
+      ...startingPtBR,
     },
   },
 })

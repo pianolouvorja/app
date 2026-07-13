@@ -2,16 +2,110 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8">
-    <title>Louvor JA</title>
-    <link rel="icon" href="/ico/favicon.svg" type="image/svg+xml">
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="apple-touch-icon" href="/ico/favicon.png">
+    <title>Central Adoração</title>
+    <link rel="icon" href="./ico/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="./favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="./ico/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* Splash estático — visível antes do Vue montar (first-boot / cold start). */
+      html, body {
+        height: 100%;
+        margin: 0;
+        background: #12121c;
+        color: #fff;
+        font-family: Inter, system-ui, sans-serif;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: #12121c;
+        text-align: center;
+      }
+      #boot-splash[hidden] {
+        display: none !important;
+      }
+      #boot-splash img {
+        width: 80px;
+        height: auto;
+        margin-bottom: 1.5rem;
+        animation: boot-pulse 2s ease-in-out infinite;
+      }
+      #boot-splash h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.875rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      #boot-splash p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 0.875rem;
+      }
+      #boot-splash .boot-progress {
+        width: 100%;
+        max-width: 450px;
+        margin-top: 2.5rem;
+      }
+      #boot-splash .boot-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        padding: 0 0.25rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #boot-splash .boot-percent {
+        color: #60a5fa;
+      }
+      #boot-splash .boot-track {
+        height: 3px;
+        overflow: hidden;
+        border-radius: 9999px;
+        background: #1e293b;
+      }
+      #boot-splash .boot-fill {
+        width: 8%;
+        height: 100%;
+        background: #2563eb;
+        border-radius: inherit;
+        animation: boot-bar 1.6s ease-in-out infinite;
+      }
+      @keyframes boot-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.08); opacity: 0.85; }
+      }
+      @keyframes boot-bar {
+        0% { width: 6%; }
+        50% { width: 38%; }
+        100% { width: 6%; }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash" aria-live="polite" aria-busy="true">
+      <img src="./ico/favicon.svg" width="80" height="80" alt="Louvor JA">
+      <h1>Iniciando o Louvor JA</h1>
+      <p>Aguarde instantes enquanto organizamos tudo para você.</p>
+      <div class="boot-progress">
+        <div class="boot-labels">
+          <span>Iniciando...</span>
+          <span class="boot-percent">…</span>
+        </div>
+        <div class="boot-track"><div class="boot-fill"></div></div>
+      </div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

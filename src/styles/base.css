@@ -40,10 +40,16 @@ body,
 
 body {
   font-family: var(--ds-font-family);
-  background-color: var(--ds-color-background);
+  background-color: #12121c;
   color: var(--ds-color-on-surface);
   -webkit-font-smoothing: antialiased;
   transition:
     background-color 280ms ease,
     color 280ms ease;
+}
+
+#app {
+  min-height: 100%;
+  height: 100%;
+  background-color: #12121c;
 }
