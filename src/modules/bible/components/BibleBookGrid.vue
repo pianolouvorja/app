@@ -97,6 +97,8 @@ const { t } = useI18n()
   flex: 2;
   height: 100%;
   overflow: hidden;
+  container-type: inline-size;
+  container-name: bible-books;
 }
 
 .bible-books__search {
@@ -198,6 +200,21 @@ const { t } = useI18n()
   &::-webkit-scrollbar-thumb {
     background: var(--ds-color-outline);
     border-radius: 999px;
+  }
+}
+
+@container bible-books (min-width: 40rem) {
+  .bible-books__grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .bible-books__abbr {
+    font-size: 0.95rem;
+  }
+
+  .bible-books__name {
+    font-size: 9px;
   }
 }
 
