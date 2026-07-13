@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { usePageTransition } from '@design-system/composables'
+
 import SettingsTabs from '../components/SettingsTabs.vue'
 import { SETTINGS_SECTIONS } from '../constants/sections'
 import type { SettingsSectionId } from '../types/settings'
@@ -10,11 +12,14 @@ import type { SettingsSectionId } from '../types/settings'
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { transitionName } = usePageTransition()
 
 const activeSection = computed<SettingsSectionId>(() => {
   const match = SETTINGS_SECTIONS.find((section) => section.routeName === route.name)
   return match?.id ?? 'appearance'
 })
+
+const isAppearance = computed(() => activeSection.value === 'appearance')
 
 const sectionTitleKey = computed(
   () => `settings.sectionTitle.${activeSection.value}`,
@@ -26,10 +31,13 @@ function goBack() {
 </script>
 
 <template>
-  <section class="settings-view">
+  <section
+    class="settings-view"
+    :class="{ 'settings-view--appearance': isAppearance }"
+  >
     <SettingsTabs class="settings-view__tabs" />
 
-    <div class="settings-view__header">
+    <div v-if="!isAppearance" class="settings-view__header">
       <button
         type="button"
         class="settings-view__back"
@@ -44,7 +52,14 @@ function goBack() {
     </div>
 
     <div class="settings-view__content">
-      <RouterView />
+      <RouterView v-slot="{ Component, route: sectionRoute }">
+        <Transition :name="transitionName" mode="out-in">
+          <component
+            :is="Component"
+            :key="String(sectionRoute.name ?? sectionRoute.path)"
+          />
+        </Transition>
+      </RouterView>
     </div>
   </section>
 </template>
@@ -55,6 +70,10 @@ function goBack() {
   max-width: 80rem;
   margin: 0 auto;
   padding: 1.5rem var(--ds-spacing-page) 2rem;
+
+  &--appearance {
+    max-width: 90rem;
+  }
 }
 
 .settings-view__tabs {

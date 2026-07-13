@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useBlurSystem } from '@design-system/composables'
 
 withDefaults(
@@ -14,12 +12,8 @@ withDefaults(
   },
 )
 
-const { backdropFilter } = useBlurSystem()
-
-const style = computed(() => ({
-  backdropFilter: backdropFilter.value,
-  WebkitBackdropFilter: backdropFilter.value,
-}))
+/** Garante ThemeManager aplicado (vars --ds-blur-active / --ds-glass-fill). */
+useBlurSystem()
 </script>
 
 <template>
@@ -29,7 +23,6 @@ const style = computed(() => ({
       'ds-glass-card--padded': padding,
       'ds-glass-card--elevated': elevated,
     }"
-    :style="style"
   >
     <slot />
   </div>
@@ -38,12 +31,20 @@ const style = computed(() => ({
 <style scoped lang="scss">
 .ds-glass-card {
   border-radius: var(--ds-radius-lg);
-  background: color-mix(in srgb, var(--ds-color-surface-card) 72%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--ds-color-surface-card) var(--ds-glass-fill, 72%),
+    transparent
+  );
   border: 1px solid var(--ds-color-outline-strong);
   color: var(--ds-color-on-surface);
+  backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
   transition:
-    background-color 280ms ease,
-    border-color 280ms ease,
+    background-color var(--ds-motion-duration, 280ms) ease,
+    border-color var(--ds-motion-duration, 280ms) ease,
+    backdrop-filter var(--ds-motion-duration, 280ms) ease,
+    -webkit-backdrop-filter var(--ds-motion-duration, 280ms) ease,
     transform 200ms ease;
 
   &--padded {
@@ -52,11 +53,15 @@ const style = computed(() => ({
   }
 
   &--elevated {
-    background: color-mix(in srgb, var(--ds-color-surface-elevated) 80%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--ds-color-surface-elevated) var(--ds-glass-fill, 80%),
+      transparent
+    );
   }
 
   &:hover {
-    background: color-mix(in srgb, var(--ds-color-surface-card) 88%, transparent);
+    border-color: color-mix(in srgb, var(--ds-color-on-surface) 18%, transparent);
   }
 }
 </style>

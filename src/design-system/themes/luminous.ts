@@ -9,7 +9,8 @@ export const luminousClarity = {
   cssVars: {
     '--ds-color-primary': colors.primary,
     '--ds-color-primary-soft': '#0061a4',
-    '--ds-color-secondary': colors.secondary,
+    '--ds-color-secondary': '#008f8b',
+    '--ds-color-tertiary': '#6d3900',
     '--ds-color-brand-yellow': colors.brandYellow,
     '--ds-color-background': colors.light.background,
     '--ds-color-surface': colors.light.surface,

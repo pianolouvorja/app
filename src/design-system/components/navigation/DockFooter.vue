@@ -55,9 +55,17 @@ function onSelect(key: string) {
   gap: 3rem;
   padding: 0 var(--ds-spacing-page, 32px) 0.5rem;
   border-top: 1px solid var(--ds-color-outline);
-  background: color-mix(in srgb, var(--ds-color-surface) 80%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--ds-color-surface) var(--ds-glass-fill, 80%),
+    transparent
+  );
   backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
+  transition:
+    background-color var(--ds-motion-duration, 280ms) ease,
+    backdrop-filter var(--ds-motion-duration, 280ms) ease,
+    -webkit-backdrop-filter var(--ds-motion-duration, 280ms) ease;
 }
 
 .ds-dock__item {

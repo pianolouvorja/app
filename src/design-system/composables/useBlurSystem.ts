@@ -4,9 +4,16 @@ import { blur, type BlurToken } from '@design-system/tokens'
 
 import { useThemeManager } from './useThemeManager'
 
-/** Acesso focado à intensidade de blur (Glass / BlurSystem). */
+/** Acesso focado à intensidade de vidro (blur + fill). */
 export function useBlurSystem() {
-  const { blurLevel, currentBlur, setBlur } = useThemeManager()
+  const {
+    glassIntensity,
+    blurLevel,
+    currentBlur,
+    currentGlassFill,
+    setGlassIntensity,
+    setBlur,
+  } = useThemeManager()
 
   const backdropFilter = computed(
     () => `blur(${currentBlur.value}) saturate(140%)`,
@@ -17,10 +24,13 @@ export function useBlurSystem() {
   }
 
   return {
+    glassIntensity,
     blurLevel,
     currentBlur,
+    currentGlassFill,
     blurTokens: blur,
     backdropFilter,
     setBlurLevel,
+    setGlassIntensity,
   }
 }

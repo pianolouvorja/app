@@ -38,5 +38,13 @@ const style = computed(() => {
 <style scoped lang="scss">
 .ds-blur-container {
   isolation: isolate;
+  background: color-mix(
+    in srgb,
+    var(--ds-color-surface-card) var(--ds-glass-fill, 72%),
+    transparent
+  );
+  transition:
+    background-color var(--ds-motion-duration, 280ms) ease,
+    backdrop-filter var(--ds-motion-duration, 280ms) ease;
 }
 </style>

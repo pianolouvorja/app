@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { usePageTransition } from '@design-system/composables'
 import { DockFooter, GradientBackground } from '@design-system/index'
 import type { DockNavItem } from '@design-system/types/navigation'
 import { mainNavRoutes } from '@shared/constants/navigation'
@@ -11,6 +12,7 @@ import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { transitionName } = usePageTransition()
 
 /** Login Google — reativar quando o fluxo de autenticação existir */
 const showAccountButton = false
@@ -36,6 +38,11 @@ function onNavigate(key: string) {
   if (item) {
     void router.push(item.to)
   }
+}
+
+function viewKey(viewRoute: typeof route) {
+  const navKey = viewRoute.meta.navKey
+  return typeof navKey === 'string' ? navKey : String(viewRoute.name ?? viewRoute.path)
 }
 </script>
 
@@ -67,7 +74,14 @@ function onNavigate(key: string) {
     </header>
 
     <main class="app-shell__main">
-      <RouterView />
+      <RouterView v-slot="{ Component, route: viewRoute }">
+        <Transition :name="transitionName" mode="out-in">
+          <component
+            :is="Component"
+            :key="viewKey(viewRoute)"
+          />
+        </Transition>
+      </RouterView>
     </main>
 
     <DockFooter

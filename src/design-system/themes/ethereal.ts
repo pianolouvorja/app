@@ -10,6 +10,7 @@ export const etherealLumens = {
     '--ds-color-primary': colors.primary,
     '--ds-color-primary-soft': colors.primarySoft,
     '--ds-color-secondary': colors.secondary,
+    '--ds-color-tertiary': '#ffb77b',
     '--ds-color-brand-yellow': colors.brandYellow,
     '--ds-color-background': colors.dark.background,
     '--ds-color-surface': colors.dark.surface,
