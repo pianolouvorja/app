@@ -267,6 +267,11 @@ onUnmounted(() => {
   }
 }
 
+[data-mode='light'] .bible-version-select__menu {
+  background: color-mix(in srgb, var(--ds-color-surface-elevated) 96%, transparent);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.12);
+}
+
 .bible-version-select__option {
   display: flex;
   align-items: baseline;

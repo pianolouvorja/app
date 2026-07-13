@@ -238,7 +238,7 @@ function isSelected(verseNumber: number): boolean {
   height: 2rem;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ds-color-surface-container-high, #2a2a2a) 90%, transparent);
+  background: color-mix(in srgb, var(--ds-color-surface-container-high) 90%, transparent);
   color: var(--ds-color-on-surface);
   cursor: pointer;
   transition:
@@ -253,7 +253,7 @@ function isSelected(verseNumber: number): boolean {
   }
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--ds-color-primary) 18%, #2a2a2a);
+    background: color-mix(in srgb, var(--ds-color-primary) 18%, var(--ds-color-surface-container-high));
   }
 
   &:active:not(:disabled) {
@@ -266,15 +266,16 @@ function isSelected(verseNumber: number): boolean {
   }
 
   &--clear {
-    background: color-mix(in srgb, #93000a 45%, #2a2a2a);
+    background: color-mix(in srgb, #93000a 45%, var(--ds-color-surface-container-high));
     color: #ffb4ab;
 
     &:hover:not(:disabled) {
-      background: color-mix(in srgb, #93000a 62%, #2a2a2a);
+      background: color-mix(in srgb, #93000a 62%, var(--ds-color-surface-container-high));
       color: #ffdad6;
     }
   }
 }
+
 
 .bible-reader__search {
   position: relative;
@@ -296,18 +297,24 @@ function isSelected(verseNumber: number): boolean {
 
 .bible-reader__search-input {
   width: 100%;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
   border-radius: var(--ds-radius-md, 0.5rem);
-  background: var(--ds-color-surface-container, #201f1f);
+  background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.5rem 0.75rem 0.5rem 2.25rem;
   font-size: 0.875rem;
   outline: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 
   &:focus {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    border-color: color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
 }
+
 
 .bible-reader__actions {
   display: flex;
@@ -328,7 +335,7 @@ function isSelected(verseNumber: number): boolean {
   cursor: pointer;
 
   &:hover {
-    background: var(--ds-color-surface-variant, #353534);
+    background: var(--ds-color-surface-variant);
   }
 }
 
@@ -451,10 +458,40 @@ function isSelected(verseNumber: number): boolean {
 
 .bible-reader__preview-ref {
   margin: 0;
-  color: var(--ds-color-primary-soft);
+  color: #fb8c00;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+</style>
+
+<style lang="scss">
+[data-mode='light'] .bible-reader__circle-btn {
+  background: #f5f6fa;
+}
+
+[data-mode='light'] .bible-reader__circle-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ds-color-primary) 10%, #f7f8fc);
+}
+
+[data-mode='light'] .bible-reader__circle-btn--clear {
+  background: #fce8e6;
+  color: #ba1a1a;
+
+  &:hover:not(:disabled) {
+    background: #f9dedc;
+    color: #93000a;
+  }
+}
+
+[data-mode='light'] .bible-reader__search-input {
+  background: #f7f8fc;
+  border-color: #e8ecf3;
+}
+
+[data-mode='light'] .bible-reader__search-input:focus {
+  background: #fff;
 }
 </style>

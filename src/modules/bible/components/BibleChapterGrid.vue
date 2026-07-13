@@ -82,20 +82,25 @@ const { t } = useI18n()
 
 .bible-chapters__search-input {
   width: 100%;
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
   border-radius: var(--ds-radius-md, 0.5rem);
-  background: var(--ds-color-surface-container, #201f1f);
+  background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.55rem 0.75rem 0.55rem 2.35rem;
   font-size: 0.875rem;
   outline: none;
   box-sizing: border-box;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 
   &:focus {
     border-color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
 }
+
 
 .bible-chapters__title {
   margin: 0 0 1rem;
@@ -129,25 +134,57 @@ const { t } = useI18n()
 
 .bible-chapters__btn {
   aspect-ratio: 1;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
   border-radius: var(--ds-radius-lg, 0.75rem);
-  background: var(--ds-color-surface-container-high, #2a2a2a);
+  background: var(--ds-color-surface-container-high);
   color: var(--ds-color-on-surface);
   font-size: 1.1rem;
   cursor: pointer;
   transition:
     background-color 160ms ease,
     color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
     transform 150ms ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--ds-color-primary) 45%, #2a2a2a);
+    background: color-mix(in srgb, var(--ds-color-primary) 45%, var(--ds-color-surface-container-high));
   }
 
   &--active {
     background: var(--ds-color-tertiary-container, #db7900);
+    border-color: transparent;
     color: var(--ds-color-on-tertiary-container, #452200);
     font-weight: 700;
   }
+}
+</style>
+
+<style lang="scss">
+[data-mode='light'] .bible-chapters__search-input {
+  background: #f7f8fc;
+  border-color: #e8ecf3;
+}
+
+[data-mode='light'] .bible-chapters__search-input:focus {
+  background: #fff;
+}
+
+[data-mode='light'] .bible-chapters__btn {
+  background: #f5f6fa;
+  border-color: #e8ecf3;
+  color: #5b616b;
+}
+
+[data-mode='light'] .bible-chapters__btn:hover {
+  background: color-mix(in srgb, var(--ds-color-primary) 8%, #f7f8fc);
+  color: var(--ds-color-primary-soft);
+}
+
+[data-mode='light'] .bible-chapters__btn--active {
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary);
+  border-color: transparent;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
 }
 </style>

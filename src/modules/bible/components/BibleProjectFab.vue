@@ -36,14 +36,14 @@ const { t } = useI18n()
   z-index: 35;
   width: 4rem;
   height: 4rem;
-  border: 0;
+  border: 4px solid color-mix(in srgb, #fff 20%, transparent);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--ds-color-primary);
-  color: var(--ds-color-on-primary, #003258);
-  box-shadow: 0 8px 30px color-mix(in srgb, var(--ds-color-primary-soft) 40%, transparent);
+  color: var(--ds-color-on-primary);
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--ds-color-primary) 40%, transparent);
   cursor: pointer;
   transition:
     transform 160ms ease,

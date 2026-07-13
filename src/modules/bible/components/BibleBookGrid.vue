@@ -118,20 +118,25 @@ const { t } = useI18n()
 
 .bible-books__search-input {
   width: 100%;
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
   border-radius: var(--ds-radius-md, 0.5rem);
-  background: var(--ds-color-surface-container, #201f1f);
+  background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.55rem 0.75rem 0.55rem 2.35rem;
   font-size: 0.875rem;
   outline: none;
   box-sizing: border-box;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 
   &:focus {
     border-color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
 }
+
 
 .bible-books__header {
   display: flex;
@@ -156,7 +161,7 @@ const { t } = useI18n()
   gap: 0.15rem;
   padding: 0.2rem;
   border-radius: var(--ds-radius-md, 0.5rem);
-  background: var(--ds-color-surface-container, #201f1f);
+  background: var(--ds-color-surface-container);
 }
 
 .bible-books__tab {
@@ -171,7 +176,8 @@ const { t } = useI18n()
 
   &--active {
     background: var(--ds-color-primary);
-    color: var(--ds-color-on-primary, #003258);
+    color: var(--ds-color-on-primary);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--ds-color-primary) 25%, transparent);
   }
 }
 
@@ -210,8 +216,10 @@ const { t } = useI18n()
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
+    filter 180ms ease,
     border-color 180ms ease,
-    background-color 180ms ease;
+    background-color 180ms ease,
+    color 180ms ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -266,5 +274,68 @@ const { t } = useI18n()
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+</style>
+
+<style lang="scss">
+[data-mode='light'] .bible-books__search-input {
+  background: #f7f8fc;
+  border-color: #e8ecf3;
+}
+
+[data-mode='light'] .bible-books__search-input:focus {
+  background: #fff;
+}
+
+[data-mode='light'] .bible-books__tabs {
+  background: #f7f8fc;
+}
+
+[data-mode='light'] .bible-books__tile:hover {
+  box-shadow: none;
+  filter: brightness(0.97);
+}
+
+[data-mode='light'] .bible-books__tile--law {
+  background: #bfdbfe;
+  color: #1e40af;
+  border-color: #60a5fa;
+}
+
+[data-mode='light'] .bible-books__tile--history {
+  background: #bbf7d0;
+  color: #166534;
+  border-color: #4ade80;
+}
+
+[data-mode='light'] .bible-books__tile--prophets {
+  background: #fecaca;
+  color: #991b1b;
+  border-color: #f87171;
+}
+
+[data-mode='light'] .bible-books__tile--gospels {
+  background: #e9d5ff;
+  color: #6b21a8;
+  border-color: #c084fc;
+}
+
+[data-mode='light'] .bible-books__tile--letters,
+[data-mode='light'] .bible-books__tile--neutral {
+  background: #f1f3f7;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+[data-mode='light'] .bible-books__tile--active {
+  background: #fdba74;
+  border-color: #ea580c;
+  color: #7c2d12;
+  filter: none;
+  box-shadow: 0 2px 8px rgb(234 88 12 / 0.28);
+}
+
+[data-mode='light'] .bible-books__name {
+  opacity: 1;
 }
 </style>

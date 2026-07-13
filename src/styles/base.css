@@ -8,8 +8,12 @@
   --ds-color-surface: #131313;
   --ds-color-surface-elevated: #1e1e1e;
   --ds-color-surface-card: #242424;
+  --ds-color-surface-container: #201f1f;
+  --ds-color-surface-container-high: #2a2a2a;
+  --ds-color-surface-variant: #353534;
   --ds-color-on-surface: #e5e2e1;
   --ds-color-on-surface-variant: #bfc7d4;
+  --ds-color-on-primary: #003258;
   --ds-color-outline: rgba(255, 255, 255, 0.05);
   --ds-color-outline-strong: rgba(255, 255, 255, 0.1);
   --ds-radius-sm: 8px;
@@ -22,6 +26,10 @@
   --ds-dock-height: 72px;
   --ds-font-family: 'Inter', system-ui, sans-serif;
   color-scheme: dark;
+}
+
+[data-mode='light'] {
+  color-scheme: light;
 }
 
 *,

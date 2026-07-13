@@ -167,18 +167,24 @@ const browseIcon = computed(() =>
 
 .bible-toolbar__search-input {
   width: 100%;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
   border-radius: 999px;
-  background: var(--ds-color-surface-container, #201f1f);
+  background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.55rem 1rem 0.55rem 2.5rem;
   font-size: 0.875rem;
   outline: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 
   &:focus {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    border-color: color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
 }
+
 
 .bible-toolbar__browse {
   display: inline-flex;
@@ -210,5 +216,21 @@ const browseIcon = computed(() =>
     background: color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
     border-color: color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
   }
+}
+
+</style>
+
+<style lang="scss">
+[data-mode='light'] .bible-toolbar__search-input {
+  background: #f7f8fc;
+  border-color: #e8ecf3;
+}
+
+[data-mode='light'] .bible-toolbar__search-input:focus {
+  background: #fff;
+}
+
+[data-mode='light'] .bible-toolbar__browse {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
 }
 </style>

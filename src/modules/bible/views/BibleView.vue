@@ -198,6 +198,7 @@ function onNextVerse() {
   flex-shrink: 0;
 }
 
+
 .bible-view__state,
 .bible-view__alert {
   flex: 1;
@@ -239,5 +240,23 @@ function onNextVerse() {
     background: transparent;
     border: 1px solid var(--ds-color-outline);
   }
+}
+</style>
+
+<style lang="scss">
+[data-mode='light'] .bible-view .ds-glass-card {
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+  border-color: #e8ecf3;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.03);
+}
+
+[data-mode='light'] .bible-view .ds-glass-card:hover {
+  background: color-mix(in srgb, #ffffff 90%, transparent);
+}
+
+[data-mode='light'] .bible-view__state,
+[data-mode='light'] .bible-view__alert {
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+  border-color: #e8ecf3;
 }
 </style>
