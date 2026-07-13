@@ -1,13 +1,12 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import ModulePlaceholder from '@shared/components/ModulePlaceholder.vue'
+import BibleView from './views/BibleView.vue'
 
 export const bibleRoutes: RouteRecordRaw[] = [
   {
     path: 'bible',
     name: 'bible',
-    component: ModulePlaceholder,
-    props: { titleKey: 'nav.bible' },
+    component: BibleView,
     meta: {
       navKey: 'bible',
     },

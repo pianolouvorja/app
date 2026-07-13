@@ -10,6 +10,7 @@ export const BROWSER_STORAGE_KEYS = {
 export const USER_PREFERENCE_KEYS = {
   theme: 'theme',
   blur: 'blur',
+  bibleSelectedVersion: 'bible.selectedVersionId',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */
