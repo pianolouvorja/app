@@ -1,6 +1,5 @@
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { isDesktopApp } from '@shared/services/desktop-bridge'
 
@@ -10,7 +9,6 @@ import type { LibraryAlbum } from '../types/library'
 /** Orquestra a Biblioteca Local (listagem, download e exclusão). */
 export function useLocalLibrary() {
   const store = useLocalLibraryStore()
-  const router = useRouter()
   const {
     categories,
     isLoadingList,
@@ -25,10 +23,6 @@ export function useLocalLibrary() {
       void store.refreshCollections()
     }
   })
-
-  function closeLibrary() {
-    void router.push({ name: 'home' })
-  }
 
   function downloadAlbum(album: LibraryAlbum) {
     void store.downloadAlbum(album.id)
@@ -58,7 +52,6 @@ export function useLocalLibrary() {
     hasIdleAlbums,
     isAnyDownloading,
     isDesktop: isDesktopApp(),
-    closeLibrary,
     downloadAlbum,
     cancelAlbum,
     downloadAll,
