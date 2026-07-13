@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import { isDesktopApp } from '@shared/services/desktop-bridge'
 import { clearWorkspace } from '@shared/services/workspace-api'
@@ -12,8 +13,13 @@ import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { APP_PRODUCT_NAME } from '@shared/constants/app'
 
 const { t } = useI18n()
+const router = useRouter()
 const isClearing = ref(false)
 const clearError = ref(false)
+
+function openLocalLibrary() {
+  void router.push({ name: 'local-library' })
+}
 
 async function clearAllLocalData() {
   if (!isDesktopApp() || isClearing.value) return
@@ -43,6 +49,22 @@ async function clearAllLocalData() {
 
 <template>
   <section class="general-settings">
+    <div class="general-settings__block">
+      <h3 class="general-settings__heading">
+        {{ t('settings.general.libraryTitle') }}
+      </h3>
+      <p class="general-settings__hint">
+        {{ t('settings.general.libraryHint') }}
+      </p>
+      <v-btn
+        color="primary"
+        variant="tonal"
+        @click="openLocalLibrary"
+      >
+        {{ t('settings.general.libraryOpen') }}
+      </v-btn>
+    </div>
+
     <div class="general-settings__block">
       <h3 class="general-settings__heading">
         {{ t('settings.general.dataTitle') }}

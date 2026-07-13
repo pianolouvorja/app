@@ -10,6 +10,7 @@ export default {
   nav: {
     home: 'Início',
     albums: 'Álbuns',
+    library: 'Biblioteca',
     bible: 'Bíblia',
     utilities: 'Utilitários',
     settings: 'Configurações',
