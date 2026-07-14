@@ -28,8 +28,16 @@ const items: UtilityHubItem[] = [
     titleKey: 'utilities.timer',
     descriptionKey: 'utilities.timerDescription',
     icon: 'mdi-timer-outline',
-    to: null,
-    available: false,
+    to: '/utilities/timer',
+    available: true,
+  },
+  {
+    key: 'countdown',
+    titleKey: 'utilities.countdown',
+    descriptionKey: 'utilities.countdownDescription',
+    icon: 'mdi-timer-sand',
+    to: '/utilities/countdown',
+    available: true,
   },
 ]
 </script>

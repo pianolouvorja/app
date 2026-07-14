@@ -16,6 +16,8 @@ export const USER_PREFERENCE_KEYS = {
   bibleSelectedVersion: 'bible.selectedVersionId',
   projectionSettings: 'projection.settings',
   clockConfig: 'clock.config',
+  timerConfig: 'timer.config',
+  countdownConfig: 'countdown.config',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */

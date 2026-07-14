@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
+import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
+import TimerProjectionView from '@modules/timer/views/TimerProjectionView.vue'
 
 const route = useRoute()
 
@@ -14,6 +16,8 @@ const moduleId = computed(() => {
 
 <template>
   <ClockProjectionView v-if="moduleId === 'clock'" />
+  <TimerProjectionView v-else-if="moduleId === 'timer'" />
+  <CountdownProjectionView v-else-if="moduleId === 'countdown'" />
   <div
     v-else
     class="projection-host-empty"

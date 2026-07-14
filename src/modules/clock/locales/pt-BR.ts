@@ -6,8 +6,10 @@ export default {
     clockDescription: 'Exibir o horário na tela de projeção',
     draw: 'Desenho',
     drawDescription: 'Anotar e destacar sobre a projeção',
-    timer: 'Timer',
-    timerDescription: 'Contagem regressiva projetada',
+    timer: 'Cronômetro',
+    timerDescription: 'Contagem progressiva projetada',
+    countdown: 'Timer',
+    countdownDescription: 'Contagem regressiva projetada',
   },
   clock: {
     title: 'Relógio',
