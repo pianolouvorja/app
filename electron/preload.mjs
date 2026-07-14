@@ -35,4 +35,9 @@ contextBridge.exposeInMainWorld('louvorja', {
     check: (mediaType, filename) => ipcRenderer.invoke('media:check', mediaType, filename),
     delete: (mediaType, filename) => ipcRenderer.invoke('media:delete', mediaType, filename),
   },
+
+  displays: {
+    list: () => ipcRenderer.invoke('displays:list'),
+    identify: () => ipcRenderer.invoke('displays:identify'),
+  },
 })

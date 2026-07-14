@@ -24,10 +24,31 @@ export type MediaApi = {
   delete: (mediaType: MediaFolderType, filename: string) => Promise<boolean>
 }
 
+export type DisplayBounds = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type SystemDisplayInfo = {
+  id: number
+  bounds: DisplayBounds
+  workArea: DisplayBounds
+  scaleFactor: number
+  isPrimary: boolean
+}
+
+export type DisplaysApi = {
+  list: () => Promise<SystemDisplayInfo[]>
+  identify: () => Promise<boolean>
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
   workspace: WorkspaceApi
   catalog: CatalogApi
   media: MediaApi
+  displays: DisplaysApi
 }

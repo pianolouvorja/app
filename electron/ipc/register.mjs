@@ -10,8 +10,11 @@ import {
   readWorkspaceRecord,
   writeWorkspaceRecord,
 } from '../workspace.mjs'
+import { registerDisplayIpc } from './displays.mjs'
 
 export function registerWorkspaceIpc() {
+  registerDisplayIpc()
+
   ipcMain.handle('workspace:get-record', (_event, filename) => {
     try {
       return readWorkspaceRecord(filename)

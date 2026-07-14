@@ -43,6 +43,60 @@ export default {
       media: 'Configurações de áudio, vídeo e player em breve.',
       projection: 'Configurações de projeção e telas em breve.',
     },
+    projection: {
+      monitors: {
+        title: 'Arranjo de Monitores',
+        identify: 'Identificar Monitores',
+        primary: 'Principal',
+        extended: 'Estendido',
+        empty: 'Nenhum monitor detectado.',
+        hint: 'Arraste os monitores para reorganizar a posição física.',
+        resetLayout: 'Redefinir arranjo',
+      },
+      slides: {
+        title: 'Slides de Músicas',
+        multiScreens: 'Múltiplas Telas',
+        projectOn: 'Projetar nas seguintes telas:',
+        noExtended:
+          'Nenhum monitor estendido (secundário) detectado no sistema.',
+      },
+      mainScreen: {
+        title: 'Tela Principal',
+        openFullscreen: 'Abrir música em tela cheia na tela principal',
+        disablePrimaryWhenExtended:
+          'Desativar tela principal caso haja monitor estendido',
+        autoMinimizePlayer: 'Minimizar o player automaticamente',
+      },
+      lyrics: {
+        title: 'Personalização da Letra',
+        align: 'Alinhamento da letra',
+        alignTop: 'Cima',
+        alignCenter: 'Centro',
+        alignBottom: 'Baixo',
+        showTitle: 'Exibir título da música no primeiro slide',
+        customTextFormat: 'Formatação de texto personalizada',
+        customBackground: 'Fundo personalizado',
+        fontSize: 'Tamanho do texto',
+        fontColor: 'Cor do texto',
+        fontWeight: 'Peso da fonte',
+        weight400: 'Normal',
+        weight600: 'Semi',
+        weight700: 'Negrito',
+        weight900: 'Extra',
+        backgroundColor: 'Cor de fundo',
+        backgroundImage: 'Imagem de fundo',
+        selectImage: 'Clique para selecionar uma imagem',
+        removeImage: 'Remover imagem',
+        changeImage: 'Trocar imagem',
+      },
+      errors: {
+        loadDisplays: 'Não foi possível carregar os monitores.',
+        identify: 'Não foi possível identificar os monitores.',
+        identifyDesktopOnly:
+          'Identificação de monitores disponível apenas no aplicativo desktop.',
+        backgroundImage: 'Não foi possível carregar a imagem de fundo.',
+      },
+    },
     general: {
       dataTitle: 'Dados locais',
       dataHint:

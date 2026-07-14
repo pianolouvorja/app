@@ -13,3 +13,11 @@ export interface SettingsSection {
   routeName: string
   labelKey: string
 }
+
+export type {
+  LyricFontWeight,
+  LyricVerticalAlign,
+  MonitorArrangementSlot,
+  ProjectionSettings,
+  SystemDisplay,
+} from './projection'

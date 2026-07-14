@@ -14,6 +14,7 @@ export const USER_PREFERENCE_KEYS = {
   interaction: 'interaction',
   autoBrightness: 'autoBrightness',
   bibleSelectedVersion: 'bible.selectedVersionId',
+  projectionSettings: 'projection.settings',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */
