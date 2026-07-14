@@ -2,27 +2,37 @@
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
-  disabled: boolean
+  disabled?: boolean
+  projecting?: boolean
 }>()
 
 const emit = defineEmits<{
   project: []
+  clear: []
 }>()
 
 const { t } = useI18n()
+
+function onClick(projecting: boolean, disabled: boolean) {
+  if (disabled) return
+  if (projecting) emit('clear')
+  else emit('project')
+}
 </script>
 
 <template>
   <button
     type="button"
     class="bible-project-fab"
-    :disabled="disabled"
-    :aria-label="t('bible.project')"
-    :title="t('bible.project')"
-    @click="emit('project')"
+    :class="{ 'bible-project-fab--active': projecting }"
+    :disabled="disabled && !projecting"
+    :aria-label="projecting ? t('bible.clearProjection') : t('bible.project')"
+    :title="projecting ? t('bible.clearProjection') : t('bible.project')"
+    @click="onClick(Boolean(projecting), Boolean(disabled))"
   >
     <i
-      class="mdi mdi-play"
+      class="mdi"
+      :class="projecting ? 'mdi-stop' : 'mdi-play'"
       aria-hidden="true"
     />
   </button>
@@ -47,11 +57,18 @@ const { t } = useI18n()
   cursor: pointer;
   transition:
     transform 160ms ease,
-    opacity 160ms ease;
+    opacity 160ms ease,
+    background-color 160ms ease;
 
   .mdi {
     font-size: 2rem;
     line-height: 1;
+  }
+
+  &--active {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 90%, transparent);
+    color: #1a1a1a;
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--ds-color-error, #ffb4ab) 40%, transparent);
   }
 
   &:hover:not(:disabled) {

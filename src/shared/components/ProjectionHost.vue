@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import BibleProjectionView from '@modules/bible/views/BibleProjectionView.vue'
 import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
 import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
 import RandomProjectionView from '@modules/random/views/RandomProjectionView.vue'
@@ -20,6 +21,7 @@ const moduleId = computed(() => {
   <TimerProjectionView v-else-if="moduleId === 'timer'" />
   <CountdownProjectionView v-else-if="moduleId === 'countdown'" />
   <RandomProjectionView v-else-if="moduleId === 'random'" />
+  <BibleProjectionView v-else-if="moduleId === 'bible'" />
   <div
     v-else
     class="projection-host-empty"

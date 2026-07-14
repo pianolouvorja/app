@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import {
+  closeProjectionModule,
+  isProjectionModuleOpen,
+  openProjectionModule,
+} from '@shared/composables/useProjectionWindow'
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
 import {
   getUserPreference,
@@ -14,6 +19,7 @@ import {
   pickDefaultVersionId,
   resolveTestament,
 } from '../services/bible-catalog'
+import { publishBibleSelection } from '../services/bible-runtime'
 import {
   buildProjectionText,
   emptySelection,
@@ -49,8 +55,31 @@ export const useBibleStore = defineStore('bible', () => {
   const isLoadingMeta = ref(false)
   const isLoadingVerses = ref(false)
   const lastErrorKey = ref<string | null>(null)
+  const isProjecting = ref(false)
 
   const projection = ref<BibleSelection>(emptySelection())
+
+  let projectionWatchTimer: ReturnType<typeof setInterval> | null = null
+
+  function stopProjectionWatch() {
+    if (!projectionWatchTimer) return
+    clearInterval(projectionWatchTimer)
+    projectionWatchTimer = null
+  }
+
+  function startProjectionWatch() {
+    stopProjectionWatch()
+    projectionWatchTimer = setInterval(() => {
+      if (!isProjectionModuleOpen('bible')) {
+        isProjecting.value = false
+        stopProjectionWatch()
+      }
+    }, 400)
+  }
+
+  function publishProjectionState(selection: BibleSelection = projection.value) {
+    publishBibleSelection(selection)
+  }
 
   const selectedBook = computed(() =>
     books.value.find((book) => book.id === selectedBookId.value) ?? null,
@@ -136,6 +165,7 @@ export const useBibleStore = defineStore('bible', () => {
     const version = selectedVersion.value
     if (!book || !version || selectedVerses.value.length === 0) {
       projection.value = emptySelection()
+      if (isProjecting.value) publishProjectionState(projection.value)
       return
     }
 
@@ -156,6 +186,36 @@ export const useBibleStore = defineStore('bible', () => {
     }
 
     projection.value = selection
+    if (isProjecting.value) publishProjectionState(selection)
+  }
+
+  async function openProjection() {
+    syncProjection()
+    if (projection.value.verses.length === 0 || !projection.value.text) {
+      return false
+    }
+
+    publishProjectionState(projection.value)
+    const opened = await openProjectionModule('bible')
+    isProjecting.value = opened
+    if (opened) startProjectionWatch()
+    else stopProjectionWatch()
+    return opened
+  }
+
+  function clearProjectionWindow() {
+    closeProjectionModule()
+    isProjecting.value = false
+    stopProjectionWatch()
+    publishProjectionState(emptySelection())
+  }
+
+  async function toggleProjection() {
+    if (isProjecting.value && isProjectionModuleOpen('bible')) {
+      clearProjectionWindow()
+      return false
+    }
+    return openProjection()
   }
 
   async function refreshChapter() {
@@ -211,6 +271,9 @@ export const useBibleStore = defineStore('bible', () => {
       selectedChapter.value = 1
       selectedVerses.value = []
       lastVerseAnchor.value = 1
+
+      isProjecting.value = isProjectionModuleOpen('bible')
+      if (isProjecting.value) startProjectionWatch()
 
       await refreshChapter()
     } catch (error) {
@@ -395,6 +458,7 @@ export const useBibleStore = defineStore('bible', () => {
     isLoadingMeta,
     isLoadingVerses,
     lastErrorKey,
+    isProjecting,
     projection,
     selectedBook,
     selectedVersion,
@@ -415,5 +479,8 @@ export const useBibleStore = defineStore('bible', () => {
     toggleNavPanel,
     goToAdjacentVerse,
     syncProjection,
+    openProjection,
+    toggleProjection,
+    clearProjectionWindow,
   }
 })
