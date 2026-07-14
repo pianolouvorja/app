@@ -16,6 +16,14 @@ const items: UtilityHubItem[] = [
     available: true,
   },
   {
+    key: 'random',
+    titleKey: 'utilities.random',
+    descriptionKey: 'utilities.randomDescription',
+    icon: 'mdi-ticket-confirmation',
+    to: '/utilities/random',
+    available: true,
+  },
+  {
     key: 'draw',
     titleKey: 'utilities.draw',
     descriptionKey: 'utilities.drawDescription',

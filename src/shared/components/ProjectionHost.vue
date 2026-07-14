@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 
 import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
 import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
+import RandomProjectionView from '@modules/random/views/RandomProjectionView.vue'
 import TimerProjectionView from '@modules/timer/views/TimerProjectionView.vue'
 
 const route = useRoute()
@@ -18,6 +19,7 @@ const moduleId = computed(() => {
   <ClockProjectionView v-if="moduleId === 'clock'" />
   <TimerProjectionView v-else-if="moduleId === 'timer'" />
   <CountdownProjectionView v-else-if="moduleId === 'countdown'" />
+  <RandomProjectionView v-else-if="moduleId === 'random'" />
   <div
     v-else
     class="projection-host-empty"

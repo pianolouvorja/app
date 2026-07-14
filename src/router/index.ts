@@ -12,6 +12,7 @@ import { homeRoutes } from '@modules/home/routes'
 import { liturgyRoutes } from '@modules/liturgy/routes'
 import { settingsRoutes } from '@modules/settings/routes'
 import { syncRoutes } from '@modules/sync/routes'
+import { randomRoutes } from '@modules/random/routes'
 import { timerRoutes } from '@modules/timer/routes'
 import ProjectionHost from '@shared/components/ProjectionHost.vue'
 import { isElectronShell } from '@shared/services/desktop-bridge'
@@ -45,6 +46,7 @@ const router = createRouter({
         ...utilitiesRoutes,
         ...timerRoutes,
         ...countdownRoutes,
+        ...randomRoutes,
         ...settingsRoutes,
       ],
     },

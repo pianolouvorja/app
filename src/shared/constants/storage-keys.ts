@@ -18,6 +18,8 @@ export const USER_PREFERENCE_KEYS = {
   clockConfig: 'clock.config',
   timerConfig: 'timer.config',
   countdownConfig: 'countdown.config',
+  randomConfig: 'random.config',
+  randomSession: 'random.session',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */

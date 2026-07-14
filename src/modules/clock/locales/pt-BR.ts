@@ -8,6 +8,8 @@ export default {
     backToUtilities: 'Voltar para utilitários',
     clock: 'Relógio',
     clockDescription: 'Exibir o horário na tela de projeção',
+    random: 'Sorteio',
+    randomDescription: 'Sorteio animado de nomes e números',
     draw: 'Desenho',
     drawDescription: 'Anotar e destacar sobre a projeção',
     timer: 'Cronômetro',
