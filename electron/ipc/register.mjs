@@ -47,7 +47,7 @@ export function registerWorkspaceIpc() {
       })
     } catch (error) {
       console.error('[ipc] catalog:download-database', error)
-      return false
+      throw error
     }
   })
 
@@ -58,7 +58,7 @@ export function registerWorkspaceIpc() {
       })
     } catch (error) {
       console.error('[ipc] catalog:extract-database', error)
-      return false
+      throw error
     }
   })
 

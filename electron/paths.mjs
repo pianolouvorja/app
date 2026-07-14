@@ -2,7 +2,12 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 
-import { MEDIA_FOLDER_BY_TYPE, TEMP_DATABASE_FILE, WORKSPACE_DIRS } from './constants.mjs'
+import {
+  DB_DOWNLOAD_COMPLETE_FLAG,
+  MEDIA_FOLDER_BY_TYPE,
+  TEMP_DATABASE_FILE,
+  WORKSPACE_DIRS,
+} from './constants.mjs'
 
 /**
  * @typedef {object} WorkspacePaths
@@ -13,6 +18,7 @@ import { MEDIA_FOLDER_BY_TYPE, TEMP_DATABASE_FILE, WORKSPACE_DIRS } from './cons
  * @property {string} music
  * @property {string} images
  * @property {string} tempDatabase
+ * @property {string} downloadCompleteFlag
  */
 
 /**
@@ -30,6 +36,7 @@ export function getWorkspacePaths() {
     music: path.join(media, WORKSPACE_DIRS.music),
     images: path.join(media, WORKSPACE_DIRS.images),
     tempDatabase: path.join(root, TEMP_DATABASE_FILE),
+    downloadCompleteFlag: path.join(root, DB_DOWNLOAD_COMPLETE_FLAG),
   }
 }
 

@@ -5,6 +5,7 @@ import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import {
   downloadAndExtractCatalog,
   isBootstrapComplete,
+  mapBootstrapError,
   markBootstrapComplete,
   prepareFreshInstall,
   syncRemoteConfig,
@@ -160,7 +161,7 @@ export function useAppBootstrap() {
       await runFirstBoot()
     } catch (error) {
       console.error('[starting] erro na sincronização inicial', error)
-      store.markError()
+      store.markError(mapBootstrapError(error))
     }
   }
 
@@ -170,7 +171,7 @@ export function useAppBootstrap() {
     } catch (error) {
       console.error('[starting] erro no bootstrap', error)
       store.revealOverlay()
-      store.markError()
+      store.markError(mapBootstrapError(error))
     }
   }
 

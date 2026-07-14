@@ -11,6 +11,38 @@ export type BootstrapCompleteFlag = {
   complete: boolean
 }
 
+export function mapBootstrapError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+
+  if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+    return 'starting.status.errorOffline'
+  }
+  if (message.includes('429') || message.toLowerCase().includes('rate limit')) {
+    return 'starting.status.errorRateLimit'
+  }
+  if (message.includes('Bridge Electron') || message.includes('indisponível')) {
+    return 'starting.status.bridgeMissing'
+  }
+  if (
+    message.includes('baixar banco') ||
+    message.includes('Falha ao baixar')
+  ) {
+    return 'starting.status.errorDownload'
+  }
+  if (
+    message.includes('extrair') ||
+    message.includes('extração') ||
+    message.includes('Arquivo não encontrado')
+  ) {
+    return 'starting.status.errorExtract'
+  }
+  if (message.includes('Servidor retornou erro')) {
+    return 'starting.status.errorServer'
+  }
+
+  return 'starting.status.error'
+}
+
 export async function isBootstrapComplete(): Promise<boolean> {
   const flag = await readCatalogRecord<BootstrapCompleteFlag>(
     WORKSPACE_RECORD_KEYS.bootstrapComplete,
@@ -48,14 +80,21 @@ export async function downloadAndExtractCatalog(
   })
 
   try {
-    const downloaded = await bridge.catalog.downloadDatabase()
-    if (!downloaded) {
+    try {
+      await bridge.catalog.downloadDatabase()
+    } catch {
       throw new Error('Falha ao baixar banco de dados')
     }
 
-    const extracted = await bridge.catalog.extractDatabase()
-    if (!extracted) {
-      throw new Error('Falha ao extrair banco de dados local')
+    try {
+      const extracted = await bridge.catalog.extractDatabase()
+      if (!extracted) {
+        throw new Error('Falha desconhecida ao extrair banco de dados local')
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('Falha desconhecida')) throw error
+      throw new Error('Erro na extração dos dados locais')
     }
   } finally {
     unsubscribeDownload()

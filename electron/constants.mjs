@@ -12,6 +12,9 @@ export const WORKSPACE_DIRS = {
 /** Arquivo SQLite temporário baixado no first-boot (removido após extração). */
 export const TEMP_DATABASE_FILE = 'database.db'
 
+/** Marca download FTP concluído — evita re-download em retentativas do first-boot. */
+export const DB_DOWNLOAD_COMPLETE_FLAG = 'db_download_complete.flag'
+
 export const MEDIA_FOLDER_BY_TYPE = {
   covers: 'covers',
   music: 'music',

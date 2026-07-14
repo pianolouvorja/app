@@ -1,5 +1,12 @@
 import { Client } from 'basic-ftp'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync, readFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+  writeFileSync,
+  readFileSync,
+  statSync,
+} from 'node:fs'
 import path from 'node:path'
 import { net } from 'electron'
 
@@ -74,6 +81,14 @@ export function clearWorkspaceData() {
  * @param {(data: { progress: number }) => void} onProgress
  */
 export async function downloadCatalogDatabase(onProgress) {
+  const { tempDatabase, downloadCompleteFlag } = getWorkspacePaths()
+
+  if (existsSync(downloadCompleteFlag) && existsSync(tempDatabase)) {
+    console.log('[catalog] banco já baixado completamente — pulando FTP')
+    onProgress({ progress: 100 })
+    return true
+  }
+
   const ftpParams = await getFtpParams()
   const client = new Client()
 
@@ -86,16 +101,26 @@ export async function downloadCatalogDatabase(onProgress) {
       secure: false,
     })
 
-    const { tempDatabase } = getWorkspacePaths()
     const langPrefix = (ftpParams.lang || 'pt').toLowerCase()
     const root = ftpParams.root || '/'
     const remotePath = `${root}${root.endsWith('/') ? '' : '/'}config/${langPrefix}_database.db`
 
+    // Check de tamanho secundário: retomada/overwrite quando a flag não existe
     let size = 0
     try {
       size = await client.size(remotePath)
     } catch (error) {
       console.warn('[catalog] não foi possível obter tamanho FTP', error)
+    }
+
+    if (size > 0 && existsSync(tempDatabase)) {
+      const localStat = statSync(tempDatabase)
+      if (localStat.size === size) {
+        console.log('[catalog] banco local completo — pulando download e gravando flag')
+        writeFileSync(downloadCompleteFlag, '1')
+        onProgress({ progress: 100 })
+        return true
+      }
     }
 
     client.trackProgress((info) => {
@@ -105,6 +130,7 @@ export async function downloadCatalogDatabase(onProgress) {
     })
 
     await client.downloadTo(tempDatabase, remotePath)
+    writeFileSync(downloadCompleteFlag, '1')
     return true
   } finally {
     client.close()
@@ -115,7 +141,7 @@ export async function downloadCatalogDatabase(onProgress) {
  * @param {(data: { text: string, progress: number }) => void} onProgress
  */
 export async function extractCatalogDatabase(onProgress) {
-  const { tempDatabase } = getWorkspacePaths()
+  const { tempDatabase, downloadCompleteFlag } = getWorkspacePaths()
   if (!existsSync(tempDatabase)) {
     throw new Error(`Arquivo não encontrado em: ${tempDatabase}`)
   }
@@ -125,6 +151,7 @@ export async function extractCatalogDatabase(onProgress) {
 
   try {
     unlinkSync(tempDatabase)
+    if (existsSync(downloadCompleteFlag)) unlinkSync(downloadCompleteFlag)
   } catch (error) {
     console.error('[catalog] erro ao excluir database.db após extração', error)
   }
