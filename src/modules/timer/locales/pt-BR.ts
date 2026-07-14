@@ -17,7 +17,7 @@ export default {
     project: 'Projetar',
     clearProjection: 'Retirar da projeção',
     projecting: 'Em projeção',
-    backToUtilities: 'Voltar para utilitários',
+    backToUtilities: 'Voltar para Temporizador',
     start: 'Iniciar',
     pause: 'Pausar',
     reset: 'Reiniciar',

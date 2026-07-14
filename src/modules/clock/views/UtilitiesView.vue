@@ -8,11 +8,11 @@ const { t } = useI18n()
 
 const items: UtilityHubItem[] = [
   {
-    key: 'clock',
-    titleKey: 'utilities.clock',
-    descriptionKey: 'utilities.clockDescription',
-    icon: 'mdi-clock-outline',
-    to: '/utilities/clock',
+    key: 'temporizador',
+    titleKey: 'utilities.temporizador',
+    descriptionKey: 'utilities.temporizadorDescription',
+    icon: 'mdi-timer-cog-outline',
+    to: '/utilities/temporizador',
     available: true,
   },
   {
@@ -22,22 +22,6 @@ const items: UtilityHubItem[] = [
     icon: 'mdi-draw',
     to: null,
     available: false,
-  },
-  {
-    key: 'timer',
-    titleKey: 'utilities.timer',
-    descriptionKey: 'utilities.timerDescription',
-    icon: 'mdi-timer-outline',
-    to: '/utilities/timer',
-    available: true,
-  },
-  {
-    key: 'countdown',
-    titleKey: 'utilities.countdown',
-    descriptionKey: 'utilities.countdownDescription',
-    icon: 'mdi-timer-sand',
-    to: '/utilities/countdown',
-    available: true,
   },
 ]
 </script>

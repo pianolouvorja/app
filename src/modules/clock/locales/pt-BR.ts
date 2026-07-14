@@ -2,6 +2,10 @@ export default {
   utilities: {
     title: 'Utilitários',
     subtitle: 'Ferramentas de projeção para o culto',
+    temporizador: 'Temporizador',
+    temporizadorDescription: 'Relógio, cronômetro e contagem regressiva',
+    temporizadorSubtitle: 'Ferramentas de tempo para a projeção',
+    backToUtilities: 'Voltar para utilitários',
     clock: 'Relógio',
     clockDescription: 'Exibir o horário na tela de projeção',
     draw: 'Desenho',
@@ -34,6 +38,6 @@ export default {
     project: 'Projetar',
     clearProjection: 'Retirar da projeção',
     projecting: 'Em projeção',
-    backToUtilities: 'Voltar para utilitários',
+    backToUtilities: 'Voltar para Temporizador',
   },
 }
