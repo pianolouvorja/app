@@ -1,13 +1,21 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import ModulePlaceholder from '@shared/components/ModulePlaceholder.vue'
+import ClockView from './views/ClockView.vue'
+import UtilitiesView from './views/UtilitiesView.vue'
 
 export const utilitiesRoutes: RouteRecordRaw[] = [
   {
     path: 'utilities',
     name: 'utilities',
-    component: ModulePlaceholder,
-    props: { titleKey: 'nav.utilities' },
+    component: UtilitiesView,
+    meta: {
+      navKey: 'utilities',
+    },
+  },
+  {
+    path: 'utilities/clock',
+    name: 'utilities-clock',
+    component: ClockView,
     meta: {
       navKey: 'utilities',
     },

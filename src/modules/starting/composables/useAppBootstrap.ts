@@ -125,7 +125,7 @@ export function useAppBootstrap() {
       return
     }
 
-    if (window.location.href.includes('popup')) {
+    if (window.location.href.includes('#/popup') || window.location.pathname.includes('/popup')) {
       store.hide()
       return
     }

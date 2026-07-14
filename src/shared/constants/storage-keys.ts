@@ -15,6 +15,7 @@ export const USER_PREFERENCE_KEYS = {
   autoBrightness: 'autoBrightness',
   bibleSelectedVersion: 'bible.selectedVersionId',
   projectionSettings: 'projection.settings',
+  clockConfig: 'clock.config',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */

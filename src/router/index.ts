@@ -11,16 +11,27 @@ import { homeRoutes } from '@modules/home/routes'
 import { liturgyRoutes } from '@modules/liturgy/routes'
 import { settingsRoutes } from '@modules/settings/routes'
 import { syncRoutes } from '@modules/sync/routes'
+import ProjectionHost from '@shared/components/ProjectionHost.vue'
+import { isElectronShell } from '@shared/services/desktop-bridge'
 
-/** Em Electron (file://) history mode quebra; hash funciona em dev e prod. */
+/** Em Electron (file:// ou shell) history mode quebra; hash funciona em dev e prod. */
 const isFileProtocol =
   typeof window !== 'undefined' && window.location.protocol === 'file:'
+const useHashRouter = isFileProtocol || isElectronShell()
 
 const router = createRouter({
-  history: isFileProtocol
+  history: useHashRouter
     ? createWebHashHistory(import.meta.env.BASE_URL)
     : createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/popup',
+      name: 'projection-popup',
+      component: ProjectionHost,
+      meta: {
+        projection: true,
+      },
+    },
     {
       path: '/',
       component: AppShell,
