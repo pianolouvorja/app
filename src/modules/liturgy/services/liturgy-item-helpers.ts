@@ -1,5 +1,4 @@
 import {
-  DEFAULT_MOMENT_DURATION_MS,
   EXECUTABLE_ITEM_TYPES,
   getTypeDotColor,
   INTERNAL_FILE_TYPES,
@@ -7,7 +6,6 @@ import {
   LITURGY_ITEM_TYPES,
   MOMENT_DURATION_MAX_MS,
   MOMENT_DURATION_MIN_MS,
-  MOMENT_DURATION_STEP_MS,
   type LiturgyItem,
   type LiturgyItemDraft,
   type LiturgyItemType,
@@ -95,6 +93,26 @@ export function formatMomentDuration(ms: number): string {
   return `${pad2(minutes)}:${pad2(seconds)}`
 }
 
+/** Aceita http(s) com host válido (ex.: youtube.com, vimeo.com). */
+export function isValidLiturgyUrl(raw: string): boolean {
+  const value = raw.trim()
+  if (!value) return false
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`
+    const parsed = new URL(withProtocol)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+
+    const host = parsed.hostname.toLowerCase()
+    if (!host || host.startsWith('.') || host.endsWith('.')) return false
+    if (host === 'localhost') return true
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true
+    return host.includes('.') && /[a-z0-9-]/i.test(host)
+  } catch {
+    return false
+  }
+}
+
 export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
   if (draft.type === 'music') {
     if (draft.musicId == null) return false
@@ -102,6 +120,12 @@ export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
     return false
   }
   if (draft.type !== 'category' && !draft.categoryId) return false
+  if (
+    (draft.type === 'site' || draft.type === 'online_video') &&
+    !isValidLiturgyUrl(draft.url)
+  ) {
+    return false
+  }
   return true
 }
 
@@ -128,7 +152,7 @@ export function buildLiturgyItemFromDraft(
           ? draft.durationMs > 0
             ? clampMomentDurationMs(draft.durationMs)
             : 0
-          : clampMomentDurationMs(draft.durationMs || DEFAULT_MOMENT_DURATION_MS),
+          : clampMomentDurationMs(draft.durationMs),
     accentColor: getTypeDotColor(draft.type),
     categoryId: draft.type === 'category' ? null : draft.categoryId,
   }
@@ -196,7 +220,7 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
           ? item.durationMs > 0
             ? clampMomentDurationMs(item.durationMs)
             : 0
-          : clampMomentDurationMs(item.durationMs || DEFAULT_MOMENT_DURATION_MS),
+          : clampMomentDurationMs(item.durationMs),
     accentColor: getTypeDotColor(item.type),
     categoryId: item.type === 'category' ? null : (item.categoryId ?? null),
     musicId: item.musicId ?? null,

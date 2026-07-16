@@ -3,6 +3,7 @@ import {
   listSystemDisplays,
 } from '@modules/settings/services/display-service'
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
 type ProjectionWindow = Window & { monitorId?: number }
 
@@ -19,6 +20,10 @@ function pruneWindows() {
   if (openWindows.length === 0) {
     activeModule = null
   }
+}
+
+function closeWebUrlProjection() {
+  void getDesktopBridge()?.projection?.closeUrl?.()
 }
 
 function buildPopupUrl(moduleId: string): string {
@@ -101,17 +106,28 @@ export function closeProjectionModule(): void {
   }
   openWindows = []
   activeModule = null
+  closeWebUrlProjection()
 }
 
 export async function openProjectionModule(moduleId: string): Promise<boolean> {
   pruneWindows()
+  closeWebUrlProjection()
 
   if (activeModule === moduleId && openWindows.length > 0) {
     openWindows[0]?.focus()
     return true
   }
 
-  closeProjectionModule()
+  // fecha só as janelas de módulo (não chamar closeProjectionModule: reentraria no closeUrl)
+  for (const win of openWindows) {
+    try {
+      win.close()
+    } catch {
+      // janela já fechada
+    }
+  }
+  openWindows = []
+  activeModule = null
 
   const url = buildPopupUrl(moduleId)
   const targets = await resolveMonitorTargets()

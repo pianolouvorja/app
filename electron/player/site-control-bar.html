@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Navegação</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        color: #e8edf5;
+        font: 600 12px/1.2 system-ui, sans-serif;
+        user-select: none;
+        overflow: hidden;
+      }
+      .shell {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .panel {
+        display: none;
+        position: absolute;
+        left: 0.5rem;
+        bottom: 3.25rem;
+        width: min(23rem, calc(100% - 1rem));
+        max-height: calc(100% - 3.75rem);
+        padding: 0.85rem;
+        border-radius: 0.65rem;
+        border: 1px solid rgba(232, 237, 245, 0.12);
+        background: rgba(26, 30, 40, 0.97);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+        overflow: auto;
+      }
+      .shell.is-panel-open .panel {
+        display: block;
+      }
+      .panel__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .panel__title {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 700;
+      }
+      .panel__identify {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.3rem 0.5rem;
+        border: 0;
+        border-radius: 0.4rem;
+        background: rgba(120, 214, 210, 0.18);
+        color: #78d6d2;
+        font-size: 0.86rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        width: auto;
+        height: auto;
+      }
+      .panel__identify:hover:not(:disabled) {
+        background: rgba(120, 214, 210, 0.28);
+      }
+      .panel__hint {
+        margin: 0.6rem 0 0.75rem;
+        font-size: 0.86rem;
+        line-height: 1.4;
+        font-weight: 500;
+        opacity: 0.62;
+      }
+      .panel__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .panel__option {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+        padding: 0.65rem 0.7rem;
+        border-radius: 0.45rem;
+        border: 1px solid rgba(232, 237, 245, 0.1);
+        background: rgba(232, 237, 245, 0.04);
+        cursor: pointer;
+      }
+      .panel__option:hover {
+        border-color: rgba(120, 214, 210, 0.4);
+        background: rgba(120, 214, 210, 0.1);
+      }
+      .panel__option.is-active {
+        border-color: rgba(120, 214, 210, 0.55);
+        background: rgba(120, 214, 210, 0.14);
+      }
+      .panel__option input {
+        margin: 0.15rem 0 0;
+        accent-color: #78d6d2;
+        cursor: pointer;
+      }
+      .panel__option-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+      }
+      .panel__option-name {
+        font-size: 0.98rem;
+        font-weight: 650;
+      }
+      .panel__option-meta {
+        font-size: 0.84rem;
+        font-weight: 500;
+        opacity: 0.55;
+      }
+      .panel__empty {
+        margin: 0;
+        padding: 0.7rem 0.75rem;
+        border-radius: 0.45rem;
+        background: rgba(232, 237, 245, 0.06);
+        opacity: 0.7;
+        font-size: 0.88rem;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+      .bar {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-shrink: 0;
+        height: 44px;
+        padding: 0 0.65rem;
+        background: rgba(16, 18, 24, 0.96);
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 0.45rem;
+        background: transparent;
+        color: inherit;
+        width: 2rem;
+        height: 2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .label {
+        margin-left: 0.35rem;
+        opacity: 0.72;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+      /* Mesmo visual do botão de projetar da liturgia */
+      #projectScreens {
+        margin-left: 0.25rem;
+        width: 2.05rem;
+        height: 2.05rem;
+        border-radius: 0.4rem;
+        background: #78d6d2;
+        color: #000;
+        box-shadow: 0 0 14px color-mix(in srgb, #78d6d2 38%, transparent);
+      }
+      #projectScreens:hover {
+        background: #9be4e1;
+      }
+      #projectScreens.is-active {
+        background: #fca5a5;
+        color: #111827;
+        box-shadow: 0 0 14px rgba(252, 165, 165, 0.5);
+      }
+      #projectScreens.is-active:hover {
+        background: #f87171;
+        color: #111827;
+      }
+      #projectScreens svg {
+        display: block;
+      }
+      /* Clone do MonitorTargetSelect dense */
+      .monitor-wrap {
+        position: relative;
+        display: inline-flex;
+        flex-shrink: 0;
+        margin-left: 0.15rem;
+      }
+      #monitorSelect {
+        position: relative;
+        width: 2.05rem;
+        height: 2.05rem;
+        padding: 0;
+        border-radius: 0.4rem;
+        background: #78d6d2;
+        color: #003258;
+        box-shadow: 0 0 14px color-mix(in srgb, #78d6d2 36%, transparent);
+      }
+      #monitorSelect:hover {
+        background: color-mix(in srgb, #78d6d2 90%, white);
+      }
+      .shell.is-panel-open #monitorSelect {
+        outline: 2px solid color-mix(in srgb, #78d6d2 55%, transparent);
+        outline-offset: 1px;
+      }
+      #monitorSelect svg {
+        display: block;
+      }
+      .monitor-badge {
+        position: absolute;
+        top: -0.25rem;
+        right: -0.25rem;
+        min-width: 1.1rem;
+        height: 1.1rem;
+        padding: 0 0.28rem;
+        border-radius: 999px;
+        background: #003736;
+        color: #78d6d2;
+        font-size: 0.65rem;
+        font-weight: 700;
+        line-height: 1.1rem;
+        text-align: center;
+        pointer-events: none;
+      }
+      .monitor-badge.is-empty {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell" id="shell">
+      <div
+        class="panel"
+        id="monitorPanel"
+        role="dialog"
+        aria-label="Selecionar telas"
+      >
+        <div class="panel__header">
+          <p class="panel__title">Selecionar telas</p>
+          <button
+            id="identifyMonitors"
+            class="panel__identify"
+            type="button"
+            title="Detectar telas"
+            aria-label="Detectar telas"
+          >
+            Detectar telas
+          </button>
+        </div>
+        <p class="panel__hint">
+          Marque os monitores onde o recurso deve ser projetado.
+        </p>
+        <div id="monitorList"></div>
+      </div>
+
+      <div class="bar">
+        <button
+          id="back"
+          type="button"
+          title="Voltar"
+          aria-label="Voltar"
+        >
+          ←
+        </button>
+        <button
+          id="forward"
+          type="button"
+          title="Avançar"
+          aria-label="Avançar"
+        >
+          →
+        </button>
+        <button
+          id="reload"
+          type="button"
+          title="Recarregar"
+          aria-label="Recarregar"
+        >
+          ↻
+        </button>
+        <span class="label">Controle do site</span>
+        <button
+          id="projectScreens"
+          type="button"
+          title="Projetar site nas telas estendidas"
+          aria-label="Projetar site nas telas estendidas"
+          aria-pressed="false"
+        >
+          <svg
+            id="projectIcon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M5 19V5h2v12h12v2H5zm4.7-3.3 1.4-1.4L8.85 12H19v-2H8.85l2.25-2.25-1.4-1.4L5 11l4.7 4.7z" />
+          </svg>
+        </button>
+        <div class="monitor-wrap">
+          <button
+            id="monitorSelect"
+            type="button"
+            title="Selecionar telas"
+            aria-label="Selecionar telas"
+            aria-expanded="false"
+            aria-haspopup="dialog"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 16H3V4h18v12zm-10 2h2v2h5v2H6v-2h5v-2zM5 6v8h14V6H5z"
+              />
+            </svg>
+          </button>
+          <span id="monitorBadge" class="monitor-badge is-empty">0</span>
+        </div>
+      </div>
+    </div>
+    <script>
+      ;(function () {
+        var shell = document.getElementById('shell')
+        var backBtn = document.getElementById('back')
+        var forwardBtn = document.getElementById('forward')
+        var reloadBtn = document.getElementById('reload')
+        var projectBtn = document.getElementById('projectScreens')
+        var projectIcon = document.getElementById('projectIcon')
+        var monitorBtn = document.getElementById('monitorSelect')
+        var monitorBadge = document.getElementById('monitorBadge')
+        var monitorList = document.getElementById('monitorList')
+        var identifyBtn = document.getElementById('identifyMonitors')
+
+        var ARROW_PATH = 'M5 17.59 15.59 7H9V5h10v10h-2V8.41L6.41 19 5 17.59z'
+        var STOP_PATH = 'M6 6h12v12H6z'
+
+        var panelOpen = false
+        /** @type {number[]} */
+        var selectedIds = []
+        /** @type {Array<{id:number,label:string,resolution:string,isPrimary:boolean}>} */
+        var displays = []
+
+        function setProjectingUi(projecting) {
+          if (projecting) {
+            projectBtn.classList.add('is-active')
+            projectBtn.title = 'Parar projeção do site'
+            projectBtn.setAttribute('aria-label', 'Parar projeção do site')
+            projectBtn.setAttribute('aria-pressed', 'true')
+            projectIcon.innerHTML = '<path d="' + STOP_PATH + '" />'
+          } else {
+            projectBtn.classList.remove('is-active')
+            projectBtn.title = 'Projetar site nas telas estendidas'
+            projectBtn.setAttribute('aria-label', 'Projetar site nas telas estendidas')
+            projectBtn.setAttribute('aria-pressed', 'false')
+            projectIcon.innerHTML = '<path d="' + ARROW_PATH + '" />'
+          }
+        }
+
+        function updateBadge() {
+          var count = selectedIds.length
+          monitorBadge.textContent = String(count)
+          if (count > 0) monitorBadge.classList.remove('is-empty')
+          else monitorBadge.classList.add('is-empty')
+        }
+
+        function renderList() {
+          var extended = displays.filter(function (d) {
+            return !d.isPrimary
+          })
+          if (!extended.length) {
+            monitorList.innerHTML =
+              '<p class="panel__empty">Nenhum monitor estendido encontrado.</p>'
+            return
+          }
+
+          var html = '<ul class="panel__list" role="group" aria-label="Selecionar telas">'
+          for (var i = 0; i < extended.length; i++) {
+            var item = extended[i]
+            var checked = selectedIds.indexOf(item.id) >= 0
+            html +=
+              '<li><label class="panel__option' +
+              (checked ? ' is-active' : '') +
+              '">' +
+              '<input type="checkbox" data-id="' +
+              item.id +
+              '"' +
+              (checked ? ' checked' : '') +
+              ' />' +
+              '<span class="panel__option-body">' +
+              '<span class="panel__option-name">' +
+              item.label +
+              '</span>' +
+              '<span class="panel__option-meta">' +
+              item.resolution +
+              '</span>' +
+              '</span></label></li>'
+          }
+          html += '</ul>'
+          monitorList.innerHTML = html
+
+          var inputs = monitorList.querySelectorAll('input[type="checkbox"]')
+          for (var j = 0; j < inputs.length; j++) {
+            inputs[j].addEventListener('change', onToggleMonitor)
+          }
+        }
+
+        async function loadMonitors() {
+          if (!window.louvorja) return
+          var list = []
+          if (window.louvorja.displays && window.louvorja.displays.list) {
+            list = (await window.louvorja.displays.list()) || []
+          }
+          displays = list.map(function (d, index) {
+            return {
+              id: d.id,
+              label: 'Monitor ' + (index + 1),
+              resolution: d.bounds
+                ? d.bounds.width + ' × ' + d.bounds.height
+                : '',
+              isPrimary: Boolean(d.isPrimary),
+            }
+          })
+
+          var ids = []
+          if (
+            window.louvorja.projection &&
+            window.louvorja.projection.getSiteTargetMonitors
+          ) {
+            ids = (await window.louvorja.projection.getSiteTargetMonitors()) || []
+          }
+          var allowed = {}
+          for (var i = 0; i < displays.length; i++) {
+            if (!displays[i].isPrimary) allowed[displays[i].id] = true
+          }
+          selectedIds = ids.filter(function (id) {
+            return allowed[id]
+          })
+          updateBadge()
+          renderList()
+        }
+
+        async function setPanelOpen(open) {
+          panelOpen = Boolean(open)
+          shell.classList.toggle('is-panel-open', panelOpen)
+          monitorBtn.setAttribute('aria-expanded', panelOpen ? 'true' : 'false')
+          if (
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setSiteControlPanelOpen
+          ) {
+            await window.louvorja.projection.setSiteControlPanelOpen(panelOpen)
+          }
+          if (panelOpen) await loadMonitors()
+        }
+
+        async function onToggleMonitor(event) {
+          var input = event.target
+          var id = Number(input.getAttribute('data-id'))
+          if (!Number.isFinite(id)) return
+          if (input.checked) {
+            if (selectedIds.indexOf(id) < 0) selectedIds.push(id)
+          } else {
+            selectedIds = selectedIds.filter(function (item) {
+              return item !== id
+            })
+          }
+          updateBadge()
+          renderList()
+          if (
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setSiteTargetMonitors
+          ) {
+            await window.louvorja.projection.setSiteTargetMonitors(selectedIds.slice())
+          }
+        }
+
+        async function refreshNav() {
+          if (!window.louvorja || !window.louvorja.projection) return
+          var state = await window.louvorja.projection.getNavigationState()
+          if (!state) return
+          backBtn.disabled = !state.canGoBack
+          forwardBtn.disabled = !state.canGoForward
+          setProjectingUi(Boolean(state.projecting))
+        }
+
+        backBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
+          await window.louvorja.projection.remoteGoBack()
+          refreshNav()
+        })
+
+        forwardBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
+          await window.louvorja.projection.remoteGoForward()
+          refreshNav()
+        })
+
+        reloadBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
+          await window.louvorja.projection.remoteReload()
+          refreshNav()
+        })
+
+        projectBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
+          await window.louvorja.projection.toggleSiteScreens()
+          refreshNav()
+        })
+
+        monitorBtn.addEventListener('click', async function () {
+          await setPanelOpen(!panelOpen)
+        })
+
+        identifyBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.displays) return
+          identifyBtn.disabled = true
+          try {
+            await window.louvorja.displays.identify()
+            await loadMonitors()
+          } finally {
+            identifyBtn.disabled = false
+          }
+        })
+
+        document.addEventListener(
+          'pointerdown',
+          function (event) {
+            if (!panelOpen) return
+            var target = event.target
+            if (!(target instanceof Node)) return
+            if (monitorBtn.contains(target)) return
+            if (document.getElementById('monitorPanel').contains(target)) return
+            setPanelOpen(false)
+          },
+          true,
+        )
+
+        if (
+          window.louvorja &&
+          window.louvorja.projection &&
+          window.louvorja.projection.onSiteTargetsChanged
+        ) {
+          window.louvorja.projection.onSiteTargetsChanged(function (ids) {
+            selectedIds = Array.isArray(ids) ? ids.slice() : []
+            updateBadge()
+            if (panelOpen) renderList()
+          })
+        }
+
+        setInterval(refreshNav, 400)
+        refreshNav()
+        loadMonitors()
+      })()
+    </script>
+  </body>
+</html>

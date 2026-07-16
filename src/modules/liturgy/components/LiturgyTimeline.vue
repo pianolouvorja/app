@@ -8,6 +8,7 @@ import LiturgyTimelineItem from './LiturgyTimelineItem.vue'
 const props = defineProps<{
   items: LiturgyItem[]
   selectedIndex: number | null
+  siteProjectionItemId?: string | null
   startLabels: string[]
   durationLabels: string[]
   canClone?: boolean
@@ -16,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [index: number]
+  playScreens: [index: number]
   edit: [index: number]
   remove: [index: number]
   toggleDone: [index: number]
@@ -198,6 +200,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           :item="segment.entry.item"
           :index="segment.entry.index"
           :selected="selectedIndex === segment.entry.index"
+          :site-projecting="siteProjectionItemId === segment.entry.item.id"
           :start-label="startLabels[segment.entry.index] ?? '—'"
           :duration-label="durationLabels[segment.entry.index] ?? '—'"
           :linked="segment.linked"
@@ -229,6 +232,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           :is-drag-source="dragFrom === segment.entry.index"
           :deletion-locked="deletionLocked"
           @select="emit('select', segment.entry.index)"
+          @play-screens="emit('playScreens', segment.entry.index)"
           @edit="emit('edit', segment.entry.index)"
           @remove="emit('remove', segment.entry.index)"
           @toggle-done="emit('toggleDone', segment.entry.index)"
@@ -252,6 +256,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
             :item="child.item"
             :index="child.index"
             :selected="selectedIndex === child.index"
+            :site-projecting="siteProjectionItemId === child.item.id"
             :start-label="startLabels[child.index] ?? '—'"
             :duration-label="durationLabels[child.index] ?? '—'"
             linked
@@ -259,6 +264,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
             :is-drag-source="dragFrom === child.index"
             :deletion-locked="deletionLocked"
             @select="emit('select', child.index)"
+            @play-screens="emit('playScreens', child.index)"
             @edit="emit('edit', child.index)"
             @remove="emit('remove', child.index)"
             @toggle-done="emit('toggleDone', child.index)"

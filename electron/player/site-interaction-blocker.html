@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bloqueio de interação</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        cursor: none;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      .shield {
+        position: fixed;
+        inset: 0;
+        background: transparent;
+        cursor: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="shield"
+      aria-hidden="true"
+    ></div>
+    <script>
+      ;(function () {
+        function block(event) {
+          event.preventDefault()
+          event.stopPropagation()
+          event.stopImmediatePropagation()
+          return false
+        }
+
+        var types = [
+          'click',
+          'dblclick',
+          'mousedown',
+          'mouseup',
+          'mousemove',
+          'mouseenter',
+          'mouseleave',
+          'mouseover',
+          'mouseout',
+          'contextmenu',
+          'wheel',
+          'scroll',
+          'touchstart',
+          'touchmove',
+          'touchend',
+          'pointerdown',
+          'pointerup',
+          'pointermove',
+          'keydown',
+          'keyup',
+          'keypress',
+        ]
+
+        for (var i = 0; i < types.length; i += 1) {
+          window.addEventListener(types[i], block, true)
+          document.addEventListener(types[i], block, true)
+        }
+      })()
+    </script>
+  </body>
+</html>

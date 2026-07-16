@@ -1,0 +1,1432 @@
+import { BrowserWindow, screen, session, WebContentsView } from 'electron'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
+const MIRROR_HTML = path.join(__dirname, '../player/mirror-player.html')
+const CONTROL_BAR_HTML = path.join(__dirname, '../player/control-bar.html')
+const SITE_CONTROL_BAR_HTML = path.join(__dirname, '../player/site-control-bar.html')
+const SITE_INTERACTION_BLOCKER_HTML = path.join(
+  __dirname,
+  '../player/site-interaction-blocker.html',
+)
+
+const SOURCE_WINDOW_TITLE = 'Player — Central Adoração'
+const SITE_WINDOW_TITLE = 'Site — Central Adoração'
+
+/** Tamanho fixo do popup de controle de vídeo (16:9). */
+const CONTROL_WIDTH = 960
+const CONTROL_HEIGHT = 540
+/** Barra do operador de vídeo (WebContentsView — fora da captura das projeções). */
+const CONTROL_BAR_HEIGHT = 48
+
+/** Popup de site: tamanho inicial confortável, sem limite máximo. */
+const SITE_DEFAULT_WIDTH = 1280
+const SITE_DEFAULT_HEIGHT = 820
+const SITE_CONTROL_BAR_HEIGHT = 44
+/** Altura da WebContentsView quando o painel de monitores está aberto. */
+const SITE_CONTROL_PANEL_HEIGHT = 300
+const SITE_MIN_WIDTH = 480
+const SITE_MIN_HEIGHT = 360
+
+/**
+ * Compacta o YouTube e remove a chrome nativa do player na captura.
+ * Controles do operador ficam no WebContentsView (não entram no espelho).
+ */
+const HIDE_YOUTUBE_SIDEBAR_SCRIPT = `
+(() => {
+  const css = \`
+    /* Lateral / recomendações */
+    #secondary,
+    #secondary-inner,
+    #related,
+    ytd-watch-next-secondary-results-renderer,
+    #chat,
+    #chat-container,
+    #panels-container,
+    #donation-shelf,
+    ytd-live-chat-frame,
+    /* Topo (busca / login) */
+    #masthead-container,
+    ytd-masthead,
+    #guide,
+    #guide-wrapper,
+    tp-yt-app-drawer,
+    /* Conteúdo abaixo do player */
+    #below,
+    #meta,
+    #info,
+    #info-contents,
+    #owner,
+    #middle-row,
+    #bottom-row,
+    #comments,
+    #comment-teaser,
+    ytd-watch-metadata,
+    ytd-video-primary-info-renderer,
+    ytd-video-secondary-info-renderer {
+      display: none !important;
+      height: 0 !important;
+      max-height: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    html, body, ytd-app, #content, #page-manager, ytd-watch-flexy {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #000 !important;
+      overflow: hidden !important;
+      max-width: 100vw !important;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+
+    ytd-watch-flexy[flexy] #columns,
+    ytd-watch-flexy #columns,
+    #columns {
+      display: block !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    #primary,
+    #primary-inner,
+    ytd-watch-flexy[flexy] #primary {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Player ocupa a janela toda (modo “fullscreen” visual no popup fixo) */
+    #player,
+    #player-container-outer,
+    #player-container-inner,
+    #movie_player,
+    ytd-player,
+    #player-theater-container,
+    ytd-watch-flexy[theater] #player-theater-container {
+      position: fixed !important;
+      inset: 0 !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      z-index: 2147483646 !important;
+    }
+
+    .html5-video-container,
+    .html5-video-container video,
+    video.html5-main-video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+    }
+
+    /* Chrome nativa do player — não aparece nas projeções (captura do webContents) */
+    .ytp-chrome-top,
+    .ytp-chrome-bottom,
+    .ytp-gradient-top,
+    .ytp-gradient-bottom,
+    .ytp-progress-bar-container,
+    .ytp-progress-bar,
+    .ytp-chrome-controls,
+    .ytp-popup,
+    .ytp-tooltip,
+    .ytp-cards-teaser,
+    .ytp-ce-element,
+    .ytp-pause-overlay,
+    .ytp-scroll-min,
+    .ytp-endscreen-content,
+    .ytp-endscreen-paginate,
+    .ytp-suggested-action,
+    .ytp-title,
+    .ytp-title-channel,
+    .ytp-watermark,
+    .ytp-large-play-button,
+    .ytp-cued-thumbnail-overlay,
+    .ytp-spinner,
+    .annotation,
+    .iv-branding,
+    .ytp-show-cards-title {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  \`;
+
+  let style = document.getElementById('louvorja-hide-yt-sidebar');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'louvorja-hide-yt-sidebar';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  style.textContent = css;
+
+  const apply = () => {
+    const hideIds = ['#secondary', '#related', '#masthead-container', '#below', '#comments'];
+    hideIds.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) el.style.setProperty('display', 'none', 'important');
+    });
+
+    // Ativa modo cinema (theater) — player largo, sem layout de coluna
+    const flexy = document.querySelector('ytd-watch-flexy');
+    if (flexy && !flexy.hasAttribute('theater')) {
+      const theaterBtn =
+        document.querySelector('button.ytp-size-button') ||
+        document.querySelector('.ytp-size-button');
+      if (theaterBtn) theaterBtn.click();
+      else {
+        flexy.setAttribute('theater', '');
+        flexy.setAttribute('theater-requested_', '');
+      }
+    }
+  };
+
+  apply();
+
+  if (!window.__louvorjaYtSidebarObserver) {
+    window.__louvorjaYtSidebarObserver = new MutationObserver(apply);
+    window.__louvorjaYtSidebarObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+    setInterval(apply, 1500);
+  }
+
+  return true;
+})()
+`
+
+/** @type {BrowserWindow | null} */
+let sourceWindow = null
+/** @type {WebContentsView | null} */
+let controlBarView = null
+/** @type {'video' | 'site'} */
+let currentProjectionMode = 'video'
+/** @type {BrowserWindow[]} */
+let mirrorWindows = []
+/** @type {BrowserWindow[]} */
+let siteShieldWindows = []
+/** @type {WeakMap<BrowserWindow, import('electron').WebContentsView>} */
+const siteBlockerViews = new WeakMap()
+/** @type {number[]} */
+let lastSiteMonitorIds = []
+/** Painel de seleção de monitores aberto na barra do controle de site. */
+let siteControlPanelOpen = false
+/** @type {ReturnType<typeof setInterval> | null} */
+let siteSyncInterval = null
+let siteSyncScrollX = -1
+let siteSyncScrollY = -1
+let siteSourceReloadPending = false
+let siteSyncBound = false
+
+const SITE_READ_SCROLL_SCRIPT = `
+(() => {
+  const el = document.scrollingElement || document.documentElement;
+  return {
+    x: Math.round(window.scrollX || el.scrollLeft || 0),
+    y: Math.round(window.scrollY || el.scrollTop || 0),
+  };
+})()
+`
+
+function siteApplyScrollScript(x, y) {
+  return `
+(() => {
+  window.scrollTo(${x}, ${y});
+  return true;
+})()
+`
+}
+
+function attachSiteSourceWindowHandlers(win) {
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      void win.webContents.loadURL(url)
+    }
+    return { action: 'deny' }
+  })
+}
+
+function onSiteSourceNavigate(url) {
+  if (!url || url === 'about:blank') return
+
+  for (const win of mirrorWindows) {
+    if (win.isDestroyed()) continue
+    if (win.webContents.getURL() !== url) {
+      void win.webContents.loadURL(url)
+    }
+  }
+
+  siteSyncScrollX = -1
+  siteSyncScrollY = -1
+}
+
+function reloadSiteProjectionWindows() {
+  for (const win of mirrorWindows) {
+    if (!win.isDestroyed()) {
+      win.webContents.reload()
+    }
+  }
+  siteSyncScrollX = -1
+  siteSyncScrollY = -1
+}
+
+async function syncSiteProjectionScroll() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return
+  }
+  if (mirrorWindows.length === 0) return
+
+  const sourceUrl = sourceWindow.webContents.getURL()
+  if (!sourceUrl || sourceUrl === 'about:blank') return
+
+  let scroll
+  try {
+    scroll = await sourceWindow.webContents.executeJavaScript(
+      SITE_READ_SCROLL_SCRIPT,
+      true,
+    )
+  } catch {
+    return
+  }
+
+  const x = Math.round(scroll?.x ?? 0)
+  const y = Math.round(scroll?.y ?? 0)
+  if (x === siteSyncScrollX && y === siteSyncScrollY) return
+  siteSyncScrollX = x
+  siteSyncScrollY = y
+
+  for (const win of mirrorWindows) {
+    if (win.isDestroyed()) continue
+    if (win.webContents.getURL() !== sourceUrl) continue
+    try {
+      await win.webContents.executeJavaScript(siteApplyScrollScript(x, y), true)
+    } catch {
+      // página ainda carregando na projeção
+    }
+  }
+}
+
+function bindSiteSourceNavigation() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || siteSyncBound) return
+
+  const contents = sourceWindow.webContents
+  siteSyncBound = true
+
+  contents.on('did-navigate', (_event, url) => {
+    if (siteSourceReloadPending) return
+    onSiteSourceNavigate(url)
+  })
+
+  contents.on('did-navigate-in-page', (_event, url) => {
+    onSiteSourceNavigate(url)
+    void syncSiteProjectionScroll()
+  })
+
+  contents.on('did-finish-load', () => {
+    if (siteSourceReloadPending) {
+      siteSourceReloadPending = false
+      reloadSiteProjectionWindows()
+    }
+    siteSyncScrollX = -1
+    siteSyncScrollY = -1
+    void syncSiteProjectionScroll()
+  })
+}
+
+function startSiteProjectionSync() {
+  stopSiteProjectionSync()
+  bindSiteSourceNavigation()
+  siteSyncInterval = setInterval(() => {
+    void syncSiteProjectionScroll()
+  }, 120)
+}
+
+function stopSiteProjectionSync() {
+  if (siteSyncInterval) {
+    clearInterval(siteSyncInterval)
+    siteSyncInterval = null
+  }
+  siteSyncBound = false
+  siteSyncScrollX = -1
+  siteSyncScrollY = -1
+  siteSourceReloadPending = false
+}
+function resolveSourceUrl(payload) {
+  const url = typeof payload?.url === 'string' ? payload.url.trim() : ''
+  const videoId = typeof payload?.videoId === 'string' ? payload.videoId.trim() : ''
+
+  if (videoId) {
+    return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`
+  }
+
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+    return parsed.toString()
+  } catch {
+    return null
+  }
+}
+
+function placeSourceOnPrimary() {
+  const primary = screen.getPrimaryDisplay()
+  const work = primary.workArea
+  const width = CONTROL_WIDTH
+  const height = CONTROL_HEIGHT
+  const x = work.x + Math.round((work.width - width) / 2)
+  const y = work.y + Math.round((work.height - height) / 2)
+  return { x, y, width, height }
+}
+
+function placeSiteOnPrimary() {
+  const primary = screen.getPrimaryDisplay()
+  const work = primary.workArea
+  const width = Math.min(SITE_DEFAULT_WIDTH, Math.max(SITE_MIN_WIDTH, work.width - 64))
+  const height = Math.min(SITE_DEFAULT_HEIGHT, Math.max(SITE_MIN_HEIGHT, work.height - 64))
+  const x = work.x + Math.round((work.width - width) / 2)
+  const y = work.y + Math.round((work.height - height) / 2)
+  return { x, y, width, height }
+}
+
+function hideYoutubeSidebar(win) {
+  if (!win || win.isDestroyed()) return
+  void win.webContents
+    .executeJavaScript(HIDE_YOUTUBE_SIDEBAR_SCRIPT, true)
+    .catch(() => {
+      // página ainda carregando
+    })
+}
+
+function detachControlBar() {
+  if (!controlBarView) return
+  const view = controlBarView
+  controlBarView = null
+  try {
+    if (sourceWindow && !sourceWindow.isDestroyed()) {
+      sourceWindow.contentView.removeChildView(view)
+    }
+  } catch {
+    // janela já fechada
+  }
+  try {
+    if (!view.webContents.isDestroyed()) {
+      view.webContents.close()
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Controles do operador fora do webContents capturado — não aparecem nas projeções.
+ * @param {import('electron').BrowserWindow} win
+ */
+function attachControlBar(win) {
+  detachControlBar()
+
+  const view = new WebContentsView({
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  })
+
+  win.contentView.addChildView(view)
+  const [contentWidth, contentHeight] = win.getContentSize()
+  view.setBounds({
+    x: 0,
+    y: Math.max(0, contentHeight - CONTROL_BAR_HEIGHT),
+    width: contentWidth,
+    height: CONTROL_BAR_HEIGHT,
+  })
+  void view.webContents.loadURL(pathToFileURL(CONTROL_BAR_HTML).href)
+  controlBarView = view
+}
+
+/**
+ * Barra de navegação do site (fora da captura do espelho).
+ * @param {import('electron').BrowserWindow} win
+ */
+function attachSiteControlBar(win) {
+  detachControlBar()
+  siteControlPanelOpen = false
+
+  const view = new WebContentsView({
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  })
+  // A área expandida serve apenas para o popover: o restante deve revelar o
+  // site abaixo, como o Teleport do seletor original da liturgia.
+  view.setBackgroundColor('#00000000')
+
+  win.contentView.addChildView(view)
+  const [contentWidth, contentHeight] = win.getContentSize()
+  view.setBounds({
+    x: 0,
+    y: Math.max(0, contentHeight - SITE_CONTROL_BAR_HEIGHT),
+    width: contentWidth,
+    height: SITE_CONTROL_BAR_HEIGHT,
+  })
+  void view.webContents.loadURL(pathToFileURL(SITE_CONTROL_BAR_HTML).href)
+  controlBarView = view
+}
+
+function layoutControlBar(win) {
+  if (!controlBarView || !win || win.isDestroyed()) return
+  const [contentWidth, contentHeight] = win.getContentSize()
+  const barHeight =
+    currentProjectionMode === 'site'
+      ? siteControlPanelOpen
+        ? Math.min(SITE_CONTROL_PANEL_HEIGHT, contentHeight)
+        : SITE_CONTROL_BAR_HEIGHT
+      : CONTROL_BAR_HEIGHT
+  controlBarView.setBounds({
+    x: 0,
+    y: Math.max(0, contentHeight - barHeight),
+    width: contentWidth,
+    height: barHeight,
+  })
+}
+
+function createSourceWindow(loadUrl, title) {
+  const bounds = placeSourceOnPrimary()
+
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    ...bounds,
+    backgroundColor: '#000000',
+    autoHideMenuBar: true,
+    show: false,
+    frame: true,
+    title: title || SOURCE_WINDOW_TITLE,
+    minimizable: true,
+    maximizable: false,
+    resizable: false,
+    fullscreenable: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const win = new BrowserWindow(options)
+  win.setTitle(title || SOURCE_WINDOW_TITLE)
+  win.setMinimumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
+  win.setMaximumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
+  win.setResizable(false)
+  win.setMaximizable(false)
+  win.webContents.setAudioMuted(false)
+  win.setAlwaysOnTop(true, 'floating')
+
+  win.once('ready-to-show', () => {
+    win.webContents.setAudioMuted(false)
+    win.setBounds({
+      x: bounds.x,
+      y: bounds.y,
+      width: CONTROL_WIDTH,
+      height: CONTROL_HEIGHT,
+    })
+    attachControlBar(win)
+    layoutControlBar(win)
+    win.show()
+    win.focus()
+  })
+
+  // Impede redimensionar / maximizar por atalho ou SO
+  win.on('will-resize', (event) => {
+    event.preventDefault()
+  })
+  win.on('maximize', () => {
+    if (!win.isDestroyed()) {
+      win.unmaximize()
+      win.setBounds({
+        x: bounds.x,
+        y: bounds.y,
+        width: CONTROL_WIDTH,
+        height: CONTROL_HEIGHT,
+      })
+      layoutControlBar(win)
+    }
+  })
+
+  const onPageReady = () => {
+    win.webContents.setAudioMuted(false)
+    hideYoutubeSidebar(win)
+    // YouTube é SPA: reaplica após hidratação
+    setTimeout(() => hideYoutubeSidebar(win), 800)
+    setTimeout(() => hideYoutubeSidebar(win), 2000)
+  }
+
+  win.webContents.on('did-finish-load', onPageReady)
+  win.webContents.on('did-navigate-in-page', onPageReady)
+  win.webContents.on('dom-ready', () => hideYoutubeSidebar(win))
+
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'Escape') {
+      closeWebProjectionWindows()
+    }
+  })
+
+  win.on('closed', () => {
+    detachControlBar()
+    if (sourceWindow === win) {
+      sourceWindow = null
+      closeMirrorWindowsOnly()
+    }
+  })
+
+  void win.loadURL(loadUrl)
+  return win
+}
+
+function createSiteSourceWindow(loadUrl, title) {
+  const bounds = placeSiteOnPrimary()
+
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    ...bounds,
+    backgroundColor: '#101218',
+    autoHideMenuBar: true,
+    show: false,
+    frame: true,
+    title: title || SITE_WINDOW_TITLE,
+    minimizable: true,
+    maximizable: true,
+    resizable: true,
+    fullscreenable: true,
+    alwaysOnTop: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const win = new BrowserWindow(options)
+  win.setTitle(title || SITE_WINDOW_TITLE)
+  win.setMinimumSize(SITE_MIN_WIDTH, SITE_MIN_HEIGHT)
+  win.webContents.setAudioMuted(false)
+  win.setAlwaysOnTop(true, 'floating')
+
+  win.once('ready-to-show', () => {
+    win.webContents.setAudioMuted(false)
+    attachSiteControlBar(win)
+    layoutControlBar(win)
+    win.show()
+    win.focus()
+  })
+
+  win.on('resize', () => {
+    layoutControlBar(win)
+  })
+
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'Escape') {
+      closeWebProjectionWindows()
+    }
+  })
+
+  win.on('closed', () => {
+    detachControlBar()
+    if (sourceWindow === win) {
+      sourceWindow = null
+      closeMirrorWindowsOnly()
+    }
+  })
+
+  attachSiteSourceWindowHandlers(win)
+  void win.loadURL(loadUrl)
+  return win
+}
+
+/**
+ * Escudo transparente que absorve mouse/teclado sobre a projeção do site.
+ * Mais confiável que setIgnoreMouseEvents no Linux/Wayland.
+ * @param {import('electron').Display} display
+ */
+function createSiteShieldWindow(display) {
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    transparent: true,
+    backgroundColor: '#00000000',
+    autoHideMenuBar: true,
+    show: false,
+    frame: false,
+    thickFrame: false,
+    hasShadow: false,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    focusable: false,
+    fullscreenable: true,
+    alwaysOnTop: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const shield = new BrowserWindow(options)
+  shield.setFocusable(false)
+  // Absorve eventos (NÃO ignora) — cliques morrem aqui
+  shield.setIgnoreMouseEvents(false)
+
+  shield.once('ready-to-show', () => {
+    shield.setBounds(display.bounds)
+    shield.setFullScreen(true)
+    if (process.platform === 'darwin') {
+      shield.setSimpleFullScreen(true)
+    }
+    shield.setAlwaysOnTop(true, 'screen-saver')
+    shield.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+    shield.showInactive()
+  })
+
+  shield.webContents.on('before-input-event', (event) => {
+    event.preventDefault()
+  })
+
+  shield.on('focus', () => {
+    if (!shield.isDestroyed()) {
+      shield.blur()
+      if (sourceWindow && !sourceWindow.isDestroyed()) {
+        sourceWindow.focus()
+      }
+    }
+  })
+
+  shield.on('closed', () => {
+    siteShieldWindows = siteShieldWindows.filter((item) => item !== shield)
+  })
+
+  void shield.loadURL(pathToFileURL(SITE_INTERACTION_BLOCKER_HTML).href)
+  return shield
+}
+
+/**
+ * Site em tela cheia real na tela estendida (URL direta, sem captura/espelho).
+ * Interação bloqueada por escudo transparente + camada interna.
+ * @param {import('electron').Display} display
+ * @param {string} loadUrl
+ */
+function createSiteProjectionWindow(display, loadUrl) {
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    backgroundColor: '#ffffff',
+    autoHideMenuBar: true,
+    show: false,
+    frame: false,
+    thickFrame: false,
+    hasShadow: false,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: false,
+    fullscreenable: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const win = new BrowserWindow(options)
+  win.webContents.setAudioMuted(true)
+  win.setFocusable(false)
+
+  const layoutBlocker = () => {
+    const view = siteBlockerViews.get(win)
+    if (!view || win.isDestroyed()) return
+    const [contentWidth, contentHeight] = win.getContentSize()
+    view.setBounds({
+      x: 0,
+      y: 0,
+      width: contentWidth,
+      height: contentHeight,
+    })
+  }
+
+  const attachBlocker = () => {
+    if (win.isDestroyed()) return
+
+    let view = siteBlockerViews.get(win)
+    if (!view) {
+      view = new WebContentsView({
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+          spellcheck: false,
+          backgroundThrottling: false,
+        },
+      })
+
+      try {
+        view.setBackgroundColor('#00000000')
+      } catch {
+        // Electron antigo sem setBackgroundColor
+      }
+
+      siteBlockerViews.set(win, view)
+      void view.webContents.loadURL(pathToFileURL(SITE_INTERACTION_BLOCKER_HTML).href)
+    }
+
+    // Reempilha sempre no topo (navegação pode reordenar as views)
+    try {
+      win.contentView.removeChildView(view)
+    } catch {
+      // ainda não estava anexada
+    }
+    win.contentView.addChildView(view)
+    layoutBlocker()
+  }
+
+  /** Reforço no DOM: página não recebe pointer events. */
+  const hardenPage = () => {
+    if (win.isDestroyed()) return
+    void win.webContents
+      .executeJavaScript(
+        `(() => {
+          const css = 'html,body,*{pointer-events:none!important;user-select:none!important;cursor:none!important;}';
+          let style = document.getElementById('louvorja-site-no-input');
+          if (!style) {
+            style = document.createElement('style');
+            style.id = 'louvorja-site-no-input';
+            (document.head || document.documentElement).appendChild(style);
+          }
+          style.textContent = css;
+          const stop = (e) => { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false; };
+          ['click','mousedown','mouseup','mousemove','wheel','touchstart','touchmove','pointerdown','contextmenu','keydown'].forEach((t) => {
+            window.addEventListener(t, stop, true);
+            document.addEventListener(t, stop, true);
+          });
+          return true;
+        })()`,
+        true,
+      )
+      .catch(() => {})
+  }
+
+  win.once('ready-to-show', () => {
+    win.setBounds(display.bounds)
+    win.setFullScreen(true)
+    if (process.platform === 'darwin') {
+      win.setSimpleFullScreen(true)
+    }
+    win.setAlwaysOnTop(true, 'screen-saver')
+    attachBlocker()
+    layoutBlocker()
+    win.showInactive()
+  })
+
+  win.on('resize', layoutBlocker)
+
+  win.webContents.on('did-finish-load', () => {
+    hardenPage()
+    attachBlocker()
+    layoutBlocker()
+  })
+  win.webContents.on('did-navigate-in-page', hardenPage)
+  win.webContents.on('dom-ready', hardenPage)
+
+  win.webContents.on('before-input-event', (event) => {
+    event.preventDefault()
+  })
+
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
+  win.on('focus', () => {
+    if (!win.isDestroyed()) {
+      win.blur()
+      if (sourceWindow && !sourceWindow.isDestroyed()) {
+        sourceWindow.focus()
+      }
+    }
+  })
+
+  win.on('closed', () => {
+    const view = siteBlockerViews.get(win)
+    if (view) {
+      try {
+        if (!view.webContents.isDestroyed()) view.webContents.close()
+      } catch {
+        // ignore
+      }
+      siteBlockerViews.delete(win)
+    }
+    mirrorWindows = mirrorWindows.filter((item) => item !== win)
+  })
+
+  void win.loadURL(loadUrl)
+  return win
+}
+
+/**
+ * Espelho fullscreen idêntico ao popup (captura ao vivo).
+ * @param {import('electron').Display} display
+ */
+function createMirrorWindow(display) {
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    backgroundColor: '#000000',
+    autoHideMenuBar: true,
+    show: false,
+    frame: false,
+    thickFrame: false,
+    hasShadow: false,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: false,
+    fullscreenable: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const win = new BrowserWindow(options)
+  // Som só no popup de controle
+  win.webContents.setAudioMuted(true)
+
+  win.once('ready-to-show', () => {
+    // Fullscreen real só nas telas estendidas
+    win.setBounds(display.bounds)
+    win.setFullScreen(true)
+    if (process.platform === 'darwin') {
+      win.setSimpleFullScreen(true)
+    }
+    if (process.platform === 'win32') {
+      win.setAlwaysOnTop(true, 'screen-saver')
+    } else {
+      win.setAlwaysOnTop(true, 'screen-saver')
+    }
+    win.showInactive()
+  })
+
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'Escape') {
+      closeWebProjectionWindows()
+    }
+  })
+
+  win.on('closed', () => {
+    mirrorWindows = mirrorWindows.filter((item) => item !== win)
+  })
+
+  const mirrorUrl = `${pathToFileURL(MIRROR_HTML).href}?mode=video`
+  void win.loadURL(mirrorUrl)
+  return win
+}
+
+function closeMirrorWindowsOnly() {
+  for (const shield of [...siteShieldWindows]) {
+    if (!shield.isDestroyed()) shield.close()
+  }
+  siteShieldWindows = []
+
+  for (const win of [...mirrorWindows]) {
+    if (!win.isDestroyed()) win.close()
+  }
+  mirrorWindows = []
+  stopSiteProjectionSync()
+}
+
+export function closeWebProjectionWindows() {
+  closeMirrorWindowsOnly()
+  detachControlBar()
+  const win = sourceWindow
+  sourceWindow = null
+  currentProjectionMode = 'video'
+  lastSiteMonitorIds = []
+  siteControlPanelOpen = false
+  if (win && !win.isDestroyed()) {
+    win.close()
+  }
+}
+
+function broadcastSiteTargetsChanged(ids) {
+  const payload = Array.isArray(ids) ? [...ids] : []
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue
+    try {
+      win.webContents.send('projection:site-targets-changed', payload)
+    } catch {
+      /* ignore */
+    }
+  }
+  if (controlBarView && !controlBarView.webContents.isDestroyed()) {
+    try {
+      controlBarView.webContents.send('projection:site-targets-changed', payload)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** @returns {number[]} */
+export function getSiteTargetMonitorIds() {
+  return [...lastSiteMonitorIds]
+}
+
+/**
+ * Atualiza monitores-alvo do site e reaplica nas telas se já estiver projetando.
+ * @param {unknown} ids
+ * @returns {boolean}
+ */
+export function setSiteTargetMonitorIds(ids) {
+  const primaryId = screen.getPrimaryDisplay().id
+  lastSiteMonitorIds = (Array.isArray(ids) ? ids : [])
+    .filter((id) => typeof id === 'number' && Number.isFinite(id) && id !== primaryId)
+
+  broadcastSiteTargetsChanged(lastSiteMonitorIds)
+
+  if (
+    isSiteProjectingToScreens() &&
+    sourceWindow &&
+    !sourceWindow.isDestroyed()
+  ) {
+    const loadUrl = sourceWindow.webContents.getURL()
+    if (loadUrl && loadUrl !== 'about:blank') {
+      openSiteScreensOnTargets(loadUrl, resolveExtendedTargets(lastSiteMonitorIds))
+    }
+  }
+
+  return true
+}
+
+/**
+ * Expande a barra do controle de site para caber o painel de monitores.
+ * @param {unknown} open
+ * @returns {boolean}
+ */
+export function setSiteControlPanelOpen(open) {
+  siteControlPanelOpen = Boolean(open)
+  if (sourceWindow && !sourceWindow.isDestroyed()) {
+    layoutControlBar(sourceWindow)
+  }
+  return true
+}
+
+/**
+ * Popup de controle + espelho idêntico nas telas estendidas.
+ * Play/pause no popup aparecem automaticamente nos espelhos (captura).
+ *
+ * @param {{
+ *   url: string
+ *   title?: string
+ *   videoId?: string
+ *   monitorIds?: number[]
+ *   mode?: 'video' | 'site'
+ *   withScreens?: boolean
+ * }} payload
+ */
+function resolveExtendedTargets(monitorIds) {
+  const displays = screen.getAllDisplays()
+  const primaryId = screen.getPrimaryDisplay().id
+  const ids = Array.isArray(monitorIds)
+    ? monitorIds.filter((id) => typeof id === 'number' && Number.isFinite(id))
+    : []
+
+  /** @type {import('electron').Display[]} */
+  const targets = []
+  if (ids.length > 0) {
+    for (const id of ids) {
+      const display = displays.find((item) => item.id === id && item.id !== primaryId)
+      if (display) targets.push(display)
+    }
+    return targets
+  }
+
+  return displays.filter((item) => item.id !== primaryId)
+}
+
+function openSiteScreensOnTargets(loadUrl, targets) {
+  closeMirrorWindowsOnly()
+  for (const display of targets) {
+    mirrorWindows.push(createSiteProjectionWindow(display, loadUrl))
+    siteShieldWindows.push(createSiteShieldWindow(display))
+  }
+  if (targets.length > 0) {
+    startSiteProjectionSync()
+  }
+  return targets.length > 0
+}
+
+export function openWebProjectionWindows(payload) {
+  const loadUrl = resolveSourceUrl(payload)
+  if (!loadUrl) return false
+
+  const mode = payload.mode === 'site' ? 'site' : 'video'
+  const withScreens = payload.withScreens !== false
+  const monitorIds = Array.isArray(payload.monitorIds)
+    ? payload.monitorIds.filter((id) => typeof id === 'number' && Number.isFinite(id))
+    : []
+
+  // Site com controle já aberto: só projeta nas telas, sem recriar o popup.
+  if (
+    mode === 'site' &&
+    withScreens &&
+    sourceWindow &&
+    !sourceWindow.isDestroyed() &&
+    currentProjectionMode === 'site'
+  ) {
+    lastSiteMonitorIds = monitorIds
+    if (isSiteProjectingToScreens()) return true
+    const currentUrl = sourceWindow.webContents.getURL()
+    const projectUrl =
+      currentUrl && currentUrl !== 'about:blank' ? currentUrl : loadUrl
+    return openSiteScreensOnTargets(
+      projectUrl,
+      resolveExtendedTargets(monitorIds),
+    )
+  }
+
+  closeWebProjectionWindows()
+
+  currentProjectionMode = mode
+
+  if (mode === 'site') {
+    lastSiteMonitorIds = monitorIds
+  }
+
+  const title =
+    typeof payload.title === 'string' && payload.title.trim()
+      ? mode === 'site'
+        ? `Site — ${payload.title.trim()}`
+        : `Player — ${payload.title.trim()}`
+      : mode === 'site'
+        ? SITE_WINDOW_TITLE
+        : SOURCE_WINDOW_TITLE
+
+  sourceWindow =
+    mode === 'site'
+      ? createSiteSourceWindow(loadUrl, title)
+      : createSourceWindow(loadUrl, title)
+
+  if (!withScreens) {
+    return true
+  }
+
+  const targets = resolveExtendedTargets(monitorIds)
+
+  for (const display of targets) {
+    if (mode === 'site') {
+      mirrorWindows.push(createSiteProjectionWindow(display, loadUrl))
+      siteShieldWindows.push(createSiteShieldWindow(display))
+    } else {
+      mirrorWindows.push(createMirrorWindow(display))
+    }
+  }
+
+  if (mode === 'site' && targets.length > 0) {
+    startSiteProjectionSync()
+  }
+
+  return true
+}
+
+/**
+ * Liga/desliga a projeção do site nas telas estendidas a partir do controle.
+ * @returns {boolean}
+ */
+export function toggleSiteProjectionScreens() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return false
+  }
+
+  if (mirrorWindows.some((win) => !win.isDestroyed())) {
+    closeMirrorWindowsOnly()
+    return true
+  }
+
+  const loadUrl = sourceWindow.webContents.getURL()
+  if (!loadUrl || loadUrl === 'about:blank') return false
+
+  const targets = resolveExtendedTargets(lastSiteMonitorIds)
+  return openSiteScreensOnTargets(loadUrl, targets)
+}
+
+export function isSiteProjectingToScreens() {
+  return (
+    currentProjectionMode === 'site' &&
+    mirrorWindows.some((win) => !win.isDestroyed())
+  )
+}
+
+/** @param {unknown} _payload */
+export function broadcastPlaybackSync(_payload) {
+  // Mantido por compatibilidade de IPC — espelho é por captura, não precisa sync.
+}
+
+/**
+ * @param {Electron.WebContents} requester
+ */
+export function getSourceMediaIdFor(requester) {
+  if (!sourceWindow || sourceWindow.isDestroyed()) return null
+  try {
+    return sourceWindow.webContents.getMediaSourceId(requester)
+  } catch (error) {
+    console.error('[projection] getMediaSourceId', error)
+    return null
+  }
+}
+
+const REMOTE_PLAY_SCRIPT = `
+(() => {
+  const video =
+    document.querySelector('video.html5-main-video') ||
+    document.querySelector('video.video-stream') ||
+    document.querySelector('video');
+
+  if (video && video.paused) {
+    const playBtn =
+      document.querySelector('button.ytp-play-button') ||
+      document.querySelector('.ytp-large-play-button');
+    if (playBtn) playBtn.click();
+    else {
+      const p = video.play();
+      if (p && typeof p.then === 'function') p.catch(() => {});
+    }
+  } else if (!video) {
+    const large = document.querySelector('.ytp-large-play-button');
+    if (large) large.click();
+    else return false;
+  }
+
+  const v =
+    document.querySelector('video.html5-main-video') ||
+    document.querySelector('video.video-stream') ||
+    document.querySelector('video');
+  return Boolean(v && !v.paused);
+})()
+`
+
+const REMOTE_PAUSE_SCRIPT = `
+(() => {
+  const video =
+    document.querySelector('video.html5-main-video') ||
+    document.querySelector('video.video-stream') ||
+    document.querySelector('video');
+  if (!video) return false;
+  if (!video.paused) {
+    const pauseBtn = document.querySelector('button.ytp-play-button');
+    if (pauseBtn) pauseBtn.click();
+    else video.pause();
+  }
+  return Boolean(video.paused);
+})()
+`
+
+const GET_PLAYBACK_STATE_SCRIPT = `
+(() => {
+  const video =
+    document.querySelector('video.html5-main-video') ||
+    document.querySelector('video.video-stream') ||
+    document.querySelector('video');
+  if (!video) return null;
+  return {
+    paused: Boolean(video.paused),
+    currentTime: Number(video.currentTime) || 0,
+    duration: Number(video.duration) || 0,
+  };
+})()
+`
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** Play no popup — espelhos acompanham visualmente. */
+export async function remotePlaySource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return false
+  }
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      const playing = await sourceWindow.webContents.executeJavaScript(
+        REMOTE_PLAY_SCRIPT,
+        true,
+      )
+      if (playing) return true
+    } catch {
+      // ainda carregando
+    }
+    await sleep(250)
+  }
+
+  return false
+}
+
+/** Pause no popup — espelhos acompanham visualmente. */
+export async function remotePauseSource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return false
+  }
+  try {
+    return Boolean(
+      await sourceWindow.webContents.executeJavaScript(REMOTE_PAUSE_SCRIPT, true),
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Seek no popup (segundos).
+ * @param {number} seconds
+ */
+export async function remoteSeekSource(seconds) {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return false
+  }
+  const t = Number(seconds)
+  if (!Number.isFinite(t) || t < 0) return false
+  try {
+    return Boolean(
+      await sourceWindow.webContents.executeJavaScript(
+        `(() => {
+          const video =
+            document.querySelector('video.html5-main-video') ||
+            document.querySelector('video.video-stream') ||
+            document.querySelector('video');
+          if (!video) return false;
+          video.currentTime = ${JSON.stringify(t)};
+          return true;
+        })()`,
+        true,
+      ),
+    )
+  } catch {
+    return false
+  }
+}
+
+/** Estado de playback do vídeo no popup (para a barra do operador). */
+export async function getSourcePlaybackState() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return null
+  }
+  try {
+    return await sourceWindow.webContents.executeJavaScript(
+      GET_PLAYBACK_STATE_SCRIPT,
+      true,
+    )
+  } catch {
+    return null
+  }
+}
+
+/** Navegação do site no popup de controle. */
+export async function getSourceNavigationState() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return null
+  }
+  try {
+    const contents = sourceWindow.webContents
+    return {
+      canGoBack: contents.canGoBack(),
+      canGoForward: contents.canGoForward(),
+      projecting: isSiteProjectingToScreens(),
+    }
+  } catch {
+    return null
+  }
+}
+
+export function remoteGoBackSource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return false
+  }
+  const contents = sourceWindow.webContents
+  if (!contents.canGoBack()) return false
+  contents.goBack()
+  return true
+}
+
+export function remoteGoForwardSource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return false
+  }
+  const contents = sourceWindow.webContents
+  if (!contents.canGoForward()) return false
+  contents.goForward()
+  return true
+}
+
+export function remoteReloadSource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'site') {
+    return false
+  }
+  siteSourceReloadPending = true
+  sourceWindow.webContents.reload()
+  return true
+}
+
+export function registerProjectionCapturePermissions() {
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (
+      permission === 'media' ||
+      permission === 'display-capture' ||
+      permission === 'mediaKeySystem' ||
+      permission === 'fullscreen' ||
+      permission === 'clipboard-sanitized-write'
+    ) {
+      callback(true)
+      return
+    }
+    callback(false)
+  })
+}

@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
 import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
 import type { LiturgyItem } from '../types/liturgy'
 
@@ -9,6 +11,7 @@ const props = defineProps<{
   item: LiturgyItem
   index: number
   selected: boolean
+  siteProjecting?: boolean
   startLabel: string
   durationLabel: string
   linked?: boolean
@@ -25,12 +28,13 @@ const props = defineProps<{
   reorderActive?: boolean
   /** Este item é o que está sendo arrastado. */
   isDragSource?: boolean
-  /** Cadeado ativo: oculta exclusão unitária. */
+  /** Cadeado ativo: oculta edição e exclusão unitária. */
   deletionLocked?: boolean
 }>()
 
 const emit = defineEmits<{
   select: []
+  playScreens: []
   edit: []
   remove: []
   toggleDone: []
@@ -47,6 +51,9 @@ let dragGhostEl: HTMLElement | null = null
 const isCategory = computed(() => props.item.type === 'category')
 const isLinked = computed(() => Boolean(props.linked))
 const executable = computed(() => isExecutableItem(props.item))
+const isStreamVideo = computed(() => props.item.type === 'online_video')
+const isSiteItem = computed(() => props.item.type === 'site')
+const canPlayOnScreens = computed(() => isStreamVideo.value)
 const isDimmed = computed(
   () => Boolean(props.reorderActive) && !props.isDragSource,
 )
@@ -278,7 +285,9 @@ function onHandleDragEnd() {
 
         <div
           class="liturgy-item__actions"
-          :class="{ 'liturgy-item__actions--visible': isCategory }"
+          :class="{
+            'liturgy-item__actions--visible': isCategory || isStreamVideo || isSiteItem,
+          }"
           @click.stop
         >
           <button
@@ -297,20 +306,87 @@ function onHandleDragEnd() {
             />
           </button>
           <button
-            v-if="!isCategory && (executable || selected)"
+            v-if="!isCategory && !isStreamVideo && !isSiteItem && (executable || selected)"
             type="button"
             class="liturgy-item__action"
             :class="{ 'liturgy-item__action--primary': selected }"
-            :title="t('liturgy.actions.execute')"
-            :aria-label="t('liturgy.actions.execute')"
+            :title="t('liturgy.actions.openControl')"
+            :aria-label="t('liturgy.actions.openControl')"
             @click.stop="emit('select')"
           >
             <i
-              class="mdi mdi-eye-outline"
+              class="mdi mdi-play"
+              aria-hidden="true"
+            />
+          </button>
+          <MonitorTargetSelect
+            v-if="!isCategory && isSiteItem"
+            dense
+            persist
+          />
+          <button
+            v-if="!isCategory && isSiteItem"
+            type="button"
+            class="liturgy-item__action liturgy-item__action--site-control"
+            :title="t('liturgy.actions.openSiteControl')"
+            :aria-label="t('liturgy.actions.openSiteControl')"
+            @click.stop="emit('select')"
+          >
+            <i
+              class="mdi mdi-monitor-dashboard"
               aria-hidden="true"
             />
           </button>
           <button
+            v-if="!isCategory && isSiteItem"
+            type="button"
+            class="liturgy-item__action liturgy-item__action--site-project"
+            :class="{
+              'liturgy-item__action--site-projecting': siteProjecting,
+            }"
+            :title="
+              siteProjecting
+                ? t('liturgy.actions.stopSiteProjection')
+                : t('liturgy.actions.projectSiteOnScreens')
+            "
+            :aria-label="
+              siteProjecting
+                ? t('liturgy.actions.stopSiteProjection')
+                : t('liturgy.actions.projectSiteOnScreens')
+            "
+            :aria-pressed="siteProjecting"
+            @click.stop="emit('playScreens')"
+          >
+            <i
+              class="mdi"
+              :class="siteProjecting ? 'mdi-stop' : 'mdi-arrow-top-right'"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            v-if="!isCategory && canPlayOnScreens"
+            type="button"
+            class="liturgy-item__action liturgy-item__action--screens"
+            :class="{ 'liturgy-item__action--screens-highlight': isStreamVideo }"
+            :title="
+              isStreamVideo
+                ? t('liturgy.actions.openControl')
+                : t('liturgy.actions.playOnScreens')
+            "
+            :aria-label="
+              isStreamVideo
+                ? t('liturgy.actions.openControl')
+                : t('liturgy.actions.playOnScreens')
+            "
+            @click.stop="emit('select')"
+          >
+            <i
+              class="mdi mdi-television-play"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            v-if="!deletionLocked"
             type="button"
             class="liturgy-item__action"
             :title="t('liturgy.actions.edit')"
@@ -870,8 +946,83 @@ function onHandleDragEnd() {
     color: var(--ds-color-error, #ffb4ab);
   }
 
+  &--screens-highlight {
+    width: 2.15rem;
+    height: 2.15rem;
+    color: var(--ds-color-on-primary, #003258);
+    background: var(--ds-color-primary);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--ds-color-primary) 42%, transparent);
+
+    i {
+      font-size: 1.2rem;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--ds-color-primary) 90%, white);
+    }
+  }
+
+  &--site-control,
+  &--site-project {
+    width: 2.05rem;
+    height: 2.05rem;
+    color: var(--ds-color-on-primary, #003258);
+    background: var(--ds-color-primary);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--ds-color-primary) 36%, transparent);
+
+    i {
+      font-size: 1.15rem;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--ds-color-primary) 90%, white);
+    }
+  }
+
+  &--site-project {
+    background: #78d6d2;
+    color: #000;
+    box-shadow: 0 0 14px color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 38%, transparent);
+
+    &:hover {
+      background: #9be4e1;
+    }
+  }
+
+  // Deve vir após --site-project, pois o botão possui as duas classes.
+  &--site-projecting {
+    background: #fca5a5;
+    color: #111827;
+    box-shadow: 0 0 14px rgba(252, 165, 165, 0.5);
+
+    &:hover {
+      background: #f87171;
+      color: #111827;
+    }
+  }
+
   .liturgy-item--done & {
     color: color-mix(in srgb, var(--ds-color-on-surface) 35%, transparent);
+  }
+
+  .liturgy-item--done &--screens-highlight {
+    color: var(--ds-color-on-primary, #003258);
+    background: var(--ds-color-primary);
+    opacity: 1;
+  }
+
+  .liturgy-item--done &--site-control,
+  .liturgy-item--done &--site-project {
+    opacity: 1;
+  }
+
+  .liturgy-item--done &--site-project {
+    color: #000;
+  }
+
+  .liturgy-item--done &--site-projecting {
+    background: #fca5a5;
+    color: #111827;
   }
 
   .liturgy-item--done &--collapse {

@@ -80,9 +80,6 @@ export const LITURGY_TYPE_GROUPS: LiturgyTypeGroup[] = [
       { value: 'category', dot: '#FFD600' }, // amarelo puro
       { value: 'music', dot: '#00E676' }, // verde neon
       { value: 'annotation', dot: '#FF6D00' }, // laranja vivo
-      { value: 'notice', dot: '#D50000' }, // vermelho intenso
-      { value: 'scheduled', dot: '#6200EA' }, // roxo profundo
-      { value: 'prayer', dot: '#C51162' }, // magenta
     ],
   },
   {
@@ -110,9 +107,9 @@ export const LITURGY_TYPE_GROUPS: LiturgyTypeGroup[] = [
 
 export type LiturgyMusicMode = 'audio' | 'instrumental'
 
-export const DEFAULT_MOMENT_DURATION_MS = 5 * 60 * 1000
+export const DEFAULT_MOMENT_DURATION_MS = 0
 export const MOMENT_DURATION_STEP_MS = 60 * 1000
-export const MOMENT_DURATION_MIN_MS = 60 * 1000
+export const MOMENT_DURATION_MIN_MS = 0
 export const MOMENT_DURATION_MAX_MS = 99 * 60 * 1000
 
 export function getTypeDotColor(type: LiturgyItemType): string {

@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -18,6 +18,7 @@ export function useLiturgy() {
     selectedDay,
     selectedCustomIndex,
     selectedItemIndex,
+    siteProjectionItemId,
     customLiturgies,
     lastActionMessageKey,
     itemDialogOpen,
@@ -55,8 +56,21 @@ export function useLiturgy() {
     () => sessionStartedAt.value,
   )
 
+  let syncTimer: number | null = null
+
   onMounted(() => {
     void store.hydrate()
+    void store.syncSiteProjectionState()
+    syncTimer = window.setInterval(() => {
+      void store.syncSiteProjectionState()
+    }, 400)
+  })
+
+  onUnmounted(() => {
+    if (syncTimer != null) {
+      window.clearInterval(syncTimer)
+      syncTimer = null
+    }
   })
 
   function worshipLabel(): string {
@@ -102,6 +116,10 @@ export function useLiturgy() {
     void store.selectItem(index, router)
   }
 
+  function onPlayItemOnScreens(index: number) {
+    void store.playItemOnScreens(index)
+  }
+
   function onSelectDay(day: LiturgyDayKey) {
     store.selectDay(day)
   }
@@ -114,6 +132,7 @@ export function useLiturgy() {
     selectedDay,
     selectedCustomIndex,
     selectedItemIndex,
+    siteProjectionItemId,
     customLiturgies,
     lastActionMessageKey,
     itemDialogOpen,
@@ -161,6 +180,7 @@ export function useLiturgy() {
     confirmClearLiturgy,
     reorderItems: store.reorderItems,
     selectItem: onSelectItem,
+    playItemOnScreens: onPlayItemOnScreens,
     toggleItemDone: store.toggleItemDone,
     openCustomDialog: store.openCustomDialog,
     closeCustomDialog: store.closeCustomDialog,

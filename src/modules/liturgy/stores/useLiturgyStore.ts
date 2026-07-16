@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Router } from 'vue-router'
 
-import { executeLiturgyItem } from '../services/liturgy-actions'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
+
+import { executeLiturgyItem, playLiturgyItemOnScreens } from '../services/liturgy-actions'
 import {
   filterLiturgyMusicOptions,
   loadLiturgyBibleBooks,
@@ -53,6 +55,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   const selectedDay = ref<LiturgyDayKey>(todayWeekday())
   const selectedCustomIndex = ref(0)
+  const siteProjectionItemId = ref<string | null>(null)
   const selectedItemIndex = ref<number | null>(null)
 
   const musicList = ref<LiturgyMusicOption[]>([])
@@ -476,6 +479,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   }
 
   function openEditDialog(index: number) {
+    if (deletionLocked.value) return
     const item = currentItems.value[index]
     if (!item) return
     editingIndex.value = index
@@ -642,7 +646,88 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       currentItems.value[index] ?? item,
       router,
     )
+    if (item.type === 'site' || item.type === 'online_video') {
+      siteProjectionItemId.value = null
+    }
     lastActionMessageKey.value = result.ok ? null : result.messageKey
+  }
+
+  /** Play nas telas estendidas (abre controle se preciso e dispara play). */
+  async function playItemOnScreens(index: number) {
+    selectedItemIndex.value = index
+    const item = currentItems.value[index]
+    if (!item) return
+
+    if (!currentStartTime.value) {
+      const now = new Date()
+      currentStartTime.value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`
+    }
+    if (sessionStartedAt.value == null) {
+      sessionStartedAt.value = Date.now()
+    }
+
+    if (item.type === 'site') {
+      const projection = getDesktopBridge()?.projection
+      // Controle já aberto: só liga/desliga as telas; não reabre o popup.
+      const state = await projection?.getNavigationState?.()
+      if (state) {
+        const toggled = await projection?.toggleSiteScreens?.()
+        if (toggled) {
+          siteProjectionItemId.value = state.projecting ? null : item.id
+          lastActionMessageKey.value = null
+          return
+        }
+      }
+
+      // Controle fechado: abre controle + projeção.
+      siteProjectionItemId.value = item.id
+    }
+
+    const result = await playLiturgyItemOnScreens(item)
+    if (!result.ok && item.type === 'site') {
+      siteProjectionItemId.value = null
+    }
+    lastActionMessageKey.value = result.ok ? null : result.messageKey
+  }
+
+  /**
+   * Mantém o botão da liturgia sincronizado com o da janela de controle
+   * (ambos refletem state.projecting do processo principal).
+   */
+  async function syncSiteProjectionState() {
+    const projection = getDesktopBridge()?.projection
+    if (!projection?.getNavigationState) return
+
+    const state = await projection.getNavigationState()
+    if (!state) {
+      if (siteProjectionItemId.value != null) {
+        siteProjectionItemId.value = null
+      }
+      return
+    }
+
+    if (state.projecting) {
+      if (siteProjectionItemId.value != null) return
+
+      const selected =
+        selectedItemIndex.value != null
+          ? currentItems.value[selectedItemIndex.value]
+          : null
+      if (selected?.type === 'site') {
+        siteProjectionItemId.value = selected.id
+        return
+      }
+
+      const siteItem = currentItems.value.find((entry) => entry.type === 'site')
+      if (siteItem) {
+        siteProjectionItemId.value = siteItem.id
+      }
+      return
+    }
+
+    if (siteProjectionItemId.value != null) {
+      siteProjectionItemId.value = null
+    }
   }
 
   function openCustomDialog() {
@@ -799,6 +884,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     customLiturgies,
     selectedDay,
     selectedCustomIndex,
+    siteProjectionItemId,
     selectedItemIndex,
     musicList,
     bibleBooks,
@@ -853,6 +939,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     toggleItemDone,
     reorderItems,
     selectItem,
+    playItemOnScreens,
+    syncSiteProjectionState,
     openCustomDialog,
     closeCustomDialog,
     createCustomLiturgy,

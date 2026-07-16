@@ -14,7 +14,7 @@ import {
   type LiturgyItemType,
   type LiturgyMusicOption,
 } from '../types/liturgy'
-import { formatMomentDuration } from '../services/liturgy-item-helpers'
+import { formatMomentDuration, isValidLiturgyUrl } from '../services/liturgy-item-helpers'
 
 const props = defineProps<{
   open: boolean
@@ -51,13 +51,6 @@ const categoryRequiredMissing = computed(
   () => !isCategory.value && !props.draft.categoryId,
 )
 
-const musicFieldError = computed(
-  () => showValidation.value && musicRequiredMissing.value,
-)
-const categoryFieldError = computed(
-  () => showValidation.value && categoryRequiredMissing.value,
-)
-
 const durationLabel = computed(() => formatMomentDuration(props.draft.durationMs))
 
 const showFilePath = computed(() =>
@@ -66,6 +59,20 @@ const showFilePath = computed(() =>
 
 const showUrl = computed(
   () => props.draft.type === 'site' || props.draft.type === 'online_video',
+)
+
+const urlRequiredMissing = computed(
+  () => showUrl.value && !isValidLiturgyUrl(props.draft.url),
+)
+
+const musicFieldError = computed(
+  () => showValidation.value && musicRequiredMissing.value,
+)
+const categoryFieldError = computed(
+  () => showValidation.value && categoryRequiredMissing.value,
+)
+const urlFieldError = computed(
+  () => showValidation.value && urlRequiredMissing.value,
 )
 
 const showMusicResults = computed(
@@ -560,18 +567,31 @@ function isLightDot(hex: string): boolean {
           >
             <label
               class="moment-dialog__label"
+              :class="{ 'moment-dialog__label--error': urlFieldError }"
               for="moment-url"
             >
               {{ t('liturgy.fields.url') }}
+              <span
+                class="moment-dialog__required"
+                aria-hidden="true"
+              >*</span>
             </label>
             <input
               id="moment-url"
               class="moment-dialog__input"
+              :class="{ 'moment-dialog__input--error': urlFieldError }"
               type="url"
               :value="draft.url"
               placeholder="https://"
+              :aria-invalid="urlFieldError"
               @input="onUrlInput"
             >
+            <p
+              v-if="urlFieldError"
+              class="moment-dialog__field-error"
+            >
+              {{ t('liturgy.dialog.urlInvalid') }}
+            </p>
           </div>
 
           <div class="moment-dialog__section">
@@ -633,10 +653,10 @@ function isLightDot(hex: string): boolean {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(64rem, 100%);
-  max-height: min(92vh, 56rem);
+  width: min(58rem, 100%);
+  max-height: min(90vh, 52rem);
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   background: var(--ds-color-surface-card, #242424);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
@@ -648,8 +668,8 @@ function isLightDot(hex: string): boolean {
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.5rem 1.75rem 1.25rem;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem 0.75rem;
   border-bottom: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
   background: var(--ds-color-surface-card, #242424);
 }
@@ -658,13 +678,13 @@ function isLightDot(hex: string): boolean {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .moment-dialog__close {
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -677,14 +697,14 @@ function isLightDot(hex: string): boolean {
   }
 
   i {
-    font-size: 1.65rem;
+    font-size: 1.25rem;
   }
 }
 
 .moment-dialog__badge {
   flex-shrink: 0;
-  width: 3rem;
-  height: 3rem;
+  width: 2.15rem;
+  height: 2.15rem;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -693,14 +713,14 @@ function isLightDot(hex: string): boolean {
   color: var(--ds-color-primary);
 
   i {
-    font-size: 1.75rem;
+    font-size: 1.15rem;
     font-weight: 600;
   }
 }
 
 .moment-dialog__title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.3;
@@ -711,9 +731,9 @@ function isLightDot(hex: string): boolean {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.1rem;
   min-height: 0;
-  padding: 1.5rem 1.75rem 2rem;
+  padding: 0.95rem 1.15rem 1.15rem;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -721,18 +741,17 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.45rem;
   min-width: 0;
 }
 
 .moment-dialog__label {
-  padding-inline: 0.25rem;
-  font-size: 0.875rem;
+  padding-inline: 0.15rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
-  opacity: 0.7;
+  opacity: 0.85;
 
   &--error {
     color: var(--ds-color-error, #ffb4ab);
@@ -741,17 +760,24 @@ function isLightDot(hex: string): boolean {
 }
 
 .moment-dialog__required {
-  margin-left: 0.2rem;
+  margin-left: 0.15rem;
   color: var(--ds-color-error, #ffb4ab);
   font-weight: 700;
+}
+
+.moment-dialog__field-error {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ds-color-error, #ffb4ab);
 }
 
 .moment-dialog__type-panel {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 1.5rem;
-  border-radius: 1.5rem;
+  gap: 1rem;
+  padding: 0.85rem;
+  border-radius: 0.9rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
 }
@@ -759,21 +785,20 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.55rem;
 
   &--divided {
-    padding-top: 1rem;
+    padding-top: 0.65rem;
     border-top: 1px solid color-mix(in srgb, #fff 5%, transparent);
   }
 }
 
 .moment-dialog__group-label {
   margin: 0;
-  padding-inline: 0.25rem;
-  font-size: 0.875rem;
+  padding-inline: 0.15rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
 
   &--primary {
     color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
@@ -791,20 +816,20 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .moment-dialog__chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 2.75rem;
-  padding: 0.7rem 1.25rem;
-  border-radius: 0.75rem;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.55rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: color-mix(in srgb, #fff 5%, transparent);
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -818,20 +843,20 @@ function isLightDot(hex: string): boolean {
     color: #fff;
     background: color-mix(in srgb, #fff 10%, transparent);
     border-color: color-mix(in srgb, #fff 20%, transparent);
-    transform: scale(1.03);
+    transform: scale(1.02);
   }
 
   &--active {
     color: var(--ds-color-primary);
     background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
     border-color: color-mix(in srgb, var(--ds-color-primary) 30%, transparent);
-    box-shadow: 0 0 15px color-mix(in srgb, var(--ds-color-primary) 20%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
   }
 }
 
 .moment-dialog__dot {
-  width: 0.625rem;
-  height: 0.625rem;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 999px;
   flex-shrink: 0;
 
@@ -844,21 +869,21 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 0.9rem;
 
   &--name-only {
     grid-template-columns: 1fr;
   }
 
   &--with-category {
-    grid-template-columns: minmax(9rem, 0.85fr) minmax(12rem, 1.2fr) minmax(10rem, 1fr);
+    grid-template-columns: minmax(7.5rem, 0.85fr) minmax(10rem, 1.2fr) minmax(9rem, 1fr);
   }
 }
 
 .moment-dialog__type-hint {
-  margin: 0 0 0.65rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
   opacity: 0.78;
 }
@@ -868,18 +893,18 @@ function isLightDot(hex: string): boolean {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 4rem;
-  padding: 0.75rem 1rem;
-  border-radius: 1rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.65rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container, #201f1f);
 }
 
 .moment-dialog__step-btn {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 1.85rem;
+  height: 1.85rem;
   border: 0;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   display: grid;
   place-items: center;
   background: color-mix(in srgb, #fff 5%, transparent);
@@ -901,7 +926,7 @@ function isLightDot(hex: string): boolean {
 }
 
 .moment-dialog__step-value {
-  font-size: 1.25rem;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: #fff;
@@ -910,14 +935,14 @@ function isLightDot(hex: string): boolean {
 
 .moment-dialog__input {
   width: 100%;
-  min-height: 4rem;
-  padding: 1rem 1.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 1rem;
+  border-radius: 0.65rem;
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: #fff;
-  font-size: 1.125rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  line-height: 1.35;
 
   &::placeholder {
     color: color-mix(in srgb, var(--ds-color-on-surface-variant) 40%, transparent);
@@ -944,29 +969,29 @@ function isLightDot(hex: string): boolean {
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239ecaff' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1.25rem center;
-  padding-right: 2.75rem;
+  background-position: right 0.85rem center;
+  padding-right: 2.25rem;
 }
 
 .moment-dialog__music {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .moment-dialog__music-search {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  min-height: 4rem;
-  padding: 0.75rem 1.25rem;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.85rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 1rem;
+  border-radius: 0.65rem;
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: var(--ds-color-primary);
 
   i {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
   }
 
@@ -993,8 +1018,8 @@ function isLightDot(hex: string): boolean {
   border: 0;
   background: transparent;
   color: #fff;
-  font-size: 1.125rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  line-height: 1.35;
   outline: none;
 
   &::placeholder {
@@ -1005,10 +1030,10 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__music-results {
   list-style: none;
   margin: 0;
-  padding: 0.35rem;
-  max-height: 14rem;
+  padding: 0.25rem;
+  max-height: 11rem;
   overflow: auto;
-  border-radius: 1rem;
+  border-radius: 0.65rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
 }
@@ -1018,10 +1043,10 @@ function isLightDot(hex: string): boolean {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.15rem;
-  padding: 0.75rem 1rem;
+  gap: 0.1rem;
+  padding: 0.45rem 0.7rem;
   border: 0;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: transparent;
   color: inherit;
   text-align: left;
@@ -1037,13 +1062,13 @@ function isLightDot(hex: string): boolean {
 }
 
 .moment-dialog__music-option-title {
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #fff;
 }
 
 .moment-dialog__music-option-meta {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
   opacity: 0.8;
 }
@@ -1051,9 +1076,9 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__music-selected {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: 0.9rem;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.65rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 35%, transparent);
   background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 12%, transparent);
 }
@@ -1061,26 +1086,26 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__music-selected-text {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
   min-width: 0;
   flex: 1;
 }
 
 .moment-dialog__music-selected-label {
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #fff;
 }
 
 .moment-dialog__music-selected-meta {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
   opacity: 0.85;
 }
 
 .moment-dialog__music-clear {
-  width: 2rem;
-  height: 2rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -1094,15 +1119,15 @@ function isLightDot(hex: string): boolean {
 
 .moment-dialog__textarea {
   width: 100%;
-  min-height: 7rem;
+  min-height: 4.5rem;
   resize: vertical;
-  padding: 1.35rem 1.5rem;
-  border-radius: 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.65rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 
   &::placeholder {
     color: color-mix(in srgb, var(--ds-color-on-surface-variant) 30%, transparent);
@@ -1118,15 +1143,15 @@ function isLightDot(hex: string): boolean {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 1.5rem;
-  padding-top: 0.75rem;
+  gap: 0.85rem;
+  padding-top: 0.35rem;
 }
 
 .moment-dialog__discard {
   border: 0;
   background: transparent;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
 
@@ -1138,11 +1163,11 @@ function isLightDot(hex: string): boolean {
 .moment-dialog__submit {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  min-height: 2.5rem;
-  padding: 0.55rem 1.35rem;
+  gap: 0.35rem;
+  min-height: 2.15rem;
+  padding: 0.4rem 1rem;
   border: 0;
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   background: linear-gradient(
     90deg,
     var(--ds-color-primary, #9ecaff),
@@ -1152,8 +1177,7 @@ function isLightDot(hex: string): boolean {
   color: var(--ds-color-on-primary-container, #002c4f);
   font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   cursor: pointer;
   box-shadow: 0 4px 16px color-mix(in srgb, #2196f3 22%, transparent);
   transition:
@@ -1175,19 +1199,19 @@ function isLightDot(hex: string): boolean {
   }
 
   i {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
 }
 
 @media (max-width: 720px) {
   .moment-dialog__header,
   .moment-dialog__form {
-    padding-inline: 1.25rem;
+    padding-inline: 0.9rem;
   }
 
   .moment-dialog__row {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 0.85rem;
   }
 
   .moment-dialog__footer {

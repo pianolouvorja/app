@@ -6,6 +6,7 @@ import { APP_PRODUCT_NAME } from './constants.mjs'
 import { registerWorkspaceIpc } from './ipc/register.mjs'
 import { ensureWorkspaceDirectories } from './paths.mjs'
 import { registerLocalFileProtocol, registerLocalScheme } from './protocol.mjs'
+import { registerYoutubeEmbedHeaders } from './youtube-embed.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
@@ -22,6 +23,9 @@ app.setPath('userData', path.join(app.getPath('appData'), APP_PRODUCT_NAME))
 if (typeof process.getuid === 'function' && process.getuid() === 0) {
   app.commandLine.appendSwitch('no-sandbox')
 }
+
+/** Permite autoplay com áudio nas janelas de projeção (YouTube). */
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
@@ -107,7 +111,10 @@ function attachProjectionWindowHandlers(parentWindow) {
   })
 
   parentWindow.webContents.on('did-create-window', (childWindow) => {
+    childWindow.webContents.setAudioMuted(false)
+
     childWindow.once('ready-to-show', () => {
+      childWindow.webContents.setAudioMuted(false)
       if (!childWindow.isResizable()) {
         if (process.platform === 'win32') {
           const bounds = childWindow.getBounds()
@@ -169,6 +176,7 @@ app.whenReady().then(() => {
   ensureWorkspaceDirectories()
   registerWorkspaceIpc()
   registerLocalFileProtocol()
+  registerYoutubeEmbedHeaders()
   createWindow()
 
   app.on('activate', () => {

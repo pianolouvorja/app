@@ -7,6 +7,15 @@ export default {
   common: {
     comingSoon: 'Em breve',
   },
+  monitors: {
+    selectScreens: 'Selecionar telas',
+    identify: 'Detectar telas',
+    hint: 'Marque os monitores onde o recurso deve ser projetado.',
+    loading: 'Detectando monitores…',
+    empty: 'Nenhum monitor estendido encontrado.',
+    primary: 'Principal',
+    selectedCount: '{count} selecionada(s)',
+  },
   nav: {
     home: 'Início',
     albums: 'Álbuns',

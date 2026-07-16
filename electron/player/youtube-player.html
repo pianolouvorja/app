@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Projeção — só vídeo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        cursor: none;
+      }
+      #player,
+      #player iframe {
+        position: fixed;
+        inset: 0;
+        width: 100% !important;
+        height: 100% !important;
+        border: 0;
+        background: #000;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="player"></div>
+    <script>
+      ;(function () {
+        var params = new URLSearchParams(window.location.search)
+        var videoId = params.get('v') || ''
+        if (!videoId) return
+
+        var player = null
+        var playerReady = false
+        var pendingSync = { currentTime: 0, paused: true, updatedAt: Date.now() }
+        var unsubscribe = null
+
+        function applySync(payload) {
+          if (!payload || typeof payload !== 'object') return
+          pendingSync = payload
+
+          if (!playerReady || !player) return
+
+          try {
+            var current = 0
+            try {
+              current = player.getCurrentTime() || 0
+            } catch (e) {}
+
+            var targetTime =
+              typeof payload.currentTime === 'number' ? payload.currentTime : current
+
+            if (Math.abs(current - targetTime) > 0.45) {
+              player.seekTo(targetTime, true)
+            }
+
+            if (payload.ended || payload.paused) {
+              player.pauseVideo()
+              return
+            }
+
+            player.playVideo()
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        window.__louvorjaApplyPlaybackSync = applySync
+
+        window.onYouTubeIframeAPIReady = function () {
+          player = new YT.Player('player', {
+            width: '100%',
+            height: '100%',
+            videoId: videoId,
+            playerVars: {
+              // Não inicia sozinho — só com play do controle remoto
+              autoplay: 0,
+              mute: 1,
+              controls: 0,
+              rel: 0,
+              fs: 0,
+              modestbranding: 1,
+              playsinline: 1,
+              disablekb: 1,
+              iv_load_policy: 3,
+              origin: 'http://localhost',
+            },
+            events: {
+              onReady: function (event) {
+                playerReady = true
+                try {
+                  event.target.mute()
+                  event.target.setVolume(0)
+                  event.target.pauseVideo()
+                } catch (e) {}
+                applySync(pendingSync)
+              },
+            },
+          })
+        }
+
+        function bindIpcSync() {
+          if (
+            !window.louvorja ||
+            !window.louvorja.projection ||
+            typeof window.louvorja.projection.onPlaybackSync !== 'function'
+          ) {
+            return false
+          }
+          unsubscribe = window.louvorja.projection.onPlaybackSync(applySync)
+          return true
+        }
+
+        if (!bindIpcSync()) {
+          var tries = 0
+          var timer = setInterval(function () {
+            tries += 1
+            if (bindIpcSync() || tries > 20) clearInterval(timer)
+          }, 100)
+        }
+
+        window.addEventListener('beforeunload', function () {
+          if (typeof unsubscribe === 'function') unsubscribe()
+        })
+
+        if (!document.querySelector('script[src*="iframe_api"]')) {
+          var tag = document.createElement('script')
+          tag.src = 'https://www.youtube.com/iframe_api'
+          document.head.appendChild(tag)
+        }
+      })()
+    </script>
+  </body>
+</html>

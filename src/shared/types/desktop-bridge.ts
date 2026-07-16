@@ -44,6 +44,56 @@ export type DisplaysApi = {
   identify: () => Promise<boolean>
 }
 
+export type OpenUrlProjectionPayload = {
+  url: string
+  title?: string
+  videoId?: string
+  monitorIds?: number[]
+  fullscreenOnPrimary?: boolean
+  mode?: 'video' | 'site'
+  withScreens?: boolean
+}
+
+export type PlaybackSyncPayload = {
+  currentTime: number
+  paused: boolean
+  ended?: boolean
+  updatedAt?: number
+}
+
+export type ProjectionPlaybackState = {
+  paused: boolean
+  currentTime: number
+  duration: number
+}
+
+export type ProjectionNavigationState = {
+  canGoBack: boolean
+  canGoForward: boolean
+  projecting?: boolean
+}
+
+export type ProjectionApi = {
+  openUrl: (payload: OpenUrlProjectionPayload) => Promise<boolean>
+  closeUrl: () => Promise<boolean>
+  getSourceMediaId?: () => Promise<string | null>
+  publishPlaybackSync?: (payload: PlaybackSyncPayload) => void
+  onPlaybackSync?: (callback: (payload: PlaybackSyncPayload) => void) => () => void
+  remotePlay?: () => Promise<boolean>
+  remotePause?: () => Promise<boolean>
+  remoteSeek?: (seconds: number) => Promise<boolean>
+  getPlaybackState?: () => Promise<ProjectionPlaybackState | null>
+  getNavigationState?: () => Promise<ProjectionNavigationState | null>
+  remoteGoBack?: () => Promise<boolean>
+  remoteGoForward?: () => Promise<boolean>
+  remoteReload?: () => Promise<boolean>
+  toggleSiteScreens?: () => Promise<boolean>
+  getSiteTargetMonitors?: () => Promise<number[]>
+  setSiteTargetMonitors?: (ids: number[]) => Promise<boolean>
+  setSiteControlPanelOpen?: (open: boolean) => Promise<boolean>
+  onSiteTargetsChanged?: (callback: (ids: number[]) => void) => () => void
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
@@ -51,4 +101,5 @@ export type LouvorJaBridge = {
   catalog: CatalogApi
   media: MediaApi
   displays: DisplaysApi
+  projection: ProjectionApi
 }

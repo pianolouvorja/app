@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Controles</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(12, 12, 14, 0.92);
+        color: #f1f5f9;
+        font: 600 12px/1.2 system-ui, sans-serif;
+        user-select: none;
+        overflow: hidden;
+      }
+      .bar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.65rem;
+        align-items: center;
+        height: 100%;
+        padding: 0 0.75rem;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: inherit;
+        width: 2rem;
+        height: 2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      button i {
+        font-style: normal;
+        font-size: 1.05rem;
+      }
+      .seek {
+        width: 100%;
+        accent-color: #3b82f6;
+        cursor: pointer;
+      }
+      .time {
+        min-width: 5.5rem;
+        text-align: right;
+        opacity: 0.85;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <button
+        id="play"
+        type="button"
+        title="Play / Pause"
+        aria-label="Play / Pause"
+      >
+        <i id="playIcon">▶</i>
+      </button>
+      <input
+        id="seek"
+        class="seek"
+        type="range"
+        min="0"
+        max="1000"
+        value="0"
+        step="1"
+      />
+      <span
+        id="time"
+        class="time"
+        >0:00 / 0:00</span
+      >
+    </div>
+    <script>
+      ;(function () {
+        var playBtn = document.getElementById('play')
+        var playIcon = document.getElementById('playIcon')
+        var seek = document.getElementById('seek')
+        var timeEl = document.getElementById('time')
+        var seeking = false
+
+        function fmt(sec) {
+          sec = Math.max(0, Math.floor(Number(sec) || 0))
+          var m = Math.floor(sec / 60)
+          var s = sec % 60
+          return m + ':' + String(s).padStart(2, '0')
+        }
+
+        async function refresh() {
+          if (!window.louvorja || !window.louvorja.projection) return
+          var state = await window.louvorja.projection.getPlaybackState()
+          if (!state) return
+          playIcon.textContent = state.paused ? '▶' : '❚❚'
+          if (!seeking && state.duration > 0) {
+            seek.value = String(Math.round((state.currentTime / state.duration) * 1000))
+          }
+          timeEl.textContent =
+            fmt(state.currentTime) + ' / ' + fmt(state.duration || 0)
+        }
+
+        playBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
+          var state = await window.louvorja.projection.getPlaybackState()
+          if (state && !state.paused) {
+            await window.louvorja.projection.remotePause()
+          } else {
+            await window.louvorja.projection.remotePlay()
+          }
+          refresh()
+        })
+
+        seek.addEventListener('pointerdown', function () {
+          seeking = true
+        })
+        seek.addEventListener('pointerup', async function () {
+          seeking = false
+          if (!window.louvorja || !window.louvorja.projection) return
+          var state = await window.louvorja.projection.getPlaybackState()
+          if (!state || !(state.duration > 0)) return
+          var t = (Number(seek.value) / 1000) * state.duration
+          await window.louvorja.projection.remoteSeek(t)
+          refresh()
+        })
+
+        setInterval(refresh, 400)
+        refresh()
+      })()
+    </script>
+  </body>
+</html>

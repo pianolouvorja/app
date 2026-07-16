@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Espelho de projeção</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        cursor: none;
+      }
+
+      .stage {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      /*
+        Site: cover preenche a tela estendida (sem letterbox).
+        Vídeo: cover com leve corte inferior para esconder a barra do operador.
+      */
+      #mirror {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #000;
+        object-fit: cover;
+        object-position: center center;
+      }
+
+      body.mode-video #mirror {
+        height: 104%;
+      }
+
+      .status {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font: 500 14px/1.4 system-ui, sans-serif;
+        text-align: center;
+        padding: 24px;
+        white-space: pre-line;
+        z-index: 3;
+      }
+      .status[hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="status"
+      class="status"
+    >
+      Conectando espelho…
+    </div>
+    <div class="stage">
+      <video
+        id="mirror"
+        autoplay
+        playsinline
+        muted
+      ></video>
+    </div>
+    <script>
+      ;(function () {
+        var params = new URLSearchParams(window.location.search)
+        if (params.get('mode') === 'video') {
+          document.body.classList.add('mode-video')
+        } else if (params.get('mode') === 'site') {
+          document.body.classList.add('mode-site')
+        }
+
+        var statusEl = document.getElementById('status')
+        var videoEl = document.getElementById('mirror')
+        var attempts = 0
+        var activeStream = null
+
+        function setStatus(text) {
+          if (!statusEl) return
+          if (!text) {
+            statusEl.hidden = true
+            return
+          }
+          statusEl.hidden = false
+          statusEl.textContent = text
+        }
+
+        function stopStream() {
+          if (!activeStream) return
+          activeStream.getTracks().forEach(function (track) {
+            track.stop()
+          })
+          activeStream = null
+        }
+
+        function constraintsFor(sourceId, kind) {
+          return {
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: kind,
+                chromeMediaSourceId: sourceId,
+                maxWidth: 3840,
+                maxHeight: 2160,
+                maxFrameRate: 30,
+              },
+            },
+          }
+        }
+
+        async function attachStream(sourceId) {
+          stopStream()
+          var stream
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(
+              constraintsFor(sourceId, 'tab'),
+            )
+          } catch (errTab) {
+            stream = await navigator.mediaDevices.getUserMedia(
+              constraintsFor(sourceId, 'desktop'),
+            )
+          }
+          activeStream = stream
+          videoEl.srcObject = stream
+          await videoEl.play().catch(function () {})
+          setStatus('')
+        }
+
+        async function startMirror() {
+          attempts += 1
+          try {
+            if (!window.louvorja || !window.louvorja.projection) {
+              throw new Error('Bridge de projeção indisponível')
+            }
+            var sourceId = await window.louvorja.projection.getSourceMediaId()
+            if (!sourceId) {
+              throw new Error('Fonte do player ainda não pronta')
+            }
+            await attachStream(sourceId)
+          } catch (error) {
+            var message = error && error.message ? error.message : String(error)
+            setStatus('Aguardando player…\n' + message)
+            if (attempts < 40) {
+              setTimeout(startMirror, 350)
+            }
+          }
+        }
+
+        window.addEventListener('beforeunload', stopStream)
+        startMirror()
+      })()
+    </script>
+  </body>
+</html>

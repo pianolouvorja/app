@@ -16,6 +16,7 @@ const {
   selectedDay,
   selectedCustomIndex,
   selectedItemIndex,
+  siteProjectionItemId,
   customLiturgies,
   lastActionMessageKey,
   itemDialogOpen,
@@ -63,6 +64,7 @@ const {
   confirmClearLiturgy,
   reorderItems,
   selectItem,
+  playItemOnScreens,
   toggleItemDone,
   openCustomDialog,
   closeCustomDialog,
@@ -213,11 +215,13 @@ const {
         <LiturgyTimeline
           :items="currentItems"
           :selected-index="selectedItemIndex"
+          :site-projection-item-id="siteProjectionItemId"
           :start-labels="startLabels"
           :duration-labels="durationLabels"
           :can-clone="canCloneLiturgy"
           :deletion-locked="deletionLocked"
           @select="selectItem"
+          @play-screens="playItemOnScreens"
           @edit="openEditDialog"
           @remove="confirmRemoveItem"
           @toggle-done="toggleItemDone"

@@ -40,4 +40,31 @@ contextBridge.exposeInMainWorld('louvorja', {
     list: () => ipcRenderer.invoke('displays:list'),
     identify: () => ipcRenderer.invoke('displays:identify'),
   },
+
+  projection: {
+    openUrl: (payload) => ipcRenderer.invoke('projection:open-url', payload),
+    closeUrl: () => ipcRenderer.invoke('projection:close-url'),
+    getSourceMediaId: () => ipcRenderer.invoke('projection:get-source-media-id'),
+    publishPlaybackSync: (payload) => {
+      ipcRenderer.send('projection:playback-sync', payload)
+    },
+    onPlaybackSync: (callback) => subscribe('projection:playback-sync', callback),
+    remotePlay: () => ipcRenderer.invoke('projection:remote-play'),
+    remotePause: () => ipcRenderer.invoke('projection:remote-pause'),
+    remoteSeek: (seconds) => ipcRenderer.invoke('projection:remote-seek', seconds),
+    getPlaybackState: () => ipcRenderer.invoke('projection:get-playback-state'),
+    getNavigationState: () => ipcRenderer.invoke('projection:get-navigation-state'),
+    remoteGoBack: () => ipcRenderer.invoke('projection:remote-go-back'),
+    remoteGoForward: () => ipcRenderer.invoke('projection:remote-go-forward'),
+    remoteReload: () => ipcRenderer.invoke('projection:remote-reload'),
+    toggleSiteScreens: () => ipcRenderer.invoke('projection:toggle-site-screens'),
+    getSiteTargetMonitors: () =>
+      ipcRenderer.invoke('projection:get-site-target-monitors'),
+    setSiteTargetMonitors: (ids) =>
+      ipcRenderer.invoke('projection:set-site-target-monitors', ids),
+    setSiteControlPanelOpen: (open) =>
+      ipcRenderer.invoke('projection:set-site-control-panel-open', open),
+    onSiteTargetsChanged: (callback) =>
+      subscribe('projection:site-targets-changed', callback),
+  },
 })
