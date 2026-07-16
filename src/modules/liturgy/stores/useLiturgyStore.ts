@@ -1,0 +1,869 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import type { Router } from 'vue-router'
+
+import { executeLiturgyItem } from '../services/liturgy-actions'
+import {
+  filterLiturgyMusicOptions,
+  loadLiturgyBibleBooks,
+  loadLiturgyMusicOptions,
+} from '../services/liturgy-catalog'
+import {
+  buildLiturgyItemFromDraft,
+  clampMomentDurationMs,
+  cloneLiturgyItems,
+  createLiturgyItemId,
+  draftFromLiturgyItem,
+  isLiturgyItemDraftValid,
+  reconcileMusicItemTitles,
+} from '../services/liturgy-item-helpers'
+import {
+  loadLiturgyState,
+  saveLiturgyState,
+  todayWeekday,
+} from '../services/liturgy-preferences'
+import {
+  DEFAULT_LITURGY_ITEM_DRAFT,
+  DEFAULT_MOMENT_DURATION_MS,
+  getTypeDotColor,
+  LITURGY_DAY_TAB_ORDER,
+  LITURGY_WEEKDAYS,
+  type CustomLiturgy,
+  type LiturgyBibleBookOption,
+  type LiturgyCloneSource,
+  type LiturgyDayKey,
+  type LiturgyItem,
+  type LiturgyItemDraft,
+  type LiturgyItemType,
+  type LiturgyMusicOption,
+  type LiturgyWeekday,
+  type WeekdayLiturgies,
+  type WeekdayNotes,
+  type WeekdaySessionTimes,
+} from '../types/liturgy'
+import { pad2 } from '../services/liturgy-format'
+
+export const useLiturgyStore = defineStore('liturgy', () => {
+  const initialState = loadLiturgyState()
+  const weekdays = ref<WeekdayLiturgies>(initialState.weekdays)
+  const dayNotes = ref<WeekdayNotes>(initialState.dayNotes)
+  const daySessionTimes = ref<WeekdaySessionTimes>(initialState.daySessionTimes)
+  const customLiturgies = ref<CustomLiturgy[]>(initialState.customLiturgies)
+  const deletionLocks = ref<Record<string, boolean>>(initialState.deletionLocks)
+
+  const selectedDay = ref<LiturgyDayKey>(todayWeekday())
+  const selectedCustomIndex = ref(0)
+  const selectedItemIndex = ref<number | null>(null)
+
+  const musicList = ref<LiturgyMusicOption[]>([])
+  const bibleBooks = ref<LiturgyBibleBookOption[]>([])
+  const musicSearchQuery = ref('')
+  const catalogLoading = ref(false)
+  const lastActionMessageKey = ref<string | null>(null)
+
+  const itemDialogOpen = ref(false)
+  const editingIndex = ref<number | null>(null)
+  const itemDraft = ref<LiturgyItemDraft>({ ...DEFAULT_LITURGY_ITEM_DRAFT })
+
+  const customDialogOpen = ref(false)
+  const newCustomName = ref('')
+  const cloneDialogOpen = ref(false)
+  const cloneSourceKey = ref('')
+
+  const sessionStartedAt = ref<number | null>(null)
+  const countdownRunning = ref(false)
+  const hydrated = ref(false)
+
+  const currentCustom = computed(() => {
+    if (selectedDay.value !== 'custom') return null
+    return customLiturgies.value[selectedCustomIndex.value] ?? null
+  })
+
+  const currentStartTime = computed({
+    get(): string | null {
+      if (selectedDay.value === 'custom') {
+        return currentCustom.value?.startTime ?? null
+      }
+      return daySessionTimes.value[selectedDay.value]?.startTime ?? null
+    },
+    set(value: string | null) {
+      if (selectedDay.value === 'custom') {
+        const custom = customLiturgies.value[selectedCustomIndex.value]
+        if (!custom) return
+        customLiturgies.value[selectedCustomIndex.value] = {
+          ...custom,
+          startTime: value,
+        }
+      } else {
+        daySessionTimes.value = {
+          ...daySessionTimes.value,
+          [selectedDay.value]: {
+            ...daySessionTimes.value[selectedDay.value],
+            startTime: value,
+          },
+        }
+      }
+      persist()
+    },
+  })
+
+  const currentEndTime = computed({
+    get(): string | null {
+      if (selectedDay.value === 'custom') {
+        return currentCustom.value?.endTime ?? null
+      }
+      return daySessionTimes.value[selectedDay.value]?.endTime ?? null
+    },
+    set(value: string | null) {
+      if (selectedDay.value === 'custom') {
+        const custom = customLiturgies.value[selectedCustomIndex.value]
+        if (!custom) return
+        customLiturgies.value[selectedCustomIndex.value] = {
+          ...custom,
+          endTime: value,
+        }
+      } else {
+        daySessionTimes.value = {
+          ...daySessionTimes.value,
+          [selectedDay.value]: {
+            ...daySessionTimes.value[selectedDay.value],
+            endTime: value,
+          },
+        }
+      }
+      persist()
+    },
+  })
+
+  const canStartCountdown = computed(() => Boolean(currentEndTime.value))
+
+  const currentItems = computed<LiturgyItem[]>({
+    get() {
+      if (selectedDay.value === 'custom') {
+        return currentCustom.value?.items ?? []
+      }
+      return weekdays.value[selectedDay.value] ?? []
+    },
+    set(items) {
+      if (selectedDay.value === 'custom') {
+        const custom = customLiturgies.value[selectedCustomIndex.value]
+        if (!custom) return
+        customLiturgies.value[selectedCustomIndex.value] = {
+          ...custom,
+          items,
+        }
+      } else {
+        weekdays.value = {
+          ...weekdays.value,
+          [selectedDay.value]: items,
+        }
+      }
+      persist()
+    },
+  })
+
+  const currentNotes = computed({
+    get() {
+      if (selectedDay.value === 'custom') {
+        return currentCustom.value?.notes ?? ''
+      }
+      return dayNotes.value[selectedDay.value] ?? ''
+    },
+    set(value: string) {
+      if (selectedDay.value === 'custom') {
+        const custom = customLiturgies.value[selectedCustomIndex.value]
+        if (!custom) return
+        customLiturgies.value[selectedCustomIndex.value] = {
+          ...custom,
+          notes: value,
+        }
+      } else {
+        dayNotes.value = {
+          ...dayNotes.value,
+          [selectedDay.value]: value,
+        }
+      }
+      persist()
+    },
+  })
+
+  /** Fontes com itens para clonar no dia/avulsa atual (vazio). */
+  const cloneSources = computed((): LiturgyCloneSource[] => {
+    const sources: LiturgyCloneSource[] = []
+
+    for (const day of LITURGY_DAY_TAB_ORDER) {
+      const items = weekdays.value[day] ?? []
+      if (items.length === 0) continue
+      if (selectedDay.value === day) continue
+      sources.push({
+        kind: 'weekday',
+        day,
+        labelKey: `liturgy.days.${day}`,
+        itemCount: items.length,
+      })
+    }
+
+    customLiturgies.value.forEach((custom, index) => {
+      if (custom.items.length === 0) return
+      if (
+        selectedDay.value === 'custom' &&
+        selectedCustomIndex.value === index
+      ) {
+        return
+      }
+      sources.push({
+        kind: 'custom',
+        id: custom.id,
+        index,
+        name: custom.name,
+        itemCount: custom.items.length,
+      })
+    })
+
+    return sources
+  })
+
+  const canCloneLiturgy = computed(
+    () =>
+      currentItems.value.length === 0 &&
+      cloneSources.value.length > 0 &&
+      (selectedDay.value !== 'custom' || currentCustom.value != null),
+  )
+
+  function deletionLockKey(): string | null {
+    if (selectedDay.value === 'custom') {
+      const custom = currentCustom.value
+      return custom ? `custom:${custom.id}` : null
+    }
+    return selectedDay.value
+  }
+
+  const deletionLocked = computed({
+    get(): boolean {
+      const key = deletionLockKey()
+      if (!key) return false
+      return Boolean(deletionLocks.value[key])
+    },
+    set(value: boolean) {
+      const key = deletionLockKey()
+      if (!key) return
+      const next = { ...deletionLocks.value }
+      if (value) next[key] = true
+      else delete next[key]
+      deletionLocks.value = next
+      persist()
+    },
+  })
+
+  const currentTitleKey = computed(() => {
+    if (selectedDay.value === 'custom') {
+      return currentCustom.value
+        ? null
+        : 'liturgy.custom.title'
+    }
+    return `liturgy.days.${selectedDay.value}`
+  })
+
+  const currentCustomTitle = computed(() => currentCustom.value?.name ?? '')
+
+  const selectedItem = computed(() => {
+    if (selectedItemIndex.value == null) return null
+    return currentItems.value[selectedItemIndex.value] ?? null
+  })
+
+  const filteredMusic = computed(() =>
+    filterLiturgyMusicOptions(
+      musicList.value,
+      musicSearchQuery.value,
+      itemDraft.value.musicId,
+    ),
+  )
+
+  const isDraftValid = computed(() => isLiturgyItemDraftValid(itemDraft.value))
+
+  const categoryOptions = computed(() =>
+    currentItems.value
+      .filter((item) => item.type === 'category')
+      .map((item) => ({ id: item.id, name: item.name })),
+  )
+
+  const complementaryTitleSuggestions = computed(() => {
+    const titles = new Set<string>()
+
+    const collectFromItems = (items: LiturgyItem[]) => {
+      for (const item of items) {
+        if (item.type !== 'music') continue
+        const title = item.complementaryTitle?.trim()
+        if (title) titles.add(title)
+      }
+    }
+
+    for (const day of LITURGY_WEEKDAYS) {
+      collectFromItems(weekdays.value[day])
+    }
+    for (const custom of customLiturgies.value) {
+      collectFromItems(custom.items)
+    }
+
+    return [...titles].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  })
+
+  const selectedMusic = computed(
+    () =>
+      musicList.value.find((entry) => entry.id === itemDraft.value.musicId) ??
+      null,
+  )
+
+  const musicCatalogEmpty = computed(
+    () => hydrated.value && musicList.value.length === 0,
+  )
+
+  const verseChapterOptions = computed(() => {
+    if (itemDraft.value.verseBookId == null) return []
+    const book = bibleBooks.value.find(
+      (entry) => entry.id === itemDraft.value.verseBookId,
+    )
+    if (!book) return []
+    return Array.from({ length: book.chapters }, (_, index) => index + 1)
+  })
+
+  function persist() {
+    saveLiturgyState({
+      weekdays: weekdays.value,
+      dayNotes: dayNotes.value,
+      daySessionTimes: daySessionTimes.value,
+      customLiturgies: customLiturgies.value,
+      deletionLocks: deletionLocks.value,
+    })
+  }
+
+  async function hydrate() {
+    if (hydrated.value) return
+
+    const state = loadLiturgyState()
+    weekdays.value = state.weekdays
+    dayNotes.value = state.dayNotes
+    daySessionTimes.value = state.daySessionTimes
+    customLiturgies.value = state.customLiturgies
+    deletionLocks.value = state.deletionLocks
+    selectedDay.value = todayWeekday()
+    countdownRunning.value = false
+
+    catalogLoading.value = true
+    try {
+      const [music, books] = await Promise.all([
+        loadLiturgyMusicOptions(),
+        loadLiturgyBibleBooks(),
+      ])
+      musicList.value = music
+      bibleBooks.value = books
+
+      let changed = false
+      const nextWeekdays = { ...weekdays.value }
+      for (const day of Object.keys(nextWeekdays) as LiturgyWeekday[]) {
+        const reconciled = reconcileMusicItemTitles(nextWeekdays[day], music)
+        if (reconciled !== nextWeekdays[day]) {
+          nextWeekdays[day] = reconciled
+          changed = true
+        }
+      }
+      weekdays.value = nextWeekdays
+
+      customLiturgies.value = customLiturgies.value.map((custom) => {
+        const reconciled = reconcileMusicItemTitles(custom.items, music)
+        if (reconciled === custom.items) return custom
+        changed = true
+        return { ...custom, items: reconciled }
+      })
+
+      if (changed) persist()
+    } finally {
+      catalogLoading.value = false
+    }
+
+    hydrated.value = true
+  }
+
+  function selectDay(day: LiturgyDayKey) {
+    selectedDay.value = day
+    selectedItemIndex.value = null
+    sessionStartedAt.value = null
+    countdownRunning.value = false
+    if (day === 'custom' && customLiturgies.value.length === 0) {
+      selectedCustomIndex.value = 0
+    } else if (
+      day === 'custom' &&
+      selectedCustomIndex.value >= customLiturgies.value.length
+    ) {
+      selectedCustomIndex.value = Math.max(0, customLiturgies.value.length - 1)
+    }
+  }
+
+  function selectCustomLiturgy(index: number) {
+    selectedCustomIndex.value = index
+    selectedItemIndex.value = null
+    sessionStartedAt.value = null
+    countdownRunning.value = false
+  }
+
+  function normalizeTimeHHmm(value: string): string | null {
+    const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+    if (!match) return null
+    const hours = Number(match[1])
+    const minutes = Number(match[2])
+    if (
+      !Number.isFinite(hours) ||
+      !Number.isFinite(minutes) ||
+      hours > 23 ||
+      minutes > 59
+    ) {
+      return null
+    }
+    return `${pad2(hours)}:${pad2(minutes)}`
+  }
+
+  function setSessionStartFromInput(value: string) {
+    const normalized = normalizeTimeHHmm(value)
+    if (normalized == null) return
+    currentStartTime.value = normalized
+  }
+
+  function clearSessionStart() {
+    currentStartTime.value = null
+  }
+
+  function setSessionEndFromInput(value: string) {
+    const normalized = normalizeTimeHHmm(value)
+    if (normalized == null) return
+    currentEndTime.value = normalized
+  }
+
+  function clearSessionEnd() {
+    currentEndTime.value = null
+    countdownRunning.value = false
+    sessionStartedAt.value = null
+  }
+
+  function startCountdown() {
+    if (!currentEndTime.value) return
+    sessionStartedAt.value = Date.now()
+    countdownRunning.value = true
+  }
+
+  function stopCountdown() {
+    countdownRunning.value = false
+    sessionStartedAt.value = null
+  }
+
+  function openAddDialog() {
+    editingIndex.value = null
+    itemDraft.value = { ...DEFAULT_LITURGY_ITEM_DRAFT }
+    musicSearchQuery.value = ''
+    itemDialogOpen.value = true
+  }
+
+  function setItemType(type: LiturgyItemType) {
+    itemDraft.value = {
+      ...itemDraft.value,
+      type,
+      accentColor: getTypeDotColor(type),
+      durationMs:
+        type === 'category'
+          ? 0
+          : itemDraft.value.durationMs || DEFAULT_MOMENT_DURATION_MS,
+      categoryId: type === 'category' ? null : itemDraft.value.categoryId,
+    }
+  }
+
+  function openEditDialog(index: number) {
+    const item = currentItems.value[index]
+    if (!item) return
+    editingIndex.value = index
+    itemDraft.value = draftFromLiturgyItem(item)
+    musicSearchQuery.value = ''
+    itemDialogOpen.value = true
+  }
+
+  function closeItemDialog() {
+    itemDialogOpen.value = false
+    editingIndex.value = null
+  }
+
+  function saveItemDraft() {
+    if (!isDraftValid.value) return false
+
+    const item = buildLiturgyItemFromDraft(itemDraft.value, {
+      musicList: musicList.value,
+      bibleBooks: bibleBooks.value,
+      existingId:
+        editingIndex.value != null
+          ? currentItems.value[editingIndex.value]?.id
+          : undefined,
+      done:
+        editingIndex.value != null
+          ? currentItems.value[editingIndex.value]?.done
+          : false,
+    })
+
+    const next = [...currentItems.value]
+    if (editingIndex.value != null) {
+      next.splice(editingIndex.value, 1, item)
+    } else {
+      next.push(item)
+    }
+    currentItems.value = next
+    closeItemDialog()
+    return true
+  }
+
+  function removeItem(index: number) {
+    if (deletionLocked.value) return
+    const next = currentItems.value.filter((_, i) => i !== index)
+    currentItems.value = next
+
+    if (selectedItemIndex.value === index) {
+      selectedItemIndex.value = null
+    } else if (
+      selectedItemIndex.value != null &&
+      selectedItemIndex.value > index
+    ) {
+      selectedItemIndex.value -= 1
+    }
+  }
+
+  function clearAllItems() {
+    if (deletionLocked.value) return
+    currentItems.value = []
+    selectedItemIndex.value = null
+  }
+
+  function toggleDeletionLock() {
+    if (deletionLockKey() == null) return
+    deletionLocked.value = !deletionLocked.value
+  }
+
+  function syncCategoryDoneFromChildren(items: LiturgyItem[]): LiturgyItem[] {
+    return items.map((item) => {
+      if (item.type !== 'category') return item
+      const children = items.filter(
+        (child) => child.type !== 'category' && child.categoryId === item.id,
+      )
+      if (children.length === 0) return item
+      const allDone = children.every((child) => child.done)
+      return { ...item, done: allDone }
+    })
+  }
+
+  function clearSelectionIfMatches(
+    predicate: (item: LiturgyItem, index: number) => boolean,
+  ) {
+    const selected = selectedItemIndex.value
+    if (selected == null) return
+    const item = currentItems.value[selected]
+    if (item && predicate(item, selected)) {
+      selectedItemIndex.value = null
+    }
+  }
+
+  function toggleItemDone(index: number) {
+    const target = currentItems.value[index]
+    if (!target) return
+
+    const nextDone = !target.done
+
+    if (target.type === 'category') {
+      currentItems.value = currentItems.value.map((item) => {
+        if (item.id === target.id) return { ...item, done: nextDone }
+        if (item.categoryId === target.id) return { ...item, done: nextDone }
+        return item
+      })
+      if (nextDone) {
+        clearSelectionIfMatches(
+          (item) => item.id === target.id || item.categoryId === target.id,
+        )
+      }
+      return
+    }
+
+    const next = currentItems.value.map((item, i) =>
+      i === index ? { ...item, done: nextDone } : item,
+    )
+    currentItems.value = syncCategoryDoneFromChildren(next)
+
+    if (nextDone) {
+      clearSelectionIfMatches((_, i) => i === index)
+      if (target.categoryId) {
+        const categoryId = target.categoryId
+        clearSelectionIfMatches((item) => item.id === categoryId && item.done)
+      }
+    }
+  }
+
+  function reorderItems(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return
+    const next = [...currentItems.value]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+    next.splice(toIndex, 0, moved)
+    currentItems.value = next
+
+    if (selectedItemIndex.value === fromIndex) {
+      selectedItemIndex.value = toIndex
+    } else if (selectedItemIndex.value != null) {
+      const selected = selectedItemIndex.value
+      if (fromIndex < selected && toIndex >= selected) {
+        selectedItemIndex.value = selected - 1
+      } else if (fromIndex > selected && toIndex <= selected) {
+        selectedItemIndex.value = selected + 1
+      }
+    }
+  }
+
+  async function selectItem(index: number, router: Router) {
+    selectedItemIndex.value = index
+    const item = currentItems.value[index]
+    if (!item) return
+
+    if (!currentStartTime.value) {
+      const now = new Date()
+      currentStartTime.value = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`
+    }
+    if (sessionStartedAt.value == null) {
+      sessionStartedAt.value = Date.now()
+    }
+
+    if (!item.done) {
+      currentItems.value = currentItems.value.map((entry, i) =>
+        i === index ? { ...entry, done: true } : entry,
+      )
+    }
+
+    const result = await executeLiturgyItem(
+      currentItems.value[index] ?? item,
+      router,
+    )
+    lastActionMessageKey.value = result.ok ? null : result.messageKey
+  }
+
+  function openCustomDialog() {
+    newCustomName.value = ''
+    customDialogOpen.value = true
+  }
+
+  function closeCustomDialog() {
+    customDialogOpen.value = false
+    newCustomName.value = ''
+  }
+
+  function createCustomLiturgy() {
+    const name = newCustomName.value.trim()
+    if (!name) return
+
+    customLiturgies.value = [
+      ...customLiturgies.value,
+      {
+        id: createLiturgyItemId(),
+        name,
+        items: [],
+        notes: '',
+        startTime: null,
+        endTime: null,
+      },
+    ]
+    selectedDay.value = 'custom'
+    selectedCustomIndex.value = customLiturgies.value.length - 1
+    selectedItemIndex.value = null
+    persist()
+    closeCustomDialog()
+  }
+
+  function removeCustomLiturgy(index: number) {
+    const removed = customLiturgies.value[index]
+    customLiturgies.value = customLiturgies.value.filter((_, i) => i !== index)
+    if (removed) {
+      const key = `custom:${removed.id}`
+      if (deletionLocks.value[key]) {
+        const next = { ...deletionLocks.value }
+        delete next[key]
+        deletionLocks.value = next
+      }
+    }
+    if (selectedCustomIndex.value >= customLiturgies.value.length) {
+      selectedCustomIndex.value = Math.max(0, customLiturgies.value.length - 1)
+    }
+    selectedItemIndex.value = null
+    persist()
+  }
+
+  function cloneSourceKeyOf(source: LiturgyCloneSource): string {
+    return source.kind === 'weekday'
+      ? `weekday:${source.day}`
+      : `custom:${source.id}`
+  }
+
+  function openCloneDialog() {
+    if (!canCloneLiturgy.value) return
+    const first = cloneSources.value[0]
+    cloneSourceKey.value = first ? cloneSourceKeyOf(first) : ''
+    cloneDialogOpen.value = true
+  }
+
+  function closeCloneDialog() {
+    cloneDialogOpen.value = false
+    cloneSourceKey.value = ''
+  }
+
+  function resolveCloneSourceItems(key: string): LiturgyItem[] | null {
+    if (key.startsWith('weekday:')) {
+      const day = key.slice('weekday:'.length) as LiturgyWeekday
+      if (!(LITURGY_WEEKDAYS as readonly string[]).includes(day)) return null
+      const items = weekdays.value[day] ?? []
+      return items.length > 0 ? items : null
+    }
+    if (key.startsWith('custom:')) {
+      const id = key.slice('custom:'.length)
+      const custom = customLiturgies.value.find((entry) => entry.id === id)
+      if (!custom || custom.items.length === 0) return null
+      return custom.items
+    }
+    return null
+  }
+
+  function cloneLiturgyFromSelected() {
+    if (currentItems.value.length > 0) return
+    if (selectedDay.value === 'custom' && !currentCustom.value) return
+
+    const sourceItems = resolveCloneSourceItems(cloneSourceKey.value)
+    if (!sourceItems) return
+
+    currentItems.value = cloneLiturgyItems(sourceItems)
+    selectedItemIndex.value = null
+    closeCloneDialog()
+  }
+
+  function onMusicPick(musicId: number) {
+    const music = musicList.value.find((entry) => entry.id === musicId)
+    if (!music) {
+      itemDraft.value = {
+        ...itemDraft.value,
+        musicId,
+        durationMs: 0,
+      }
+      return
+    }
+
+    itemDraft.value = {
+      ...itemDraft.value,
+      musicId,
+      durationMs:
+        music.durationMs && music.durationMs > 0
+          ? clampMomentDurationMs(music.durationMs)
+          : 0,
+    }
+  }
+
+  function clearMusicPick() {
+    itemDraft.value = {
+      ...itemDraft.value,
+      musicId: null,
+    }
+  }
+
+  function onBookPick(bookId: number) {
+    itemDraft.value = {
+      ...itemDraft.value,
+      verseBookId: bookId,
+      verseChapter: 1,
+    }
+    const book = bibleBooks.value.find((entry) => entry.id === bookId)
+    if (book && !itemDraft.value.name.trim()) {
+      itemDraft.value = {
+        ...itemDraft.value,
+        name: book.name,
+      }
+    }
+  }
+
+  function clearActionMessage() {
+    lastActionMessageKey.value = null
+  }
+
+  function setNotes(value: string) {
+    currentNotes.value = value
+  }
+
+  return {
+    weekdays,
+    dayNotes,
+    daySessionTimes,
+    customLiturgies,
+    selectedDay,
+    selectedCustomIndex,
+    selectedItemIndex,
+    musicList,
+    bibleBooks,
+    musicSearchQuery,
+    catalogLoading,
+    lastActionMessageKey,
+    itemDialogOpen,
+    editingIndex,
+    itemDraft,
+    customDialogOpen,
+    newCustomName,
+    cloneDialogOpen,
+    cloneSourceKey,
+    sessionStartedAt,
+    countdownRunning,
+    hydrated,
+    currentItems,
+    currentNotes,
+    currentStartTime,
+    currentEndTime,
+    canStartCountdown,
+    cloneSources,
+    canCloneLiturgy,
+    deletionLocked,
+    currentTitleKey,
+    currentCustomTitle,
+    selectedItem,
+    filteredMusic,
+    selectedMusic,
+    musicCatalogEmpty,
+    isDraftValid,
+    categoryOptions,
+    complementaryTitleSuggestions,
+    verseChapterOptions,
+    hydrate,
+    selectDay,
+    selectCustomLiturgy,
+    setSessionStartFromInput,
+    clearSessionStart,
+    setSessionEndFromInput,
+    clearSessionEnd,
+    startCountdown,
+    stopCountdown,
+    openAddDialog,
+    setItemType,
+    openEditDialog,
+    closeItemDialog,
+    saveItemDraft,
+    removeItem,
+    clearAllItems,
+    toggleDeletionLock,
+    toggleItemDone,
+    reorderItems,
+    selectItem,
+    openCustomDialog,
+    closeCustomDialog,
+    createCustomLiturgy,
+    removeCustomLiturgy,
+    openCloneDialog,
+    closeCloneDialog,
+    cloneLiturgyFromSelected,
+    onMusicPick,
+    clearMusicPick,
+    onBookPick,
+    clearActionMessage,
+    setNotes,
+  }
+})

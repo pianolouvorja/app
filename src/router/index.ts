@@ -8,6 +8,7 @@ import AppShell from '@layouts/AppShell.vue'
 import { bibleRoutes } from '@modules/bible/routes'
 import { utilitiesRoutes } from '@modules/clock/routes'
 import { countdownRoutes } from '@modules/countdown/routes'
+import { albumsRoutes } from '@modules/albums/routes'
 import { homeRoutes } from '@modules/home/routes'
 import { liturgyRoutes } from '@modules/liturgy/routes'
 import { settingsRoutes } from '@modules/settings/routes'
@@ -40,6 +41,7 @@ const router = createRouter({
       component: AppShell,
       children: [
         ...homeRoutes,
+        ...albumsRoutes,
         ...liturgyRoutes,
         ...syncRoutes,
         ...bibleRoutes,
