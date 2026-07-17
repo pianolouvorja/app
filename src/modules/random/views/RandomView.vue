@@ -2,6 +2,8 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
 import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
 import RandomConfigDialog from '../components/RandomConfigDialog.vue'
 import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
@@ -202,6 +204,11 @@ async function onImportFile(file: File) {
       @project="onToggleProjection"
       @clear="onToggleProjection"
     />
+    <MonitorTargetSelect
+      class="random-view__monitor-select"
+      dense
+      persist
+    />
   </section>
 </template>
 
@@ -213,6 +220,13 @@ async function onImportFile(file: File) {
   align-items: center;
   padding: var(--ds-spacing-page, 1.5rem);
   padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 5rem);
+}
+
+.random-view__monitor-select {
+  position: fixed;
+  right: 6.75rem;
+  bottom: calc(var(--ds-dock-height, 5.5rem) + 1.875rem);
+  z-index: 36;
 }
 
 .random-view__header {

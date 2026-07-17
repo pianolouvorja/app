@@ -11,6 +11,7 @@ import { countdownRoutes } from '@modules/countdown/routes'
 import { albumsRoutes } from '@modules/albums/routes'
 import { homeRoutes } from '@modules/home/routes'
 import { liturgyRoutes } from '@modules/liturgy/routes'
+import { mediaRoutes } from '@modules/media/routes'
 import { settingsRoutes } from '@modules/settings/routes'
 import { syncRoutes } from '@modules/sync/routes'
 import { randomRoutes } from '@modules/random/routes'
@@ -43,6 +44,7 @@ const router = createRouter({
         ...homeRoutes,
         ...albumsRoutes,
         ...liturgyRoutes,
+        ...mediaRoutes,
         ...syncRoutes,
         ...bibleRoutes,
         ...utilitiesRoutes,

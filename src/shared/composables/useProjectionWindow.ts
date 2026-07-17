@@ -14,11 +14,18 @@ type MonitorTargets = {
 
 let openWindows: ProjectionWindow[] = []
 let activeModule: string | null = null
+/** Último módulo projetado — permite reabrir após close acidental no reapply. */
+let lastProjectedModule: string | null = null
+/** Evita que o watch trate o fechamento temporário do reapply como “parou de projetar”. */
+let reapplyingTargets = false
+/** Nome único a cada open — reusar o mesmo nome após close falha no Chromium/Electron. */
+let projectionWindowSeq = 0
 
 function pruneWindows() {
   openWindows = openWindows.filter((win) => win && !win.closed)
-  if (openWindows.length === 0) {
+  if (openWindows.length === 0 && !reapplyingTargets) {
     activeModule = null
+    lastProjectedModule = null
   }
 }
 
@@ -42,10 +49,22 @@ function buildPopupUrl(moduleId: string): string {
   return `${window.location.origin}/popup?${params}`
 }
 
-async function resolveMonitorTargets(): Promise<MonitorTargets> {
-  const settings = loadProjectionSettings()
+async function resolveMonitorTargets(
+  preferredIds?: number[] | null,
+): Promise<MonitorTargets> {
   const displays = await listSystemDisplays()
   const extendedIds = new Set(listExtendedDisplays(displays).map((display) => display.id))
+
+  // null/undefined = ler settings; array (mesmo vazio) = seleção explícita (como YouTube/site).
+  if (preferredIds != null) {
+    const selected = preferredIds.filter((id) => extendedIds.has(id))
+    if (selected.length > 0) {
+      return { monitorIds: selected, fullscreen: true }
+    }
+    return { monitorIds: [], fullscreen: false }
+  }
+
+  const settings = loadProjectionSettings()
   const selected = settings.targetDisplayIds.filter((id) => extendedIds.has(id))
 
   if (selected.length > 0) {
@@ -64,6 +83,7 @@ function openOnMonitor(
   monitorId: number | null,
   fullscreen: boolean,
 ): ProjectionWindow | null {
+  projectionWindowSeq += 1
   const features = [
     'width=800',
     'height=600',
@@ -73,13 +93,14 @@ function openOnMonitor(
     .filter(Boolean)
     .join(',')
 
+  // Sequência no nome evita falha ao reabrir após close (mesmo targetName).
   const name =
     monitorId != null
-      ? `Projection_${moduleId}_${monitorId}`
-      : `Projection_${moduleId}`
+      ? `Projection_${moduleId}_${monitorId}_${projectionWindowSeq}`
+      : `Projection_${moduleId}_${projectionWindowSeq}`
 
   const win = window.open(url, name, features) as ProjectionWindow | null
-  if (!win) return null
+  if (!win || win.closed) return null
 
   if (monitorId != null) {
     win.monitorId = monitorId
@@ -88,7 +109,24 @@ function openOnMonitor(
   return win
 }
 
+function notifyProjectionReapplied(moduleId: string, open: boolean) {
+  try {
+    window.dispatchEvent(
+      new CustomEvent('louvorja:projection-reapplied', {
+        detail: { moduleId, open },
+      }),
+    )
+  } catch {
+    // ignore
+  }
+}
+
 export function isProjectionModuleOpen(moduleId?: string): boolean {
+  if (reapplyingTargets && activeModule) {
+    if (!moduleId) return true
+    return activeModule === moduleId
+  }
+
   pruneWindows()
   if (openWindows.length === 0) return false
   if (!moduleId) return true
@@ -96,6 +134,7 @@ export function isProjectionModuleOpen(moduleId?: string): boolean {
 }
 
 export function closeProjectionModule(): void {
+  reapplyingTargets = false
   pruneWindows()
   for (const win of openWindows) {
     try {
@@ -106,6 +145,7 @@ export function closeProjectionModule(): void {
   }
   openWindows = []
   activeModule = null
+  lastProjectedModule = null
   closeWebUrlProjection()
 }
 
@@ -145,7 +185,97 @@ export async function openProjectionModule(moduleId: string): Promise<boolean> {
 
   openWindows = nextWindows
   activeModule = nextWindows.length > 0 ? moduleId : null
+  lastProjectedModule = activeModule
   return nextWindows.length > 0
+}
+
+/**
+ * Reabre/ajusta as janelas do módulo ativo nas telas selecionadas.
+ * Espelha setVideoTargetMonitors / setSiteTargetMonitors: troca as telas
+ * sem “desligar” a projeção.
+ */
+export async function reapplyProjectionTargets(
+  preferredIds?: number[] | null,
+): Promise<boolean> {
+  pruneWindows()
+  const moduleId = activeModule ?? lastProjectedModule
+  if (!moduleId) return false
+
+  // Garante que o watch continue vendo a projeção como ativa durante a troca.
+  activeModule = moduleId
+  lastProjectedModule = moduleId
+  reapplyingTargets = true
+  try {
+    const targets = await resolveMonitorTargets(preferredIds)
+    const desiredIds = targets.monitorIds
+    const desiredSet = new Set(desiredIds)
+    const url = buildPopupUrl(moduleId)
+
+    // Mantém janelas das telas que continuam selecionadas (como o espelho do YouTube).
+    const kept: ProjectionWindow[] = []
+    const alreadyOpen = new Set<number>()
+
+    for (const win of openWindows) {
+      const id = win.monitorId
+      if (id != null && desiredSet.has(id) && !win.closed) {
+        kept.push(win)
+        alreadyOpen.add(id)
+      } else {
+        try {
+          win.close()
+        } catch {
+          // janela já fechada
+        }
+      }
+    }
+
+    // Pequena pausa após closes para o Chromium liberar o slot da janela.
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 50)
+    })
+
+    for (const monitorId of desiredIds) {
+      if (alreadyOpen.has(monitorId)) continue
+      const win = openOnMonitor(url, moduleId, monitorId, true)
+      if (win) kept.push(win)
+    }
+
+    openWindows = kept.filter((win) => win && !win.closed)
+
+    if (desiredIds.length === 0) {
+      activeModule = null
+      lastProjectedModule = null
+      notifyProjectionReapplied(moduleId, false)
+      return false
+    }
+
+    // Se alguma abertura falhou, tenta recriar todas com nomes novos.
+    if (openWindows.length < desiredIds.length) {
+      for (const win of openWindows) {
+        try {
+          win.close()
+        } catch {
+          // ignore
+        }
+      }
+      openWindows = []
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 50)
+      })
+      for (const monitorId of desiredIds) {
+        const win = openOnMonitor(url, moduleId, monitorId, true)
+        if (win) openWindows.push(win)
+      }
+    }
+
+    const opened = openWindows.length > 0
+    activeModule = opened ? moduleId : null
+    if (opened) lastProjectedModule = moduleId
+    notifyProjectionReapplied(moduleId, opened)
+    return opened
+  } finally {
+    reapplyingTargets = false
+  }
 }
 
 export async function toggleProjectionModule(moduleId: string): Promise<boolean> {
@@ -163,5 +293,6 @@ export function useProjectionWindow() {
     closeAll: closeProjectionModule,
     isOpen: isProjectionModuleOpen,
     toggle: toggleProjectionModule,
+    reapplyTargets: reapplyProjectionTargets,
   }
 }

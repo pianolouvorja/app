@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import AlbumLyricDialog from '@modules/albums/components/AlbumLyricDialog.vue'
 
 import LiturgyCloneDialog from '../components/LiturgyCloneDialog.vue'
 import LiturgyCustomBar from '../components/LiturgyCustomBar.vue'
@@ -33,8 +36,14 @@ const {
   filteredMusic,
   selectedMusic,
   musicCatalogEmpty,
+  musicInstrumentalById,
+  busyMusicId,
+  lyricOpen,
+  lyricDoc,
+  isLoadingLyric,
   startLabels,
   durationLabels,
+  videoProjectionItemId,
   worshipLabel,
   headerDateTime,
   remainingCountdownLabel,
@@ -79,7 +88,17 @@ const {
   onManageTeam,
   onMusicPick,
   clearMusicPick,
+  onMusicSung,
+  onMusicInstrumental,
+  onMusicSlides,
+  onMusicLyric,
+  closeLyric,
+  setItemDraft,
+  setMusicSearchQuery,
 } = useLiturgy()
+
+/** Exibe avisos da liturgia e do player (ex.: áudio indisponível). */
+const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 </script>
 
 <template>
@@ -108,11 +127,11 @@ const {
     </header>
 
     <div
-      v-if="lastActionMessageKey"
+      v-if="liturgyAlertKey"
       class="liturgy-view__alert"
       role="status"
     >
-      <p>{{ t(lastActionMessageKey) }}</p>
+      <p>{{ t(liturgyAlertKey) }}</p>
       <button
         type="button"
         @click="clearActionMessage"
@@ -216,10 +235,13 @@ const {
           :items="currentItems"
           :selected-index="selectedItemIndex"
           :site-projection-item-id="siteProjectionItemId"
+          :video-projection-item-id="videoProjectionItemId"
           :start-labels="startLabels"
           :duration-labels="durationLabels"
           :can-clone="canCloneLiturgy"
           :deletion-locked="deletionLocked"
+          :music-instrumental-by-id="musicInstrumentalById"
+          :busy-music-id="busyMusicId"
           @select="selectItem"
           @play-screens="playItemOnScreens"
           @edit="openEditDialog"
@@ -227,6 +249,10 @@ const {
           @toggle-done="toggleItemDone"
           @reorder="reorderItems"
           @clone="openCloneDialog"
+          @music-sung="onMusicSung"
+          @music-instrumental="onMusicInstrumental"
+          @music-slides="onMusicSlides"
+          @music-lyric="onMusicLyric"
         />
       </div>
     </div>
@@ -244,8 +270,8 @@ const {
       :selected-music="selectedMusic"
       @close="closeItemDialog"
       @save="saveItemDraft"
-      @update:draft="itemDraft = $event"
-      @update:music-query="musicSearchQuery = $event"
+      @update:draft="setItemDraft"
+      @update:music-query="setMusicSearchQuery"
       @pick-music="onMusicPick"
       @clear-music="clearMusicPick"
     />
@@ -265,6 +291,13 @@ const {
       @close="closeCloneDialog"
       @confirm="cloneLiturgyFromSelected"
       @update:source-key="cloneSourceKey = $event"
+    />
+
+    <AlbumLyricDialog
+      :open="lyricOpen"
+      :loading="isLoadingLyric"
+      :document="lyricDoc"
+      @close="closeLyric"
     />
   </section>
 </template>
@@ -488,8 +521,8 @@ const {
   padding: 0.3rem 0.7rem;
   border: 0;
   border-radius: 999px;
-  background: var(--ds-color-primary-container, #2196f3);
-  color: var(--ds-color-on-primary-container, #002c4f);
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.01em;

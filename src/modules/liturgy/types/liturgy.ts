@@ -198,6 +198,8 @@ export interface LiturgyMusicOption {
   displayLabel: string
   /** Duração detectada no catálogo (ms). Null se indisponível. */
   durationMs: number | null
+  /** True quando há faixa instrumental no catálogo. */
+  hasInstrumental: boolean
 }
 
 export interface LiturgyBibleBookOption {

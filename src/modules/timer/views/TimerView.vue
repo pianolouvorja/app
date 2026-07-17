@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 
 import TimerConfigDialog from '../components/TimerConfigDialog.vue'
 import TimerPreview from '../components/TimerPreview.vue'
@@ -187,6 +188,11 @@ function onToggleProjection() {
       @project="onToggleProjection"
       @clear="onToggleProjection"
     />
+    <MonitorTargetSelect
+      class="timer-view__monitor-select"
+      dense
+      persist
+    />
   </section>
 </template>
 
@@ -197,6 +203,13 @@ function onToggleProjection() {
   flex-direction: column;
   padding: var(--ds-spacing-page, 1.5rem);
   padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 5rem);
+}
+
+.timer-view__monitor-select {
+  position: fixed;
+  right: 6.75rem;
+  bottom: calc(var(--ds-dock-height, 5.5rem) + 1.875rem);
+  z-index: 36;
 }
 
 .timer-view__header {

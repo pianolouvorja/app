@@ -197,6 +197,10 @@ const {
   transition: opacity 0.35s ease;
 }
 
+.starting-fade-leave-active {
+  pointer-events: none;
+}
+
 .starting-fade-enter-from,
 .starting-fade-leave-to {
   opacity: 0;

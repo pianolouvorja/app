@@ -11,6 +11,8 @@ type CatalogHymnalRow = {
   name?: string
   track?: number | string | null
   duration?: number | string | null
+  has_instrumental_music?: number | string | boolean | null
+  url_instrumental_music?: string | null
 }
 
 type CatalogMusicIndexRow = CatalogHymnalRow & {
@@ -114,6 +116,14 @@ function buildDisplayLabel(name: string, hymnalTrack: number | null): string {
   return hymnalTrack != null ? `${hymnalTrack} - ${name}` : name
 }
 
+function hasInstrumentalFlag(row: CatalogHymnalRow): boolean {
+  if (row.has_instrumental_music === true || row.has_instrumental_music === 1) {
+    return true
+  }
+  if (row.has_instrumental_music === '1') return true
+  return Boolean(String(row.url_instrumental_music ?? '').trim())
+}
+
 function upsertMusicOption(
   byId: Map<number, LiturgyMusicOption>,
   option: LiturgyMusicOption,
@@ -131,6 +141,7 @@ function upsertMusicOption(
     albumNames: joinAlbumNames(existing.albumNames, option.albumNames),
     displayLabel: buildDisplayLabel(existing.name, hymnalTrack),
     durationMs: existing.durationMs ?? option.durationMs,
+    hasInstrumental: existing.hasInstrumental || option.hasInstrumental,
   })
 }
 
@@ -154,6 +165,7 @@ function mapMusicOption(
     albumNames: albumName,
     displayLabel: buildDisplayLabel(name, hymnalTrack),
     durationMs: parseCatalogDurationMs(row.duration),
+    hasInstrumental: hasInstrumentalFlag(row),
   }
 }
 
@@ -184,6 +196,7 @@ function mapMusicIndexRow(row: CatalogMusicIndexRow): LiturgyMusicOption | null 
     albumNames,
     displayLabel: buildDisplayLabel(name, isHymnalAlbum ? hymnalTrack : null),
     durationMs: parseCatalogDurationMs(row.duration),
+    hasInstrumental: hasInstrumentalFlag(row),
   }
 }
 
@@ -269,7 +282,10 @@ function sortMusicOptions(options: LiturgyMusicOption[]): LiturgyMusicOption[] {
 export async function loadLiturgyMusicOptions(): Promise<LiturgyMusicOption[]> {
   const fromIndex = await loadFromMusicIndex()
   if (fromIndex && fromIndex.length > 0) {
-    return sortMusicOptions(fromIndex)
+    const byId = new Map(fromIndex.map((entry) => [entry.id, entry]))
+    // Índice pode omitir flags de instrumental; hinário completa o dado.
+    await loadHymnalOptions(byId)
+    return sortMusicOptions([...byId.values()])
   }
 
   const byId = new Map<number, LiturgyMusicOption>()

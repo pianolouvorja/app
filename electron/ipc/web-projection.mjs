@@ -221,6 +221,8 @@ let siteShieldWindows = []
 const siteBlockerViews = new WeakMap()
 /** @type {number[]} */
 let lastSiteMonitorIds = []
+/** @type {number[]} */
+let lastVideoMonitorIds = []
 /** Painel de seleção de monitores aberto na barra do controle de site. */
 let siteControlPanelOpen = false
 /** @type {ReturnType<typeof setInterval> | null} */
@@ -436,6 +438,7 @@ function detachControlBar() {
  */
 function attachControlBar(win) {
   detachControlBar()
+  siteControlPanelOpen = false
 
   const view = new WebContentsView({
     webPreferences: {
@@ -447,6 +450,7 @@ function attachControlBar(win) {
       backgroundThrottling: false,
     },
   })
+  view.setBackgroundColor('#00000000')
 
   win.contentView.addChildView(view)
   const [contentWidth, contentHeight] = win.getContentSize()
@@ -497,12 +501,11 @@ function attachSiteControlBar(win) {
 function layoutControlBar(win) {
   if (!controlBarView || !win || win.isDestroyed()) return
   const [contentWidth, contentHeight] = win.getContentSize()
-  const barHeight =
-    currentProjectionMode === 'site'
-      ? siteControlPanelOpen
-        ? Math.min(SITE_CONTROL_PANEL_HEIGHT, contentHeight)
-        : SITE_CONTROL_BAR_HEIGHT
-      : CONTROL_BAR_HEIGHT
+  const collapsedHeight =
+    currentProjectionMode === 'site' ? SITE_CONTROL_BAR_HEIGHT : CONTROL_BAR_HEIGHT
+  const barHeight = siteControlPanelOpen
+    ? Math.min(SITE_CONTROL_PANEL_HEIGHT, contentHeight)
+    : collapsedHeight
   controlBarView.setBounds({
     x: 0,
     y: Math.max(0, contentHeight - barHeight),
@@ -990,6 +993,7 @@ export function closeWebProjectionWindows() {
   sourceWindow = null
   currentProjectionMode = 'video'
   lastSiteMonitorIds = []
+  lastVideoMonitorIds = []
   siteControlPanelOpen = false
   if (win && !win.isDestroyed()) {
     win.close()
@@ -1015,9 +1019,34 @@ function broadcastSiteTargetsChanged(ids) {
   }
 }
 
+function broadcastVideoTargetsChanged(ids) {
+  const payload = Array.isArray(ids) ? [...ids] : []
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue
+    try {
+      win.webContents.send('projection:video-targets-changed', payload)
+    } catch {
+      /* ignore */
+    }
+  }
+  if (controlBarView && !controlBarView.webContents.isDestroyed()) {
+    try {
+      controlBarView.webContents.send('projection:video-targets-changed', payload)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 /** @returns {number[]} */
 export function getSiteTargetMonitorIds() {
   return [...lastSiteMonitorIds]
+}
+
+function normalizeMonitorIds(ids, primaryId) {
+  return (Array.isArray(ids) ? ids : [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id !== primaryId)
 }
 
 /**
@@ -1027,8 +1056,7 @@ export function getSiteTargetMonitorIds() {
  */
 export function setSiteTargetMonitorIds(ids) {
   const primaryId = screen.getPrimaryDisplay().id
-  lastSiteMonitorIds = (Array.isArray(ids) ? ids : [])
-    .filter((id) => typeof id === 'number' && Number.isFinite(id) && id !== primaryId)
+  lastSiteMonitorIds = normalizeMonitorIds(ids, primaryId)
 
   broadcastSiteTargetsChanged(lastSiteMonitorIds)
 
@@ -1041,6 +1069,29 @@ export function setSiteTargetMonitorIds(ids) {
     if (loadUrl && loadUrl !== 'about:blank') {
       openSiteScreensOnTargets(loadUrl, resolveExtendedTargets(lastSiteMonitorIds))
     }
+  }
+
+  return true
+}
+
+/** @returns {number[]} */
+export function getVideoTargetMonitorIds() {
+  return [...lastVideoMonitorIds]
+}
+
+/**
+ * Atualiza monitores-alvo do vídeo e reaplica se já estiver projetando.
+ * @param {unknown} ids
+ * @returns {boolean}
+ */
+export function setVideoTargetMonitorIds(ids) {
+  const primaryId = screen.getPrimaryDisplay().id
+  lastVideoMonitorIds = normalizeMonitorIds(ids, primaryId)
+
+  broadcastVideoTargetsChanged(lastVideoMonitorIds)
+
+  if (isVideoProjectingToScreens()) {
+    openVideoScreensOnTargets(resolveExtendedTargets(lastVideoMonitorIds))
   }
 
   return true
@@ -1139,6 +1190,8 @@ export function openWebProjectionWindows(payload) {
 
   if (mode === 'site') {
     lastSiteMonitorIds = monitorIds
+  } else {
+    lastVideoMonitorIds = monitorIds
   }
 
   const title =
@@ -1177,6 +1230,14 @@ export function openWebProjectionWindows(payload) {
   return true
 }
 
+function openVideoScreensOnTargets(targets) {
+  closeMirrorWindowsOnly()
+  for (const display of targets) {
+    mirrorWindows.push(createMirrorWindow(display))
+  }
+  return targets.length > 0
+}
+
 /**
  * Liga/desliga a projeção do site nas telas estendidas a partir do controle.
  * @returns {boolean}
@@ -1198,9 +1259,34 @@ export function toggleSiteProjectionScreens() {
   return openSiteScreensOnTargets(loadUrl, targets)
 }
 
+/**
+ * Liga/desliga a projeção do vídeo nas telas estendidas a partir do controle.
+ * @returns {boolean}
+ */
+export function toggleVideoProjectionScreens() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return false
+  }
+
+  if (mirrorWindows.some((win) => !win.isDestroyed())) {
+    closeMirrorWindowsOnly()
+    return true
+  }
+
+  const targets = resolveExtendedTargets(lastVideoMonitorIds)
+  return openVideoScreensOnTargets(targets)
+}
+
 export function isSiteProjectingToScreens() {
   return (
     currentProjectionMode === 'site' &&
+    mirrorWindows.some((win) => !win.isDestroyed())
+  )
+}
+
+export function isVideoProjectingToScreens() {
+  return (
+    currentProjectionMode === 'video' &&
     mirrorWindows.some((win) => !win.isDestroyed())
   )
 }
@@ -1276,10 +1362,33 @@ const GET_PLAYBACK_STATE_SCRIPT = `
     document.querySelector('video.video-stream') ||
     document.querySelector('video');
   if (!video) return null;
+  const volume = Math.min(1, Math.max(0, Number(video.volume) || 0));
   return {
     paused: Boolean(video.paused),
     currentTime: Number(video.currentTime) || 0,
     duration: Number(video.duration) || 0,
+    muted: Boolean(video.muted) || volume === 0,
+    volume,
+  };
+})()
+`
+
+const REMOTE_TOGGLE_MUTE_SCRIPT = `
+(() => {
+  const video =
+    document.querySelector('video.html5-main-video') ||
+    document.querySelector('video.video-stream') ||
+    document.querySelector('video');
+  if (!video) return null;
+
+  const muteBtn = document.querySelector('button.ytp-mute-button');
+  if (muteBtn) muteBtn.click();
+  else video.muted = !video.muted;
+
+  const volume = Math.min(1, Math.max(0, Number(video.volume) || 0));
+  return {
+    muted: Boolean(video.muted) || volume === 0,
+    volume,
   };
 })()
 `
@@ -1354,16 +1463,69 @@ export async function remoteSeekSource(seconds) {
   }
 }
 
+/** Alterna mudo no popup — áudio só sai desta janela de controle. */
+export async function remoteToggleMuteSource() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return null
+  }
+  try {
+    return await sourceWindow.webContents.executeJavaScript(
+      REMOTE_TOGGLE_MUTE_SCRIPT,
+      true,
+    )
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Define o volume do vídeo no popup (0–1).
+ * @param {number} volume
+ */
+export async function remoteSetVolumeSource(volume) {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+    return null
+  }
+  const next = Math.min(1, Math.max(0, Number(volume)))
+  if (!Number.isFinite(next)) return null
+  try {
+    return await sourceWindow.webContents.executeJavaScript(
+      `(() => {
+        const video =
+          document.querySelector('video.html5-main-video') ||
+          document.querySelector('video.video-stream') ||
+          document.querySelector('video');
+        if (!video) return null;
+        const value = ${JSON.stringify(next)};
+        video.volume = value;
+        video.muted = value <= 0;
+        return {
+          muted: Boolean(video.muted) || value <= 0,
+          volume: Math.min(1, Math.max(0, Number(video.volume) || 0)),
+        };
+      })()`,
+      true,
+    )
+  } catch {
+    return null
+  }
+}
+
 /** Estado de playback do vídeo no popup (para a barra do operador). */
 export async function getSourcePlaybackState() {
   if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
     return null
   }
   try {
-    return await sourceWindow.webContents.executeJavaScript(
+    const state = await sourceWindow.webContents.executeJavaScript(
       GET_PLAYBACK_STATE_SCRIPT,
       true,
     )
+    if (!state || typeof state !== 'object') return null
+    return {
+      ...state,
+      projecting: isVideoProjectingToScreens(),
+    }
   } catch {
     return null
   }

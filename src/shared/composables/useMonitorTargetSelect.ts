@@ -8,10 +8,10 @@ import {
   loadProjectionSettings,
   reconcileTargetDisplays,
   saveProjectionSettings,
-  toggleTargetDisplay,
 } from '@modules/settings/services/projection-preferences'
 import type { SystemDisplay } from '@modules/settings/types/projection'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import { reapplyProjectionTargets } from '@shared/composables/useProjectionWindow'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 
 export type MonitorTargetOption = {
@@ -57,6 +57,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   const open = ref(false)
 
   let applyingRemote = false
+  let syncSeq = 0
   let unsubscribeTargets: (() => void) | undefined
 
   const optionsList = computed<MonitorTargetOption[]>(() => {
@@ -87,10 +88,31 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
     options.onUpdate?.(ids)
   }
 
-  function syncToMain(ids: number[]) {
+  async function syncToMain(ids: number[]) {
     if (applyingRemote) return
+    const seq = ++syncSeq
+    // Como no controle YouTube/site: snapshot local é a fonte da verdade.
+    const snapshot = ids
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id))
     const bridge = getDesktopBridge()
-    void bridge?.projection?.setSiteTargetMonitors?.(ids)
+
+    // Ignora ecos IPC da própria atualização (senão a seleção “volta”/some).
+    applyingRemote = true
+    try {
+      await bridge?.projection?.setSiteTargetMonitors?.(snapshot)
+      if (seq !== syncSeq) return
+      await bridge?.projection?.setVideoTargetMonitors?.(snapshot)
+      if (seq !== syncSeq) return
+      // Módulos Vue (mídia, bíblia…): reaplica nas telas — no-op se não houver projeção ativa.
+      await reapplyProjectionTargets(snapshot)
+    } finally {
+      if (seq === syncSeq) {
+        window.setTimeout(() => {
+          if (seq === syncSeq) applyingRemote = false
+        }, 0)
+      }
+    }
   }
 
   function allowedDisplayIds(nextDisplays: SystemDisplay[]): number[] {
@@ -128,10 +150,14 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   function applyRemoteIds(ids: number[]) {
+    if (applyingRemote) return
     const allowed = new Set(allowedDisplayIds(displays.value))
+    const normalized = ids
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id))
     const next = displays.value.length
-      ? ids.filter((id) => allowed.has(id))
-      : [...ids]
+      ? normalized.filter((id) => allowed.has(id))
+      : [...normalized]
     if (sameIds(selectedIds.value, next)) return
 
     applyingRemote = true
@@ -178,29 +204,14 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       })
     }
     emitUpdate([...selectedIds.value])
-    syncToMain([...selectedIds.value])
+    void syncToMain([...selectedIds.value])
   }
 
   function toggle(displayId: number) {
     const allowed = new Set(allowedDisplayIds(displays.value))
     if (!allowed.has(displayId)) return
 
-    if (persist) {
-      const settings = toggleTargetDisplay(loadProjectionSettings(), displayId)
-      const extendedIds = listExtendedDisplays(displays.value).map((item) => item.id)
-      const next = {
-        ...settings,
-        targetDisplayIds: settings.targetDisplayIds.filter((id) =>
-          extendedIds.includes(id),
-        ),
-      }
-      saveProjectionSettings(next)
-      selectedIds.value = [...next.targetDisplayIds]
-      emitUpdate([...selectedIds.value])
-      syncToMain([...selectedIds.value])
-      return
-    }
-
+    // Fonte da verdade: seleção atual na UI (evita corrida com settings/IPC).
     const next = selectedIds.value.includes(displayId)
       ? selectedIds.value.filter((id) => id !== displayId)
       : [...selectedIds.value, displayId]

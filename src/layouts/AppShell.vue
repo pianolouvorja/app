@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePageTransition } from '@design-system/composables'
 import { DockFooter, GradientBackground } from '@design-system/index'
 import type { DockNavItem } from '@design-system/types/navigation'
+import MediaChrome from '@modules/media/components/MediaChrome.vue'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 
@@ -21,6 +22,9 @@ const activeKey = computed(() => {
   const navKey = route.meta.navKey
   return typeof navKey === 'string' ? navKey : 'home'
 })
+
+/** Na liturgia o FAB de mídia fica na própria view (padrão Bíblia). */
+const showMediaChrome = computed(() => activeKey.value !== 'liturgy')
 
 const showHeaderLogo = computed(() => activeKey.value !== 'home')
 
@@ -83,6 +87,8 @@ function viewKey(viewRoute: typeof route) {
         </Transition>
       </RouterView>
     </main>
+
+    <MediaChrome v-if="showMediaChrome" />
 
     <DockFooter
       :items="navItems"

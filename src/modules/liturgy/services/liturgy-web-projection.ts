@@ -86,6 +86,17 @@ export async function openLiturgySiteControl(
   })
 }
 
+/** Popup de controle do vídeo online, sem projetar nas telas estendidas. */
+export async function openLiturgyVideoControl(
+  rawUrl: string,
+  title = '',
+): Promise<boolean> {
+  return openLiturgyWebOnConfiguredScreens(rawUrl, title, {
+    mode: 'video',
+    withScreens: false,
+  })
+}
+
 /** Popup de controle do site + espelho nas telas estendidas (zoom normal). */
 export async function openLiturgySiteOnScreens(
   rawUrl: string,

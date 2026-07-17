@@ -18,6 +18,44 @@ export function createLiturgyItemId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+/** Categoria preferida ao adicionar item (seleção atual ou última sessão). */
+export function resolvePreferredCategoryId(
+  items: LiturgyItem[],
+  selected: LiturgyItem | null | undefined,
+): string | null {
+  if (selected?.type === 'category') return selected.id
+  if (selected?.categoryId) return selected.categoryId
+
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index]
+    if (item?.type === 'category') return item.id
+  }
+  return null
+}
+
+/**
+ * Índice de inserção: imediatamente após o último filho da categoria
+ * (necessário para a timeline aninhar por sequência contígua).
+ */
+export function findCategoryInsertIndex(
+  items: LiturgyItem[],
+  categoryId: string,
+): number {
+  const categoryIndex = items.findIndex(
+    (item) => item.type === 'category' && item.id === categoryId,
+  )
+  if (categoryIndex < 0) return items.length
+
+  let insertAt = categoryIndex + 1
+  while (insertAt < items.length) {
+    const child = items[insertAt]
+    if (!child || child.type === 'category') break
+    if (child.categoryId !== categoryId) break
+    insertAt += 1
+  }
+  return insertAt
+}
+
 /** Copia itens com novos IDs, remapeando categoryId e limpando done. */
 export function cloneLiturgyItems(items: LiturgyItem[]): LiturgyItem[] {
   const idMap = new Map<string, string>()
@@ -114,11 +152,8 @@ export function isValidLiturgyUrl(raw: string): boolean {
 }
 
 export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
-  if (draft.type === 'music') {
-    if (draft.musicId == null) return false
-  } else if (draft.name.trim().length === 0) {
-    return false
-  }
+  if (draft.name.trim().length === 0) return false
+  if (draft.type === 'music' && draft.musicId == null) return false
   if (draft.type !== 'category' && !draft.categoryId) return false
   if (
     (draft.type === 'site' || draft.type === 'online_video') &&

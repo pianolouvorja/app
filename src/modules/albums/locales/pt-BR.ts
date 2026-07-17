@@ -1,0 +1,39 @@
+export default {
+  albums: {
+    title: 'Central de Mídia',
+    subtitle: 'Álbum & Coletâneas',
+    collectionFallback: 'Coletânea',
+    back: 'Voltar para álbuns',
+    searchPlaceholder: 'Digite o número ou nome do hino...',
+    hubSearchPlaceholder: 'Procure aqui...',
+    catalogSearchPlaceholder: 'Buscar álbum ou coletânea...',
+    searchResultsTitle: 'Resultados da Pesquisa',
+    clearSearch: 'Limpar busca',
+    columns: {
+      number: '#',
+      title: 'Título / Coletânea',
+      duration: 'Duração',
+      actions: 'Ações',
+    },
+    trackCount: '{count} faixas',
+    loading: 'Carregando…',
+    retry: 'Tentar novamente',
+    dismiss: 'Descartar',
+    lyric: {
+      title: 'Letra',
+      close: 'Fechar letra',
+    },
+    messages: {
+      catalogEmpty: 'Nenhuma coletânea encontrada no catálogo local.',
+      catalogFailed: 'Não foi possível carregar o catálogo de álbuns.',
+      catalogSearchEmpty: 'Nenhuma coletânea encontrada para essa busca.',
+      collectionMissing: 'Coletânea não encontrada.',
+      tracksEmpty: 'Nenhuma faixa nesta coletânea.',
+      tracksFailed: 'Não foi possível carregar as faixas.',
+      searchEmpty: 'Nenhuma música encontrada.',
+      lyricMissing: 'Letra indisponível para esta faixa.',
+      projectionFailed:
+        'Não foi possível abrir a projeção nas telas configuradas.',
+    },
+  },
+}

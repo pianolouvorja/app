@@ -23,6 +23,12 @@
   --ds-blur-default: 16px;
   --ds-blur-active: 16px;
   --ds-glass-fill: 66%;
+  --ds-spacing-1: 4px;
+  --ds-spacing-2: 8px;
+  --ds-spacing-3: 12px;
+  --ds-spacing-4: 16px;
+  --ds-spacing-5: 20px;
+  --ds-spacing-6: 24px;
   --ds-spacing-page: 32px;
   --ds-dock-height: 72px;
   --ds-font-family: 'Inter', system-ui, sans-serif;
@@ -39,6 +45,40 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/*
+ * Scrollbar global neutra.
+ * As cores são intencionalmente fixas para não variarem com tema ou destaque.
+ */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #7a7a7a #282828 !important;
+}
+
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 9999px !important;
+  background: #282828 !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 9999px !important;
+  background: #7a7a7a !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #929292 !important;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #282828 !important;
 }
 
 html,

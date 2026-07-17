@@ -38,4 +38,4 @@ export const accents = {
 export type AccentKey = keyof typeof accents
 export type AccentDefinition = (typeof accents)[AccentKey]
 
-export const defaultAccent: AccentKey = 'azure'
+export const defaultAccent: AccentKey = 'orange'

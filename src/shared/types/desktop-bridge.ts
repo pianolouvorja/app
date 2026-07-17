@@ -65,6 +65,11 @@ export type ProjectionPlaybackState = {
   paused: boolean
   currentTime: number
   duration: number
+  muted?: boolean
+  /** Volume do vídeo no popup (0–1). */
+  volume?: number
+  /** Telas estendidas espelhando o popup. */
+  projecting?: boolean
 }
 
 export type ProjectionNavigationState = {
@@ -82,16 +87,24 @@ export type ProjectionApi = {
   remotePlay?: () => Promise<boolean>
   remotePause?: () => Promise<boolean>
   remoteSeek?: (seconds: number) => Promise<boolean>
+  remoteToggleMute?: () => Promise<{ muted: boolean; volume?: number } | null>
+  remoteSetVolume?: (
+    volume: number,
+  ) => Promise<{ muted: boolean; volume: number } | null>
   getPlaybackState?: () => Promise<ProjectionPlaybackState | null>
   getNavigationState?: () => Promise<ProjectionNavigationState | null>
   remoteGoBack?: () => Promise<boolean>
   remoteGoForward?: () => Promise<boolean>
   remoteReload?: () => Promise<boolean>
   toggleSiteScreens?: () => Promise<boolean>
+  toggleVideoScreens?: () => Promise<boolean>
   getSiteTargetMonitors?: () => Promise<number[]>
   setSiteTargetMonitors?: (ids: number[]) => Promise<boolean>
+  getVideoTargetMonitors?: () => Promise<number[]>
+  setVideoTargetMonitors?: (ids: number[]) => Promise<boolean>
   setSiteControlPanelOpen?: (open: boolean) => Promise<boolean>
   onSiteTargetsChanged?: (callback: (ids: number[]) => void) => () => void
+  onVideoTargetsChanged?: (callback: (ids: number[]) => void) => () => void
 }
 
 export type LouvorJaBridge = {

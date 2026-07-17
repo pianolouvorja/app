@@ -4,7 +4,13 @@ import type { Router } from 'vue-router'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
-import { executeLiturgyItem, playLiturgyItemOnScreens } from '../services/liturgy-actions'
+import type { MediaPlaybackMode } from '@modules/media/types/media'
+
+import {
+  executeLiturgyItem,
+  openLiturgyMusicPlayer,
+  playLiturgyItemOnScreens,
+} from '../services/liturgy-actions'
 import {
   filterLiturgyMusicOptions,
   loadLiturgyBibleBooks,
@@ -16,6 +22,7 @@ import {
   cloneLiturgyItems,
   createLiturgyItemId,
   draftFromLiturgyItem,
+  findCategoryInsertIndex,
   isLiturgyItemDraftValid,
   reconcileMusicItemTitles,
 } from '../services/liturgy-item-helpers'
@@ -56,6 +63,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   const selectedDay = ref<LiturgyDayKey>(todayWeekday())
   const selectedCustomIndex = ref(0)
   const siteProjectionItemId = ref<string | null>(null)
+  const videoProjectionItemId = ref<string | null>(null)
   const selectedItemIndex = ref<number | null>(null)
 
   const musicList = ref<LiturgyMusicOption[]>([])
@@ -460,9 +468,17 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   function openAddDialog() {
     editingIndex.value = null
-    itemDraft.value = { ...DEFAULT_LITURGY_ITEM_DRAFT }
     musicSearchQuery.value = ''
+    itemDraft.value = { ...DEFAULT_LITURGY_ITEM_DRAFT }
     itemDialogOpen.value = true
+  }
+
+  function setItemDraft(draft: LiturgyItemDraft) {
+    itemDraft.value = draft
+  }
+
+  function setMusicSearchQuery(query: string) {
+    musicSearchQuery.value = query
   }
 
   function setItemType(type: LiturgyItemType) {
@@ -496,7 +512,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   function saveItemDraft() {
     if (!isDraftValid.value) return false
 
-    const item = buildLiturgyItemFromDraft(itemDraft.value, {
+    if (selectedDay.value === 'custom' && !currentCustom.value) {
+      lastActionMessageKey.value = 'liturgy.messages.customRequired'
+      return false
+    }
+
+    const draft = itemDraft.value
+    const item = buildLiturgyItemFromDraft(draft, {
       musicList: musicList.value,
       bibleBooks: bibleBooks.value,
       existingId:
@@ -511,27 +533,58 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     const next = [...currentItems.value]
     if (editingIndex.value != null) {
-      next.splice(editingIndex.value, 1, item)
+      if (item.type !== 'category' && item.categoryId) {
+        const without = next.filter((_, i) => i !== editingIndex.value)
+        const insertAt = findCategoryInsertIndex(without, item.categoryId)
+        without.splice(insertAt, 0, item)
+        currentItems.value = without
+      } else {
+        next.splice(editingIndex.value, 1, item)
+        currentItems.value = next
+      }
+    } else if (item.type !== 'category' && item.categoryId) {
+      const insertAt = findCategoryInsertIndex(next, item.categoryId)
+      next.splice(insertAt, 0, item)
+      currentItems.value = next
     } else {
       next.push(item)
+      currentItems.value = next
     }
-    currentItems.value = next
     closeItemDialog()
     return true
   }
 
   function removeItem(index: number) {
     if (deletionLocked.value) return
-    const next = currentItems.value.filter((_, i) => i !== index)
+    const target = currentItems.value[index]
+    if (!target) return
+
+    const removeIds = new Set<string>([target.id])
+    if (target.type === 'category') {
+      for (const item of currentItems.value) {
+        if (item.type !== 'category' && item.categoryId === target.id) {
+          removeIds.add(item.id)
+        }
+      }
+    }
+
+    const selected = selectedItemIndex.value
+    let removedBeforeSelected = 0
+    let selectedRemoved = false
+
+    const next = currentItems.value.filter((item, i) => {
+      if (!removeIds.has(item.id)) return true
+      if (selected != null && i < selected) removedBeforeSelected += 1
+      if (selected === i) selectedRemoved = true
+      return false
+    })
+
     currentItems.value = next
 
-    if (selectedItemIndex.value === index) {
+    if (selectedRemoved) {
       selectedItemIndex.value = null
-    } else if (
-      selectedItemIndex.value != null &&
-      selectedItemIndex.value > index
-    ) {
-      selectedItemIndex.value -= 1
+    } else if (selected != null && removedBeforeSelected > 0) {
+      selectedItemIndex.value = selected - removedBeforeSelected
     }
   }
 
@@ -623,10 +676,10 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     }
   }
 
-  async function selectItem(index: number, router: Router) {
+  function markItemStarted(index: number) {
     selectedItemIndex.value = index
     const item = currentItems.value[index]
-    if (!item) return
+    if (!item) return null
 
     if (!currentStartTime.value) {
       const now = new Date()
@@ -636,20 +689,45 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       sessionStartedAt.value = Date.now()
     }
 
-    if (!item.done) {
-      currentItems.value = currentItems.value.map((entry, i) =>
-        i === index ? { ...entry, done: true } : entry,
-      )
+    return item
+  }
+
+  async function selectItem(index: number, router: Router) {
+    const item = markItemStarted(index)
+    if (!item) return
+
+    const result = await executeLiturgyItem(item, router)
+    if (item.type === 'site') {
+      siteProjectionItemId.value = null
+    } else if (item.type === 'online_video') {
+      videoProjectionItemId.value = null
+    }
+    lastActionMessageKey.value = result.messageKey ?? null
+  }
+
+  /**
+   * Controles do álbum/hinário na linha de música:
+   * cantado, instrumental ou slides sem áudio (abre /media).
+   */
+  async function playMusicMode(
+    index: number,
+    mode: MediaPlaybackMode,
+    router: Router,
+  ) {
+    const item = markItemStarted(index)
+    if (!item || item.type !== 'music') {
+      lastActionMessageKey.value = 'liturgy.messages.catalogEmpty'
+      return false
     }
 
-    const result = await executeLiturgyItem(
-      currentItems.value[index] ?? item,
-      router,
-    )
-    if (item.type === 'site' || item.type === 'online_video') {
-      siteProjectionItemId.value = null
-    }
-    lastActionMessageKey.value = result.ok ? null : result.messageKey
+    const result = await openLiturgyMusicPlayer(item, mode, {
+      project: mode === 'no_audio',
+    })
+    lastActionMessageKey.value = result.messageKey ?? null
+    if (!result.ok) return false
+
+    await router.push({ name: 'media' })
+    return true
   }
 
   /** Play nas telas estendidas (abre controle se preciso e dispara play). */
@@ -681,13 +759,30 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
       // Controle fechado: abre controle + projeção.
       siteProjectionItemId.value = item.id
+    } else if (item.type === 'online_video') {
+      const projection = getDesktopBridge()?.projection
+      // Controle já aberto: apenas liga/desliga as telas.
+      const state = await projection?.getPlaybackState?.()
+      if (state) {
+        const toggled = await projection?.toggleVideoScreens?.()
+        if (toggled) {
+          videoProjectionItemId.value = state.projecting ? null : item.id
+          lastActionMessageKey.value = null
+          return
+        }
+      }
+
+      // Controle fechado: abre controle + projeção.
+      videoProjectionItemId.value = item.id
     }
 
     const result = await playLiturgyItemOnScreens(item)
     if (!result.ok && item.type === 'site') {
       siteProjectionItemId.value = null
+    } else if (!result.ok && item.type === 'online_video') {
+      videoProjectionItemId.value = null
     }
-    lastActionMessageKey.value = result.ok ? null : result.messageKey
+    lastActionMessageKey.value = result.messageKey ?? null
   }
 
   /**
@@ -696,38 +791,55 @@ export const useLiturgyStore = defineStore('liturgy', () => {
    */
   async function syncSiteProjectionState() {
     const projection = getDesktopBridge()?.projection
-    if (!projection?.getNavigationState) return
+    if (!projection) return
 
-    const state = await projection.getNavigationState()
-    if (!state) {
+    const [siteState, videoState] = await Promise.all([
+      projection.getNavigationState?.() ?? null,
+      projection.getPlaybackState?.() ?? null,
+    ])
+
+    if (!siteState) {
       if (siteProjectionItemId.value != null) {
         siteProjectionItemId.value = null
       }
-      return
-    }
-
-    if (state.projecting) {
-      if (siteProjectionItemId.value != null) return
-
-      const selected =
-        selectedItemIndex.value != null
-          ? currentItems.value[selectedItemIndex.value]
-          : null
-      if (selected?.type === 'site') {
-        siteProjectionItemId.value = selected.id
-        return
+    } else if (siteState.projecting) {
+      if (siteProjectionItemId.value == null) {
+        const selected =
+          selectedItemIndex.value != null
+            ? currentItems.value[selectedItemIndex.value]
+            : null
+        const siteItem =
+          selected?.type === 'site'
+            ? selected
+            : currentItems.value.find((entry) => entry.type === 'site')
+        if (siteItem) {
+          siteProjectionItemId.value = siteItem.id
+        }
       }
-
-      const siteItem = currentItems.value.find((entry) => entry.type === 'site')
-      if (siteItem) {
-        siteProjectionItemId.value = siteItem.id
-      }
-      return
-    }
-
-    if (siteProjectionItemId.value != null) {
+    } else if (siteProjectionItemId.value != null) {
       siteProjectionItemId.value = null
     }
+
+    if (!videoState?.projecting) {
+      if (videoProjectionItemId.value != null) {
+        videoProjectionItemId.value = null
+      }
+      return
+    }
+
+    if (videoProjectionItemId.value != null) return
+    const selected =
+      selectedItemIndex.value != null
+        ? currentItems.value[selectedItemIndex.value]
+        : null
+    if (selected?.type === 'online_video') {
+      videoProjectionItemId.value = selected.id
+      return
+    }
+    const videoItem = currentItems.value.find(
+      (entry) => entry.type === 'online_video',
+    )
+    if (videoItem) videoProjectionItemId.value = videoItem.id
   }
 
   function openCustomDialog() {
@@ -873,6 +985,10 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey.value = null
   }
 
+  function setActionMessage(messageKey: string | null) {
+    lastActionMessageKey.value = messageKey
+  }
+
   function setNotes(value: string) {
     currentNotes.value = value
   }
@@ -885,6 +1001,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     selectedDay,
     selectedCustomIndex,
     siteProjectionItemId,
+    videoProjectionItemId,
     selectedItemIndex,
     musicList,
     bibleBooks,
@@ -929,6 +1046,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     startCountdown,
     stopCountdown,
     openAddDialog,
+    setItemDraft,
+    setMusicSearchQuery,
     setItemType,
     openEditDialog,
     closeItemDialog,
@@ -939,6 +1058,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     toggleItemDone,
     reorderItems,
     selectItem,
+    playMusicMode,
     playItemOnScreens,
     syncSiteProjectionState,
     openCustomDialog,
@@ -952,6 +1072,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     clearMusicPick,
     onBookPick,
     clearActionMessage,
+    setActionMessage,
     setNotes,
   }
 })

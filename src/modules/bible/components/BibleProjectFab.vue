@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
 defineProps<{
   disabled?: boolean
   projecting?: boolean
@@ -21,21 +23,28 @@ function onClick(projecting: boolean, disabled: boolean) {
 </script>
 
 <template>
-  <button
-    type="button"
-    class="bible-project-fab"
-    :class="{ 'bible-project-fab--active': projecting }"
-    :disabled="disabled && !projecting"
-    :aria-label="projecting ? t('bible.clearProjection') : t('bible.project')"
-    :title="projecting ? t('bible.clearProjection') : t('bible.project')"
-    @click="onClick(Boolean(projecting), Boolean(disabled))"
-  >
-    <i
-      class="mdi"
-      :class="projecting ? 'mdi-stop' : 'mdi-play'"
-      aria-hidden="true"
+  <div class="bible-project-fab">
+    <MonitorTargetSelect
+      class="bible-project-fab__monitors"
+      dense
+      persist
     />
-  </button>
+    <button
+      type="button"
+      class="bible-project-fab__btn"
+      :class="{ 'bible-project-fab__btn--active': projecting }"
+      :disabled="disabled && !projecting"
+      :aria-label="projecting ? t('bible.clearProjection') : t('bible.project')"
+      :title="projecting ? t('bible.clearProjection') : t('bible.project')"
+      @click="onClick(Boolean(projecting), Boolean(disabled))"
+    >
+      <i
+        class="mdi"
+        :class="projecting ? 'mdi-stop' : 'mdi-play'"
+        aria-hidden="true"
+      />
+    </button>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -44,6 +53,12 @@ function onClick(projecting: boolean, disabled: boolean) {
   right: 2rem;
   bottom: calc(var(--ds-dock-height, 5.5rem) + 1.25rem);
   z-index: 35;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.bible-project-fab__btn {
   width: 4rem;
   height: 4rem;
   border: 4px solid color-mix(in srgb, #fff 20%, transparent);

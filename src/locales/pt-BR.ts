@@ -18,7 +18,7 @@ export default {
   },
   nav: {
     home: 'Início',
-    albums: 'Álbuns',
+    albums: 'Central de Mídia',
     liturgy: 'Liturgia',
     library: 'Biblioteca',
     bible: 'Bíblia',

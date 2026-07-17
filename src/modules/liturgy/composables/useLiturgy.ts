@@ -1,7 +1,10 @@
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+
+import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
+import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import { formatMomentDuration } from '../services/liturgy-item-helpers'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
@@ -11,6 +14,7 @@ import { useLiturgyClock } from './useLiturgyClock'
 /** Orquestra a feature de liturgia na view. */
 export function useLiturgy() {
   const store = useLiturgyStore()
+  const albumsStore = useAlbumsStore()
   const router = useRouter()
   const { t } = useI18n()
 
@@ -19,6 +23,7 @@ export function useLiturgy() {
     selectedCustomIndex,
     selectedItemIndex,
     siteProjectionItemId,
+    videoProjectionItemId,
     customLiturgies,
     lastActionMessageKey,
     itemDialogOpen,
@@ -47,7 +52,20 @@ export function useLiturgy() {
     filteredMusic,
     selectedMusic,
     musicCatalogEmpty,
+    musicList,
   } = storeToRefs(store)
+
+  const { lyricOpen, lyricDoc, isLoadingLyric } = storeToRefs(albumsStore)
+
+  const busyMusicId = ref<number | null>(null)
+
+  const musicInstrumentalById = computed(() => {
+    const map: Record<number, boolean> = {}
+    for (const entry of musicList.value) {
+      map[entry.id] = entry.hasInstrumental
+    }
+    return map
+  })
 
   const clock = useLiturgyClock(
     () => currentStartTime.value,
@@ -98,7 +116,12 @@ export function useLiturgy() {
 
   function confirmRemoveItem(index: number) {
     if (deletionLocked.value) return
-    if (!window.confirm(t('liturgy.messages.confirmDelete'))) return
+    const item = currentItems.value[index]
+    const message =
+      item?.type === 'category'
+        ? t('liturgy.messages.confirmDeleteCategory')
+        : t('liturgy.messages.confirmDelete')
+    if (!window.confirm(message)) return
     store.removeItem(index)
   }
 
@@ -128,6 +151,58 @@ export function useLiturgy() {
     window.alert(t('liturgy.team.comingSoon'))
   }
 
+  async function runMusicAction(
+    index: number,
+    action: () => Promise<boolean | void>,
+  ) {
+    const item = currentItems.value[index]
+    const musicId =
+      item?.type === 'music' && item.musicId != null ? item.musicId : null
+    busyMusicId.value = musicId
+    try {
+      await action()
+    } finally {
+      busyMusicId.value = null
+    }
+  }
+
+  function onMusicSung(index: number) {
+    albumsStore.closeLyric()
+    void runMusicAction(index, () =>
+      store.playMusicMode(index, 'audio', router),
+    )
+  }
+
+  function onMusicInstrumental(index: number) {
+    albumsStore.closeLyric()
+    void runMusicAction(index, () =>
+      store.playMusicMode(index, 'instrumental', router),
+    )
+  }
+
+  function onMusicSlides(index: number) {
+    albumsStore.closeLyric()
+    void runMusicAction(index, () =>
+      store.playMusicMode(index, 'no_audio' satisfies MediaPlaybackMode, router),
+    )
+  }
+
+  function onOpenAddDialog() {
+    albumsStore.closeLyric()
+    store.openAddDialog()
+  }
+
+  function onOpenEditDialog(index: number) {
+    albumsStore.closeLyric()
+    store.openEditDialog(index)
+  }
+
+  function onMusicLyric(index: number) {
+    const item = currentItems.value[index]
+    if (item?.type !== 'music' || item.musicId == null) return
+    void runMusicAction(index, () => albumsStore.openLyric(item.musicId!))
+  }
+
   return {
     selectedDay,
     selectedCustomIndex,
@@ -149,6 +224,11 @@ export function useLiturgy() {
     filteredMusic,
     selectedMusic,
     musicCatalogEmpty,
+    musicInstrumentalById,
+    busyMusicId,
+    lyricOpen,
+    lyricDoc,
+    isLoadingLyric,
     startLabels,
     durationLabels,
     worshipLabel,
@@ -164,6 +244,7 @@ export function useLiturgy() {
     cloneSourceKey,
     cloneSources,
     deletionLocked,
+    videoProjectionItemId,
     selectDay: onSelectDay,
     selectCustomLiturgy: store.selectCustomLiturgy,
     setSessionStartFromInput: store.setSessionStartFromInput,
@@ -172,10 +253,12 @@ export function useLiturgy() {
     clearSessionEnd: store.clearSessionEnd,
     startCountdown: store.startCountdown,
     stopCountdown: store.stopCountdown,
-    openAddDialog: store.openAddDialog,
-    openEditDialog: store.openEditDialog,
+    openAddDialog: onOpenAddDialog,
+    openEditDialog: onOpenEditDialog,
     closeItemDialog: store.closeItemDialog,
     saveItemDraft: store.saveItemDraft,
+    setItemDraft: store.setItemDraft,
+    setMusicSearchQuery: store.setMusicSearchQuery,
     confirmRemoveItem,
     confirmClearLiturgy,
     reorderItems: store.reorderItems,
@@ -191,9 +274,15 @@ export function useLiturgy() {
     cloneLiturgyFromSelected: store.cloneLiturgyFromSelected,
     toggleDeletionLock: store.toggleDeletionLock,
     clearActionMessage: store.clearActionMessage,
+    setActionMessage: store.setActionMessage,
     setNotes: store.setNotes,
     onManageTeam,
     onMusicPick: store.onMusicPick,
     clearMusicPick: store.clearMusicPick,
+    onMusicSung,
+    onMusicInstrumental,
+    onMusicSlides,
+    onMusicLyric,
+    closeLyric: albumsStore.closeLyric,
   }
 }

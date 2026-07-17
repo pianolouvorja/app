@@ -1,0 +1,48 @@
+export default {
+  media: {
+    title: 'Player',
+    empty: 'Nenhuma música em reprodução. Abra uma faixa pelos álbuns ou pela liturgia.',
+    play: 'Reproduzir',
+    pause: 'Pausar',
+    project: 'Projetar slides',
+    clearProjection: 'Encerrar projeção',
+    maximize: 'Abrir player',
+    minimize: 'Minimizar',
+    close: 'Fechar',
+    seek: 'Posição da faixa',
+    volume: 'Volume',
+    audioType: 'Tipo de áudio',
+    fullscreen: 'Tela cheia',
+    previousSlide: 'Anterior',
+    nextSlide: 'Próxima',
+    slideOf: 'Slide {current} de {total}',
+    coverSlide: 'Capa / título',
+    playlist: 'Lista de slides',
+    dismiss: 'Dispensar',
+    closeConfirmTitle: 'Deseja fechar essa música?',
+    closeConfirmYes: 'Sim',
+    closeConfirmNo: 'Não',
+    actions: {
+      sung: 'Cantado',
+      instrumental: 'Playback',
+      slides: 'Sem áudio',
+      lyric: 'Letra',
+    },
+    modes: {
+      sung: 'Cantado',
+      instrumental: 'Playback',
+      noAudio: 'Sem áudio',
+    },
+    messages: {
+      trackMissing: 'Não foi possível carregar esta música no catálogo local.',
+      audioMissing: 'Esta faixa não possui áudio disponível para o modo selecionado.',
+      notDownloaded:
+        'Essa coletânea ainda não foi baixada. Acesse a Biblioteca Local para baixá-la.',
+      slidesOnlyNotDownloaded:
+        'Áudio indisponível (coletânea não baixada). Projetando apenas os slides.',
+      slidesOnlyNoAudio:
+        'Áudio indisponível para esta faixa. Projetando apenas os slides.',
+      playbackFailed: 'Não foi possível iniciar a reprodução do áudio.',
+    },
+  },
+}

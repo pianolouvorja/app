@@ -47,6 +47,7 @@ const isMusic = computed(() => props.draft.type === 'music')
 const musicRequiredMissing = computed(
   () => isMusic.value && props.draft.musicId == null,
 )
+const nameRequiredMissing = computed(() => props.draft.name.trim().length === 0)
 const categoryRequiredMissing = computed(
   () => !isCategory.value && !props.draft.categoryId,
 )
@@ -65,6 +66,9 @@ const urlRequiredMissing = computed(
   () => showUrl.value && !isValidLiturgyUrl(props.draft.url),
 )
 
+const nameFieldError = computed(
+  () => showValidation.value && nameRequiredMissing.value,
+)
 const musicFieldError = computed(
   () => showValidation.value && musicRequiredMissing.value,
 )
@@ -146,7 +150,7 @@ function selectType(type: LiturgyItemType) {
           ? props.draft.durationMs
           : DEFAULT_MOMENT_DURATION_MS
     }
-    next.categoryId = props.draft.categoryId
+    next.categoryId = props.draft.categoryId ?? null
   }
   if (type !== 'music') {
     next.musicId = null
@@ -207,6 +211,10 @@ function onSubmit(event: Event) {
   event.preventDefault()
   if (!props.isValid) {
     showValidation.value = true
+    if (nameRequiredMissing.value) {
+      const input = document.getElementById('moment-name') as HTMLInputElement | null
+      input?.focus()
+    }
     return
   }
   showValidation.value = false
@@ -473,17 +481,25 @@ function isLightDot(hex: string): boolean {
               </p>
               <label
                 class="moment-dialog__label"
+                :class="{ 'moment-dialog__label--error': nameFieldError }"
                 for="moment-name"
               >
                 {{ momentNameLabel }}
+                <span
+                  class="moment-dialog__required"
+                  aria-hidden="true"
+                >*</span>
               </label>
               <input
                 id="moment-name"
                 class="moment-dialog__input"
+                :class="{ 'moment-dialog__input--error': nameFieldError }"
                 type="text"
                 :value="draft.name"
                 :placeholder="momentNamePlaceholder"
                 :list="isMusic ? 'moment-complementary-titles' : undefined"
+                :aria-invalid="nameFieldError"
+                :aria-required="true"
                 autocomplete="off"
                 @input="onNameInput"
               >
@@ -640,7 +656,7 @@ function isLightDot(hex: string): boolean {
 .moment-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 120;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1168,24 +1184,21 @@ function isLightDot(hex: string): boolean {
   padding: 0.4rem 1rem;
   border: 0;
   border-radius: 0.6rem;
-  background: linear-gradient(
-    90deg,
-    var(--ds-color-primary, #9ecaff),
-    var(--ds-color-brand-blue-alt, #0097d7),
-    var(--ds-color-secondary, #78d6d2)
-  );
-  color: var(--ds-color-on-primary-container, #002c4f);
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary);
   font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 4px 16px color-mix(in srgb, #2196f3 22%, transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
   transition:
     box-shadow 180ms ease,
     transform 140ms ease;
 
   &:hover:not(:disabled) {
-    box-shadow: 0 6px 20px color-mix(in srgb, #2196f3 35%, transparent);
+    box-shadow: 0 6px 20px
+      color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
     transform: translateY(-1px);
   }
 

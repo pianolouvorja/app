@@ -2,7 +2,7 @@ export default {
   liturgy: {
     title: 'Liturgia do Culto',
     subtitle: 'Organização do culto',
-    worshipOf: 'Culto de {day}',
+    worshipOf: 'Programação de {day}',
     addItem: 'Adicionar item',
     addItemToLiturgy: 'Adicionar item à liturgia',
     clearLiturgy: 'Apagar liturgia',
@@ -72,7 +72,7 @@ export default {
       custom: 'Avulsa',
     },
     types: {
-      category: 'Categoria/Sessão',
+      category: 'Categoria/Separador',
       music: 'Música',
       annotation: 'Anotações',
       notice: 'Aviso',
@@ -119,7 +119,7 @@ export default {
       categoryMomentName: 'Nome do momento da programação',
       categoryField: 'Categoria',
       categoryPlaceholder: 'Selecione uma categoria',
-      categoryEmpty: 'Crie uma Categoria/Sessão antes de adicionar outros itens.',
+      categoryEmpty: 'Crie uma Categoria/Separador antes de adicionar outros itens.',
       notesTitle: 'Anotações e Detalhes',
       notesPlaceholder: 'Informações adicionais relevantes para a programação',
       urlInvalid: 'Informe um link válido (ex.: https://youtube.com/...)',
@@ -175,8 +175,11 @@ export default {
       play: 'Reproduzir',
       openControl: 'Abrir controle (popup)',
       openSiteControl: 'Abrir controle do site',
+      openVideoControl: 'Abrir controle do YouTube',
       projectSiteOnScreens: 'Projetar site nas telas estendidas',
       stopSiteProjection: 'Parar projeção do site',
+      projectVideoOnScreens: 'Projetar vídeo nas telas estendidas',
+      stopVideoProjection: 'Parar projeção do vídeo',
       playOnScreens: 'Play nas telas estendidas',
       open: 'Abrir',
       newLiturgy: 'Nova liturgia',
@@ -192,14 +195,16 @@ export default {
     },
     messages: {
       confirmDelete: 'Deseja remover este item da liturgia?',
+      confirmDeleteCategory:
+        'Deseja remover esta categoria/separador e todos os itens relacionados?',
       confirmClear: 'Deseja apagar toda a liturgia deste dia?',
       confirmDeleteCustom: 'Deseja remover a liturgia “{name}”?',
       itemAdded: 'Item adicionado com sucesso.',
       liturgySaved: 'Liturgia salva com sucesso.',
-      musicUnavailable:
-        'O reprodutor de músicas ainda não está disponível neste app.',
       mediaDesktopOnly: 'Informe o caminho do arquivo de mídia.',
       catalogEmpty: 'Nenhuma música encontrada no catálogo local.',
+      customRequired:
+        'Crie ou selecione uma liturgia personalizada antes de adicionar itens.',
       booksEmpty: 'Nenhum livro bíblico disponível. Conclua a inicialização.',
       urlMissing: 'Informe um link válido neste item.',
       urlInvalid: 'O link informado não é válido para projeção.',

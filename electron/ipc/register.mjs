@@ -17,6 +17,7 @@ import {
   getSourceMediaIdFor,
   getSourceNavigationState,
   getSourcePlaybackState,
+  getVideoTargetMonitorIds,
   openWebProjectionWindows,
   registerProjectionCapturePermissions,
   remoteGoBackSource,
@@ -25,10 +26,14 @@ import {
   remotePlaySource,
   remoteReloadSource,
   remoteSeekSource,
+  remoteSetVolumeSource,
+  remoteToggleMuteSource,
   setSiteControlPanelOpen,
   setSiteTargetMonitorIds,
   getSiteTargetMonitorIds,
+  setVideoTargetMonitorIds,
   toggleSiteProjectionScreens,
+  toggleVideoProjectionScreens,
 } from './web-projection.mjs'
 
 export function registerWorkspaceIpc() {
@@ -98,6 +103,24 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  ipcMain.handle('projection:remote-toggle-mute', async () => {
+    try {
+      return await remoteToggleMuteSource()
+    } catch (error) {
+      console.error('[ipc] projection:remote-toggle-mute', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-set-volume', async (_event, volume) => {
+    try {
+      return await remoteSetVolumeSource(volume)
+    } catch (error) {
+      console.error('[ipc] projection:remote-set-volume', error)
+      return null
+    }
+  })
+
   ipcMain.handle('projection:get-playback-state', async () => {
     try {
       return await getSourcePlaybackState()
@@ -152,6 +175,15 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  ipcMain.handle('projection:toggle-video-screens', () => {
+    try {
+      return toggleVideoProjectionScreens()
+    } catch (error) {
+      console.error('[ipc] projection:toggle-video-screens', error)
+      return false
+    }
+  })
+
   ipcMain.handle('projection:get-site-target-monitors', () => {
     try {
       return getSiteTargetMonitorIds()
@@ -166,6 +198,24 @@ export function registerWorkspaceIpc() {
       return setSiteTargetMonitorIds(ids)
     } catch (error) {
       console.error('[ipc] projection:set-site-target-monitors', error)
+      return false
+    }
+  })
+
+  ipcMain.handle('projection:get-video-target-monitors', () => {
+    try {
+      return getVideoTargetMonitorIds()
+    } catch (error) {
+      console.error('[ipc] projection:get-video-target-monitors', error)
+      return []
+    }
+  })
+
+  ipcMain.handle('projection:set-video-target-monitors', (_event, ids) => {
+    try {
+      return setVideoTargetMonitorIds(ids)
+    } catch (error) {
+      console.error('[ipc] projection:set-video-target-monitors', error)
       return false
     }
   })

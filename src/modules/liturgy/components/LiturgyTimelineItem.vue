@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 
 import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
@@ -12,6 +13,7 @@ const props = defineProps<{
   index: number
   selected: boolean
   siteProjecting?: boolean
+  videoProjecting?: boolean
   startLabel: string
   durationLabel: string
   linked?: boolean
@@ -30,6 +32,10 @@ const props = defineProps<{
   isDragSource?: boolean
   /** Cadeado ativo: oculta edição e exclusão unitária. */
   deletionLocked?: boolean
+  /** True quando o catálogo indica faixa instrumental. */
+  hasInstrumental?: boolean
+  /** Ação de música em andamento. */
+  musicBusy?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +45,10 @@ const emit = defineEmits<{
   remove: []
   toggleDone: []
   toggleCollapse: []
+  musicSung: []
+  musicInstrumental: []
+  musicSlides: []
+  musicLyric: []
   dragStart: [index: number]
   dragEnd: []
   drop: [index: number]
@@ -51,9 +61,11 @@ let dragGhostEl: HTMLElement | null = null
 const isCategory = computed(() => props.item.type === 'category')
 const isLinked = computed(() => Boolean(props.linked))
 const executable = computed(() => isExecutableItem(props.item))
+const isMusicItem = computed(
+  () => props.item.type === 'music' && props.item.musicId != null,
+)
 const isStreamVideo = computed(() => props.item.type === 'online_video')
 const isSiteItem = computed(() => props.item.type === 'site')
-const canPlayOnScreens = computed(() => isStreamVideo.value)
 const isDimmed = computed(
   () => Boolean(props.reorderActive) && !props.isDragSource,
 )
@@ -190,11 +202,12 @@ function onHandleDragEnd() {
           class="liturgy-item__drag"
           role="button"
           tabindex="0"
-          draggable="true"
+          :draggable="!item.done"
           :title="t('liturgy.actions.reorder')"
           :aria-label="t('liturgy.actions.reorder')"
+          :aria-disabled="item.done"
           @click.stop
-          @dragstart.stop="onHandleDragStart"
+          @dragstart.stop="!item.done && onHandleDragStart($event)"
           @dragend="onHandleDragEnd"
         >
           <i
@@ -286,7 +299,8 @@ function onHandleDragEnd() {
         <div
           class="liturgy-item__actions"
           :class="{
-            'liturgy-item__actions--visible': isCategory || isStreamVideo || isSiteItem,
+            'liturgy-item__actions--visible':
+              isCategory || isStreamVideo || isSiteItem || isMusicItem,
           }"
           @click.stop
         >
@@ -297,6 +311,7 @@ function onHandleDragEnd() {
             :title="collapseLabel"
             :aria-label="collapseLabel"
             :aria-expanded="!collapsed"
+            :disabled="item.done"
             @click="emit('toggleCollapse')"
           >
             <i
@@ -305,13 +320,36 @@ function onHandleDragEnd() {
               aria-hidden="true"
             />
           </button>
+          <MonitorTargetSelect
+            v-if="!isCategory && (isSiteItem || isStreamVideo || isMusicItem)"
+            dense
+            persist
+            :disabled="item.done"
+          />
+          <MusicTrackActions
+            v-if="isMusicItem && item.musicId != null"
+            :has-instrumental="Boolean(hasInstrumental)"
+            :busy="Boolean(musicBusy || item.done)"
+            variant="contained"
+            @sung="emit('musicSung')"
+            @instrumental="emit('musicInstrumental')"
+            @slides="emit('musicSlides')"
+            @lyric="emit('musicLyric')"
+          />
           <button
-            v-if="!isCategory && !isStreamVideo && !isSiteItem && (executable || selected)"
+            v-if="
+              !isCategory &&
+                !isMusicItem &&
+                !isStreamVideo &&
+                !isSiteItem &&
+                (executable || selected)
+            "
             type="button"
             class="liturgy-item__action"
             :class="{ 'liturgy-item__action--primary': selected }"
             :title="t('liturgy.actions.openControl')"
             :aria-label="t('liturgy.actions.openControl')"
+            :disabled="item.done"
             @click.stop="emit('select')"
           >
             <i
@@ -319,17 +357,21 @@ function onHandleDragEnd() {
               aria-hidden="true"
             />
           </button>
-          <MonitorTargetSelect
-            v-if="!isCategory && isSiteItem"
-            dense
-            persist
-          />
           <button
-            v-if="!isCategory && isSiteItem"
+            v-if="!isCategory && (isSiteItem || isStreamVideo)"
             type="button"
             class="liturgy-item__action liturgy-item__action--site-control"
-            :title="t('liturgy.actions.openSiteControl')"
-            :aria-label="t('liturgy.actions.openSiteControl')"
+            :title="
+              isStreamVideo
+                ? t('liturgy.actions.openVideoControl')
+                : t('liturgy.actions.openSiteControl')
+            "
+            :aria-label="
+              isStreamVideo
+                ? t('liturgy.actions.openVideoControl')
+                : t('liturgy.actions.openSiteControl')
+            "
+            :disabled="item.done"
             @click.stop="emit('select')"
           >
             <i
@@ -338,50 +380,42 @@ function onHandleDragEnd() {
             />
           </button>
           <button
-            v-if="!isCategory && isSiteItem"
+            v-if="!isCategory && (isSiteItem || isStreamVideo)"
             type="button"
             class="liturgy-item__action liturgy-item__action--site-project"
             :class="{
-              'liturgy-item__action--site-projecting': siteProjecting,
+              'liturgy-item__action--site-projecting':
+                !item.done && (isSiteItem ? siteProjecting : videoProjecting),
             }"
             :title="
-              siteProjecting
-                ? t('liturgy.actions.stopSiteProjection')
-                : t('liturgy.actions.projectSiteOnScreens')
+              isSiteItem
+                ? siteProjecting
+                  ? t('liturgy.actions.stopSiteProjection')
+                  : t('liturgy.actions.projectSiteOnScreens')
+                : videoProjecting
+                  ? t('liturgy.actions.stopVideoProjection')
+                  : t('liturgy.actions.projectVideoOnScreens')
             "
             :aria-label="
-              siteProjecting
-                ? t('liturgy.actions.stopSiteProjection')
-                : t('liturgy.actions.projectSiteOnScreens')
+              isSiteItem
+                ? siteProjecting
+                  ? t('liturgy.actions.stopSiteProjection')
+                  : t('liturgy.actions.projectSiteOnScreens')
+                : videoProjecting
+                  ? t('liturgy.actions.stopVideoProjection')
+                  : t('liturgy.actions.projectVideoOnScreens')
             "
-            :aria-pressed="siteProjecting"
+            :aria-pressed="isSiteItem ? siteProjecting : videoProjecting"
+            :disabled="item.done"
             @click.stop="emit('playScreens')"
           >
             <i
               class="mdi"
-              :class="siteProjecting ? 'mdi-stop' : 'mdi-arrow-top-right'"
-              aria-hidden="true"
-            />
-          </button>
-          <button
-            v-if="!isCategory && canPlayOnScreens"
-            type="button"
-            class="liturgy-item__action liturgy-item__action--screens"
-            :class="{ 'liturgy-item__action--screens-highlight': isStreamVideo }"
-            :title="
-              isStreamVideo
-                ? t('liturgy.actions.openControl')
-                : t('liturgy.actions.playOnScreens')
-            "
-            :aria-label="
-              isStreamVideo
-                ? t('liturgy.actions.openControl')
-                : t('liturgy.actions.playOnScreens')
-            "
-            @click.stop="emit('select')"
-          >
-            <i
-              class="mdi mdi-television-play"
+              :class="
+                (isSiteItem ? siteProjecting : videoProjecting)
+                  ? 'mdi-stop'
+                  : 'mdi-arrow-top-right'
+              "
               aria-hidden="true"
             />
           </button>
@@ -391,6 +425,7 @@ function onHandleDragEnd() {
             class="liturgy-item__action"
             :title="t('liturgy.actions.edit')"
             :aria-label="t('liturgy.actions.edit')"
+            :disabled="item.done"
             @click="emit('edit')"
           >
             <i
@@ -404,6 +439,7 @@ function onHandleDragEnd() {
             class="liturgy-item__action liturgy-item__action--danger"
             :title="t('liturgy.actions.delete')"
             :aria-label="t('liturgy.actions.delete')"
+            :disabled="item.done"
             @click="emit('remove')"
           >
             <i
@@ -896,13 +932,10 @@ function onHandleDragEnd() {
     opacity: 1;
   }
 
-  .liturgy-item--done & {
-    opacity: 0.55;
-  }
-
+  .liturgy-item--done &,
   .liturgy-item--done:hover &,
   .liturgy-item--done &--visible {
-    opacity: 0.85;
+    opacity: 0.45;
   }
 }
 
@@ -926,8 +959,16 @@ function onHandleDragEnd() {
   color: var(--ds-color-on-surface);
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
+  }
+
+  &:disabled {
+    color: color-mix(in srgb, var(--ds-color-on-surface) 28%, transparent);
+    cursor: default;
+    opacity: 0.55;
+    filter: grayscale(1);
+    pointer-events: none;
   }
 
   &--primary {
@@ -942,7 +983,7 @@ function onHandleDragEnd() {
     }
   }
 
-  &--danger:hover {
+  &--danger:hover:not(:disabled) {
     color: var(--ds-color-error, #ffb4ab);
   }
 
@@ -957,7 +998,7 @@ function onHandleDragEnd() {
       font-size: 1.2rem;
     }
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: color-mix(in srgb, var(--ds-color-primary) 90%, white);
     }
   }
@@ -974,7 +1015,7 @@ function onHandleDragEnd() {
       font-size: 1.15rem;
     }
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: color-mix(in srgb, var(--ds-color-primary) 90%, white);
     }
   }
@@ -984,7 +1025,7 @@ function onHandleDragEnd() {
     color: #000;
     box-shadow: 0 0 14px color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 38%, transparent);
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #9be4e1;
     }
   }
@@ -995,38 +1036,17 @@ function onHandleDragEnd() {
     color: #111827;
     box-shadow: 0 0 14px rgba(252, 165, 165, 0.5);
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #f87171;
       color: #111827;
     }
   }
 
   .liturgy-item--done & {
-    color: color-mix(in srgb, var(--ds-color-on-surface) 35%, transparent);
-  }
-
-  .liturgy-item--done &--screens-highlight {
-    color: var(--ds-color-on-primary, #003258);
-    background: var(--ds-color-primary);
-    opacity: 1;
-  }
-
-  .liturgy-item--done &--site-control,
-  .liturgy-item--done &--site-project {
-    opacity: 1;
-  }
-
-  .liturgy-item--done &--site-project {
-    color: #000;
-  }
-
-  .liturgy-item--done &--site-projecting {
-    background: #fca5a5;
-    color: #111827;
-  }
-
-  .liturgy-item--done &--collapse {
-    color: color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
+    color: color-mix(in srgb, var(--ds-color-on-surface) 30%, transparent);
+    background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+    box-shadow: none;
+    filter: grayscale(1);
   }
 }
 
@@ -1035,6 +1055,22 @@ function onHandleDragEnd() {
     border-color: transparent;
     background: color-mix(in srgb, var(--ds-color-on-surface) 18%, transparent);
     color: color-mix(in srgb, var(--ds-color-on-surface) 42%, transparent);
+  }
+
+  .liturgy-item__card {
+    filter: grayscale(0.55);
+  }
+
+  .liturgy-item__drag {
+    pointer-events: none;
+    opacity: 0.35;
+  }
+
+  :deep(.monitor-target-select),
+  :deep(.music-track-actions) {
+    filter: grayscale(1);
+    opacity: 0.5;
+    pointer-events: none;
   }
 }
 

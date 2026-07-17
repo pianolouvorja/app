@@ -23,7 +23,7 @@ export default {
       glassSoft: 'Suave',
       glassDeep: 'Profundo',
       autoBrightness: 'Auto-brilho',
-      accentColor: 'Acento de Cor',
+      accentColor: 'Cores de Realce',
       interactions: 'Interações',
       interactionsHint: 'Fluidez nas transições de cena.',
       interactionDynamic: 'Dinâmico',
