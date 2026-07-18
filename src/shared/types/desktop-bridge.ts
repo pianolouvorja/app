@@ -44,13 +44,39 @@ export type DisplaysApi = {
   identify: () => Promise<boolean>
 }
 
+export type FileDialogFilter = {
+  name: string
+  extensions: string[]
+}
+
+export type OpenFileDialogOptions = {
+  title?: string
+  filters?: FileDialogFilter[]
+  /** Permite selecionar vários arquivos (ex.: galeria de imagens). */
+  multiple?: boolean
+}
+
+export type DialogApi = {
+  openFile: (
+    options?: OpenFileDialogOptions,
+  ) => Promise<string | string[] | null>
+}
+
+export type PresentationApi = {
+  /** True se LibreOffice/soffice estiver disponível para converter PPT. */
+  detectOffice?: () => Promise<boolean>
+}
+
 export type OpenUrlProjectionPayload = {
-  url: string
+  url?: string
+  filePath?: string
+  /** Galeria de imagens locais (vários caminhos absolutos). */
+  filePaths?: string[]
   title?: string
   videoId?: string
   monitorIds?: number[]
   fullscreenOnPrimary?: boolean
-  mode?: 'video' | 'site'
+  mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
 }
 
@@ -98,6 +124,27 @@ export type ProjectionApi = {
   remoteReload?: () => Promise<boolean>
   toggleSiteScreens?: () => Promise<boolean>
   toggleVideoScreens?: () => Promise<boolean>
+  remoteImageNext?: () => Promise<{ index: number; total: number } | null>
+  remoteImagePrev?: () => Promise<{ index: number; total: number } | null>
+  getImageSlideState?: () => Promise<{
+    index: number
+    total: number
+    projecting?: boolean
+  } | null>
+  remotePdfNext?: () => Promise<{ index: number; total: number } | null>
+  remotePdfPrev?: () => Promise<{ index: number; total: number } | null>
+  getPdfPageState?: () => Promise<{
+    index: number
+    total: number
+    projecting?: boolean
+  } | null>
+  remotePptNext?: () => Promise<{ index: number; total: number } | null>
+  remotePptPrev?: () => Promise<{ index: number; total: number } | null>
+  getPptSlideState?: () => Promise<{
+    index: number
+    total: number
+    projecting?: boolean
+  } | null>
   getSiteTargetMonitors?: () => Promise<number[]>
   setSiteTargetMonitors?: (ids: number[]) => Promise<boolean>
   getVideoTargetMonitors?: () => Promise<number[]>
@@ -114,5 +161,7 @@ export type LouvorJaBridge = {
   catalog: CatalogApi
   media: MediaApi
   displays: DisplaysApi
+  dialog: DialogApi
+  presentation?: PresentationApi
   projection: ProjectionApi
 }

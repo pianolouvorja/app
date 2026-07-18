@@ -74,6 +74,10 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   const itemDialogOpen = ref(false)
   const editingIndex = ref<number | null>(null)
+  /** Diálogo aberto via "Adicionar sub item": categoria fixa, sem opção de category. */
+  const itemDialogLockedCategory = ref(false)
+  /** Diálogo aberto via toolbar: só cria categoria (esconde seletor de tipo). */
+  const itemDialogHideTypePicker = ref(false)
   const itemDraft = ref<LiturgyItemDraft>({ ...DEFAULT_LITURGY_ITEM_DRAFT })
 
   const customDialogOpen = ref(false)
@@ -468,8 +472,29 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   function openAddDialog() {
     editingIndex.value = null
+    itemDialogLockedCategory.value = false
+    itemDialogHideTypePicker.value = true
     musicSearchQuery.value = ''
-    itemDraft.value = { ...DEFAULT_LITURGY_ITEM_DRAFT }
+    itemDraft.value = {
+      ...DEFAULT_LITURGY_ITEM_DRAFT,
+      type: 'category',
+      accentColor: getTypeDotColor('category'),
+      durationMs: 0,
+      categoryId: null,
+    }
+    itemDialogOpen.value = true
+  }
+
+  /** Abre o diálogo de novo item já vinculado à categoria informada. */
+  function openAddSubItemDialog(categoryId: string) {
+    editingIndex.value = null
+    itemDialogLockedCategory.value = true
+    itemDialogHideTypePicker.value = false
+    musicSearchQuery.value = ''
+    itemDraft.value = {
+      ...DEFAULT_LITURGY_ITEM_DRAFT,
+      categoryId,
+    }
     itemDialogOpen.value = true
   }
 
@@ -491,6 +516,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
           ? 0
           : itemDraft.value.durationMs || DEFAULT_MOMENT_DURATION_MS,
       categoryId: type === 'category' ? null : itemDraft.value.categoryId,
+      startTime: type === 'category' ? itemDraft.value.startTime : '',
     }
   }
 
@@ -499,6 +525,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     const item = currentItems.value[index]
     if (!item) return
     editingIndex.value = index
+    itemDialogLockedCategory.value = false
+    itemDialogHideTypePicker.value = false
     itemDraft.value = draftFromLiturgyItem(item)
     musicSearchQuery.value = ''
     itemDialogOpen.value = true
@@ -507,6 +535,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   function closeItemDialog() {
     itemDialogOpen.value = false
     editingIndex.value = null
+    itemDialogLockedCategory.value = false
+    itemDialogHideTypePicker.value = false
   }
 
   function saveItemDraft() {
@@ -699,7 +729,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     const result = await executeLiturgyItem(item, router)
     if (item.type === 'site') {
       siteProjectionItemId.value = null
-    } else if (item.type === 'online_video') {
+    } else if (
+      item.type === 'online_video' ||
+      item.type === 'video' ||
+      item.type === 'images' ||
+      item.type === 'pdf' ||
+      item.type === 'presentation'
+    ) {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
@@ -759,7 +795,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
       // Controle fechado: abre controle + projeção.
       siteProjectionItemId.value = item.id
-    } else if (item.type === 'online_video') {
+    } else if (
+      item.type === 'online_video' ||
+      item.type === 'video' ||
+      item.type === 'images' ||
+      item.type === 'pdf' ||
+      item.type === 'presentation'
+    ) {
       const projection = getDesktopBridge()?.projection
       // Controle já aberto: apenas liga/desliga as telas.
       const state = await projection?.getPlaybackState?.()
@@ -779,7 +821,14 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     const result = await playLiturgyItemOnScreens(item)
     if (!result.ok && item.type === 'site') {
       siteProjectionItemId.value = null
-    } else if (!result.ok && item.type === 'online_video') {
+    } else if (
+      !result.ok &&
+      (item.type === 'online_video' ||
+        item.type === 'video' ||
+        item.type === 'images' ||
+        item.type === 'pdf' ||
+        item.type === 'presentation')
+    ) {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
@@ -832,12 +881,23 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       selectedItemIndex.value != null
         ? currentItems.value[selectedItemIndex.value]
         : null
-    if (selected?.type === 'online_video') {
+    if (
+      selected?.type === 'online_video' ||
+      selected?.type === 'video' ||
+      selected?.type === 'images' ||
+      selected?.type === 'pdf' ||
+      selected?.type === 'presentation'
+    ) {
       videoProjectionItemId.value = selected.id
       return
     }
     const videoItem = currentItems.value.find(
-      (entry) => entry.type === 'online_video',
+      (entry) =>
+        entry.type === 'online_video' ||
+        entry.type === 'video' ||
+        entry.type === 'images' ||
+        entry.type === 'pdf' ||
+        entry.type === 'presentation',
     )
     if (videoItem) videoProjectionItemId.value = videoItem.id
   }
@@ -1010,6 +1070,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey,
     itemDialogOpen,
     editingIndex,
+    itemDialogLockedCategory,
+    itemDialogHideTypePicker,
     itemDraft,
     customDialogOpen,
     newCustomName,
@@ -1046,6 +1108,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     startCountdown,
     stopCountdown,
     openAddDialog,
+    openAddSubItemDialog,
     setItemDraft,
     setMusicSearchQuery,
     setItemType,

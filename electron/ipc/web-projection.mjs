@@ -2,10 +2,40 @@ import { BrowserWindow, screen, session, WebContentsView } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import { convertPresentationToPdf } from './presentation-convert.mjs'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
 const MIRROR_HTML = path.join(__dirname, '../player/mirror-player.html')
 const CONTROL_BAR_HTML = path.join(__dirname, '../player/control-bar.html')
+const LOCAL_VIDEO_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-video-player.html',
+)
+const LOCAL_IMAGE_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-image-player.html',
+)
+const LOCAL_PDF_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-pdf-player.html',
+)
+const LOCAL_PPTX_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-pptx-player.html',
+)
+const IMAGE_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/image-control-bar.html',
+)
+const PDF_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/pdf-control-bar.html',
+)
+const PPT_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/ppt-control-bar.html',
+)
 const SITE_CONTROL_BAR_HTML = path.join(__dirname, '../player/site-control-bar.html')
 const SITE_INTERACTION_BLOCKER_HTML = path.join(
   __dirname,
@@ -211,7 +241,7 @@ const HIDE_YOUTUBE_SIDEBAR_SCRIPT = `
 let sourceWindow = null
 /** @type {WebContentsView | null} */
 let controlBarView = null
-/** @type {'video' | 'site'} */
+/** @type {'video' | 'site' | 'image' | 'pdf' | 'presentation'} */
 let currentProjectionMode = 'video'
 /** @type {BrowserWindow[]} */
 let mirrorWindows = []
@@ -365,7 +395,82 @@ function stopSiteProjectionSync() {
   siteSyncScrollY = -1
   siteSourceReloadPending = false
 }
+function toLocalAppUrl(filePath) {
+  if (typeof filePath !== 'string') return null
+  const trimmed = filePath.trim()
+  if (!trimmed) return null
+
+  // Windows: C:\foo → /C:/foo ; POSIX já começa com /
+  const normalized = trimmed.replace(/\\/g, '/')
+  const withLeadingSlash = normalized.startsWith('/')
+    ? normalized
+    : `/${normalized}`
+  const encoded = withLeadingSlash
+    .split('/')
+    .map((part, index) =>
+      index === 0 && part === '' ? '' : encodeURIComponent(part),
+    )
+    .join('/')
+  return `local://app${encoded}`
+}
+
+function resolveLocalVideoPlayerUrl(filePath) {
+  const mediaUrl = toLocalAppUrl(filePath)
+  if (!mediaUrl) return null
+  const playerUrl = new URL(pathToFileURL(LOCAL_VIDEO_PLAYER_HTML).href)
+  playerUrl.searchParams.set('src', mediaUrl)
+  return playerUrl.toString()
+}
+
+function resolveLocalImagePlayerUrl(filePaths) {
+  if (!Array.isArray(filePaths) || filePaths.length === 0) return null
+  const sources = filePaths
+    .map((entry) => toLocalAppUrl(String(entry)))
+    .filter(Boolean)
+  if (sources.length === 0) return null
+  const playerUrl = new URL(pathToFileURL(LOCAL_IMAGE_PLAYER_HTML).href)
+  playerUrl.searchParams.set('srcs', JSON.stringify(sources))
+  return playerUrl.toString()
+}
+
+function resolveLocalPdfPlayerUrl(filePath) {
+  const mediaUrl = toLocalAppUrl(filePath)
+  if (!mediaUrl) return null
+  const playerUrl = new URL(pathToFileURL(LOCAL_PDF_PLAYER_HTML).href)
+  playerUrl.searchParams.set('src', mediaUrl)
+  return playerUrl.toString()
+}
+
+function resolveLocalPptPlayerUrl(filePath) {
+  const mediaUrl = toLocalAppUrl(filePath)
+  if (!mediaUrl) return null
+  const playerUrl = new URL(pathToFileURL(LOCAL_PPTX_PLAYER_HTML).href)
+  playerUrl.searchParams.set('src', mediaUrl)
+  return playerUrl.toString()
+}
+
 function resolveSourceUrl(payload) {
+  const mode = typeof payload?.mode === 'string' ? payload.mode : ''
+
+  const filePaths = Array.isArray(payload?.filePaths)
+    ? payload.filePaths.map((entry) => String(entry).trim()).filter(Boolean)
+    : []
+  if (mode === 'image' || filePaths.length > 0) {
+    return resolveLocalImagePlayerUrl(filePaths)
+  }
+
+  const filePath =
+    typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
+  if (filePath) {
+    if (mode === 'pdf') {
+      return resolveLocalPdfPlayerUrl(filePath)
+    }
+    if (mode === 'presentation') {
+      return resolveLocalPptPlayerUrl(filePath)
+    }
+    return resolveLocalVideoPlayerUrl(filePath)
+  }
+
   const url = typeof payload?.url === 'string' ? payload.url.trim() : ''
   const videoId = typeof payload?.videoId === 'string' ? payload.videoId.trim() : ''
 
@@ -376,11 +481,32 @@ function resolveSourceUrl(payload) {
   if (!url) return null
   try {
     const parsed = new URL(url)
+    if (parsed.protocol === 'local:') {
+      if (parsed.host !== 'app') return null
+      let absolute = decodeURIComponent(parsed.pathname)
+      if (process.platform === 'win32' && absolute.match(/^\/[a-zA-Z]:\//)) {
+        absolute = absolute.slice(1)
+      }
+      return resolveLocalVideoPlayerUrl(absolute)
+    }
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
     return parsed.toString()
   } catch {
     return null
   }
+}
+
+function isPdfDocumentMode(mode = currentProjectionMode) {
+  return mode === 'pdf' || mode === 'presentation'
+}
+
+function isCaptureProjectionMode(mode = currentProjectionMode) {
+  return (
+    mode === 'video' ||
+    mode === 'image' ||
+    mode === 'pdf' ||
+    mode === 'presentation'
+  )
 }
 
 function placeSourceOnPrimary() {
@@ -460,7 +586,16 @@ function attachControlBar(win) {
     width: contentWidth,
     height: CONTROL_BAR_HEIGHT,
   })
-  void view.webContents.loadURL(pathToFileURL(CONTROL_BAR_HTML).href)
+  void view.webContents.loadURL(
+    pathToFileURL(
+      currentProjectionMode === 'image'
+        ? IMAGE_CONTROL_BAR_HTML
+        : currentProjectionMode === 'pdf' ||
+            currentProjectionMode === 'presentation'
+          ? PDF_CONTROL_BAR_HTML
+          : CONTROL_BAR_HTML,
+    ).href,
+  )
   controlBarView = view
 }
 
@@ -973,6 +1108,206 @@ function createMirrorWindow(display) {
   return win
 }
 
+/**
+ * Projeção de imagens: carrega a mesma galeria nas telas (sem captura).
+ * Captura de tela falha com conteúdo estático — o slide às vezes não atualiza.
+ * @param {import('electron').Display} display
+ * @param {string} loadUrl
+ */
+function createImageProjectionWindow(display, loadUrl) {
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const options = {
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    backgroundColor: '#000000',
+    autoHideMenuBar: true,
+    show: false,
+    frame: false,
+    thickFrame: false,
+    hasShadow: false,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: false,
+    fullscreenable: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: false,
+    },
+  }
+
+  const win = new BrowserWindow(options)
+  win.webContents.setAudioMuted(true)
+
+  win.once('ready-to-show', () => {
+    win.setBounds(display.bounds)
+    win.setFullScreen(true)
+    if (process.platform === 'darwin') {
+      win.setSimpleFullScreen(true)
+    }
+    win.setAlwaysOnTop(true, 'screen-saver')
+    win.showInactive()
+  })
+
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'Escape') {
+      closeWebProjectionWindows()
+    }
+  })
+
+  win.webContents.on('did-finish-load', () => {
+    if (isPdfDocumentMode()) {
+      void applyPdfIndexToWindow(win)
+    } else if (currentProjectionMode === 'image') {
+      void applyImageIndexToWindow(win)
+    }
+  })
+
+  win.on('closed', () => {
+    mirrorWindows = mirrorWindows.filter((item) => item !== win)
+  })
+
+  void win.loadURL(loadUrl)
+  return win
+}
+
+/**
+ * Lê o índice atual da galeria no popup e aplica em uma janela de projeção.
+ * @param {import('electron').BrowserWindow} win
+ */
+async function applyImageIndexToWindow(win) {
+  if (
+    !sourceWindow ||
+    sourceWindow.isDestroyed() ||
+    win.isDestroyed() ||
+    currentProjectionMode !== 'image'
+  ) {
+    return
+  }
+
+  let index = 0
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyGallery ? window.__liturgyGallery.getState() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      index = Number(state.index) || 0
+    }
+  } catch {
+    return
+  }
+
+  await goToImageIndexOnWindow(win, index)
+}
+
+/**
+ * @param {import('electron').BrowserWindow} win
+ * @param {number} index
+ */
+async function goToImageIndexOnWindow(win, index) {
+  if (win.isDestroyed()) return false
+  const safeIndex = Number(index) || 0
+  const script = `(() => {
+    const gallery = window.__liturgyGallery;
+    if (!gallery || typeof gallery.goTo !== 'function') return null;
+    return gallery.goTo(${JSON.stringify(safeIndex)});
+  })()`
+
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    try {
+      const result = await win.webContents.executeJavaScript(script, true)
+      if (result && typeof result === 'object') return true
+    } catch {
+      // ainda carregando
+    }
+    await sleep(40)
+  }
+  return false
+}
+
+/**
+ * Sincroniza todas as telas de projeção com o índice da galeria no popup.
+ * @param {number} index
+ */
+async function syncImageMirrorsToIndex(index) {
+  if (currentProjectionMode !== 'image' || mirrorWindows.length === 0) return
+  await Promise.all(
+    mirrorWindows.map((win) => goToImageIndexOnWindow(win, index)),
+  )
+}
+
+/**
+ * Lê a página atual do PDF no popup e aplica em uma janela de projeção.
+ * @param {import('electron').BrowserWindow} win
+ */
+async function applyPdfIndexToWindow(win) {
+  if (
+    !sourceWindow ||
+    sourceWindow.isDestroyed() ||
+    win.isDestroyed() ||
+    !isPdfDocumentMode()
+  ) {
+    return
+  }
+
+  let index = 0
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyPdf ? window.__liturgyPdf.getState() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      index = Number(state.index) || 0
+    }
+  } catch {
+    return
+  }
+
+  await goToPdfIndexOnWindow(win, index)
+}
+
+/**
+ * @param {import('electron').BrowserWindow} win
+ * @param {number} index
+ */
+async function goToPdfIndexOnWindow(win, index) {
+  if (win.isDestroyed()) return false
+  const safeIndex = Number(index) || 0
+  const script = `(() => {
+    const pdf = window.__liturgyPdf;
+    if (!pdf || typeof pdf.goTo !== 'function') return null;
+    return pdf.goTo(${JSON.stringify(safeIndex)});
+  })()`
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      const result = await win.webContents.executeJavaScript(script, true)
+      if (result && typeof result === 'object') return true
+    } catch {
+      // ainda carregando
+    }
+    await sleep(50)
+  }
+  return false
+}
+
+/**
+ * Sincroniza todas as telas de projeção com a página do PDF no popup.
+ * @param {number} index
+ */
+async function syncPdfMirrorsToIndex(index) {
+  if (!isPdfDocumentMode() || mirrorWindows.length === 0) return
+  await Promise.all(
+    mirrorWindows.map((win) => goToPdfIndexOnWindow(win, index)),
+  )
+}
+
 function closeMirrorWindowsOnly() {
   for (const shield of [...siteShieldWindows]) {
     if (!shield.isDestroyed()) shield.close()
@@ -1155,14 +1490,51 @@ function openSiteScreensOnTargets(loadUrl, targets) {
   return targets.length > 0
 }
 
-export function openWebProjectionWindows(payload) {
-  const loadUrl = resolveSourceUrl(payload)
+export async function openWebProjectionWindows(payload) {
+  const input = payload ?? {}
+  let effective = input
+
+  if (input.mode === 'presentation') {
+    const filePath =
+      typeof input.filePath === 'string' ? input.filePath.trim() : ''
+    if (!filePath) return false
+    try {
+      const pdfPath = await convertPresentationToPdf(filePath)
+      effective = {
+        ...input,
+        filePath: pdfPath,
+        // Player PDF; título/controles mantêm modo presentation.
+        __presentationPdf: true,
+      }
+    } catch (error) {
+      console.error('[projection] presentation convert', error)
+      return false
+    }
+  }
+
+  const loadUrl =
+    effective.mode === 'presentation' && effective.filePath
+      ? resolveLocalPdfPlayerUrl(String(effective.filePath))
+      : resolveSourceUrl(effective)
   if (!loadUrl) return false
 
-  const mode = payload.mode === 'site' ? 'site' : 'video'
-  const withScreens = payload.withScreens !== false
-  const monitorIds = Array.isArray(payload.monitorIds)
-    ? payload.monitorIds.filter((id) => typeof id === 'number' && Number.isFinite(id))
+  const mode =
+    effective.mode === 'site'
+      ? 'site'
+      : effective.mode === 'pdf'
+        ? 'pdf'
+        : effective.mode === 'presentation'
+          ? 'presentation'
+          : effective.mode === 'image' ||
+              (Array.isArray(effective.filePaths) &&
+                effective.filePaths.length > 0)
+            ? 'image'
+            : 'video'
+  const withScreens = effective.withScreens !== false
+  const monitorIds = Array.isArray(effective.monitorIds)
+    ? effective.monitorIds.filter(
+        (id) => typeof id === 'number' && Number.isFinite(id),
+      )
     : []
 
   // Site com controle já aberto: só projeta nas telas, sem recriar o popup.
@@ -1195,13 +1567,25 @@ export function openWebProjectionWindows(payload) {
   }
 
   const title =
-    typeof payload.title === 'string' && payload.title.trim()
+    typeof effective.title === 'string' && effective.title.trim()
       ? mode === 'site'
-        ? `Site — ${payload.title.trim()}`
-        : `Player — ${payload.title.trim()}`
+        ? `Site — ${effective.title.trim()}`
+        : mode === 'image'
+          ? `Imagens — ${effective.title.trim()}`
+          : mode === 'pdf'
+            ? `PDF — ${effective.title.trim()}`
+            : mode === 'presentation'
+              ? `Apresentação — ${effective.title.trim()}`
+              : `Player — ${effective.title.trim()}`
       : mode === 'site'
         ? SITE_WINDOW_TITLE
-        : SOURCE_WINDOW_TITLE
+        : mode === 'image'
+          ? 'Imagens — Central Adoração'
+          : mode === 'pdf'
+            ? 'PDF — Central Adoração'
+            : mode === 'presentation'
+              ? 'Apresentação — Central Adoração'
+              : SOURCE_WINDOW_TITLE
 
   sourceWindow =
     mode === 'site'
@@ -1218,6 +1602,12 @@ export function openWebProjectionWindows(payload) {
     if (mode === 'site') {
       mirrorWindows.push(createSiteProjectionWindow(display, loadUrl))
       siteShieldWindows.push(createSiteShieldWindow(display))
+    } else if (
+      mode === 'image' ||
+      mode === 'pdf' ||
+      mode === 'presentation'
+    ) {
+      mirrorWindows.push(createImageProjectionWindow(display, loadUrl))
     } else {
       mirrorWindows.push(createMirrorWindow(display))
     }
@@ -1232,6 +1622,22 @@ export function openWebProjectionWindows(payload) {
 
 function openVideoScreensOnTargets(targets) {
   closeMirrorWindowsOnly()
+  if (
+    currentProjectionMode === 'image' ||
+    currentProjectionMode === 'pdf' ||
+    currentProjectionMode === 'presentation'
+  ) {
+    const loadUrl =
+      sourceWindow && !sourceWindow.isDestroyed()
+        ? sourceWindow.webContents.getURL()
+        : ''
+    if (!loadUrl || loadUrl === 'about:blank') return false
+    for (const display of targets) {
+      mirrorWindows.push(createImageProjectionWindow(display, loadUrl))
+    }
+    return targets.length > 0
+  }
+
   for (const display of targets) {
     mirrorWindows.push(createMirrorWindow(display))
   }
@@ -1264,7 +1670,11 @@ export function toggleSiteProjectionScreens() {
  * @returns {boolean}
  */
 export function toggleVideoProjectionScreens() {
-  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
+  if (
+    !sourceWindow ||
+    sourceWindow.isDestroyed() ||
+    !isCaptureProjectionMode()
+  ) {
     return false
   }
 
@@ -1286,8 +1696,8 @@ export function isSiteProjectingToScreens() {
 
 export function isVideoProjectingToScreens() {
   return (
-    currentProjectionMode === 'video' &&
-    mirrorWindows.some((win) => !win.isDestroyed())
+    isCaptureProjectionMode() &&
+    mirrorWindows.some((win) => win && !win.isDestroyed())
   )
 }
 
@@ -1513,9 +1923,23 @@ export async function remoteSetVolumeSource(volume) {
 
 /** Estado de playback do vídeo no popup (para a barra do operador). */
 export async function getSourcePlaybackState() {
-  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'video') {
-    return null
+  if (!sourceWindow || sourceWindow.isDestroyed()) return null
+
+  // Galeria de imagens / PDF / PPT: só o flag de projeção.
+  if (
+    currentProjectionMode === 'image' ||
+    currentProjectionMode === 'pdf' ||
+    currentProjectionMode === 'presentation'
+  ) {
+    return {
+      paused: true,
+      currentTime: 0,
+      duration: 0,
+      projecting: isVideoProjectingToScreens(),
+    }
   }
+
+  if (currentProjectionMode !== 'video') return null
   try {
     const state = await sourceWindow.webContents.executeJavaScript(
       GET_PLAYBACK_STATE_SCRIPT,
@@ -1529,6 +1953,139 @@ export async function getSourcePlaybackState() {
   } catch {
     return null
   }
+}
+
+/** Avança para a próxima imagem na galeria do popup. */
+export async function remoteImageNext() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'image') {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyGallery ? window.__liturgyGallery.next() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      await syncImageMirrorsToIndex(Number(state.index) || 0)
+    }
+    return state
+  } catch {
+    return null
+  }
+}
+
+/** Volta para a imagem anterior na galeria do popup. */
+export async function remoteImagePrev() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'image') {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyGallery ? window.__liturgyGallery.prev() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      await syncImageMirrorsToIndex(Number(state.index) || 0)
+    }
+    return state
+  } catch {
+    return null
+  }
+}
+
+/** Índice atual da galeria de imagens no popup. */
+export async function getImageSlideState() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || currentProjectionMode !== 'image') {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyGallery ? window.__liturgyGallery.getState() : null))()`,
+      true,
+    )
+    if (!state || typeof state !== 'object') return null
+    return {
+      index: Number(state.index) || 0,
+      total: Number(state.total) || 0,
+      projecting: isVideoProjectingToScreens(),
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Avança para a próxima página do PDF no popup. */
+export async function remotePdfNext() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || !isPdfDocumentMode()) {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyPdf ? window.__liturgyPdf.next() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      await syncPdfMirrorsToIndex(Number(state.index) || 0)
+    }
+    return state
+  } catch {
+    return null
+  }
+}
+
+/** Volta para a página anterior do PDF no popup. */
+export async function remotePdfPrev() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || !isPdfDocumentMode()) {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyPdf ? window.__liturgyPdf.prev() : null))()`,
+      true,
+    )
+    if (state && typeof state === 'object') {
+      await syncPdfMirrorsToIndex(Number(state.index) || 0)
+    }
+    return state
+  } catch {
+    return null
+  }
+}
+
+/** Página atual do PDF no popup. */
+export async function getPdfPageState() {
+  if (!sourceWindow || sourceWindow.isDestroyed() || !isPdfDocumentMode()) {
+    return null
+  }
+  try {
+    const state = await sourceWindow.webContents.executeJavaScript(
+      `(() => (window.__liturgyPdf ? window.__liturgyPdf.getState() : null))()`,
+      true,
+    )
+    if (!state || typeof state !== 'object') return null
+    return {
+      index: Number(state.index) || 0,
+      total: Number(state.total) || 0,
+      projecting: isVideoProjectingToScreens(),
+    }
+  } catch {
+    return null
+  }
+}
+
+/** Avança para o próximo slide da apresentação no popup. */
+export async function remotePptNext() {
+  return remotePdfNext()
+}
+
+/** Volta para o slide anterior da apresentação no popup. */
+export async function remotePptPrev() {
+  return remotePdfPrev()
+}
+
+/** Slide atual da apresentação no popup. */
+export async function getPptSlideState() {
+  return getPdfPageState()
 }
 
 /** Navegação do site no popup de controle. */

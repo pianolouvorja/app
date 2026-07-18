@@ -27,6 +27,7 @@ const emit = defineEmits<{
   toggleDone: [index: number]
   reorder: [fromIndex: number, toIndex: number]
   clone: []
+  addSubItem: [categoryId: string]
   musicSung: [index: number]
   musicInstrumental: [index: number]
   musicSlides: [index: number]
@@ -255,6 +256,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           @select="emit('select', segment.entry.index)"
           @play-screens="emit('playScreens', segment.entry.index)"
           @edit="emit('edit', segment.entry.index)"
+          @add-sub-item="emit('addSubItem', segment.entry.item.id)"
           @remove="emit('remove', segment.entry.index)"
           @toggle-done="emit('toggleDone', segment.entry.index)"
           @toggle-collapse="toggleCategoryCollapse(segment.entry.item.id)"
@@ -353,6 +355,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
   max-width: 18rem;
   font-size: 0.875rem;
   color: color-mix(in srgb, var(--ds-color-on-surface) 65%, transparent);
+  white-space: pre-line;
 }
 
 .liturgy-timeline__clone {

@@ -45,6 +45,7 @@ const emit = defineEmits<{
   remove: []
   toggleDone: []
   toggleCollapse: []
+  addSubItem: []
   musicSung: []
   musicInstrumental: []
   musicSlides: []
@@ -65,6 +66,18 @@ const isMusicItem = computed(
   () => props.item.type === 'music' && props.item.musicId != null,
 )
 const isStreamVideo = computed(() => props.item.type === 'online_video')
+const isLocalVideo = computed(() => props.item.type === 'video')
+const isLocalImages = computed(() => props.item.type === 'images')
+const isLocalPdf = computed(() => props.item.type === 'pdf')
+const isLocalPresentation = computed(() => props.item.type === 'presentation')
+const isVideoRemote = computed(
+  () =>
+    isStreamVideo.value ||
+    isLocalVideo.value ||
+    isLocalImages.value ||
+    isLocalPdf.value ||
+    isLocalPresentation.value,
+)
 const isSiteItem = computed(() => props.item.type === 'site')
 const isDimmed = computed(
   () => Boolean(props.reorderActive) && !props.isDragSource,
@@ -235,6 +248,13 @@ function onHandleDragEnd() {
           />
         </div>
 
+        <p
+          v-if="isCategory && item.startTime"
+          class="liturgy-item__start-time"
+        >
+          {{ item.startTime }}
+        </p>
+
         <div class="liturgy-item__body">
           <p class="liturgy-item__type">
             {{ t(`liturgy.types.${item.type}`) }}
@@ -300,10 +320,25 @@ function onHandleDragEnd() {
           class="liturgy-item__actions"
           :class="{
             'liturgy-item__actions--visible':
-              isCategory || isStreamVideo || isSiteItem || isMusicItem,
+              isCategory || isVideoRemote || isSiteItem || isMusicItem,
           }"
           @click.stop
         >
+          <button
+            v-if="isCategory"
+            type="button"
+            class="liturgy-item__add-sub"
+            :title="t('liturgy.actions.addSubItem')"
+            :aria-label="t('liturgy.actions.addSubItem')"
+            :disabled="item.done"
+            @click="emit('addSubItem')"
+          >
+            <i
+              class="mdi mdi-plus"
+              aria-hidden="true"
+            />
+            <span>{{ t('liturgy.actions.addSubItem') }}</span>
+          </button>
           <button
             v-if="collapsible"
             type="button"
@@ -321,7 +356,7 @@ function onHandleDragEnd() {
             />
           </button>
           <MonitorTargetSelect
-            v-if="!isCategory && (isSiteItem || isStreamVideo || isMusicItem)"
+            v-if="!isCategory && (isSiteItem || isVideoRemote || isMusicItem)"
             dense
             persist
             :disabled="item.done"
@@ -340,7 +375,7 @@ function onHandleDragEnd() {
             v-if="
               !isCategory &&
                 !isMusicItem &&
-                !isStreamVideo &&
+                !isVideoRemote &&
                 !isSiteItem &&
                 (executable || selected)
             "
@@ -358,18 +393,30 @@ function onHandleDragEnd() {
             />
           </button>
           <button
-            v-if="!isCategory && (isSiteItem || isStreamVideo)"
+            v-if="!isCategory && (isSiteItem || isVideoRemote)"
             type="button"
             class="liturgy-item__action liturgy-item__action--site-control"
             :title="
-              isStreamVideo
-                ? t('liturgy.actions.openVideoControl')
-                : t('liturgy.actions.openSiteControl')
+              isLocalPresentation
+                ? t('liturgy.actions.openPresentationControl')
+                : isLocalPdf
+                  ? t('liturgy.actions.openPdfControl')
+                  : isLocalImages
+                    ? t('liturgy.actions.openImageControl')
+                    : isVideoRemote
+                      ? t('liturgy.actions.openVideoControl')
+                      : t('liturgy.actions.openSiteControl')
             "
             :aria-label="
-              isStreamVideo
-                ? t('liturgy.actions.openVideoControl')
-                : t('liturgy.actions.openSiteControl')
+              isLocalPresentation
+                ? t('liturgy.actions.openPresentationControl')
+                : isLocalPdf
+                  ? t('liturgy.actions.openPdfControl')
+                  : isLocalImages
+                    ? t('liturgy.actions.openImageControl')
+                    : isVideoRemote
+                      ? t('liturgy.actions.openVideoControl')
+                      : t('liturgy.actions.openSiteControl')
             "
             :disabled="item.done"
             @click.stop="emit('select')"
@@ -380,7 +427,7 @@ function onHandleDragEnd() {
             />
           </button>
           <button
-            v-if="!isCategory && (isSiteItem || isStreamVideo)"
+            v-if="!isCategory && (isSiteItem || isVideoRemote)"
             type="button"
             class="liturgy-item__action liturgy-item__action--site-project"
             :class="{
@@ -392,18 +439,42 @@ function onHandleDragEnd() {
                 ? siteProjecting
                   ? t('liturgy.actions.stopSiteProjection')
                   : t('liturgy.actions.projectSiteOnScreens')
-                : videoProjecting
-                  ? t('liturgy.actions.stopVideoProjection')
-                  : t('liturgy.actions.projectVideoOnScreens')
+                : isLocalPresentation
+                  ? videoProjecting
+                    ? t('liturgy.actions.stopPresentationProjection')
+                    : t('liturgy.actions.projectPresentationOnScreens')
+                  : isLocalPdf
+                    ? videoProjecting
+                      ? t('liturgy.actions.stopPdfProjection')
+                      : t('liturgy.actions.projectPdfOnScreens')
+                    : isLocalImages
+                      ? videoProjecting
+                        ? t('liturgy.actions.stopImageProjection')
+                        : t('liturgy.actions.projectImageOnScreens')
+                      : videoProjecting
+                        ? t('liturgy.actions.stopVideoProjection')
+                        : t('liturgy.actions.projectVideoOnScreens')
             "
             :aria-label="
               isSiteItem
                 ? siteProjecting
                   ? t('liturgy.actions.stopSiteProjection')
                   : t('liturgy.actions.projectSiteOnScreens')
-                : videoProjecting
-                  ? t('liturgy.actions.stopVideoProjection')
-                  : t('liturgy.actions.projectVideoOnScreens')
+                : isLocalPresentation
+                  ? videoProjecting
+                    ? t('liturgy.actions.stopPresentationProjection')
+                    : t('liturgy.actions.projectPresentationOnScreens')
+                  : isLocalPdf
+                    ? videoProjecting
+                      ? t('liturgy.actions.stopPdfProjection')
+                      : t('liturgy.actions.projectPdfOnScreens')
+                    : isLocalImages
+                      ? videoProjecting
+                        ? t('liturgy.actions.stopImageProjection')
+                        : t('liturgy.actions.projectImageOnScreens')
+                      : videoProjecting
+                        ? t('liturgy.actions.stopVideoProjection')
+                        : t('liturgy.actions.projectVideoOnScreens')
             "
             :aria-pressed="isSiteItem ? siteProjecting : videoProjecting"
             :disabled="item.done"
@@ -762,6 +833,29 @@ function onHandleDragEnd() {
   }
 }
 
+.liturgy-item__start-time {
+  flex: 0 0 auto;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ds-color-primary);
+  line-height: 1;
+
+  .liturgy-item--pending & {
+    color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
+  }
+
+  .liturgy-item--done & {
+    color: color-mix(in srgb, var(--ds-color-on-surface) 32%, transparent);
+  }
+
+  .liturgy-item--selected & {
+    color: var(--ds-color-primary);
+  }
+}
+
 .liturgy-item__body {
   min-width: 0;
 }
@@ -948,6 +1042,51 @@ function onHandleDragEnd() {
   font-weight: 700;
   color: color-mix(in srgb, var(--ds-color-on-surface) 55%, transparent);
   background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+}
+
+.liturgy-item__add-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: 1.7rem;
+  margin-right: 0.15rem;
+  padding: 0 0.55rem 0 0.4rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
+  color: var(--ds-color-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+
+  i {
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--ds-color-primary);
+    background: color-mix(in srgb, var(--ds-color-primary) 20%, transparent);
+  }
+
+  &:disabled {
+    color: color-mix(in srgb, var(--ds-color-on-surface) 28%, transparent);
+    background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+    cursor: default;
+    opacity: 0.55;
+    filter: grayscale(1);
+    pointer-events: none;
+  }
+
+  .liturgy-item--done & {
+    color: color-mix(in srgb, var(--ds-color-on-surface) 30%, transparent);
+    background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+  }
 }
 
 .liturgy-item__action {

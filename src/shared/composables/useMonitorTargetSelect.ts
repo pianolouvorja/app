@@ -239,12 +239,15 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   onMounted(() => {
-    void refresh()
-    const bridge = getDesktopBridge()
-    unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
-      applyRemoteIds(Array.isArray(ids) ? ids : [])
-    })
+  void refresh().then(() => {
+    // Alinha o main process com as preferências já mostradas no badge.
+    void syncToMain([...selectedIds.value])
   })
+  const bridge = getDesktopBridge()
+  unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
+    applyRemoteIds(Array.isArray(ids) ? ids : [])
+  })
+})
 
   onBeforeUnmount(() => {
     unsubscribeTargets?.()

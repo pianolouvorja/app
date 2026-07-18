@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imagens — Central Adoração</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      #stage {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        background: #000;
+      }
+      #frame {
+        max-width: 100%;
+        max-height: 100%;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+      }
+      #error {
+        display: none;
+        color: #f8fafc;
+        font: 500 0.95rem/1.4 system-ui, sans-serif;
+        text-align: center;
+        padding: 1rem;
+      }
+      #error.is-visible { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <img id="frame" alt="" />
+      <p id="error">Não foi possível carregar as imagens.</p>
+    </div>
+    <script>
+      ;(() => {
+        const params = new URLSearchParams(window.location.search)
+        const raw = params.get('srcs') || '[]'
+        let sources = []
+        try {
+          const parsed = JSON.parse(raw)
+          sources = Array.isArray(parsed)
+            ? parsed.map((entry) => String(entry)).filter(Boolean)
+            : []
+        } catch {
+          sources = []
+        }
+
+        const frame = document.getElementById('frame')
+        const error = document.getElementById('error')
+        let index = 0
+
+        function show(nextIndex) {
+          if (!sources.length || !frame) {
+            error?.classList.add('is-visible')
+            if (frame) frame.style.display = 'none'
+            return { index: 0, total: 0 }
+          }
+          index = ((nextIndex % sources.length) + sources.length) % sources.length
+          frame.style.display = 'block'
+          error?.classList.remove('is-visible')
+          frame.src = sources[index]
+          return { index, total: sources.length }
+        }
+
+        frame?.addEventListener('error', () => {
+          error?.classList.add('is-visible')
+        })
+
+        window.__liturgyGallery = {
+          getState() {
+            return { index, total: sources.length }
+          },
+          next() {
+            return show(index + 1)
+          },
+          prev() {
+            return show(index - 1)
+          },
+          goTo(i) {
+            return show(Number(i) || 0)
+          },
+        }
+
+        show(0)
+      })()
+    </script>
+  </body>
+</html>

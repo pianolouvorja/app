@@ -12,7 +12,7 @@ import {
   type LiturgyMusicOption,
   type LiturgyBibleBookOption,
 } from '../types/liturgy'
-import { pad2 } from './liturgy-format'
+import { normalizeLiturgyTimeHHmm, pad2 } from './liturgy-format'
 
 export function createLiturgyItemId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -152,9 +152,30 @@ export function isValidLiturgyUrl(raw: string): boolean {
 }
 
 export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
+  if (draft.type == null) return false
   if (draft.name.trim().length === 0) return false
+  if (draft.type === 'category' && !normalizeLiturgyTimeHHmm(draft.startTime)) {
+    return false
+  }
   if (draft.type === 'music' && draft.musicId == null) return false
   if (draft.type !== 'category' && !draft.categoryId) return false
+  if (draft.type === 'images') {
+    const paths =
+      draft.filePaths.length > 0
+        ? draft.filePaths
+        : draft.filePath.trim()
+          ? [draft.filePath]
+          : []
+    if (paths.length === 0) return false
+  }
+  if (
+    (draft.type === 'video' ||
+      draft.type === 'pdf' ||
+      draft.type === 'presentation') &&
+    !draft.filePath.trim()
+  ) {
+    return false
+  }
   if (
     (draft.type === 'site' || draft.type === 'online_video') &&
     !isValidLiturgyUrl(draft.url)
@@ -173,26 +194,33 @@ export function buildLiturgyItemFromDraft(
     done?: boolean
   },
 ): LiturgyItem {
+  if (draft.type == null) {
+    throw new Error('Liturgy item draft requires a type')
+  }
+
+  const type = draft.type
   const details = draft.subtitle.trim()
   const item: LiturgyItem = {
     id: context.existingId ?? createLiturgyItemId(),
-    type: draft.type,
+    type,
     name: draft.name.trim(),
     subtitle: details,
     done: context.done ?? false,
     durationMs:
-      draft.type === 'category'
+      type === 'category'
         ? 0
-        : draft.type === 'music'
+        : type === 'music'
           ? draft.durationMs > 0
             ? clampMomentDurationMs(draft.durationMs)
             : 0
           : clampMomentDurationMs(draft.durationMs),
-    accentColor: getTypeDotColor(draft.type),
-    categoryId: draft.type === 'category' ? null : draft.categoryId,
+    accentColor: getTypeDotColor(type),
+    categoryId: type === 'category' ? null : draft.categoryId,
+    startTime:
+      type === 'category' ? normalizeLiturgyTimeHHmm(draft.startTime) : null,
   }
 
-  if (draft.type === 'music') {
+  if (type === 'music') {
     item.musicId = draft.musicId
     item.musicMode = draft.musicMode
     const complementary = draft.name.trim()
@@ -210,7 +238,7 @@ export function buildLiturgyItemFromDraft(
     }
   }
 
-  if (draft.type === 'verse') {
+  if (type === 'verse') {
     item.verseBookId = draft.verseBookId
     item.verseChapter = draft.verseChapter
     item.verseNumbers = draft.verseNumbers.trim()
@@ -221,15 +249,35 @@ export function buildLiturgyItemFromDraft(
     }
   }
 
-  if (INTERNAL_FILE_TYPES.includes(draft.type)) {
-    item.filePath = draft.filePath.trim()
-    if (item.filePath && !details) {
+  if (INTERNAL_FILE_TYPES.includes(type)) {
+    const paths =
+      type === 'images'
+        ? (draft.filePaths.length > 0
+            ? draft.filePaths
+            : draft.filePath.trim()
+              ? [draft.filePath.trim()]
+              : []
+          ).map((entry) => entry.trim()).filter(Boolean)
+        : draft.filePath.trim()
+          ? [draft.filePath.trim()]
+          : []
+
+    item.filePath = paths[0] ?? ''
+    if (type === 'images' && paths.length > 0) {
+      item.filePaths = paths
+      if (!details) {
+        item.subtitle =
+          paths.length === 1
+            ? (paths[0]!.split(/[\\/]/).pop() ?? paths[0]!)
+            : `${paths.length} imagens`
+      }
+    } else if (item.filePath && !details) {
       const parts = item.filePath.split(/[\\/]/)
       item.subtitle = parts[parts.length - 1] ?? item.filePath
     }
   }
 
-  if (draft.type === 'site' || draft.type === 'online_video') {
+  if (type === 'site' || type === 'online_video') {
     item.url = draft.url.trim()
     if (item.url && !details) {
       item.subtitle = item.url
@@ -258,12 +306,22 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
           : clampMomentDurationMs(item.durationMs),
     accentColor: getTypeDotColor(item.type),
     categoryId: item.type === 'category' ? null : (item.categoryId ?? null),
+    startTime:
+      item.type === 'category'
+        ? (normalizeLiturgyTimeHHmm(item.startTime) ?? '')
+        : '',
     musicId: item.musicId ?? null,
     musicMode: item.musicMode ?? 'audio',
     verseBookId: item.verseBookId ?? null,
     verseChapter: item.verseChapter ?? null,
     verseNumbers: item.verseNumbers ?? '',
     filePath: item.filePath ?? '',
+    filePaths:
+      item.filePaths && item.filePaths.length > 0
+        ? [...item.filePaths]
+        : item.filePath
+          ? [item.filePath]
+          : [],
     url: item.url ?? '',
   }
 }

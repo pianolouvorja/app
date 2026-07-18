@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apresentação — Central Adoração</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      #stage {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        background: #000;
+      }
+      #frame {
+        max-width: 100%;
+        max-height: 100%;
+        width: 100%;
+        height: 100%;
+        background: #000;
+      }
+      #error {
+        display: none;
+        max-width: 28rem;
+        color: #f8fafc;
+        font: 500 0.95rem/1.4 system-ui, sans-serif;
+        text-align: center;
+        padding: 1rem;
+        white-space: pre-line;
+      }
+      #error.is-visible { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="frame" aria-hidden="true"></canvas>
+      <p id="error">Não foi possível carregar a apresentação.</p>
+    </div>
+    <script src="./vendor/pptx/jszip.min.js"></script>
+    <script src="./vendor/pptx/PptxViewJS.min.js"></script>
+    <script>
+      ;(function () {
+        var params = new URLSearchParams(window.location.search)
+        var src = (params.get('src') || '').trim()
+        var canvas = document.getElementById('frame')
+        var error = document.getElementById('error')
+        var viewer = null
+        var ready = false
+        var pageIndex = 0
+        var total = 0
+
+        function state() {
+          return { index: pageIndex, total: total }
+        }
+
+        function showError(visible, message) {
+          if (message) error.textContent = message
+          error.classList.toggle('is-visible', Boolean(visible))
+          if (canvas) canvas.style.display = visible ? 'none' : 'block'
+        }
+
+        function isSupportedPptx(url) {
+          var clean = String(url || '').split('?')[0].toLowerCase()
+          return clean.endsWith('.pptx')
+        }
+
+        async function renderCurrent() {
+          if (!viewer || !ready || !canvas) return state()
+          await viewer.goToSlide(pageIndex, canvas)
+          pageIndex = viewer.getCurrentSlideIndex()
+          total = viewer.getSlideCount()
+          showError(false)
+          return state()
+        }
+
+        async function ensureReady() {
+          if (ready && viewer) return true
+          if (!src) {
+            showError(true, 'Arquivo de apresentação não informado.')
+            return false
+          }
+          if (!isSupportedPptx(src)) {
+            showError(
+              true,
+              'A projeção aceita apenas arquivos .pptx.\nSalve a apresentação como PPTX e tente novamente.',
+            )
+            return false
+          }
+          if (!window.PptxViewJS || !window.PptxViewJS.PPTXViewer) {
+            showError(true, 'Biblioteca de apresentação indisponível.')
+            return false
+          }
+          if (!window.JSZip) {
+            showError(true, 'JSZip indisponível para ler o PPTX.')
+            return false
+          }
+
+          try {
+            viewer = new window.PptxViewJS.PPTXViewer({
+              canvas: canvas,
+              slideSizeMode: 'fit',
+              backgroundColor: '#000000',
+            })
+            await viewer.loadFromUrl(src)
+            total = viewer.getSlideCount()
+            pageIndex = 0
+            ready = total > 0
+            if (!ready) {
+              showError(true, 'A apresentação não contém slides.')
+              return false
+            }
+            await renderCurrent()
+            return true
+          } catch (err) {
+            console.error('[pptx] load', err)
+            showError(true, 'Não foi possível carregar a apresentação.')
+            viewer = null
+            ready = false
+            return false
+          }
+        }
+
+        window.__liturgyPpt = {
+          getState: function () {
+            return state()
+          },
+          next: async function () {
+            if (!(await ensureReady())) return state()
+            if (total <= 0) return state()
+            pageIndex = (pageIndex + 1) % total
+            return renderCurrent()
+          },
+          prev: async function () {
+            if (!(await ensureReady())) return state()
+            if (total <= 0) return state()
+            pageIndex = (pageIndex - 1 + total) % total
+            return renderCurrent()
+          },
+          goTo: async function (i) {
+            if (!(await ensureReady())) return state()
+            if (total <= 0) return state()
+            pageIndex = ((Number(i) || 0) % total + total) % total
+            return renderCurrent()
+          },
+        }
+
+        var resizeTimer = null
+        window.addEventListener('resize', function () {
+          clearTimeout(resizeTimer)
+          resizeTimer = setTimeout(function () {
+            if (ready) void renderCurrent()
+          }, 120)
+        })
+
+        void ensureReady()
+      })()
+    </script>
+  </body>
+</html>

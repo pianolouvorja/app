@@ -1,15 +1,24 @@
 import { useBibleStore } from '@modules/bible/stores/useBibleStore'
 import { openMusicPlayer } from '@modules/media/services/open-music-player'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import type { Router } from 'vue-router'
 
 import type { LiturgyItem } from '../types/liturgy'
 import { INTERNAL_FILE_TYPES } from '../types/liturgy'
 import { isExecutableItem } from './liturgy-item-helpers'
 import {
+  openLiturgyLocalImageControl,
+  openLiturgyLocalPdfControl,
+  openLiturgyLocalPresentationControl,
+  openLiturgyLocalVideoControl,
   openLiturgySiteControl,
   openLiturgySiteOnScreens,
   openLiturgyVideoControl,
+  playLiturgyLocalImageOnScreens,
+  playLiturgyLocalPdfOnScreens,
+  playLiturgyLocalPresentationOnScreens,
+  playLiturgyLocalVideoOnScreens,
   playLiturgyWebOnConfiguredScreens,
 } from './liturgy-web-projection'
 
@@ -22,6 +31,15 @@ function resolveMusicId(item: LiturgyItem): number | null {
   const musicId = Number(item.musicId)
   if (!Number.isFinite(musicId) || musicId <= 0) return null
   return musicId
+}
+
+function resolveImagePaths(item: LiturgyItem): string[] {
+  if (item.type !== 'images') return []
+  if (item.filePaths && item.filePaths.length > 0) {
+    return item.filePaths.map((entry) => entry.trim()).filter(Boolean)
+  }
+  const single = item.filePath?.trim()
+  return single ? [single] : []
 }
 
 /**
@@ -115,6 +133,79 @@ export async function executeLiturgyItem(
       return { ok: true }
     }
 
+    case 'video': {
+      const filePath = item.filePath?.trim()
+      if (!filePath) {
+        return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+      }
+
+      const opened = await openLiturgyLocalVideoControl(
+        filePath,
+        item.name?.trim() || filePath,
+      )
+      if (!opened) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
+    case 'images': {
+      const paths = resolveImagePaths(item)
+      if (paths.length === 0) {
+        return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+      }
+
+      const opened = await openLiturgyLocalImageControl(
+        paths,
+        item.name?.trim() || paths[0] || 'Imagens',
+      )
+      if (!opened) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
+    case 'pdf': {
+      const filePath = item.filePath?.trim()
+      if (!filePath) {
+        return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+      }
+
+      const opened = await openLiturgyLocalPdfControl(
+        filePath,
+        item.name?.trim() || filePath,
+      )
+      if (!opened) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
+    case 'presentation': {
+      const filePath = item.filePath?.trim()
+      if (!filePath) {
+        return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+      }
+
+      const bridge = getDesktopBridge()
+      const hasOffice = await bridge?.presentation?.detectOffice?.()
+      if (hasOffice === false) {
+        return {
+          ok: false,
+          messageKey: 'liturgy.messages.presentationOfficeMissing',
+        }
+      }
+
+      const opened = await openLiturgyLocalPresentationControl(
+        filePath,
+        item.name?.trim() || filePath,
+      )
+      if (!opened) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
     case 'site': {
       const rawUrl = item.url?.trim()
       if (!rawUrl) {
@@ -149,6 +240,74 @@ export async function playLiturgyItemOnScreens(
 ): Promise<LiturgyActionResult> {
   if (item.type === 'music') {
     return openLiturgyMusicOnScreens(item)
+  }
+
+  if (item.type === 'video') {
+    const filePath = item.filePath?.trim()
+    if (!filePath) {
+      return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+    }
+    const ok = await playLiturgyLocalVideoOnScreens(
+      filePath,
+      item.name?.trim() || filePath,
+    )
+    if (!ok) {
+      return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+    }
+    return { ok: true }
+  }
+
+  if (item.type === 'images') {
+    const paths = resolveImagePaths(item)
+    if (paths.length === 0) {
+      return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+    }
+    const ok = await playLiturgyLocalImageOnScreens(
+      paths,
+      item.name?.trim() || paths[0] || 'Imagens',
+    )
+    if (!ok) {
+      return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+    }
+    return { ok: true }
+  }
+
+  if (item.type === 'pdf') {
+    const filePath = item.filePath?.trim()
+    if (!filePath) {
+      return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+    }
+    const ok = await playLiturgyLocalPdfOnScreens(
+      filePath,
+      item.name?.trim() || filePath,
+    )
+    if (!ok) {
+      return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+    }
+    return { ok: true }
+  }
+
+  if (item.type === 'presentation') {
+    const filePath = item.filePath?.trim()
+    if (!filePath) {
+      return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+    }
+    const bridge = getDesktopBridge()
+    const hasOffice = await bridge?.presentation?.detectOffice?.()
+    if (hasOffice === false) {
+      return {
+        ok: false,
+        messageKey: 'liturgy.messages.presentationOfficeMissing',
+      }
+    }
+    const ok = await playLiturgyLocalPresentationOnScreens(
+      filePath,
+      item.name?.trim() || filePath,
+    )
+    if (!ok) {
+      return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+    }
+    return { ok: true }
   }
 
   if (item.type !== 'online_video' && item.type !== 'site') {

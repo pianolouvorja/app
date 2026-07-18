@@ -73,6 +73,10 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
     accentColor: getTypeDotColor(type),
     categoryId:
       type === 'category' ? null : asString(source.categoryId) || null,
+    startTime:
+      type === 'category'
+        ? normalizeTimeHHmm(source.startTime)
+        : null,
     complementaryTitle: asString(source.complementaryTitle).trim() || undefined,
     notes: asString(source.notes).trim() || undefined,
     musicId: asNumberOrNull(source.musicId),
@@ -81,6 +85,15 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
     verseChapter: asNumberOrNull(source.verseChapter),
     verseNumbers: asString(source.verseNumbers),
     filePath: asString(source.filePath),
+    filePaths: (() => {
+      if (Array.isArray(source.filePaths)) {
+        return source.filePaths
+          .map((entry) => asString(entry).trim())
+          .filter(Boolean)
+      }
+      const single = asString(source.filePath).trim()
+      return single ? [single] : undefined
+    })(),
     url: asString(source.url),
   }
 }

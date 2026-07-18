@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF — Central Adoração</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      #stage {
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        background: #000;
+      }
+      #frame {
+        max-width: 100%;
+        max-height: 100%;
+        background: #000;
+      }
+      #error {
+        display: none;
+        color: #f8fafc;
+        font: 500 0.95rem/1.4 system-ui, sans-serif;
+        text-align: center;
+        padding: 1rem;
+      }
+      #error.is-visible { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="frame" aria-hidden="true"></canvas>
+      <p id="error">Não foi possível carregar o PDF.</p>
+    </div>
+    <script type="module">
+      import * as pdfjsLib from './vendor/pdfjs/pdf.min.mjs'
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        './vendor/pdfjs/pdf.worker.min.mjs',
+        import.meta.url,
+      ).href
+
+      const params = new URLSearchParams(window.location.search)
+      const src = (params.get('src') || '').trim()
+      const canvas = document.getElementById('frame')
+      const error = document.getElementById('error')
+      const context = canvas?.getContext('2d', { alpha: false })
+
+      let pdfDoc = null
+      let pageIndex = 0
+      let renderToken = 0
+
+      function state() {
+        return {
+          index: pageIndex,
+          total: pdfDoc ? pdfDoc.numPages : 0,
+        }
+      }
+
+      function showError(visible) {
+        error?.classList.toggle('is-visible', Boolean(visible))
+        if (canvas) canvas.style.display = visible ? 'none' : 'block'
+      }
+
+      async function renderPage(nextIndex) {
+        if (!pdfDoc || !canvas || !context) {
+          showError(true)
+          return state()
+        }
+
+        const total = pdfDoc.numPages
+        pageIndex = ((nextIndex % total) + total) % total
+        const token = ++renderToken
+        const page = await pdfDoc.getPage(pageIndex + 1)
+        if (token !== renderToken) return state()
+
+        const stage = document.getElementById('stage')
+        const maxWidth = Math.max(1, stage?.clientWidth || window.innerWidth || 1)
+        const maxHeight = Math.max(1, stage?.clientHeight || window.innerHeight || 1)
+        const base = page.getViewport({ scale: 1 })
+        const scale = Math.min(maxWidth / base.width, maxHeight / base.height)
+        const viewport = page.getViewport({ scale: Math.max(0.1, scale) })
+
+        canvas.width = Math.floor(viewport.width)
+        canvas.height = Math.floor(viewport.height)
+        showError(false)
+
+        await page.render({
+          canvasContext: context,
+          viewport,
+        }).promise
+
+        return state()
+      }
+
+      async function ensureReady() {
+        if (pdfDoc) return true
+        if (!src) {
+          showError(true)
+          return false
+        }
+        try {
+          pdfDoc = await pdfjsLib.getDocument(src).promise
+          return true
+        } catch {
+          showError(true)
+          pdfDoc = null
+          return false
+        }
+      }
+
+      window.__liturgyPdf = {
+        getState() {
+          return state()
+        },
+        async next() {
+          if (!(await ensureReady())) return state()
+          return renderPage(pageIndex + 1)
+        },
+        async prev() {
+          if (!(await ensureReady())) return state()
+          return renderPage(pageIndex - 1)
+        },
+        async goTo(i) {
+          if (!(await ensureReady())) return state()
+          return renderPage(Number(i) || 0)
+        },
+      }
+
+      window.addEventListener('resize', () => {
+        if (pdfDoc) void renderPage(pageIndex)
+      })
+
+      ;(async () => {
+        if (await ensureReady()) await renderPage(0)
+      })()
+    </script>
+  </body>
+</html>

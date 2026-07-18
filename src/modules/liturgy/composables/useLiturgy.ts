@@ -28,6 +28,8 @@ export function useLiturgy() {
     lastActionMessageKey,
     itemDialogOpen,
     editingIndex,
+    itemDialogLockedCategory,
+    itemDialogHideTypePicker,
     itemDraft,
     customDialogOpen,
     newCustomName,
@@ -192,6 +194,11 @@ export function useLiturgy() {
     store.openAddDialog()
   }
 
+  function onOpenAddSubItemDialog(categoryId: string) {
+    albumsStore.closeLyric()
+    store.openAddSubItemDialog(categoryId)
+  }
+
   function onOpenEditDialog(index: number) {
     albumsStore.closeLyric()
     store.openEditDialog(index)
@@ -212,6 +219,8 @@ export function useLiturgy() {
     lastActionMessageKey,
     itemDialogOpen,
     editingIndex,
+    itemDialogLockedCategory,
+    itemDialogHideTypePicker,
     itemDraft,
     customDialogOpen,
     newCustomName,
@@ -254,6 +263,7 @@ export function useLiturgy() {
     startCountdown: store.startCountdown,
     stopCountdown: store.stopCountdown,
     openAddDialog: onOpenAddDialog,
+    openAddSubItemDialog: onOpenAddSubItemDialog,
     openEditDialog: onOpenEditDialog,
     closeItemDialog: store.closeItemDialog,
     saveItemDraft: store.saveItemDraft,

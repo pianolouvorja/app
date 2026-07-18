@@ -41,6 +41,14 @@ contextBridge.exposeInMainWorld('louvorja', {
     identify: () => ipcRenderer.invoke('displays:identify'),
   },
 
+  dialog: {
+    openFile: (options) => ipcRenderer.invoke('dialog:open-file', options ?? {}),
+  },
+
+  presentation: {
+    detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
+  },
+
   projection: {
     openUrl: (payload) => ipcRenderer.invoke('projection:open-url', payload),
     closeUrl: () => ipcRenderer.invoke('projection:close-url'),
@@ -62,6 +70,17 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteReload: () => ipcRenderer.invoke('projection:remote-reload'),
     toggleSiteScreens: () => ipcRenderer.invoke('projection:toggle-site-screens'),
     toggleVideoScreens: () => ipcRenderer.invoke('projection:toggle-video-screens'),
+    remoteImageNext: () => ipcRenderer.invoke('projection:remote-image-next'),
+    remoteImagePrev: () => ipcRenderer.invoke('projection:remote-image-prev'),
+    getImageSlideState: () =>
+      ipcRenderer.invoke('projection:get-image-slide-state'),
+    remotePdfNext: () => ipcRenderer.invoke('projection:remote-pdf-next'),
+    remotePdfPrev: () => ipcRenderer.invoke('projection:remote-pdf-prev'),
+    getPdfPageState: () => ipcRenderer.invoke('projection:get-pdf-page-state'),
+    remotePptNext: () => ipcRenderer.invoke('projection:remote-ppt-next'),
+    remotePptPrev: () => ipcRenderer.invoke('projection:remote-ppt-prev'),
+    getPptSlideState: () =>
+      ipcRenderer.invoke('projection:get-ppt-slide-state'),
     getSiteTargetMonitors: () =>
       ipcRenderer.invoke('projection:get-site-target-monitors'),
     setSiteTargetMonitors: (ids) =>

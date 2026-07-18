@@ -91,7 +91,6 @@ export const LITURGY_TYPE_GROUPS: LiturgyTypeGroup[] = [
       { value: 'images', dot: '#6D4C41' }, // marrom
       { value: 'pdf', dot: '#1A237E' }, // índigo/navy
       { value: 'presentation', dot: '#F5F5F5' }, // branco
-      { value: 'other_files', dot: '#78909C' }, // cinza azulado
     ],
   },
   {
@@ -130,6 +129,8 @@ export interface LiturgyItem {
   accentColor: string
   /** ID da Categoria/Sessão vinculada (itens que não são category). */
   categoryId?: string | null
+  /** Horário de início da categoria/separador (HH:MM). */
+  startTime?: string | null
   /** Título opcional ao lado do nome da música na listagem. */
   complementaryTitle?: string
   /** Anotações livres (em música, exibidas abaixo do álbum). */
@@ -140,6 +141,8 @@ export interface LiturgyItem {
   verseChapter?: number | null
   verseNumbers?: string
   filePath?: string
+  /** Caminhos locais (galeria de imagens). */
+  filePaths?: string[]
   url?: string
 }
 
@@ -175,18 +178,21 @@ export interface LiturgyPersistedState {
 }
 
 export interface LiturgyItemDraft {
-  type: LiturgyItemType
+  type: LiturgyItemType | null
   name: string
   subtitle: string
   durationMs: number
   accentColor: string
   categoryId: string | null
+  /** Horário de início (HH:MM) — usado em categorias/separadores. */
+  startTime: string
   musicId: number | null
   musicMode: LiturgyMusicMode
   verseBookId: number | null
   verseChapter: number | null
   verseNumbers: string
   filePath: string
+  filePaths: string[]
   url: string
 }
 
@@ -215,18 +221,20 @@ export interface LiturgyItemTypeMeta {
 }
 
 export const DEFAULT_LITURGY_ITEM_DRAFT: LiturgyItemDraft = {
-  type: 'category',
+  type: null,
   name: '',
   subtitle: '',
   durationMs: 0,
-  accentColor: getTypeDotColor('category'),
+  accentColor: '#9ecaff',
   categoryId: null,
+  startTime: '',
   musicId: null,
   musicMode: 'audio',
   verseBookId: null,
   verseChapter: null,
   verseNumbers: '',
   filePath: '',
+  filePaths: [],
   url: '',
 }
 

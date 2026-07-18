@@ -24,6 +24,8 @@ const {
   lastActionMessageKey,
   itemDialogOpen,
   editingIndex,
+  itemDialogLockedCategory,
+  itemDialogHideTypePicker,
   itemDraft,
   customDialogOpen,
   newCustomName,
@@ -66,6 +68,7 @@ const {
   startCountdown,
   stopCountdown,
   openAddDialog,
+  openAddSubItemDialog,
   openEditDialog,
   closeItemDialog,
   saveItemDraft,
@@ -245,6 +248,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           @select="selectItem"
           @play-screens="playItemOnScreens"
           @edit="openEditDialog"
+          @add-sub-item="openAddSubItemDialog"
           @remove="confirmRemoveItem"
           @toggle-done="toggleItemDone"
           @reorder="reorderItems"
@@ -262,6 +266,8 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
       :draft="itemDraft"
       :is-editing="editingIndex != null"
       :is-valid="isDraftValid"
+      :lock-category="itemDialogLockedCategory"
+      :hide-type-picker="itemDialogHideTypePicker"
       :category-options="categoryOptions"
       :complementary-title-suggestions="complementaryTitleSuggestions"
       :music-options="filteredMusic"

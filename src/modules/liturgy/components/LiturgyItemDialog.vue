@@ -2,6 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
+import type { FileDialogFilter } from '@shared/types/desktop-bridge'
+
 import {
   DEFAULT_MOMENT_DURATION_MS,
   getTypeDotColor,
@@ -15,12 +18,17 @@ import {
   type LiturgyMusicOption,
 } from '../types/liturgy'
 import { formatMomentDuration, isValidLiturgyUrl } from '../services/liturgy-item-helpers'
+import { normalizeLiturgyTimeHHmm } from '../services/liturgy-format'
 
 const props = defineProps<{
   open: boolean
   draft: LiturgyItemDraft
   isEditing: boolean
   isValid: boolean
+  /** Sub-item: oculta tipo category e o select de categoria (já vinculada). */
+  lockCategory?: boolean
+  /** Toolbar: cria só categoria — oculta o seletor de tipo. */
+  hideTypePicker?: boolean
   categoryOptions: Array<{ id: string; name: string }>
   complementaryTitleSuggestions: string[]
   musicOptions: LiturgyMusicOption[]
@@ -40,7 +48,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const showValidation = ref(false)
+const filePickerBusy = ref(false)
+const filePickerError = ref<string | null>(null)
 
+const hasTypeSelection = computed(() => props.draft.type != null)
 const isCategory = computed(() => props.draft.type === 'category')
 const isMusic = computed(() => props.draft.type === 'music')
 
@@ -48,15 +59,56 @@ const musicRequiredMissing = computed(
   () => isMusic.value && props.draft.musicId == null,
 )
 const nameRequiredMissing = computed(() => props.draft.name.trim().length === 0)
+const startTimeRequiredMissing = computed(
+  () => isCategory.value && !normalizeLiturgyTimeHHmm(props.draft.startTime),
+)
 const categoryRequiredMissing = computed(
-  () => !isCategory.value && !props.draft.categoryId,
+  () => hasTypeSelection.value && !isCategory.value && !props.draft.categoryId,
 )
 
 const durationLabel = computed(() => formatMomentDuration(props.draft.durationMs))
 
-const showFilePath = computed(() =>
-  INTERNAL_FILE_TYPES.includes(props.draft.type),
+const showFilePath = computed(
+  () =>
+    props.draft.type != null && INTERNAL_FILE_TYPES.includes(props.draft.type),
 )
+
+const isImagesType = computed(() => props.draft.type === 'images')
+
+const selectedFilePaths = computed(() => {
+  if (props.draft.filePaths.length > 0) return props.draft.filePaths
+  if (props.draft.filePath.trim()) return [props.draft.filePath.trim()]
+  return [] as string[]
+})
+
+const fileButtonLabel = computed(() => {
+  const hasFile = selectedFilePaths.value.length > 0
+  const type = props.draft.type
+
+  if (type === 'images') {
+    return hasFile
+      ? t('liturgy.fields.changeFilesButton')
+      : t('liturgy.fields.selectFilesButton')
+  }
+  if (type === 'video') {
+    return hasFile
+      ? t('liturgy.fields.changeVideoButton')
+      : t('liturgy.fields.selectVideoButton')
+  }
+  if (type === 'pdf') {
+    return hasFile
+      ? t('liturgy.fields.changePdfButton')
+      : t('liturgy.fields.selectPdfButton')
+  }
+  if (type === 'presentation') {
+    return hasFile
+      ? t('liturgy.fields.changePresentationButton')
+      : t('liturgy.fields.selectPresentationButton')
+  }
+  return hasFile
+    ? t('liturgy.fields.changeFileButton')
+    : t('liturgy.fields.selectFileButton')
+})
 
 const showUrl = computed(
   () => props.draft.type === 'site' || props.draft.type === 'online_video',
@@ -68,6 +120,9 @@ const urlRequiredMissing = computed(
 
 const nameFieldError = computed(
   () => showValidation.value && nameRequiredMissing.value,
+)
+const startTimeFieldError = computed(
+  () => showValidation.value && startTimeRequiredMissing.value,
 )
 const musicFieldError = computed(
   () => showValidation.value && musicRequiredMissing.value,
@@ -95,8 +150,21 @@ const momentNamePlaceholder = computed(() => {
   return t('liturgy.dialog.momentNamePlaceholder')
 })
 
+const dialogTitle = computed(() => {
+  if (props.isEditing) return t('liturgy.dialog.editTitle')
+  if (props.lockCategory) return t('liturgy.dialog.addSubItemTitle')
+  if (props.hideTypePicker) return t('liturgy.dialog.addCategoryTitle')
+  return t('liturgy.dialog.title')
+})
+
 const typeGroups = computed(() => {
-  const groups = LITURGY_TYPE_GROUPS.map((group) => ({ ...group }))
+  const groups = LITURGY_TYPE_GROUPS.map((group) => ({
+    ...group,
+    types: props.lockCategory
+      ? group.types.filter((chip) => chip.value !== 'category')
+      : [...group.types],
+  })).filter((group) => group.types.length > 0)
+
   if (props.draft.type === 'verse') {
     return [
       ...groups,
@@ -111,10 +179,21 @@ const typeGroups = computed(() => {
   return groups
 })
 
+const showCategoryField = computed(
+  () => hasTypeSelection.value && !isCategory.value && !props.lockCategory,
+)
+
+const showDurationTitleRow = computed(
+  () => hasTypeSelection.value && !isCategory.value,
+)
+
 watch(
   () => props.open,
   (open) => {
-    if (open) showValidation.value = false
+    if (open) {
+      showValidation.value = false
+      filePickerError.value = null
+    }
   },
 )
 
@@ -136,6 +215,9 @@ function patch(partial: Partial<LiturgyItemDraft>) {
 }
 
 function selectType(type: LiturgyItemType) {
+  if (props.lockCategory && type === 'category') return
+
+  const previousType = props.draft.type
   const next: Partial<LiturgyItemDraft> = {
     type,
     accentColor: getTypeDotColor(type),
@@ -144,17 +226,18 @@ function selectType(type: LiturgyItemType) {
     next.durationMs = 0
     next.categoryId = null
   } else {
-    if (props.draft.type === 'category') {
+    if (previousType === 'category' || previousType == null) {
       next.durationMs =
         props.draft.durationMs > 0
           ? props.draft.durationMs
           : DEFAULT_MOMENT_DURATION_MS
     }
     next.categoryId = props.draft.categoryId ?? null
+    next.startTime = ''
   }
   if (type !== 'music') {
     next.musicId = null
-  } else if (props.draft.type !== 'music') {
+  } else if (previousType !== 'music') {
     next.name = ''
   }
   patch(next)
@@ -176,6 +259,10 @@ function onNameInput(event: Event) {
   patch({ name: (event.target as HTMLInputElement).value })
 }
 
+function onStartTimeInput(event: Event) {
+  patch({ startTime: (event.target as HTMLInputElement).value })
+}
+
 function onDetailsInput(event: Event) {
   patch({ subtitle: (event.target as HTMLTextAreaElement).value })
 }
@@ -184,8 +271,102 @@ function onUrlInput(event: Event) {
   patch({ url: (event.target as HTMLInputElement).value })
 }
 
-function onFileInput(event: Event) {
-  patch({ filePath: (event.target as HTMLInputElement).value })
+function fileFiltersForType(type: LiturgyItemType | null): FileDialogFilter[] {
+  switch (type) {
+    case 'video':
+      return [
+        { name: 'Vídeos', extensions: ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm'] },
+        { name: 'Todos', extensions: ['*'] },
+      ]
+    case 'images':
+      return [
+        {
+          name: 'Imagens',
+          extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'],
+        },
+        { name: 'Todos', extensions: ['*'] },
+      ]
+    case 'pdf':
+      return [
+        { name: 'PDF', extensions: ['pdf'] },
+        { name: 'Todos', extensions: ['*'] },
+      ]
+    case 'presentation':
+      return [
+        { name: 'PowerPoint (PPTX)', extensions: ['pptx'] },
+        { name: 'Outros (PPT/ODP)', extensions: ['ppt', 'odp'] },
+        { name: 'Todos', extensions: ['*'] },
+      ]
+    default:
+      return [
+        {
+          name: 'Mídia',
+          extensions: [
+            'mp4',
+            'mkv',
+            'avi',
+            'mov',
+            'wmv',
+            'webm',
+            'jpg',
+            'jpeg',
+            'png',
+            'gif',
+            'webp',
+            'pdf',
+            'ppt',
+            'pptx',
+          ],
+        },
+        { name: 'Todos', extensions: ['*'] },
+      ]
+  }
+}
+
+async function selectLocalFile() {
+  filePickerError.value = null
+  if (!isDesktopApp()) {
+    filePickerError.value = t('liturgy.fields.fileDesktopOnly')
+    return
+  }
+
+  const bridge = getDesktopBridge()
+  if (!bridge?.dialog?.openFile) {
+    filePickerError.value = t('liturgy.fields.fileDesktopOnly')
+    return
+  }
+
+  const multiple = isImagesType.value
+  filePickerBusy.value = true
+  try {
+    const result = await bridge.dialog.openFile({
+      title: fileButtonLabel.value,
+      filters: fileFiltersForType(props.draft.type),
+      multiple,
+    })
+    if (!result) return
+
+    const paths = (Array.isArray(result) ? result : [result])
+      .map((entry) => String(entry).trim())
+      .filter(Boolean)
+    if (paths.length === 0) return
+
+    const next: Partial<LiturgyItemDraft> = {
+      filePath: paths[0] ?? '',
+      filePaths: multiple ? paths : [],
+    }
+    if (!props.draft.name.trim()) {
+      if (multiple && paths.length > 1) {
+        next.name = t('liturgy.fields.filesSelected', { count: paths.length })
+      } else {
+        const fileName = paths[0]!.split(/[\\/]/).pop() ?? ''
+        next.name = fileName.replace(/\.[^.]+$/, '') || fileName
+      }
+    }
+    patch(next)
+  } finally {
+    filePickerBusy.value = false
+  }
 }
 
 function onCategoryChange(event: Event) {
@@ -243,7 +424,7 @@ function isLightDot(hex: string): boolean {
         class="moment-dialog"
         role="dialog"
         aria-modal="true"
-        :aria-label="isEditing ? t('liturgy.dialog.editTitle') : t('liturgy.dialog.title')"
+        :aria-label="dialogTitle"
       >
         <header class="moment-dialog__header">
           <div class="moment-dialog__heading">
@@ -254,7 +435,7 @@ function isLightDot(hex: string): boolean {
               <i class="mdi mdi-plus" />
             </div>
             <h2 class="moment-dialog__title">
-              {{ isEditing ? t('liturgy.dialog.editTitle') : t('liturgy.dialog.title') }}
+              {{ dialogTitle }}
             </h2>
           </div>
           <button
@@ -274,12 +455,20 @@ function isLightDot(hex: string): boolean {
           class="moment-dialog__form"
           @submit="onSubmit"
         >
-          <div class="moment-dialog__section">
+          <div
+            v-if="!hideTypePicker"
+            class="moment-dialog__section"
+          >
             <span class="moment-dialog__label">
               {{ t('liturgy.dialog.itemType') }}
             </span>
 
-            <div class="moment-dialog__type-panel">
+            <div
+              class="moment-dialog__type-panel"
+              :class="{
+                'moment-dialog__type-panel--has-selection': hasTypeSelection,
+              }"
+            >
               <div
                 v-for="(group, groupIndex) in typeGroups"
                 :key="group.id"
@@ -298,7 +487,11 @@ function isLightDot(hex: string): boolean {
                     :key="chip.value"
                     type="button"
                     class="moment-dialog__chip"
-                    :class="{ 'moment-dialog__chip--active': draft.type === chip.value }"
+                    :class="{
+                      'moment-dialog__chip--active': draft.type === chip.value,
+                      'moment-dialog__chip--muted':
+                        hasTypeSelection && draft.type !== chip.value,
+                    }"
                     :title="t(`liturgy.typeDescriptions.${chip.value}`)"
                     @click="selectType(chip.value)"
                   >
@@ -315,6 +508,7 @@ function isLightDot(hex: string): boolean {
             </div>
           </div>
 
+          <template v-if="hasTypeSelection">
           <div
             v-if="isMusic"
             class="moment-dialog__section"
@@ -433,12 +627,14 @@ function isLightDot(hex: string): boolean {
             class="moment-dialog__row"
             :class="{
               'moment-dialog__row--name-only': isCategory,
-              'moment-dialog__row--with-category': !isCategory,
+              'moment-dialog__row--with-category': showCategoryField,
+              'moment-dialog__row--duration-title':
+                showDurationTitleRow && !showCategoryField,
             }"
           >
             <div
-              v-if="!isCategory"
-              class="moment-dialog__section"
+              v-if="showDurationTitleRow"
+              class="moment-dialog__section moment-dialog__section--duration"
             >
               <span class="moment-dialog__label">
                 {{ t('liturgy.dialog.duration') }}
@@ -516,7 +712,36 @@ function isLightDot(hex: string): boolean {
             </div>
 
             <div
-              v-if="!isCategory"
+              v-if="isCategory"
+              class="moment-dialog__section moment-dialog__section--start-time"
+            >
+              <label
+                class="moment-dialog__label"
+                :class="{ 'moment-dialog__label--error': startTimeFieldError }"
+                for="moment-start-time"
+              >
+                {{ t('liturgy.dialog.categoryStartTime') }}
+                <span
+                  class="moment-dialog__required"
+                  aria-hidden="true"
+                >*</span>
+              </label>
+              <input
+                id="moment-start-time"
+                class="moment-dialog__input moment-dialog__input--time"
+                :class="{ 'moment-dialog__input--error': startTimeFieldError }"
+                type="time"
+                :value="draft.startTime"
+                :aria-label="t('liturgy.dialog.categoryStartTime')"
+                :aria-invalid="startTimeFieldError"
+                :aria-required="true"
+                required
+                @input="onStartTimeInput"
+              >
+            </div>
+
+            <div
+              v-if="showCategoryField"
               class="moment-dialog__section"
             >
               <label
@@ -562,19 +787,56 @@ function isLightDot(hex: string): boolean {
             v-if="showFilePath"
             class="moment-dialog__section"
           >
-            <label
-              class="moment-dialog__label"
-              for="moment-file"
-            >
+            <span class="moment-dialog__label">
               {{ t('liturgy.fields.selectFile') }}
-            </label>
-            <input
-              id="moment-file"
-              class="moment-dialog__input"
-              type="text"
-              :value="draft.filePath"
-              @input="onFileInput"
+            </span>
+            <button
+              type="button"
+              class="moment-dialog__file-btn"
+              :disabled="filePickerBusy"
+              @click="selectLocalFile"
             >
+              <i
+                class="mdi mdi-folder-open"
+                aria-hidden="true"
+              />
+              {{ fileButtonLabel }}
+            </button>
+            <p
+              v-if="isImagesType && selectedFilePaths.length > 0"
+              class="moment-dialog__file-path"
+            >
+              {{
+                t('liturgy.fields.filesSelected', {
+                  count: selectedFilePaths.length,
+                })
+              }}
+            </p>
+            <ul
+              v-if="isImagesType && selectedFilePaths.length > 0"
+              class="moment-dialog__file-list"
+            >
+              <li
+                v-for="(path, index) in selectedFilePaths"
+                :key="`${index}-${path}`"
+                :title="path"
+              >
+                {{ path.split(/[\\/]/).pop() || path }}
+              </li>
+            </ul>
+            <p
+              v-else-if="draft.filePath"
+              class="moment-dialog__file-path"
+              :title="draft.filePath"
+            >
+              {{ draft.filePath }}
+            </p>
+            <p
+              v-if="filePickerError"
+              class="moment-dialog__field-error"
+            >
+              {{ filePickerError }}
+            </p>
           </div>
 
           <div
@@ -626,6 +888,7 @@ function isLightDot(hex: string): boolean {
               @input="onDetailsInput"
             />
           </div>
+          </template>
 
           <footer class="moment-dialog__footer">
             <button
@@ -853,7 +1116,9 @@ function isLightDot(hex: string): boolean {
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
-    transform 140ms ease;
+    transform 140ms ease,
+    filter 180ms ease,
+    opacity 180ms ease;
 
   &:hover {
     color: #fff;
@@ -867,6 +1132,30 @@ function isLightDot(hex: string): boolean {
     background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
     border-color: color-mix(in srgb, var(--ds-color-primary) 30%, transparent);
     box-shadow: 0 0 12px color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
+    filter: none;
+    opacity: 1;
+  }
+
+  &--muted {
+    filter: grayscale(1);
+    opacity: 0.42;
+    color: color-mix(in srgb, var(--ds-color-on-surface) 48%, transparent);
+    border-color: color-mix(in srgb, #fff 6%, transparent);
+    background: color-mix(in srgb, #fff 3%, transparent);
+    box-shadow: none;
+
+    .moment-dialog__dot {
+      box-shadow: none !important;
+      background: color-mix(in srgb, var(--ds-color-on-surface) 35%, transparent) !important;
+      border-color: transparent;
+    }
+
+    &:hover {
+      filter: grayscale(0.65);
+      opacity: 0.72;
+      color: color-mix(in srgb, var(--ds-color-on-surface) 78%, transparent);
+      transform: none;
+    }
   }
 }
 
@@ -875,6 +1164,10 @@ function isLightDot(hex: string): boolean {
   height: 0.5rem;
   border-radius: 999px;
   flex-shrink: 0;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 
   &--light {
     border: 1px solid color-mix(in srgb, #fff 55%, #000);
@@ -891,8 +1184,13 @@ function isLightDot(hex: string): boolean {
     grid-template-columns: 1fr;
   }
 
+  &--duration-title {
+    grid-template-columns: minmax(6.25rem, 7.25rem) minmax(0, 1fr);
+  }
+
   &--with-category {
-    grid-template-columns: minmax(7.5rem, 0.85fr) minmax(10rem, 1.2fr) minmax(9rem, 1fr);
+    grid-template-columns:
+      minmax(6.25rem, 7.25rem) minmax(12rem, 1.7fr) minmax(8rem, 0.95fr);
   }
 }
 
@@ -949,6 +1247,73 @@ function isLightDot(hex: string): boolean {
   font-variant-numeric: tabular-nums;
 }
 
+.moment-dialog__file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
+  color: var(--ds-color-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+
+  i {
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
+    border-color: color-mix(in srgb, var(--ds-color-primary) 50%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+    filter: grayscale(0.4);
+  }
+}
+
+.moment-dialog__file-path {
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  word-break: break-all;
+  color: color-mix(in srgb, var(--ds-color-on-surface) 58%, transparent);
+}
+
+.moment-dialog__file-list {
+  margin: 0.35rem 0 0;
+  padding: 0.4rem 0.55rem;
+  max-height: 7rem;
+  overflow: auto;
+  list-style: none;
+  border-radius: 0.55rem;
+  border: 1px solid color-mix(in srgb, #fff 8%, transparent);
+  background: color-mix(in srgb, #fff 4%, transparent);
+
+  li {
+    margin: 0;
+    padding: 0.18rem 0;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: color-mix(in srgb, var(--ds-color-on-surface) 68%, transparent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .moment-dialog__input {
   width: 100%;
   min-height: 2.5rem;
@@ -977,6 +1342,13 @@ function isLightDot(hex: string): boolean {
     &:focus {
       outline-color: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 55%, transparent);
     }
+  }
+
+  &--time {
+    width: auto;
+    max-width: 10rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color-scheme: dark;
   }
 }
 

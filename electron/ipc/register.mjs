@@ -11,10 +11,17 @@ import {
   writeWorkspaceRecord,
 } from '../workspace.mjs'
 import { registerDisplayIpc } from './displays.mjs'
+import { registerDialogIpc } from './dialog.mjs'
+import {
+  hasPresentationOffice,
+} from './presentation-convert.mjs'
 import {
   broadcastPlaybackSync,
   closeWebProjectionWindows,
   getSourceMediaIdFor,
+  getImageSlideState,
+  getPdfPageState,
+  getPptSlideState,
   getSourceNavigationState,
   getSourcePlaybackState,
   getVideoTargetMonitorIds,
@@ -22,6 +29,12 @@ import {
   registerProjectionCapturePermissions,
   remoteGoBackSource,
   remoteGoForwardSource,
+  remoteImageNext,
+  remoteImagePrev,
+  remotePdfNext,
+  remotePdfPrev,
+  remotePptNext,
+  remotePptPrev,
   remotePauseSource,
   remotePlaySource,
   remoteReloadSource,
@@ -38,13 +51,23 @@ import {
 
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
+  registerDialogIpc()
   registerProjectionCapturePermissions()
 
-  ipcMain.handle('projection:open-url', (_event, payload) => {
+  ipcMain.handle('projection:open-url', async (_event, payload) => {
     try {
-      return openWebProjectionWindows(payload ?? {})
+      return await openWebProjectionWindows(payload ?? {})
     } catch (error) {
       console.error('[ipc] projection:open-url', error)
+      return false
+    }
+  })
+
+  ipcMain.handle('presentation:detect-office', () => {
+    try {
+      return hasPresentationOffice()
+    } catch (error) {
+      console.error('[ipc] presentation:detect-office', error)
       return false
     }
   })
@@ -181,6 +204,87 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] projection:toggle-video-screens', error)
       return false
+    }
+  })
+
+  ipcMain.handle('projection:remote-image-next', async () => {
+    try {
+      return await remoteImageNext()
+    } catch (error) {
+      console.error('[ipc] projection:remote-image-next', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-image-prev', async () => {
+    try {
+      return await remoteImagePrev()
+    } catch (error) {
+      console.error('[ipc] projection:remote-image-prev', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:get-image-slide-state', async () => {
+    try {
+      return await getImageSlideState()
+    } catch (error) {
+      console.error('[ipc] projection:get-image-slide-state', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-pdf-next', async () => {
+    try {
+      return await remotePdfNext()
+    } catch (error) {
+      console.error('[ipc] projection:remote-pdf-next', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-pdf-prev', async () => {
+    try {
+      return await remotePdfPrev()
+    } catch (error) {
+      console.error('[ipc] projection:remote-pdf-prev', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:get-pdf-page-state', async () => {
+    try {
+      return await getPdfPageState()
+    } catch (error) {
+      console.error('[ipc] projection:get-pdf-page-state', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-ppt-next', async () => {
+    try {
+      return await remotePptNext()
+    } catch (error) {
+      console.error('[ipc] projection:remote-ppt-next', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:remote-ppt-prev', async () => {
+    try {
+      return await remotePptPrev()
+    } catch (error) {
+      console.error('[ipc] projection:remote-ppt-prev', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:get-ppt-slide-state', async () => {
+    try {
+      return await getPptSlideState()
+    } catch (error) {
+      console.error('[ipc] projection:get-ppt-slide-state', error)
+      return null
     }
   })
 
