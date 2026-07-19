@@ -142,7 +142,7 @@ onUnmounted(() => {
     >
       <span class="bible-version-select__value">{{ selectedLabel }}</span>
       <i
-        class="mdi mdi-chevron-down bible-version-select__chevron"
+        class="ti ti-chevron-down bible-version-select__chevron"
         aria-hidden="true"
       />
     </button>

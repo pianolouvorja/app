@@ -34,7 +34,7 @@ function onSelect(key: string) {
       :class="{ 'ds-dock__item--active': isActive(item.key) }"
       @click="onSelect(item.key)"
     >
-      <i class="mdi ds-dock__icon" :class="item.icon" aria-hidden="true" />
+      <i class="ti ds-dock__icon" :class="item.icon" aria-hidden="true" />
       <span class="ds-dock__label">{{ item.label }}</span>
       <span v-if="isActive(item.key)" class="ds-dock__dot" aria-hidden="true" />
     </button>
@@ -55,17 +55,8 @@ function onSelect(key: string) {
   gap: 3rem;
   padding: 0 var(--ds-spacing-page, 32px) 0.5rem;
   border-top: 1px solid var(--ds-color-outline);
-  background: color-mix(
-    in srgb,
-    var(--ds-color-surface) var(--ds-glass-fill, 80%),
-    transparent
-  );
-  backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
-  transition:
-    background-color var(--ds-motion-duration, 280ms) ease,
-    backdrop-filter var(--ds-motion-duration, 280ms) ease,
-    -webkit-backdrop-filter var(--ds-motion-duration, 280ms) ease;
+  background: var(--ds-color-surface);
+  transition: background-color var(--ds-motion-duration, 280ms) ease;
 }
 
 .ds-dock__item {

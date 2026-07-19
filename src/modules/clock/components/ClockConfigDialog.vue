@@ -64,7 +64,7 @@ function onBackdropClick(event: MouseEvent) {
             <div class="clock-config__heading">
               <div class="clock-config__heading-icon">
                 <i
-                  class="mdi mdi-palette-outline"
+                  class="ti ti-palette"
                   aria-hidden="true"
                 />
               </div>
@@ -84,7 +84,7 @@ function onBackdropClick(event: MouseEvent) {
               @click="emit('close')"
             >
               <i
-                class="mdi mdi-close"
+                class="ti ti-x"
                 aria-hidden="true"
               />
             </button>
@@ -94,7 +94,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="clock-config__section">
               <div class="clock-config__section-head">
                 <i
-                  class="mdi mdi-format-color-fill"
+                  class="ti ti-paint"
                   aria-hidden="true"
                 />
                 <div>
@@ -127,7 +127,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onBgInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -137,7 +137,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="clock-config__section">
               <div class="clock-config__section-head">
                 <i
-                  class="mdi mdi-format-color-text"
+                  class="ti ti-typography"
                   aria-hidden="true"
                 />
                 <div>
@@ -170,7 +170,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onTextInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -179,7 +179,7 @@ function onBackdropClick(event: MouseEvent) {
               <div class="clock-config__style">
                 <span class="clock-config__style-label">
                   <i
-                    class="mdi mdi-clock-outline"
+                    class="ti ti-clock"
                     aria-hidden="true"
                   />
                   {{ t('clock.style') }}
@@ -196,7 +196,7 @@ function onBackdropClick(event: MouseEvent) {
                     @click="emit('update:style', 'digital')"
                   >
                     <i
-                      class="mdi mdi-format-text-variant"
+                      class="ti ti-letter-case"
                       aria-hidden="true"
                     />
                     {{ t('clock.digital') }}
@@ -208,7 +208,7 @@ function onBackdropClick(event: MouseEvent) {
                     @click="emit('update:style', 'analog')"
                   >
                     <i
-                      class="mdi mdi-clock-outline"
+                      class="ti ti-clock"
                       aria-hidden="true"
                     />
                     {{ t('clock.analog') }}
@@ -220,7 +220,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="clock-config__section">
               <div class="clock-config__section-head">
                 <i
-                  class="mdi mdi-tune"
+                  class="ti ti-adjustments"
                   aria-hidden="true"
                 />
                 <div>
@@ -346,7 +346,7 @@ function onBackdropClick(event: MouseEvent) {
   background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -384,7 +384,7 @@ function onBackdropClick(event: MouseEvent) {
     color: var(--ds-color-on-surface);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -410,7 +410,7 @@ function onBackdropClick(event: MouseEvent) {
   gap: 0.75rem;
   margin-bottom: 1rem;
 
-  > .mdi {
+  > .ti {
     margin-top: 0.15rem;
     color: var(--ds-color-primary);
     font-size: 1.35rem;
@@ -482,7 +482,7 @@ function onBackdropClick(event: MouseEvent) {
     cursor: pointer;
   }
 
-  .mdi {
+  .ti {
     font-size: 0.95rem;
     pointer-events: none;
   }
@@ -503,7 +503,7 @@ function onBackdropClick(event: MouseEvent) {
   font-size: 0.875rem;
   font-weight: 700;
 
-  .mdi {
+  .ti {
     color: var(--ds-color-primary);
     font-size: 1rem;
   }
@@ -541,7 +541,7 @@ function onBackdropClick(event: MouseEvent) {
     color: var(--ds-color-primary);
   }
 
-  .mdi {
+  .ti {
     font-size: 1rem;
   }
 }

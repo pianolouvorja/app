@@ -47,7 +47,7 @@ function labelFor(ms: number) {
         class="countdown-saved__item"
       >
         <i
-          class="mdi mdi-timer"
+          class="ti ti-clock-hour-4"
           aria-hidden="true"
         />
         <span class="countdown-saved__value">{{ labelFor(ms) }}</span>
@@ -58,7 +58,7 @@ function labelFor(ms: number) {
           @click="emit('remove', index)"
         >
           <i
-            class="mdi mdi-delete"
+            class="ti ti-trash"
             aria-hidden="true"
           />
         </button>
@@ -138,7 +138,7 @@ function labelFor(ms: number) {
   padding: 0.35rem 0.25rem;
   color: var(--ds-color-on-surface);
 
-  > .mdi {
+  > .ti {
     color: var(--ds-color-primary);
     font-size: 1rem;
   }

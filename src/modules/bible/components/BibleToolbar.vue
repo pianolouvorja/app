@@ -33,7 +33,7 @@ const browseLabel = computed(() =>
 )
 
 const browseIcon = computed(() =>
-  props.showNavPanel ? 'mdi-format-list-numbered' : 'mdi-book-open-page-variant',
+  props.showNavPanel ? 'ti-list-numbers' : 'ti-book-2',
 )
 </script>
 
@@ -66,7 +66,7 @@ const browseIcon = computed(() =>
     <div class="bible-toolbar__actions">
       <div class="bible-toolbar__search">
         <i
-          class="mdi mdi-magnify bible-toolbar__search-icon"
+          class="ti ti-search bible-toolbar__search-icon"
           aria-hidden="true"
         />
         <input
@@ -88,7 +88,7 @@ const browseIcon = computed(() =>
         @click="emit('toggleNav')"
       >
         <i
-          :class="['mdi', browseIcon]"
+          :class="['ti', browseIcon]"
           aria-hidden="true"
         />
         <span>{{ browseLabel }}</span>

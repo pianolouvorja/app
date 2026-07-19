@@ -44,7 +44,7 @@ const { t } = useI18n()
             @click="emit('close')"
           >
             <i
-              class="mdi mdi-close"
+              class="ti ti-x"
               aria-hidden="true"
             />
           </button>

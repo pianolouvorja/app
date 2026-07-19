@@ -208,11 +208,11 @@ function onHandleDragEnd() {
       >
         <i
           v-if="item.done"
-          class="mdi mdi-check"
+          class="ti ti-check"
         />
         <i
           v-else-if="indeterminate"
-          class="mdi mdi-minus"
+          class="ti ti-minus"
         />
       </span>
     </label>
@@ -232,7 +232,7 @@ function onHandleDragEnd() {
           @dragend="onHandleDragEnd"
         >
           <i
-            class="mdi mdi-drag-vertical"
+            class="ti ti-grip-vertical"
             aria-hidden="true"
           />
         </span>
@@ -250,7 +250,7 @@ function onHandleDragEnd() {
           "
         >
           <i
-            class="mdi"
+            class="ti"
             :class="getItemTypeIcon(item.type)"
             aria-hidden="true"
           />
@@ -344,7 +344,7 @@ function onHandleDragEnd() {
             @click="emit('addSubItem')"
           >
             <i
-              class="mdi mdi-plus"
+              class="ti ti-plus"
               aria-hidden="true"
             />
             <span>{{ t('liturgy.actions.addSubItem') }}</span>
@@ -360,8 +360,8 @@ function onHandleDragEnd() {
             @click="emit('toggleCollapse')"
           >
             <i
-              class="mdi"
-              :class="collapsed ? 'mdi-chevron-right' : 'mdi-chevron-down'"
+              class="ti"
+              :class="collapsed ? 'ti-chevron-right' : 'ti-chevron-down'"
               aria-hidden="true"
             />
           </button>
@@ -398,7 +398,7 @@ function onHandleDragEnd() {
             @click.stop="emit('select')"
           >
             <i
-              class="mdi mdi-play"
+              class="ti ti-player-play"
               aria-hidden="true"
             />
           </button>
@@ -432,7 +432,7 @@ function onHandleDragEnd() {
             @click.stop="emit('select')"
           >
             <i
-              class="mdi mdi-monitor-dashboard"
+              class="ti ti-layout-dashboard"
               aria-hidden="true"
             />
           </button>
@@ -491,11 +491,11 @@ function onHandleDragEnd() {
             @click.stop="emit('playScreens')"
           >
             <i
-              class="mdi"
+              class="ti"
               :class="
                 (isSiteItem ? siteProjecting : videoProjecting)
-                  ? 'mdi-stop'
-                  : 'mdi-arrow-top-right'
+                  ? 'ti-player-stop'
+                  : 'ti-arrow-up-right'
               "
               aria-hidden="true"
             />
@@ -518,7 +518,7 @@ function onHandleDragEnd() {
             @click="emit('edit')"
           >
             <i
-              class="mdi mdi-pencil"
+              class="ti ti-pencil"
               aria-hidden="true"
             />
           </button>
@@ -532,7 +532,7 @@ function onHandleDragEnd() {
             @click="emit('remove')"
           >
             <i
-              class="mdi mdi-delete-outline"
+              class="ti ti-trash"
               aria-hidden="true"
             />
           </button>

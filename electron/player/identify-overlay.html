@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Identificar monitor</title>
+    <style>
+      /* Mesmo fundo do GradientBackground / tema geral */
+      :root {
+        --surface: #131313;
+        --primary: #2196f3;
+        --glow-a: 10%;
+        --glow-b: 5%;
+        --glow-c: 2%;
+        --lift: 3.2%;
+        --id-gradient: linear-gradient(
+          135deg,
+          #3a3a3a 0%,
+          #5a5a5a 18%,
+          #7a7a7a 32%,
+          #4a4a4a 48%,
+          #2a2a2a 58%,
+          #6a6a6a 74%,
+          #484848 88%,
+          #333 100%
+        );
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--surface);
+        color: #e5e2e1;
+        font-family:
+          Inter,
+          'Plus Jakarta Sans',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        cursor: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .stage {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        isolation: isolate;
+        overflow: hidden;
+        background: var(--surface);
+      }
+
+      /* Camadas suaves — idêntico ao ds-gradient-bg__glow */
+      .glow-aura {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            circle at 50% 45%,
+            color-mix(in srgb, var(--primary) var(--glow-a), transparent) 0%,
+            color-mix(in srgb, var(--primary) var(--glow-b), transparent) 28%,
+            color-mix(in srgb, var(--primary) var(--glow-c), transparent) 48%,
+            transparent 68%
+          ),
+          radial-gradient(
+            circle at 50% 48%,
+            color-mix(in srgb, #ffffff var(--lift), var(--surface)) 0%,
+            var(--surface) 62%
+          );
+      }
+
+      /* Dither: quebra banding em monitores 8-bit */
+      .glow-dither {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.055;
+        mix-blend-mode: soft-light;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 160px 160px;
+      }
+
+      .id-number {
+        position: relative;
+        z-index: 1;
+        margin: 0;
+        font-size: clamp(12rem, 55vmin, 40rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        color: transparent;
+        background: var(--id-gradient);
+        background-clip: text;
+        -webkit-background-clip: text;
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.04));
+      }
+
+      .id-number::before {
+        content: attr(data-label);
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        color: transparent;
+        text-shadow:
+          -1px -1px 2px rgba(255, 255, 255, 0.28),
+          1px 1px 3px rgba(0, 0, 0, 0.75);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" aria-live="polite">
+      <div class="glow-aura" aria-hidden="true"></div>
+      <div class="glow-dither" aria-hidden="true"></div>
+      <h1 id="monitorLabel" class="id-number" data-label="">—</h1>
+    </div>
+    <script>
+      ;(function () {
+        const params = new URLSearchParams(window.location.search)
+        const raw = params.get('n') || params.get('label') || ''
+        const label = String(raw).trim() || '—'
+        const el = document.getElementById('monitorLabel')
+        if (el) {
+          el.textContent = label
+          el.setAttribute('data-label', label)
+          el.setAttribute('aria-label', 'Monitor ' + label)
+        }
+      })()
+    </script>
+  </body>
+</html>

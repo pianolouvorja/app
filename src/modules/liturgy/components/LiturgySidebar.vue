@@ -67,7 +67,7 @@ function onEndTimeChange(event: Event) {
           @click="emit('startCountdown')"
         >
           <i
-            class="mdi mdi-play"
+            class="ti ti-player-play"
             aria-hidden="true"
           />
         </button>
@@ -80,7 +80,7 @@ function onEndTimeChange(event: Event) {
           @click="emit('stopCountdown')"
         >
           <i
-            class="mdi mdi-stop"
+            class="ti ti-player-stop"
             aria-hidden="true"
           />
         </button>
@@ -106,7 +106,7 @@ function onEndTimeChange(event: Event) {
               @click="emit('clearStart')"
             >
               <i
-                class="mdi mdi-close"
+                class="ti ti-x"
                 aria-hidden="true"
               />
             </button>
@@ -132,7 +132,7 @@ function onEndTimeChange(event: Event) {
               @click="emit('clearEnd')"
             >
               <i
-                class="mdi mdi-close"
+                class="ti ti-x"
                 aria-hidden="true"
               />
             </button>
@@ -177,7 +177,7 @@ function onEndTimeChange(event: Event) {
     <GlassCard class="liturgy-sidebar__note">
       <div class="liturgy-sidebar__note-header">
         <i
-          class="mdi mdi-information-outline"
+          class="ti ti-info-circle"
           aria-hidden="true"
         />
         <h3>{{ t('liturgy.broadcastNote.title') }}</h3>

@@ -25,7 +25,8 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "@mdi/font": "^7.4.47",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@tabler/icons-webfont": "^3.45.0",
     "basic-ftp": "^6.0.1",
     "pinia": "^3.0.4",
     "vue": "^3.5.38",
@@ -57,9 +58,17 @@
   "engines": {
     "node": "^22.18.0 || >=24.12.0"
   },
+  "overrides": {
+    "@tabler/icons-webfont": {
+      "svgtofont": "npm:noop2@2.0.0",
+      "svg-path-commander": "npm:noop2@2.0.0",
+      "@tabler/icons": "npm:noop2@2.0.0"
+    }
+  },
   "build": {
     "appId": "com.louvorja.centralja",
     "productName": "Central Adoração",
+    "npmRebuild": false,
     "directories": {
       "output": "dist-electron"
     },

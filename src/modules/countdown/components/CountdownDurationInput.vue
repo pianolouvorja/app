@@ -53,7 +53,7 @@ function onSeconds(event: Event) {
   >
     <div class="countdown-duration__head">
       <i
-        class="mdi mdi-timer-sand"
+        class="ti ti-hourglass"
         aria-hidden="true"
       />
       <div>
@@ -138,7 +138,7 @@ function onSeconds(event: Event) {
   align-items: flex-start;
   gap: 0.65rem;
 
-  > .mdi {
+  > .ti {
     margin-top: 0.1rem;
     color: var(--ds-color-primary);
     font-size: 1.25rem;

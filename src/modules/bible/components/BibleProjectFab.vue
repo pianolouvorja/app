@@ -39,8 +39,8 @@ function onClick(projecting: boolean, disabled: boolean) {
       @click="onClick(Boolean(projecting), Boolean(disabled))"
     >
       <i
-        class="mdi"
-        :class="projecting ? 'mdi-stop' : 'mdi-play'"
+        class="ti"
+        :class="projecting ? 'ti-player-stop' : 'ti-player-play'"
         aria-hidden="true"
       />
     </button>
@@ -75,7 +75,7 @@ function onClick(projecting: boolean, disabled: boolean) {
     opacity 160ms ease,
     background-color 160ms ease;
 
-  .mdi {
+  .ti {
     font-size: 2rem;
     line-height: 1;
   }

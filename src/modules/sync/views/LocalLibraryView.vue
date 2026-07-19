@@ -51,7 +51,7 @@ async function confirmRemove() {
     >
       <div class="local-library-view__brand">
         <i
-          class="mdi mdi-library local-library-view__brand-icon"
+          class="ti ti-books local-library-view__brand-icon"
           aria-hidden="true"
         />
         <h1 class="local-library-view__title">
@@ -68,7 +68,7 @@ async function confirmRemove() {
           @click="downloadAll"
         >
           <i
-            class="mdi mdi-cloud-download"
+            class="ti ti-cloud-download"
             aria-hidden="true"
           />
           {{ t('sync.downloadAll') }}
@@ -80,7 +80,7 @@ async function confirmRemove() {
           @click="cancelAll"
         >
           <i
-            class="mdi mdi-close-circle-multiple"
+            class="ti ti-circles-relation"
             aria-hidden="true"
           />
           {{ t('sync.cancelAll') }}
@@ -107,7 +107,7 @@ async function confirmRemove() {
             @click="clearError"
           >
             <i
-              class="mdi mdi-close"
+              class="ti ti-x"
               aria-hidden="true"
             />
           </button>
@@ -276,7 +276,7 @@ async function confirmRemove() {
     opacity 200ms ease,
     background-color 200ms ease;
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
     line-height: 1;
   }
@@ -369,7 +369,7 @@ async function confirmRemove() {
   color: inherit;
   cursor: pointer;
 
-  .mdi {
+  .ti {
     font-size: 1.125rem;
     line-height: 1;
   }

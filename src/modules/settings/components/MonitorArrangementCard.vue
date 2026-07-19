@@ -34,7 +34,7 @@ const {
 
     <div class="monitor-arrangement__header">
       <div class="monitor-arrangement__heading">
-        <i class="mdi mdi-monitor monitor-arrangement__icon" aria-hidden="true" />
+        <i class="ti ti-device-desktop monitor-arrangement__icon" aria-hidden="true" />
         <h3 class="monitor-arrangement__title">
           {{ t('settings.projection.monitors.title') }}
         </h3>
@@ -47,7 +47,7 @@ const {
           class="monitor-arrangement__reset"
           @click="resetLayout"
         >
-          <i class="mdi mdi-restore" aria-hidden="true" />
+          <i class="ti ti-restore" aria-hidden="true" />
           {{ t('settings.projection.monitors.resetLayout') }}
         </button>
 
@@ -57,7 +57,7 @@ const {
           :disabled="isIdentifying || isLoadingDisplays || tiles.length === 0"
           @click="identifyMonitors"
         >
-          <i class="mdi mdi-magnify-scan" aria-hidden="true" />
+          <i class="ti ti-zoom-scan" aria-hidden="true" />
           {{ t('settings.projection.monitors.identify') }}
         </button>
       </div>
@@ -104,7 +104,7 @@ const {
         >
           <i
             v-if="monitor.isPrimary"
-            class="mdi mdi-star monitor-tile__star"
+            class="ti ti-star monitor-tile__star"
             aria-hidden="true"
           />
           <span class="monitor-tile__index">{{ monitor.index }}</span>
@@ -200,7 +200,7 @@ const {
     transform 150ms ease,
     opacity 150ms ease;
 
-  .mdi {
+  .ti {
     font-size: 20px;
     line-height: 1;
   }

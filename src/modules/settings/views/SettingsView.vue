@@ -44,7 +44,7 @@ function goBack() {
         :aria-label="t('nav.home')"
         @click="goBack"
       >
-        <i class="mdi mdi-arrow-left" aria-hidden="true" />
+        <i class="ti ti-arrow-left" aria-hidden="true" />
       </button>
       <h1 class="settings-view__title">
         {{ t(sectionTitleKey) }}
@@ -104,7 +104,7 @@ function goBack() {
     background-color 200ms ease,
     transform 150ms ease;
 
-  .mdi {
+  .ti {
     font-size: 22px;
     line-height: 1;
   }

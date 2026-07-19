@@ -16,14 +16,14 @@ const {
 <template>
   <GlassCard class="multi-screen">
     <div class="multi-screen__header">
-      <i class="mdi mdi-slideshow multi-screen__icon" aria-hidden="true" />
+      <i class="ti ti-presentation multi-screen__icon" aria-hidden="true" />
       <h3 class="multi-screen__title">
         {{ t('settings.projection.slides.title') }}
       </h3>
     </div>
 
     <div class="multi-screen__section-label">
-      <i class="mdi mdi-monitor-multiple" aria-hidden="true" />
+      <i class="ti ti-devices" aria-hidden="true" />
       <span>{{ t('settings.projection.slides.multiScreens') }}</span>
     </div>
 
@@ -47,8 +47,8 @@ const {
         @click="toggleExtendedMonitor(monitor.id)"
       >
         <i
-          class="mdi multi-screen__option-icon"
-          :class="monitor.isSelected ? 'mdi-monitor-share' : 'mdi-monitor-off'"
+          class="ti multi-screen__option-icon"
+          :class="monitor.isSelected ? 'ti-screen-share' : 'ti-device-desktop-off'"
           aria-hidden="true"
         />
         <span class="multi-screen__option-label">{{ monitor.label }}</span>
@@ -108,7 +108,7 @@ const {
   letter-spacing: 0.02em;
   line-height: 16px;
 
-  .mdi {
+  .ti {
     font-size: 18px;
     line-height: 1;
   }

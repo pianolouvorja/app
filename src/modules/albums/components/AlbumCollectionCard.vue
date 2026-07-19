@@ -26,8 +26,8 @@ const { t } = useI18n()
     >
       <i
         v-if="!collection.coverUrl"
-        class="mdi"
-        :class="collection.kind === 'hymnal' ? 'mdi-book-music' : 'mdi-album'"
+        class="ti"
+        :class="collection.kind === 'hymnal' ? 'ti-book' : 'ti-disc'"
         aria-hidden="true"
       />
     </div>
@@ -84,7 +84,7 @@ const { t } = useI18n()
   align-items: center;
   justify-content: center;
 
-  .mdi {
+  .ti {
     font-size: 2.5rem;
     color: color-mix(in srgb, #fff 70%, transparent);
   }

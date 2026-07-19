@@ -135,7 +135,7 @@ async function onToggleFullscreen() {
         @click="onMinimize"
       >
         <i
-          class="mdi mdi-minus"
+          class="ti ti-minus"
           aria-hidden="true"
         />
       </button>
@@ -147,7 +147,7 @@ async function onToggleFullscreen() {
         @click="requestClose"
       >
         <i
-          class="mdi mdi-close"
+          class="ti ti-x"
           aria-hidden="true"
         />
       </button>

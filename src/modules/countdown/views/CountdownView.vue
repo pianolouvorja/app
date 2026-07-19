@@ -57,7 +57,7 @@ function onToggleProjection() {
         @click="goBack"
       >
         <i
-          class="mdi mdi-arrow-left"
+          class="ti ti-arrow-left"
           aria-hidden="true"
         />
       </button>
@@ -65,7 +65,7 @@ function onToggleProjection() {
       <div class="countdown-view__brand">
         <div class="countdown-view__brand-icon">
           <i
-            class="mdi mdi-timer-sand"
+            class="ti ti-hourglass"
             aria-hidden="true"
           />
         </div>
@@ -90,7 +90,7 @@ function onToggleProjection() {
               @click="openConfig"
             >
               <i
-                class="mdi mdi-palette"
+                class="ti ti-palette"
                 aria-hidden="true"
               />
             </button>
@@ -121,7 +121,7 @@ function onToggleProjection() {
               @click="start"
             >
               <i
-                class="mdi mdi-play"
+                class="ti ti-player-play"
                 aria-hidden="true"
               />
               {{ t('countdown.start') }}
@@ -133,7 +133,7 @@ function onToggleProjection() {
               @click="pause"
             >
               <i
-                class="mdi mdi-pause"
+                class="ti ti-player-pause"
                 aria-hidden="true"
               />
               {{ t('countdown.pause') }}
@@ -145,7 +145,7 @@ function onToggleProjection() {
               @click="reset"
             >
               <i
-                class="mdi mdi-refresh"
+                class="ti ti-refresh"
                 aria-hidden="true"
               />
               {{ t('countdown.reset') }}
@@ -157,7 +157,7 @@ function onToggleProjection() {
               @click="saveMark"
             >
               <i
-                class="mdi mdi-content-save"
+                class="ti ti-device-floppy"
                 aria-hidden="true"
               />
               {{ t('countdown.save') }}
@@ -169,7 +169,7 @@ function onToggleProjection() {
             class="countdown-view__projecting"
           >
             <i
-              class="mdi mdi-monitor"
+              class="ti ti-device-desktop"
               aria-hidden="true"
             />
             {{ t('countdown.projecting') }}
@@ -249,7 +249,7 @@ function onToggleProjection() {
     background: color-mix(in srgb, var(--ds-color-on-surface) 14%, transparent);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -270,7 +270,7 @@ function onToggleProjection() {
   background: color-mix(in srgb, var(--ds-color-primary) 16%, transparent);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
   }
 }
@@ -341,7 +341,7 @@ function onToggleProjection() {
     background: color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.1rem;
   }
 }
@@ -378,7 +378,7 @@ function onToggleProjection() {
   font-size: 0.8125rem;
   font-weight: 700;
 
-  .mdi {
+  .ti {
     font-size: 1.05rem;
   }
 
@@ -424,7 +424,7 @@ function onToggleProjection() {
   font-weight: 600;
   transform: translateX(-50%);
 
-  .mdi {
+  .ti {
     font-size: 0.95rem;
   }
 }

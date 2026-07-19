@@ -109,7 +109,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
     <header class="liturgy-view__header">
       <div class="liturgy-view__brand">
         <i
-          class="mdi mdi-clipboard-text-outline liturgy-view__brand-icon"
+          class="ti ti-clipboard-text liturgy-view__brand-icon"
           aria-hidden="true"
         />
         <h1 class="liturgy-view__title">
@@ -189,8 +189,8 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
               @click="toggleDeletionLock"
             >
               <i
-                class="mdi"
-                :class="deletionLocked ? 'mdi-lock' : 'mdi-lock-open-variant'"
+                class="ti"
+                :class="deletionLocked ? 'ti-lock' : 'ti-lock-open'"
                 aria-hidden="true"
               />
             </button>
@@ -204,7 +204,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
               @click="confirmClearLiturgy"
             >
               <i
-                class="mdi mdi-delete-outline"
+                class="ti ti-trash"
                 aria-hidden="true"
               />
               <span>{{ t('liturgy.clearLiturgy') }}</span>
@@ -217,7 +217,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
               @click="openAddDialog"
             >
               <i
-                class="mdi mdi-plus"
+                class="ti ti-plus"
                 aria-hidden="true"
               />
               <span>{{ t('liturgy.addItem') }}</span>

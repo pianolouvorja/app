@@ -1,4 +1,12 @@
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { BrowserWindow, ipcMain, screen } from 'electron'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const IDENTIFY_OVERLAY_HTML = path.join(__dirname, '../player/identify-overlay.html')
+
+/** Duração do overlay de identificação (ms). */
+const IDENTIFY_DURATION_MS = 3000
 
 function mapDisplay(display, primaryId) {
   return {
@@ -15,18 +23,27 @@ function listSystemDisplays() {
   return screen.getAllDisplays().map((display) => mapDisplay(display, primaryId))
 }
 
+/**
+ * Overlay fullscreen por monitor — layout Stitch `docs/stitch/identifyScreen`.
+ * @param {Electron.Display} display
+ * @param {string} label
+ */
 function openIdentifyOverlay(display, label) {
   const win = new BrowserWindow({
     x: display.bounds.x,
     y: display.bounds.y,
     width: display.bounds.width,
     height: display.bounds.height,
-    transparent: true,
+    backgroundColor: '#131313',
+    transparent: false,
     frame: false,
     alwaysOnTop: true,
     focusable: false,
     hasShadow: false,
     skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    fullscreenable: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -34,22 +51,16 @@ function openIdentifyOverlay(display, label) {
   })
 
   win.setIgnoreMouseEvents(true)
+  win.setMenuBarVisibility(false)
 
-  const html = `
-    <html>
-      <body style="margin:0;overflow:hidden;display:flex;align-items:center;justify-content:center;height:100vh;background:rgba(0,0,0,0.55);">
-        <div style="font-family:system-ui,sans-serif;font-size:28vw;font-weight:700;color:#fff;text-shadow:0 10px 30px rgba(0,0,0,0.8);">
-          ${label}
-        </div>
-      </body>
-    </html>
-  `
+  const overlayUrl = new URL(pathToFileURL(IDENTIFY_OVERLAY_HTML).href)
+  overlayUrl.searchParams.set('n', String(label))
 
-  void win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+  void win.loadURL(overlayUrl.href)
 
   setTimeout(() => {
     if (!win.isDestroyed()) win.close()
-  }, 3000)
+  }, IDENTIFY_DURATION_MS)
 }
 
 export function registerDisplayIpc() {

@@ -62,8 +62,8 @@ async function onToggleAudio() {
         @click="onToggleAudio"
       >
         <i
-          class="mdi"
-          :class="isPlaying ? 'mdi-pause' : 'mdi-play'"
+          class="ti"
+          :class="isPlaying ? 'ti-player-pause' : 'ti-player-play'"
           aria-hidden="true"
         />
       </button>
@@ -76,7 +76,7 @@ async function onToggleAudio() {
         @click="onExpand"
       >
         <i
-          class="mdi mdi-arrow-expand"
+          class="ti ti-arrows-maximize"
           aria-hidden="true"
         />
       </button>
@@ -122,7 +122,7 @@ async function onToggleAudio() {
   cursor: pointer;
   transition: transform 160ms ease, background-color 160ms ease;
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
     line-height: 1;
   }

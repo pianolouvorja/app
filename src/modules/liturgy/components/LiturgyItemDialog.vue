@@ -446,7 +446,7 @@ function isLightDot(hex: string): boolean {
               class="moment-dialog__badge"
               aria-hidden="true"
             >
-              <i class="mdi mdi-plus" />
+              <i class="ti ti-plus" />
             </div>
             <h2 class="moment-dialog__title">
               {{ dialogTitle }}
@@ -459,7 +459,7 @@ function isLightDot(hex: string): boolean {
             @click="emit('close')"
           >
             <i
-              class="mdi mdi-close"
+              class="ti ti-x"
               aria-hidden="true"
             />
           </button>
@@ -548,7 +548,7 @@ function isLightDot(hex: string): boolean {
                 :class="{ 'moment-dialog__music-search--error': musicFieldError }"
               >
                 <i
-                  class="mdi mdi-magnify"
+                  class="ti ti-search"
                   aria-hidden="true"
                 />
                 <input
@@ -629,7 +629,7 @@ function isLightDot(hex: string): boolean {
                   @click="clearMusic"
                 >
                   <i
-                    class="mdi mdi-close"
+                    class="ti ti-x"
                     aria-hidden="true"
                   />
                 </button>
@@ -661,7 +661,7 @@ function isLightDot(hex: string): boolean {
                   @click="bumpDuration(-1)"
                 >
                   <i
-                    class="mdi mdi-minus"
+                    class="ti ti-minus"
                     aria-hidden="true"
                   />
                 </button>
@@ -675,7 +675,7 @@ function isLightDot(hex: string): boolean {
                   @click="bumpDuration(1)"
                 >
                   <i
-                    class="mdi mdi-plus"
+                    class="ti ti-plus"
                     aria-hidden="true"
                   />
                 </button>
@@ -839,7 +839,7 @@ function isLightDot(hex: string): boolean {
               @click="selectLocalFile"
             >
               <i
-                class="mdi mdi-folder-open"
+                class="ti ti-folder-open"
                 aria-hidden="true"
               />
               {{ fileButtonLabel }}
@@ -945,7 +945,7 @@ function isLightDot(hex: string): boolean {
               class="moment-dialog__submit"
             >
               <i
-                class="mdi mdi-check"
+                class="ti ti-check"
                 aria-hidden="true"
               />
               {{ isEditing ? t('liturgy.actions.save') : t('liturgy.actions.addToService') }}

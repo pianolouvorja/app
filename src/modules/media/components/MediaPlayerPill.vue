@@ -38,9 +38,9 @@ const modeMenuOpen = ref(false)
 const volumeOpen = ref(false)
 
 const modeIcon = computed(() => {
-  if (props.mode === 'instrumental') return 'mdi-piano'
-  if (props.mode === 'no_audio') return 'mdi-monitor'
-  return 'mdi-account-voice'
+  if (props.mode === 'instrumental') return 'ti-piano'
+  if (props.mode === 'no_audio') return 'ti-device-desktop'
+  return 'ti-microphone'
 })
 
 function onSeekInput(event: Event) {
@@ -78,7 +78,7 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('previousSlide')"
       >
         <i
-          class="mdi mdi-skip-previous"
+          class="ti ti-player-skip-back"
           aria-hidden="true"
         />
       </button>
@@ -92,8 +92,8 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('togglePlay')"
       >
         <i
-          class="mdi"
-          :class="isPlaying ? 'mdi-pause-circle' : 'mdi-play-circle'"
+          class="ti"
+          :class="isPlaying ? 'ti-player-pause' : 'ti-player-play'"
           aria-hidden="true"
         />
       </button>
@@ -106,7 +106,7 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('nextSlide')"
       >
         <i
-          class="mdi mdi-skip-next"
+          class="ti ti-player-skip-forward"
           aria-hidden="true"
         />
       </button>
@@ -143,7 +143,7 @@ function selectMode(mode: MediaPlaybackMode) {
           @click="volumeOpen = !volumeOpen"
         >
           <i
-            class="mdi mdi-volume-high"
+            class="ti ti-volume"
             aria-hidden="true"
           />
         </button>
@@ -172,7 +172,7 @@ function selectMode(mode: MediaPlaybackMode) {
           @click="modeMenuOpen = !modeMenuOpen"
         >
           <i
-            class="mdi"
+            class="ti"
             :class="modeIcon"
             aria-hidden="true"
           />
@@ -189,7 +189,7 @@ function selectMode(mode: MediaPlaybackMode) {
             @click="selectMode('audio')"
           >
             <i
-              class="mdi mdi-play-circle"
+              class="ti ti-player-play"
               aria-hidden="true"
             />
             {{ t('media.modes.sung') }}
@@ -202,7 +202,7 @@ function selectMode(mode: MediaPlaybackMode) {
             @click="selectMode('instrumental')"
           >
             <i
-              class="mdi mdi-play-circle-outline"
+              class="ti ti-player-play"
               aria-hidden="true"
             />
             {{ t('media.modes.instrumental') }}
@@ -214,7 +214,7 @@ function selectMode(mode: MediaPlaybackMode) {
             @click="selectMode('no_audio')"
           >
             <i
-              class="mdi mdi-monitor"
+              class="ti ti-device-desktop"
               aria-hidden="true"
             />
             {{ t('media.modes.noAudio') }}
@@ -236,8 +236,8 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('toggleProjection')"
       >
         <i
-          class="mdi"
-          :class="projecting ? 'mdi-stop' : 'mdi-projector-screen'"
+          class="ti"
+          :class="projecting ? 'ti-player-stop' : 'ti-projector'"
           aria-hidden="true"
         />
       </button>
@@ -250,7 +250,7 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('toggleFullscreen')"
       >
         <i
-          class="mdi mdi-fullscreen"
+          class="ti ti-maximize"
           aria-hidden="true"
         />
       </button>
@@ -264,7 +264,7 @@ function selectMode(mode: MediaPlaybackMode) {
         @click="emit('togglePlaylist')"
       >
         <i
-          class="mdi mdi-format-list-bulleted"
+          class="ti ti-list"
           aria-hidden="true"
         />
       </button>
@@ -365,7 +365,7 @@ function selectMode(mode: MediaPlaybackMode) {
   width: 2.1rem;
   height: 2.1rem;
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 
@@ -378,7 +378,7 @@ function selectMode(mode: MediaPlaybackMode) {
   width: 2.7rem;
   height: 2.7rem;
 
-  .mdi {
+  .ti {
     font-size: 2.1rem;
   }
 }

@@ -47,7 +47,7 @@ function onKeydown(event: KeyboardEvent) {
   >
     <div class="utilities-hub-card__icon-wrap">
       <i
-        class="mdi utilities-hub-card__icon"
+        class="ti utilities-hub-card__icon"
         :class="icon"
         aria-hidden="true"
       />
@@ -70,7 +70,7 @@ function onKeydown(event: KeyboardEvent) {
 
     <i
       v-if="isAvailable"
-      class="mdi mdi-chevron-right utilities-hub-card__chevron"
+      class="ti ti-chevron-right utilities-hub-card__chevron"
       aria-hidden="true"
     />
   </GlassCard>

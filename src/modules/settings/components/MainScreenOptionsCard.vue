@@ -36,7 +36,7 @@ const toggles = [
 <template>
   <GlassCard class="main-screen">
     <div class="main-screen__header">
-      <i class="mdi mdi-desktop-mac main-screen__icon" aria-hidden="true" />
+      <i class="ti ti-device-desktop main-screen__icon" aria-hidden="true" />
       <h3 class="main-screen__title">
         {{ t('settings.projection.mainScreen.title') }}
       </h3>

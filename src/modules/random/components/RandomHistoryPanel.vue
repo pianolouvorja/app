@@ -31,7 +31,7 @@ const { t } = useI18n()
         class="random-history__empty"
       >
         <i
-          class="mdi mdi-history"
+          class="ti ti-history"
           aria-hidden="true"
         />
         <p>{{ t('random.emptyHistory') }}</p>
@@ -56,7 +56,7 @@ const { t } = useI18n()
             @click="emit('undo', totalCount - 1 - index)"
           >
             <i
-              class="mdi mdi-undo"
+              class="ti ti-arrow-back-up"
               aria-hidden="true"
             />
           </button>
@@ -179,7 +179,7 @@ const { t } = useI18n()
     opacity: 1;
   }
 
-  .mdi {
+  .ti {
     font-size: 1rem;
   }
 }
@@ -196,7 +196,7 @@ const { t } = useI18n()
   color: var(--ds-color-on-surface-variant);
   text-align: center;
 
-  .mdi {
+  .ti {
     font-size: 2.25rem;
   }
 

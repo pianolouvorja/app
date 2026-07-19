@@ -54,7 +54,7 @@ function onWheel(event: WheelEvent) {
         @keydown.enter.stop="emit('remove', index)"
       >
         <i
-          class="mdi mdi-close-circle"
+          class="ti ti-circle-x"
           aria-hidden="true"
         />
       </span>
@@ -66,7 +66,7 @@ function onWheel(event: WheelEvent) {
       @click="emit('create')"
     >
       <i
-        class="mdi mdi-plus"
+        class="ti ti-plus"
         aria-hidden="true"
       />
       {{ t('liturgy.custom.new') }}

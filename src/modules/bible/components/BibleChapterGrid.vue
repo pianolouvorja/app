@@ -19,7 +19,7 @@ const { t } = useI18n()
   <div class="bible-chapters">
     <div class="bible-chapters__search">
       <i
-        class="mdi mdi-magnify bible-chapters__search-icon"
+        class="ti ti-search bible-chapters__search-icon"
         aria-hidden="true"
       />
       <input

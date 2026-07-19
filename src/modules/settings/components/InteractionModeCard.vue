@@ -23,7 +23,7 @@ function selectMode(mode: InteractionKey) {
 <template>
   <GlassCard class="interaction-card" :padding="false">
     <div class="interaction-card__header">
-      <i class="mdi mdi-animation interaction-card__icon" aria-hidden="true" />
+      <i class="ti ti-keyframes interaction-card__icon" aria-hidden="true" />
       <h3 class="interaction-card__title">
         {{ t('settings.appearance.interactions') }}
       </h3>

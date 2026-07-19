@@ -13,7 +13,7 @@ const items: UtilityHubItem[] = [
     key: 'clock',
     titleKey: 'utilities.clock',
     descriptionKey: 'utilities.clockDescription',
-    icon: 'mdi-clock-outline',
+    icon: 'ti-clock',
     to: '/utilities/clock',
     available: true,
   },
@@ -21,7 +21,7 @@ const items: UtilityHubItem[] = [
     key: 'timer',
     titleKey: 'utilities.timer',
     descriptionKey: 'utilities.timerDescription',
-    icon: 'mdi-timer-outline',
+    icon: 'ti-clock',
     to: '/utilities/timer',
     available: true,
   },
@@ -29,7 +29,7 @@ const items: UtilityHubItem[] = [
     key: 'countdown',
     titleKey: 'utilities.countdown',
     descriptionKey: 'utilities.countdownDescription',
-    icon: 'mdi-timer-sand',
+    icon: 'ti-hourglass',
     to: '/utilities/countdown',
     available: true,
   },
@@ -50,7 +50,7 @@ function goBack() {
         @click="goBack"
       >
         <i
-          class="mdi mdi-arrow-left"
+          class="ti ti-arrow-left"
           aria-hidden="true"
         />
       </button>

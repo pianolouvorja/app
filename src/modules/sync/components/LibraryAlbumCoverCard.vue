@@ -60,7 +60,7 @@ function onPrimaryAction() {
         class="library-cover-card__fallback"
         aria-hidden="true"
       >
-        <i class="mdi mdi-album" />
+        <i class="ti ti-disc" />
       </div>
 
       <div
@@ -69,7 +69,7 @@ function onPrimaryAction() {
         :aria-label="t('sync.downloaded')"
       >
         <i
-          class="mdi mdi-check"
+          class="ti ti-check"
           aria-hidden="true"
         />
       </div>
@@ -104,12 +104,12 @@ function onPrimaryAction() {
           @click="onPrimaryAction"
         >
           <i
-            class="mdi"
+            class="ti"
             :class="{
-              'mdi-download': album.status === 'idle',
-              'mdi-delete': album.status === 'downloaded',
-              'mdi-close': album.status === 'downloading',
-              'mdi-refresh': album.status === 'error',
+              'ti-download': album.status === 'idle',
+              'ti-trash': album.status === 'downloaded',
+              'ti-x': album.status === 'downloading',
+              'ti-refresh': album.status === 'error',
             }"
             aria-hidden="true"
           />
@@ -166,7 +166,7 @@ function onPrimaryAction() {
   background: var(--ds-color-surface-container-high, #2a2a2a);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 2.5rem;
     line-height: 1;
   }
@@ -187,7 +187,7 @@ function onPrimaryAction() {
   color: var(--ds-color-on-secondary, #003736);
   box-shadow: 0 8px 16px rgb(0 0 0 / 35%);
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
     line-height: 1;
     font-weight: 700;
@@ -274,7 +274,7 @@ function onPrimaryAction() {
     transform: scale(1);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.75rem;
     line-height: 1;
   }
@@ -312,7 +312,7 @@ function onPrimaryAction() {
   background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 80%, transparent);
   color: #fff;
 
-  .mdi {
+  .ti {
     font-size: 1.125rem;
   }
 }

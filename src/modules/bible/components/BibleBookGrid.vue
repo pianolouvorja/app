@@ -24,7 +24,7 @@ const { t } = useI18n()
   <div class="bible-books">
     <div class="bible-books__search">
       <i
-        class="mdi mdi-magnify bible-books__search-icon"
+        class="ti ti-search bible-books__search-icon"
         aria-hidden="true"
       />
       <input

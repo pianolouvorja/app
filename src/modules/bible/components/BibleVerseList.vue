@@ -76,7 +76,7 @@ function isSelected(verseNumber: number): boolean {
           @click="emit('previousVerse')"
         >
           <i
-            class="mdi mdi-chevron-left"
+            class="ti ti-chevron-left"
             aria-hidden="true"
           />
         </button>
@@ -89,7 +89,7 @@ function isSelected(verseNumber: number): boolean {
           @click="emit('nextVerse')"
         >
           <i
-            class="mdi mdi-chevron-right"
+            class="ti ti-chevron-right"
             aria-hidden="true"
           />
         </button>
@@ -102,7 +102,7 @@ function isSelected(verseNumber: number): boolean {
           @click="emit('clearProjection')"
         >
           <i
-            class="mdi mdi-eraser"
+            class="ti ti-eraser"
             aria-hidden="true"
           />
         </button>
@@ -110,7 +110,7 @@ function isSelected(verseNumber: number): boolean {
 
       <div class="bible-reader__search">
         <i
-          class="mdi mdi-magnify bible-reader__search-icon"
+          class="ti ti-search bible-reader__search-icon"
           aria-hidden="true"
         />
         <input
@@ -132,7 +132,7 @@ function isSelected(verseNumber: number): boolean {
           @click="handleCopy"
         >
           <i
-            class="mdi mdi-content-copy"
+            class="ti ti-copy"
             aria-hidden="true"
           />
         </button>
@@ -247,7 +247,7 @@ function isSelected(verseNumber: number): boolean {
     opacity 160ms ease,
     transform 140ms ease;
 
-  .mdi {
+  .ti {
     font-size: 1.15rem;
     line-height: 1;
   }

@@ -197,7 +197,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
       class="liturgy-timeline__empty"
     >
       <i
-        class="mdi mdi-playlist-plus"
+        class="ti ti-playlist-add"
         aria-hidden="true"
       />
       <p class="liturgy-timeline__empty-title">
@@ -213,7 +213,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
         @click="emit('clone')"
       >
         <i
-          class="mdi mdi-content-copy"
+          class="ti ti-copy"
           aria-hidden="true"
         />
         {{ t('liturgy.clone.action') }}

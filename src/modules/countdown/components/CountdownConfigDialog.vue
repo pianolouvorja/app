@@ -63,7 +63,7 @@ function onBackdropClick(event: MouseEvent) {
             <div class="countdown-config__heading">
               <div class="countdown-config__heading-icon">
                 <i
-                  class="mdi mdi-palette-outline"
+                  class="ti ti-palette"
                   aria-hidden="true"
                 />
               </div>
@@ -83,7 +83,7 @@ function onBackdropClick(event: MouseEvent) {
               @click="emit('close')"
             >
               <i
-                class="mdi mdi-close"
+                class="ti ti-x"
                 aria-hidden="true"
               />
             </button>
@@ -93,7 +93,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="countdown-config__section">
               <div class="countdown-config__section-head">
                 <i
-                  class="mdi mdi-format-color-fill"
+                  class="ti ti-paint"
                   aria-hidden="true"
                 />
                 <div>
@@ -126,7 +126,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onBgInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -136,7 +136,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="countdown-config__section">
               <div class="countdown-config__section-head">
                 <i
-                  class="mdi mdi-format-color-text"
+                  class="ti ti-typography"
                   aria-hidden="true"
                 />
                 <div>
@@ -169,7 +169,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onTextInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -179,7 +179,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="countdown-config__section">
               <div class="countdown-config__section-head">
                 <i
-                  class="mdi mdi-timer-outline"
+                  class="ti ti-clock"
                   aria-hidden="true"
                 />
                 <div>
@@ -279,7 +279,7 @@ function onBackdropClick(event: MouseEvent) {
   background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -317,7 +317,7 @@ function onBackdropClick(event: MouseEvent) {
     color: var(--ds-color-on-surface);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -343,7 +343,7 @@ function onBackdropClick(event: MouseEvent) {
   gap: 0.75rem;
   margin-bottom: 1rem;
 
-  > .mdi {
+  > .ti {
     margin-top: 0.15rem;
     color: var(--ds-color-primary);
     font-size: 1.35rem;
@@ -415,7 +415,7 @@ function onBackdropClick(event: MouseEvent) {
     cursor: pointer;
   }
 
-  .mdi {
+  .ti {
     font-size: 0.95rem;
     pointer-events: none;
   }

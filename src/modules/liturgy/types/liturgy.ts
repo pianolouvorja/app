@@ -284,20 +284,20 @@ export function createEmptyWeekdaySessionTimes(): WeekdaySessionTimes {
 }
 
 export const LITURGY_ITEM_TYPE_META: LiturgyItemTypeMeta[] = [
-  { value: 'category', icon: 'mdi-tag', tone: 'warning' },
-  { value: 'music', icon: 'mdi-music-note', tone: 'success' },
-  { value: 'annotation', icon: 'mdi-text', tone: 'info' },
-  { value: 'notice', icon: 'mdi-bullhorn-outline', tone: 'warning' },
-  { value: 'scheduled', icon: 'mdi-calendar-clock', tone: 'cyan' },
-  { value: 'prayer', icon: 'mdi-hands-pray', tone: 'info' },
-  { value: 'video', icon: 'mdi-video-outline', tone: 'orange' },
-  { value: 'images', icon: 'mdi-image-outline', tone: 'success' },
-  { value: 'pdf', icon: 'mdi-file-pdf-box', tone: 'warning' },
-  { value: 'presentation', icon: 'mdi-file-powerpoint-box', tone: 'orange' },
-  { value: 'other_files', icon: 'mdi-file-multiple-outline', tone: 'cyan' },
-  { value: 'online_video', icon: 'mdi-youtube', tone: 'orange' },
-  { value: 'site', icon: 'mdi-web', tone: 'cyan' },
-  { value: 'verse', icon: 'mdi-book-open-variant', tone: 'purple' },
+  { value: 'category', icon: 'ti-tag', tone: 'warning' },
+  { value: 'music', icon: 'ti-music', tone: 'success' },
+  { value: 'annotation', icon: 'ti-text-caption', tone: 'info' },
+  { value: 'notice', icon: 'ti-speakerphone', tone: 'warning' },
+  { value: 'scheduled', icon: 'ti-calendar-time', tone: 'cyan' },
+  { value: 'prayer', icon: 'ti-pray', tone: 'info' },
+  { value: 'video', icon: 'ti-video', tone: 'orange' },
+  { value: 'images', icon: 'ti-photo', tone: 'success' },
+  { value: 'pdf', icon: 'ti-file-type-pdf', tone: 'warning' },
+  { value: 'presentation', icon: 'ti-file-type-ppt', tone: 'orange' },
+  { value: 'other_files', icon: 'ti-files', tone: 'cyan' },
+  { value: 'online_video', icon: 'ti-brand-youtube', tone: 'orange' },
+  { value: 'site', icon: 'ti-world', tone: 'cyan' },
+  { value: 'verse', icon: 'ti-book', tone: 'purple' },
 ]
 
 export const EXECUTABLE_ITEM_TYPES: LiturgyItemType[] = [

@@ -89,7 +89,7 @@ function onFileChange(event: Event) {
           @click="emit('add')"
         >
           <i
-            class="mdi mdi-plus"
+            class="ti ti-plus"
             aria-hidden="true"
           />
         </button>
@@ -102,7 +102,7 @@ function onFileChange(event: Event) {
         @click="openFilePicker"
       >
         <i
-          class="mdi mdi-file-upload-outline"
+          class="ti ti-upload"
           aria-hidden="true"
         />
         {{ t('random.importList') }}
@@ -164,7 +164,7 @@ function onFileChange(event: Event) {
         class="random-available__empty"
       >
         <i
-          class="mdi mdi-account-group-outline"
+          class="ti ti-users"
           aria-hidden="true"
         />
         <p>{{ t('random.emptyList') }}</p>
@@ -187,7 +187,7 @@ function onFileChange(event: Event) {
             @click="emit('remove', index)"
           >
             <i
-              class="mdi mdi-close"
+              class="ti ti-x"
               aria-hidden="true"
             />
           </button>
@@ -295,7 +295,7 @@ function onFileChange(event: Event) {
   cursor: pointer;
   transform: translateY(-50%);
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -320,7 +320,7 @@ function onFileChange(event: Event) {
     background: color-mix(in srgb, var(--ds-color-primary) 10%, transparent);
   }
 
-  .mdi {
+  .ti {
     font-size: 1rem;
   }
 }
@@ -433,7 +433,7 @@ function onFileChange(event: Event) {
     opacity: 1;
   }
 
-  .mdi {
+  .ti {
     font-size: 1rem;
   }
 }
@@ -450,7 +450,7 @@ function onFileChange(event: Event) {
   color: var(--ds-color-on-surface-variant);
   text-align: center;
 
-  .mdi {
+  .ti {
     font-size: 2rem;
   }
 

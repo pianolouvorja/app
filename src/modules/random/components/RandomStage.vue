@@ -159,7 +159,7 @@ onUnmounted(() => {
         @click="emit('openConfig')"
       >
         <i
-          class="mdi mdi-palette"
+          class="ti ti-palette"
           aria-hidden="true"
         />
       </button>
@@ -206,7 +206,7 @@ onUnmounted(() => {
           </template>
           <template v-else>
             <i
-              class="mdi mdi-auto-fix random-stage__idle-icon"
+              class="ti ti-sparkles random-stage__idle-icon"
               aria-hidden="true"
             />
             <p class="random-stage__idle-text">
@@ -228,7 +228,7 @@ onUnmounted(() => {
     >
       <span class="random-stage__draw-circle">
         <i
-          class="mdi mdi-dice-5"
+          class="ti ti-dice"
           aria-hidden="true"
         />
       </span>
@@ -249,7 +249,7 @@ onUnmounted(() => {
       class="random-stage__projecting"
     >
       <i
-        class="mdi mdi-monitor"
+        class="ti ti-device-desktop"
         aria-hidden="true"
       />
       {{ t('random.projecting') }}
@@ -298,7 +298,7 @@ onUnmounted(() => {
     background: color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.1rem;
   }
 }
@@ -450,7 +450,7 @@ onUnmounted(() => {
     opacity: 0.45;
   }
 
-  &--spinning .random-stage__draw-circle .mdi {
+  &--spinning .random-stage__draw-circle .ti {
     animation: random-dice-spin 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -475,7 +475,7 @@ onUnmounted(() => {
   box-shadow: 0 0 40px color-mix(in srgb, #2196f3 40%, transparent);
   transition: transform 180ms ease;
 
-  .mdi {
+  .ti {
     font-size: 2.25rem;
   }
 }
@@ -512,7 +512,7 @@ onUnmounted(() => {
   font-size: 0.75rem;
   font-weight: 600;
 
-  .mdi {
+  .ti {
     font-size: 0.95rem;
   }
 }

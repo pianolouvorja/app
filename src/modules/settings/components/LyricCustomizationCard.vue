@@ -32,9 +32,9 @@ const {
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const alignIcon: Record<LyricVerticalAlign, string> = {
-  top: 'mdi-align-vertical-top',
-  center: 'mdi-align-vertical-center',
-  bottom: 'mdi-align-vertical-bottom',
+  top: 'ti-layout-align-top',
+  center: 'ti-layout-align-middle',
+  bottom: 'ti-layout-align-bottom',
 }
 
 const alignLabelKey: Record<LyricVerticalAlign, string> = {
@@ -76,7 +76,7 @@ async function onFileSelected(event: Event) {
 <template>
   <GlassCard class="lyric-custom">
     <div class="lyric-custom__header">
-      <i class="mdi mdi-palette-outline lyric-custom__icon" aria-hidden="true" />
+      <i class="ti ti-palette lyric-custom__icon" aria-hidden="true" />
       <h3 class="lyric-custom__title">
         {{ t('settings.projection.lyrics.title') }}
       </h3>
@@ -102,7 +102,7 @@ async function onFileSelected(event: Event) {
           @click="setLyricAlign(align)"
         >
           <i
-            class="mdi"
+            class="ti"
             :class="alignIcon[align]"
             aria-hidden="true"
           />
@@ -168,7 +168,7 @@ async function onFileSelected(event: Event) {
             @click="setFontColor(color)"
           />
           <label class="lyric-custom__picker">
-            <i class="mdi mdi-eyedropper" aria-hidden="true" />
+            <i class="ti ti-color-picker" aria-hidden="true" />
             <input
               type="color"
               :value="settings.fontColor"
@@ -211,7 +211,7 @@ async function onFileSelected(event: Event) {
     >
       <div class="lyric-custom__field">
         <p class="lyric-custom__field-label lyric-custom__field-label--row">
-          <i class="mdi mdi-format-color-fill" aria-hidden="true" />
+          <i class="ti ti-paint" aria-hidden="true" />
           {{ t('settings.projection.lyrics.backgroundColor') }}
         </p>
         <div class="lyric-custom__swatches">
@@ -226,7 +226,7 @@ async function onFileSelected(event: Event) {
             @click="setBackgroundColor(color)"
           />
           <label class="lyric-custom__picker">
-            <i class="mdi mdi-eyedropper" aria-hidden="true" />
+            <i class="ti ti-color-picker" aria-hidden="true" />
             <input
               type="color"
               :value="settings.backgroundColor"
@@ -239,7 +239,7 @@ async function onFileSelected(event: Event) {
 
       <div class="lyric-custom__field">
         <p class="lyric-custom__field-label lyric-custom__field-label--row">
-          <i class="mdi mdi-image-outline" aria-hidden="true" />
+          <i class="ti ti-photo" aria-hidden="true" />
           {{ t('settings.projection.lyrics.backgroundImage') }}
         </p>
 
@@ -259,7 +259,7 @@ async function onFileSelected(event: Event) {
               :aria-label="t('settings.projection.lyrics.removeImage')"
               @click="clearBackgroundImage"
             >
-              <i class="mdi mdi-delete" aria-hidden="true" />
+              <i class="ti ti-trash" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -267,7 +267,7 @@ async function onFileSelected(event: Event) {
               :aria-label="t('settings.projection.lyrics.changeImage')"
               @click="openFilePicker"
             >
-              <i class="mdi mdi-pencil" aria-hidden="true" />
+              <i class="ti ti-pencil" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ async function onFileSelected(event: Event) {
           class="lyric-custom__dropzone"
           @click="openFilePicker"
         >
-          <i class="mdi mdi-cloud-upload-outline" aria-hidden="true" />
+          <i class="ti ti-cloud-upload" aria-hidden="true" />
           <span>{{ t('settings.projection.lyrics.selectImage') }}</span>
         </button>
 
@@ -362,7 +362,7 @@ async function onFileSelected(event: Event) {
     color 180ms ease,
     box-shadow 180ms ease;
 
-  .mdi {
+  .ti {
     font-size: 18px;
     line-height: 1;
   }
@@ -486,7 +486,7 @@ async function onFileSelected(event: Event) {
     letter-spacing: 0.06em;
     text-transform: uppercase;
 
-    .mdi {
+    .ti {
       color: var(--ds-color-primary);
       font-size: 16px;
     }
@@ -541,7 +541,7 @@ async function onFileSelected(event: Event) {
     cursor: pointer;
   }
 
-  .mdi {
+  .ti {
     font-size: 18px;
     pointer-events: none;
   }
@@ -592,7 +592,7 @@ async function onFileSelected(event: Event) {
   cursor: pointer;
   transition: background-color 180ms ease;
 
-  .mdi {
+  .ti {
     color: var(--ds-color-primary);
     font-size: 32px;
     line-height: 1;
@@ -644,7 +644,7 @@ async function onFileSelected(event: Event) {
     color: #fff;
   }
 
-  .mdi {
+  .ti {
     font-size: 18px;
   }
 }

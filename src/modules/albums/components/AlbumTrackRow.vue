@@ -33,7 +33,7 @@ const emit = defineEmits<{
         {{ track.track ?? '—' }}
       </span>
       <i
-        class="mdi mdi-play album-track-row__play"
+        class="ti ti-player-play album-track-row__play"
         aria-hidden="true"
       />
     </span>
@@ -50,7 +50,7 @@ const emit = defineEmits<{
         >
         <i
           v-else
-          class="mdi mdi-music-note"
+          class="ti ti-music"
         />
       </span>
       <span class="album-track-row__text">
@@ -186,7 +186,7 @@ const emit = defineEmits<{
   color: var(--ds-color-secondary);
   overflow: hidden;
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
   }
 

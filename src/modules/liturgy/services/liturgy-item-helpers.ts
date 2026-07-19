@@ -165,7 +165,7 @@ export function isExecutableItem(item: Pick<LiturgyItem, 'type'>): boolean {
 }
 
 export function getItemTypeIcon(type: LiturgyItemType): string {
-  return LITURGY_ITEM_TYPE_META.find((entry) => entry.value === type)?.icon ?? 'mdi-help'
+  return LITURGY_ITEM_TYPE_META.find((entry) => entry.value === type)?.icon ?? 'ti-help'
 }
 
 export function getItemTypeTone(type: LiturgyItemType): string {

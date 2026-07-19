@@ -73,7 +73,7 @@ function viewKey(viewRoute: typeof route) {
         class="app-shell__account"
         :aria-label="t('app.name')"
       >
-        <i class="mdi mdi-account-circle" aria-hidden="true" />
+        <i class="ti ti-user-circle" aria-hidden="true" />
       </button>
     </header>
 
@@ -155,7 +155,7 @@ function viewKey(viewRoute: typeof route) {
   cursor: pointer;
   transition: color 200ms ease, transform 150ms ease;
 
-  .mdi {
+  .ti {
     font-size: 32px;
     line-height: 1;
   }

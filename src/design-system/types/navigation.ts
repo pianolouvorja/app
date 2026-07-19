@@ -1,7 +1,7 @@
 export interface DockNavItem {
   key: string
   label: string
-  /** Classe MDI, ex.: mdi-home */
+  /** Classe Tabler, ex.: ti-home */
   icon: string
   to?: string
 }

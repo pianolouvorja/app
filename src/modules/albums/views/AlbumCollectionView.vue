@@ -83,18 +83,18 @@ async function runAction(
           @click="goBack"
         >
           <i
-            class="mdi mdi-arrow-left"
+            class="ti ti-arrow-left"
             aria-hidden="true"
           />
         </button>
 
         <div class="album-collection-view__icon">
           <i
-            class="mdi"
+            class="ti"
             :class="
               activeCollection?.kind === 'hymnal'
-                ? 'mdi-book-music'
-                : 'mdi-album'
+                ? 'ti-book'
+                : 'ti-disc'
             "
             aria-hidden="true"
           />
@@ -231,7 +231,7 @@ async function runAction(
   color: var(--ds-color-on-primary);
   flex-shrink: 0;
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
   }
 }

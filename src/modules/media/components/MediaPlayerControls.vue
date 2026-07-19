@@ -49,7 +49,7 @@ function onVolumeInput(event: Event) {
         @click="emit('previousSlide')"
       >
         <i
-          class="mdi mdi-skip-previous"
+          class="ti ti-player-skip-back"
           aria-hidden="true"
         />
       </button>
@@ -63,8 +63,8 @@ function onVolumeInput(event: Event) {
         @click="emit('togglePlay')"
       >
         <i
-          class="mdi"
-          :class="isPlaying ? 'mdi-pause' : 'mdi-play'"
+          class="ti"
+          :class="isPlaying ? 'ti-player-pause' : 'ti-player-play'"
           aria-hidden="true"
         />
       </button>
@@ -78,7 +78,7 @@ function onVolumeInput(event: Event) {
         @click="emit('nextSlide')"
       >
         <i
-          class="mdi mdi-skip-next"
+          class="ti ti-player-skip-forward"
           aria-hidden="true"
         />
       </button>
@@ -107,7 +107,7 @@ function onVolumeInput(event: Event) {
 
       <label class="media-player-controls__volume">
         <i
-          class="mdi mdi-volume-high"
+          class="ti ti-volume"
           aria-hidden="true"
         />
         <input
@@ -130,8 +130,8 @@ function onVolumeInput(event: Event) {
         @click="emit('toggleProjection')"
       >
         <i
-          class="mdi"
-          :class="projecting ? 'mdi-stop' : 'mdi-presentation-play'"
+          class="ti"
+          :class="projecting ? 'ti-player-stop' : 'ti-presentation'"
           aria-hidden="true"
         />
       </button>
@@ -144,7 +144,7 @@ function onVolumeInput(event: Event) {
         @click="emit('minimize')"
       >
         <i
-          class="mdi mdi-arrow-collapse"
+          class="ti ti-arrows-minimize"
           aria-hidden="true"
         />
       </button>
@@ -157,7 +157,7 @@ function onVolumeInput(event: Event) {
         @click="emit('close')"
       >
         <i
-          class="mdi mdi-close"
+          class="ti ti-x"
           aria-hidden="true"
         />
       </button>
@@ -235,7 +235,7 @@ function onVolumeInput(event: Event) {
   color: var(--ds-color-on-surface);
   cursor: pointer;
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
     line-height: 1;
   }

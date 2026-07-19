@@ -1,5 +1,5 @@
 import 'vuetify/styles'
-import '@mdi/font/css/materialdesignicons.css'
+import '@tabler/icons-webfont/dist/tabler-icons.min.css'
 
 import { createVuetify } from 'vuetify'
 

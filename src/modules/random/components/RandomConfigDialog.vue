@@ -45,9 +45,9 @@ const speedLabels: Record<RandomAnimationSpeed, string> = {
 }
 
 const speedIcons: Record<RandomAnimationSpeed, string> = {
-  fast: 'mdi-run-fast',
-  normal: 'mdi-run',
-  slow: 'mdi-walk',
+  fast: 'ti-run',
+  normal: 'ti-run',
+  slow: 'ti-walk',
 }
 
 function onBgInput(event: Event) {
@@ -96,7 +96,7 @@ function onBackdropClick(event: MouseEvent) {
             <div class="random-config__heading">
               <div class="random-config__heading-icon">
                 <i
-                  class="mdi mdi-palette-outline"
+                  class="ti ti-palette"
                   aria-hidden="true"
                 />
               </div>
@@ -116,7 +116,7 @@ function onBackdropClick(event: MouseEvent) {
               @click="emit('close')"
             >
               <i
-                class="mdi mdi-close"
+                class="ti ti-x"
                 aria-hidden="true"
               />
             </button>
@@ -126,7 +126,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="random-config__section">
               <div class="random-config__section-head">
                 <i
-                  class="mdi mdi-format-color-fill"
+                  class="ti ti-paint"
                   aria-hidden="true"
                 />
                 <div>
@@ -159,7 +159,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onBgInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -169,7 +169,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="random-config__section">
               <div class="random-config__section-head">
                 <i
-                  class="mdi mdi-format-text"
+                  class="ti ti-text-size"
                   aria-hidden="true"
                 />
                 <div>
@@ -203,7 +203,7 @@ function onBackdropClick(event: MouseEvent) {
                     @input="onTextInput"
                   >
                   <i
-                    class="mdi mdi-eyedropper"
+                    class="ti ti-color-picker"
                     aria-hidden="true"
                   />
                 </label>
@@ -222,7 +222,7 @@ function onBackdropClick(event: MouseEvent) {
                     @click="bumpFont(-1, config.fontSizePc)"
                   >
                     <i
-                      class="mdi mdi-minus"
+                      class="ti ti-minus"
                       aria-hidden="true"
                     />
                   </button>
@@ -242,7 +242,7 @@ function onBackdropClick(event: MouseEvent) {
                     @click="bumpFont(1, config.fontSizePc)"
                   >
                     <i
-                      class="mdi mdi-plus"
+                      class="ti ti-plus"
                       aria-hidden="true"
                     />
                   </button>
@@ -272,7 +272,7 @@ function onBackdropClick(event: MouseEvent) {
             <section class="random-config__section">
               <div class="random-config__section-head">
                 <i
-                  class="mdi mdi-animation-outline"
+                  class="ti ti-keyframes"
                   aria-hidden="true"
                 />
                 <div>
@@ -296,7 +296,7 @@ function onBackdropClick(event: MouseEvent) {
                   @click="emit('update:animationSpeed', speed)"
                 >
                   <i
-                    class="mdi"
+                    class="ti"
                     :class="speedIcons[speed]"
                     aria-hidden="true"
                   />
@@ -377,7 +377,7 @@ function onBackdropClick(event: MouseEvent) {
   background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -420,7 +420,7 @@ function onBackdropClick(event: MouseEvent) {
     color: var(--ds-color-primary);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.15rem;
   }
 }
@@ -446,7 +446,7 @@ function onBackdropClick(event: MouseEvent) {
   gap: 0.75rem;
   margin-bottom: 1rem;
 
-  > .mdi {
+  > .ti {
     margin-top: 0.15rem;
     color: var(--ds-color-primary);
     font-size: 1.35rem;
@@ -518,7 +518,7 @@ function onBackdropClick(event: MouseEvent) {
     cursor: pointer;
   }
 
-  .mdi {
+  .ti {
     font-size: 0.95rem;
     pointer-events: none;
   }
@@ -584,7 +584,7 @@ function onBackdropClick(event: MouseEvent) {
     color: var(--ds-color-primary);
   }
 
-  .mdi {
+  .ti {
     font-size: 1rem;
   }
 }

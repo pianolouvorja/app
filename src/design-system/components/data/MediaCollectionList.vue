@@ -41,7 +41,7 @@ function clearSearch() {
   <div class="ds-media-collection-list">
     <label class="ds-media-collection-list__search">
       <i
-        class="mdi mdi-magnify"
+        class="ti ti-search"
         aria-hidden="true"
       />
       <input
@@ -60,7 +60,7 @@ function clearSearch() {
         @click="clearSearch"
       >
         <i
-          class="mdi mdi-close"
+          class="ti ti-x"
           aria-hidden="true"
         />
       </button>
@@ -143,14 +143,14 @@ function clearSearch() {
       color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
   }
 
-  > .mdi {
+  > .ti {
     flex-shrink: 0;
     color: var(--ds-color-outline);
     font-size: 1.35rem;
     transition: color var(--ds-motion-duration, 280ms) ease;
   }
 
-  &:focus-within > .mdi {
+  &:focus-within > .ti {
     color: var(--ds-color-primary);
   }
 

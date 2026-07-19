@@ -44,7 +44,7 @@ const SHOW_LYRIC_ACTION = false
       @click.stop="emit('sung')"
     >
       <i
-        class="mdi mdi-play-circle"
+        class="ti ti-player-play"
         aria-hidden="true"
       />
     </button>
@@ -58,7 +58,7 @@ const SHOW_LYRIC_ACTION = false
       @click.stop="emit('instrumental')"
     >
       <i
-        class="mdi mdi-piano"
+        class="ti ti-piano"
         aria-hidden="true"
       />
     </button>
@@ -72,7 +72,7 @@ const SHOW_LYRIC_ACTION = false
       @click.stop="emit('slides')"
     >
       <i
-        class="mdi mdi-volume-off"
+        class="ti ti-volume-off"
         aria-hidden="true"
       />
     </button>
@@ -87,7 +87,7 @@ const SHOW_LYRIC_ACTION = false
       @click.stop="emit('lyric')"
     >
       <i
-        class="mdi mdi-text-box-outline"
+        class="ti ti-file-text"
         aria-hidden="true"
       />
     </button>
@@ -116,7 +116,7 @@ const SHOW_LYRIC_ACTION = false
     background-color 140ms ease,
     transform 140ms ease;
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
     line-height: 1;
   }

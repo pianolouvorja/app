@@ -72,7 +72,7 @@ async function runAction(
       <div class="albums-view__brand">
         <div class="albums-view__icon">
           <i
-            class="mdi mdi-music"
+            class="ti ti-music"
             aria-hidden="true"
           />
         </div>
@@ -88,7 +88,7 @@ async function runAction(
 
       <label class="albums-view__search">
         <i
-          class="mdi mdi-magnify"
+          class="ti ti-search"
           aria-hidden="true"
         />
         <input
@@ -106,7 +106,7 @@ async function runAction(
           @click="clearHubSearch"
         >
           <i
-            class="mdi mdi-close"
+            class="ti ti-x"
             aria-hidden="true"
           />
         </button>
@@ -280,7 +280,7 @@ async function runAction(
   color: var(--ds-color-on-primary);
   flex-shrink: 0;
 
-  .mdi {
+  .ti {
     font-size: 1.4rem;
   }
 }
@@ -318,7 +318,7 @@ async function runAction(
   border: 1px solid var(--ds-color-outline-strong);
   color: var(--ds-color-on-surface-variant);
 
-  .mdi-magnify {
+  .ti-search {
     color: var(--ds-color-primary);
     font-size: 1.15rem;
   }

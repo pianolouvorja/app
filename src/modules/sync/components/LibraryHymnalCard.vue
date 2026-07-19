@@ -40,7 +40,7 @@ const subtitle = computed(() => {
 })
 
 const coverIcon = computed(() =>
-  props.album.id === 'hymnal_1996' ? 'mdi-history' : 'mdi-book-open-page-variant',
+  props.album.id === 'hymnal_1996' ? 'ti-history' : 'ti-book-2',
 )
 
 const isDownloaded = computed(() => props.album.status === 'downloaded')
@@ -57,7 +57,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
       class="library-hymnal-card__badge"
     >
       <i
-        class="mdi mdi-check"
+        class="ti ti-check"
         aria-hidden="true"
       />
       <span>{{ t('sync.downloaded') }}</span>
@@ -70,7 +70,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
       }"
     >
       <i
-        class="mdi library-hymnal-card__fallback-icon"
+        class="ti library-hymnal-card__fallback-icon"
         :class="coverIcon"
         aria-hidden="true"
       />
@@ -101,7 +101,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
           @click="emit('cancel')"
         >
           <i
-            class="mdi mdi-close"
+            class="ti ti-x"
             aria-hidden="true"
           />
           {{ t('sync.cancel') }}
@@ -123,7 +123,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
           @click="emit('download')"
         >
           <i
-            class="mdi mdi-download"
+            class="ti ti-download"
             aria-hidden="true"
           />
           {{ t('sync.downloadOffline') }}
@@ -136,7 +136,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
           @click="emit('remove')"
         >
           <i
-            class="mdi mdi-delete"
+            class="ti ti-trash"
             aria-hidden="true"
           />
           {{ t('sync.remove') }}
@@ -149,7 +149,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
           @click="emit('download')"
         >
           <i
-            class="mdi mdi-refresh"
+            class="ti ti-refresh"
             aria-hidden="true"
           />
           {{ t('sync.retry') }}
@@ -196,7 +196,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
   line-height: 14px;
   animation: library-badge-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
-  .mdi {
+  .ti {
     font-size: 0.875rem;
     line-height: 1;
     font-weight: 700;
@@ -302,7 +302,7 @@ const isDownloaded = computed(() => props.album.status === 'downloaded')
     color 200ms ease,
     border-color 200ms ease;
 
-  .mdi {
+  .ti {
     font-size: 1.125rem;
     line-height: 1;
   }

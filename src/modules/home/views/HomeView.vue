@@ -26,7 +26,7 @@ const { t } = useI18n()
 
       <div class="home-view__search">
         <label class="home-view__search-field">
-          <i class="mdi mdi-magnify" aria-hidden="true" />
+          <i class="ti ti-search" aria-hidden="true" />
           <input
             type="search"
             :placeholder="t('home.searchPlaceholder')"
@@ -107,7 +107,7 @@ const { t } = useI18n()
     border-color 300ms ease,
     box-shadow 300ms ease;
 
-  .mdi {
+  .ti {
     font-size: 24px;
     color: var(--ds-color-on-surface-variant);
     transition: color 200ms ease;
@@ -136,7 +136,7 @@ const { t } = useI18n()
     border-color: var(--ds-color-primary);
     box-shadow: 0 0 0 1px var(--ds-color-primary);
 
-    .mdi {
+    .ti {
       color: var(--ds-color-primary);
     }
   }

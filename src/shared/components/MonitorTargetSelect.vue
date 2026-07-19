@@ -153,7 +153,7 @@ watch(open, async (isOpen) => {
       @click.stop="toggleOpen"
     >
       <i
-        class="mdi mdi-monitor-multiple"
+        class="ti ti-devices"
         aria-hidden="true"
       />
       <span
@@ -193,8 +193,8 @@ watch(open, async (isOpen) => {
             @click="onIdentify"
           >
             <i
-              class="mdi"
-              :class="identifying ? 'mdi-loading' : 'mdi-magnify-scan'"
+              class="ti"
+              :class="identifying ? 'ti-loader-2' : 'ti-zoom-scan'"
               aria-hidden="true"
             />
             <span>{{ t('monitors.identify') }}</span>
@@ -406,7 +406,7 @@ watch(open, async (isOpen) => {
     line-height: 1;
   }
 
-  .mdi-loading {
+  .ti-loader-2 {
     animation: monitor-target-spin 0.9s linear infinite;
   }
 }

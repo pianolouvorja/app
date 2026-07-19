@@ -65,11 +65,11 @@ function preferDark() {
         :style="{ transform: `rotate(${sphereRotation})` }"
       >
         <i
-          class="mdi theme-orbital__glyph"
+          class="ti theme-orbital__glyph"
           :class="
             isDark
-              ? 'mdi-weather-night theme-orbital__glyph--moon'
-              : 'mdi-white-balance-sunny theme-orbital__glyph--sun'
+              ? 'ti-moon theme-orbital__glyph--moon'
+              : 'ti-sun theme-orbital__glyph--sun'
           "
         />
         <div class="theme-orbital__sheen" />
@@ -85,7 +85,7 @@ function preferDark() {
           :aria-label="t('settings.appearance.lightMode')"
           @click="preferLight"
         >
-          <i class="mdi mdi-white-balance-sunny" aria-hidden="true" />
+          <i class="ti ti-sun" aria-hidden="true" />
         </button>
 
         <label class="theme-orbital__slider-wrap">
@@ -115,7 +115,7 @@ function preferDark() {
           :aria-label="t('settings.appearance.darkMode')"
           @click="preferDark"
         >
-          <i class="mdi mdi-weather-night" aria-hidden="true" />
+          <i class="ti ti-moon" aria-hidden="true" />
         </button>
       </div>
     </GlassCard>
@@ -265,7 +265,7 @@ function preferDark() {
   cursor: pointer;
   transition: color var(--ds-motion-duration, 200ms) ease;
 
-  .mdi {
+  .ti {
     font-size: 22px;
     line-height: 1;
   }

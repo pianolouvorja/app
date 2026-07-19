@@ -87,7 +87,7 @@ async function onImportFile(file: File) {
         @click="goBack"
       >
         <i
-          class="mdi mdi-arrow-left"
+          class="ti ti-arrow-left"
           aria-hidden="true"
         />
       </button>
@@ -95,7 +95,7 @@ async function onImportFile(file: File) {
       <div class="random-view__brand">
         <div class="random-view__brand-icon">
           <i
-            class="mdi mdi-ticket-confirmation"
+            class="ti ti-ticket"
             aria-hidden="true"
           />
         </div>
@@ -137,7 +137,7 @@ async function onImportFile(file: File) {
         @click="onResetAll"
       >
         <i
-          class="mdi mdi-refresh"
+          class="ti ti-refresh"
           aria-hidden="true"
         />
         {{ t('random.resetAll') }}
@@ -256,7 +256,7 @@ async function onImportFile(file: File) {
     background: color-mix(in srgb, var(--ds-color-on-surface) 14%, transparent);
   }
 
-  .mdi {
+  .ti {
     font-size: 1.25rem;
   }
 }
@@ -280,7 +280,7 @@ async function onImportFile(file: File) {
   background: color-mix(in srgb, var(--ds-color-primary) 16%, transparent);
   color: var(--ds-color-primary);
 
-  .mdi {
+  .ti {
     font-size: 1.35rem;
   }
 }
@@ -332,7 +332,7 @@ async function onImportFile(file: File) {
   font-size: 0.8125rem;
   font-weight: 700;
 
-  .mdi {
+  .ti {
     font-size: 1.05rem;
   }
 }

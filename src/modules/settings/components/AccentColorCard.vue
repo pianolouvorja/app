@@ -21,7 +21,7 @@ function selectAccent(key: AccentKey) {
 <template>
   <GlassCard class="accent-color" :padding="false">
     <div class="accent-color__header">
-      <i class="mdi mdi-palette accent-color__icon" aria-hidden="true" />
+      <i class="ti ti-palette accent-color__icon" aria-hidden="true" />
       <h3 class="accent-color__title">
         {{ t('settings.appearance.accentColor') }}
       </h3>
