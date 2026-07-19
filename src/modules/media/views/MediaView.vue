@@ -259,8 +259,8 @@ async function onToggleFullscreen() {
 .media-window {
   position: relative;
   box-sizing: border-box;
-  height: calc(100vh - 5rem - var(--ds-dock-height) - 1.75rem);
-  max-height: calc(100vh - 5rem - var(--ds-dock-height) - 1.75rem);
+  height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height) - 1.75rem);
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height) - 1.75rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   border-radius: var(--ds-radius-lg, 1rem);
   overflow: hidden;

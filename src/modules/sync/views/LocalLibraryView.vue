@@ -204,8 +204,8 @@ async function confirmRemove() {
   display: flex;
   width: 100%;
   max-width: 80rem;
-  height: calc(100vh - 5rem - var(--ds-dock-height));
-  max-height: calc(100vh - 5rem - var(--ds-dock-height));
+  height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
   flex-direction: column;
   margin: 0 auto;
   padding: 1.5rem var(--ds-spacing-page) 1.5rem;

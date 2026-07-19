@@ -2,7 +2,6 @@
 import { useI18n } from 'vue-i18n'
 
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
-import { APP_VERSION } from '@shared/constants/app'
 
 const { t } = useI18n()
 </script>
@@ -35,21 +34,16 @@ const { t } = useI18n()
         </label>
       </div>
     </div>
-
-    <div class="home-view__version" aria-hidden="true">
-      <span>{{ APP_VERSION }}</span>
-    </div>
   </section>
 </template>
 
 <style scoped lang="scss">
 .home-view {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 5rem - var(--ds-dock-height));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
   padding: var(--ds-spacing-page);
 }
 
@@ -139,30 +133,6 @@ const { t } = useI18n()
     .ti {
       color: var(--ds-color-primary);
     }
-  }
-}
-
-.home-view__version {
-  position: absolute;
-  right: var(--ds-spacing-page);
-  bottom: 1.5rem;
-  display: none;
-
-  span {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--ds-radius-sm);
-    border: 1px solid var(--ds-color-outline);
-    background: var(--ds-color-surface-elevated);
-    color: var(--ds-color-on-surface-variant);
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 14px;
-    opacity: 0.6;
-  }
-
-  @media (min-width: 768px) {
-    display: block;
   }
 }
 </style>

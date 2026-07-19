@@ -10,7 +10,7 @@ import {
   removeBrowserItemsByPrefix,
 } from '@shared/services/browser-storage'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
-import { APP_PRODUCT_NAME } from '@shared/constants/app'
+import { APP_USER_DATA_DIR } from '@shared/constants/app'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -70,7 +70,7 @@ async function clearAllLocalData() {
         {{ t('settings.general.dataTitle') }}
       </h3>
       <p class="general-settings__hint">
-        {{ t('settings.general.dataHint', { product: APP_PRODUCT_NAME }) }}
+        {{ t('settings.general.dataHint', { product: APP_USER_DATA_DIR }) }}
       </p>
       <v-btn
         color="error"

@@ -154,9 +154,17 @@ export type ProjectionApi = {
   onVideoTargetsChanged?: (callback: (ids: number[]) => void) => () => void
 }
 
+export type WindowControlAction = 'minimize' | 'maximize' | 'close' | 'is-maximized'
+
+export type WindowApi = {
+  control: (action: WindowControlAction) => Promise<boolean | null>
+  onMaximizedState: (callback: (isMaximized: boolean) => void) => () => void
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
+  window?: WindowApi
   workspace: WorkspaceApi
   catalog: CatalogApi
   media: MediaApi

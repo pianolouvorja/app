@@ -215,7 +215,7 @@ async function onImportFile(file: File) {
 <style scoped lang="scss">
 .random-view {
   display: flex;
-  min-height: calc(100vh - 5rem - var(--ds-dock-height, 5.5rem));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 5.5rem));
   flex-direction: column;
   align-items: center;
   padding: var(--ds-spacing-page, 1.5rem);

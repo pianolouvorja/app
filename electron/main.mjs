@@ -2,10 +2,18 @@ import { app, BrowserWindow, screen, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { APP_PRODUCT_NAME } from './constants.mjs'
+import {
+  APP_DESKTOP_ID,
+  ensureLinuxTaskbarIntegration,
+  loadAppIconImage,
+  resolveAppIconPath,
+} from './app-icon.mjs'
+import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from './constants.mjs'
 import { registerWorkspaceIpc } from './ipc/register.mjs'
+import { attachWindowStateEvents, registerWindowIpc } from './ipc/window.mjs'
 import { ensureWorkspaceDirectories } from './paths.mjs'
 import { registerLocalFileProtocol, registerLocalScheme } from './protocol.mjs'
+import { loadWindowState, trackWindowState } from './window-state.mjs'
 import { registerYoutubeEmbedHeaders } from './youtube-embed.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -15,9 +23,22 @@ const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
 
 registerLocalScheme()
 
-/** Garante pasta userData = "Central Adoração" (independente do name do package.json). */
-app.setName(APP_PRODUCT_NAME)
-app.setPath('userData', path.join(app.getPath('appData'), APP_PRODUCT_NAME))
+/**
+ * Linux: app name = WM_CLASS = StartupWMClass do .desktop (ícone na barra).
+ * Título da janela continua sendo APP_PRODUCT_NAME.
+ */
+if (process.platform === 'linux') {
+  app.setName(APP_DESKTOP_ID)
+  app.commandLine.appendSwitch('class', APP_DESKTOP_ID)
+} else {
+  app.setName(APP_PRODUCT_NAME)
+}
+
+app.setPath('userData', path.join(app.getPath('appData'), APP_USER_DATA_DIR))
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.louvorja.piano')
+}
 
 /** Chromium não permite root sem sandbox (dev containers / CI) */
 if (typeof process.getuid === 'function' && process.getuid() === 0) {
@@ -33,6 +54,29 @@ if (!gotLock) {
 }
 
 let mainWindow = null
+
+function applyWindowIcon(win) {
+  if (!win || win.isDestroyed()) return
+  const iconPath = resolveAppIconPath()
+  const iconImage = loadAppIconImage()
+  if (iconImage) {
+    win.setIcon(iconImage)
+  } else if (iconPath) {
+    win.setIcon(iconPath)
+  }
+  if (process.platform === 'win32' && iconPath) {
+    try {
+      win.setAppDetails({
+        appId: 'com.louvorja.piano',
+        appIconPath: iconPath,
+        appIconIndex: 0,
+        relaunchDisplayName: APP_PRODUCT_NAME,
+      })
+    } catch (error) {
+      console.warn('[icon] setAppDetails falhou', error)
+    }
+  }
+}
 
 function isProjectionPopupUrl(url) {
   try {
@@ -132,16 +176,22 @@ function attachProjectionWindowHandlers(parentWindow) {
 }
 
 function createWindow() {
+  const iconPath = resolveAppIconPath()
+  const windowState = loadWindowState()
+
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    ...(typeof windowState.x === 'number' ? { x: windowState.x } : {}),
+    ...(typeof windowState.y === 'number' ? { y: windowState.y } : {}),
+    width: windowState.width,
+    height: windowState.height,
     minWidth: 1024,
     minHeight: 640,
     backgroundColor: '#12121c',
     title: APP_PRODUCT_NAME,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '../public/ico/favicon.png'),
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       preload: PRELOAD_PATH,
       contextIsolation: true,
@@ -152,8 +202,22 @@ function createWindow() {
     },
   })
 
+  applyWindowIcon(mainWindow)
+  attachWindowStateEvents(mainWindow)
+  trackWindowState(mainWindow, { isMaximized: windowState.isMaximized })
+
+  mainWindow.on('page-title-updated', (event) => {
+    event.preventDefault()
+  })
+
   mainWindow.once('ready-to-show', () => {
+    applyWindowIcon(mainWindow)
+    if (windowState.isMaximized && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.maximize()
+    }
     mainWindow?.show()
+    // Reaplica após show — alguns WMs só pegam o ícone com a janela visível
+    applyWindowIcon(mainWindow)
     if (isDev && process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
       mainWindow?.webContents.openDevTools({ mode: 'detach' })
     }
@@ -173,8 +237,10 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  ensureLinuxTaskbarIntegration()
   ensureWorkspaceDirectories()
   registerWorkspaceIpc()
+  registerWindowIpc(() => mainWindow)
   registerLocalFileProtocol()
   registerYoutubeEmbedHeaders()
   createWindow()

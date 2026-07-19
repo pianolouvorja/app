@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld('louvorja', {
   platform: process.platform,
   isElectron: true,
 
+  window: {
+    control: (action) => ipcRenderer.invoke('window:control', action),
+    onMaximizedState: (callback) => subscribe('window:maximized-state', callback),
+  },
+
   workspace: {
     getRecord: (filename) => ipcRenderer.invoke('workspace:get-record', filename),
     saveRecord: (filename, data) => ipcRenderer.invoke('workspace:save-record', filename, data),

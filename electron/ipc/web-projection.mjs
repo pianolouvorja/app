@@ -42,8 +42,8 @@ const SITE_INTERACTION_BLOCKER_HTML = path.join(
   '../player/site-interaction-blocker.html',
 )
 
-const SOURCE_WINDOW_TITLE = 'Player — Central Adoração'
-const SITE_WINDOW_TITLE = 'Site — Central Adoração'
+const SOURCE_WINDOW_TITLE = 'Player — LouvorJA - PIANO'
+const SITE_WINDOW_TITLE = 'Site — LouvorJA - PIANO'
 
 /** Tamanho fixo do popup de controle de vídeo (16:9). */
 const CONTROL_WIDTH = 960
@@ -1580,11 +1580,11 @@ export async function openWebProjectionWindows(payload) {
       : mode === 'site'
         ? SITE_WINDOW_TITLE
         : mode === 'image'
-          ? 'Imagens — Central Adoração'
+          ? 'Imagens — LouvorJA - PIANO'
           : mode === 'pdf'
-            ? 'PDF — Central Adoração'
+            ? 'PDF — LouvorJA - PIANO'
             : mode === 'presentation'
-              ? 'Apresentação — Central Adoração'
+              ? 'Apresentação — LouvorJA - PIANO'
               : SOURCE_WINDOW_TITLE
 
   sourceWindow =

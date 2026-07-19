@@ -9,6 +9,8 @@ import type { DockNavItem } from '@design-system/types/navigation'
 import MediaChrome from '@modules/media/components/MediaChrome.vue'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
+import codenamePianoUrl from '@assets/brand/codenamePIANO.svg'
+import { APP_VERSION } from '@shared/constants/app'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,14 +69,26 @@ function viewKey(viewRoute: typeof route) {
           <span class="app-shell__brand-ja">{{ t('app.nameJa') }}</span>
         </span>
       </div>
-      <button
-        v-if="showAccountButton"
-        type="button"
-        class="app-shell__account"
-        :aria-label="t('app.name')"
-      >
-        <i class="ti ti-user-circle" aria-hidden="true" />
-      </button>
+      <div class="app-shell__header-end">
+        <div class="app-shell__codename-block">
+          <img
+            class="app-shell__codename"
+            :src="codenamePianoUrl"
+            alt="codename PIANO"
+            width="168"
+            height="25"
+          >
+          <span class="app-shell__version" aria-hidden="true">{{ APP_VERSION }}</span>
+        </div>
+        <button
+          v-if="showAccountButton"
+          type="button"
+          class="app-shell__account"
+          :aria-label="t('app.name')"
+        >
+          <i class="ti ti-user-circle" aria-hidden="true" />
+        </button>
+      </div>
     </header>
 
     <main class="app-shell__main">
@@ -145,6 +159,37 @@ function viewKey(viewRoute: typeof route) {
   color: var(--ds-color-brand-yellow);
 }
 
+.app-shell__header-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.app-shell__codename-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.app-shell__codename {
+  display: block;
+  height: 1.5rem;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.app-shell__version {
+  color: var(--ds-color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+}
+
 .app-shell__account {
   display: inline-flex;
   align-items: center;
@@ -172,7 +217,7 @@ function viewKey(viewRoute: typeof route) {
 .app-shell__main {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - 5rem - var(--ds-dock-height));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
   padding-bottom: var(--ds-dock-height);
 }
 </style>

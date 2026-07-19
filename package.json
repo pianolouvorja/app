@@ -1,9 +1,10 @@
 {
-  "name": "centralja",
+  "name": "louvorja-piano",
   "version": "1.12.3",
   "private": true,
   "type": "module",
   "main": "electron/main.mjs",
+  "desktopName": "louvorja-piano.desktop",
   "scripts": {
     "version:major": "npm version major -m \"chore: versão %s\"",
     "version:minor": "npm version minor -m \"chore: versão %s\"",
@@ -19,8 +20,8 @@
     "type-check": "vue-tsc --build",
     "git:tag": "git tag -a \"v$npm_package_version\" -m \"Versão $npm_package_version\" && git push origin \"v$npm_package_version\"",
     "git:publish": "git push -u origin HEAD --follow-tags",
-    "electron:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173\" \"wait-on http://127.0.0.1:5173 && env -u ELECTRON_RUN_AS_NODE cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
-    "electron:preview": "vite build --base=./ && env -u ELECTRON_RUN_AS_NODE electron .",
+    "electron:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173\" \"wait-on http://127.0.0.1:5173 && env -u ELECTRON_RUN_AS_NODE cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron . --class=louvorja-piano\"",
+    "electron:preview": "vite build --base=./ && env -u ELECTRON_RUN_AS_NODE electron . --class=louvorja-piano",
     "electron:build": "vite build --base=./ && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -66,15 +67,28 @@
     }
   },
   "build": {
-    "appId": "com.louvorja.centralja",
-    "productName": "Central Adoração",
+    "appId": "com.louvorja.piano",
+    "productName": "LouvorJA - PIANO",
+    "executableName": "louvorja-piano",
     "npmRebuild": false,
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-electron",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "public/ico/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
     ],
     "linux": {
       "target": [
@@ -86,7 +100,17 @@
         }
       ],
       "category": "AudioVideo",
-      "icon": "public/ico/favicon.png"
+      "icon": "build/icons",
+      "executableName": "louvorja-piano",
+      "syncDesktopName": true,
+      "desktop": {
+        "entry": {
+          "Name": "LouvorJA - PIANO",
+          "Comment": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
+          "Categories": "AudioVideo;",
+          "StartupWMClass": "louvorja-piano"
+        }
+      }
     },
     "win": {
       "target": [
@@ -97,7 +121,7 @@
           ]
         }
       ],
-      "icon": "public/ico/favicon.png"
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": [
@@ -109,13 +133,13 @@
           ]
         }
       ],
-      "icon": "public/ico/favicon.png"
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
   },
-  "description": "Central Adoração — aplicativo desktop para gerenciamento de culto",
+  "description": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
   "author": "Kiki Solutions"
 }

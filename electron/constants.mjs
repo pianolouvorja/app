@@ -1,5 +1,8 @@
-/** Nome do produto no SO — define a pasta userData (ex.: ~/.config/Central Adoração). */
-export const APP_PRODUCT_NAME = 'Central Adoração'
+/** Nome do produto no SO (janela, atalhos, productName do build). */
+export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
+
+/** Pasta userData no ambiente do cliente (ex.: ~/.config/LouvorJA - codenamePIANO). */
+export const APP_USER_DATA_DIR = 'LouvorJA - codenamePIANO'
 
 export const WORKSPACE_DIRS = {
   sysdata: '.sysdata',
