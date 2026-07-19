@@ -50,24 +50,26 @@ const {
               </div>
 
               <section class="starting-overlay__progress">
-                <div class="starting-overlay__labels">
-                  <span class="starting-overlay__status">
-                    {{ t(statusKey) }}
-                  </span>
-                  <span class="starting-overlay__percent">
-                    {{ hasError ? '!' : `${progress}%` }}
-                  </span>
-                </div>
-
                 <div
                   v-if="!hasError"
-                  class="starting-overlay__track"
-                  aria-hidden="true"
+                  class="starting-overlay__indicator"
                 >
                   <div
-                    class="starting-overlay__fill"
-                    :style="{ width: `${Math.max(progress, 4)}%` }"
-                  />
+                    class="starting-overlay__gears"
+                    aria-hidden="true"
+                  >
+                    <i class="ti ti-settings starting-overlay__gear starting-overlay__gear--outer" />
+                    <i class="ti ti-settings starting-overlay__gear starting-overlay__gear--inner" />
+                  </div>
+
+                  <div class="starting-overlay__meter">
+                    <span class="starting-overlay__percent">
+                      {{ progress }}%
+                    </span>
+                    <span class="starting-overlay__status">
+                      {{ t(statusKey) }}
+                    </span>
+                  </div>
                 </div>
 
                 <v-btn
@@ -126,7 +128,6 @@ const {
   width: 80px;
   height: auto;
   margin-bottom: 1.5rem;
-  animation: starting-pulse 2s ease-in-out infinite;
 }
 
 .starting-overlay__title {
@@ -151,45 +152,67 @@ const {
   margin-top: 2.5rem;
 }
 
-.starting-overlay__labels {
+.starting-overlay__indicator {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding-inline: 0.25rem;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
-.starting-overlay__status {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.starting-overlay__gears {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+}
+
+.starting-overlay__gear {
+  line-height: 1;
+}
+
+.starting-overlay__gear--outer {
+  font-size: 3.75rem;
+  color: var(--ds-color-primary-soft, var(--ds-color-primary));
+  animation: starting-spin 3s linear infinite;
+}
+
+.starting-overlay__gear--inner {
+  position: absolute;
+  font-size: 1.875rem;
+  color: var(--ds-color-primary);
+  animation: starting-spin-reverse 2s linear infinite;
+}
+
+.starting-overlay__meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .starting-overlay__percent {
-  color: #60a5fa;
+  color: var(--ds-color-primary-soft, var(--ds-color-primary));
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--ds-color-primary) 50%, transparent);
+  animation: starting-pulse 2s ease-in-out infinite;
+}
+
+.starting-overlay__status {
+  margin-top: 0.5rem;
+  color: #94a3b8;
   font-size: 0.6875rem;
   font-weight: 700;
-}
-
-.starting-overlay__track {
-  width: 100%;
-  height: 3px;
-  overflow: hidden;
-  border-radius: 9999px;
-  background-color: #1e293b;
-}
-
-.starting-overlay__fill {
-  height: 100%;
-  min-width: 4%;
-  border-radius: inherit;
-  background-color: #2563eb;
-  transition: width 0.5s ease-out;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .starting-overlay__retry {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .starting-fade-enter-active,
@@ -206,16 +229,34 @@ const {
   opacity: 0;
 }
 
+@keyframes starting-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes starting-spin-reverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
 @keyframes starting-pulse {
   0%,
   100% {
-    transform: scale(1);
     opacity: 1;
   }
 
   50% {
-    transform: scale(1.08);
-    opacity: 0.85;
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starting-overlay__gear--outer,
+  .starting-overlay__gear--inner,
+  .starting-overlay__percent {
+    animation: none;
   }
 }
 </style>

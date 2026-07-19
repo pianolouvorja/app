@@ -2,10 +2,10 @@ export default {
   starting: {
     titleFirstBoot: 'Preparando o Louvor JA',
     titleWarmBoot: 'Iniciando o Louvor JA',
-    subtitle: 'Aguarde instantes enquanto organizamos tudo para você.',
+    subtitle: 'Preparando o ambiente e os recursos do culto.',
     retry: 'Tentar novamente',
     status: {
-      booting: 'Iniciando...',
+      booting: 'Iniciando sistema',
       preparingInstall: 'Preparando nova instalação...',
       preparing: 'Preparando...',
       loading: 'Carregando ambiente...',

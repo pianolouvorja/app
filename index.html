@@ -7,12 +7,46 @@
     <link rel="icon" href="./favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="./ico/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+      /* Aplica cor de realce salva (user_data.accent) ou o padrão orange da 1ª inicialização. */
+      ;(function () {
+        var accents = {
+          azure: { primary: '#5B9BD5', soft: '#B4D4F0' },
+          sky: { primary: '#5BA4C9', soft: '#B5D8E8' },
+          teal: { primary: '#4DB6AC', soft: '#B2DFDB' },
+          emerald: { primary: '#6BAA7A', soft: '#B8D9C0' },
+          apricot: { primary: '#E0A84A', soft: '#F0D9A8' },
+          orange: { primary: '#E0895A', soft: '#F0C4A8' },
+          coral: { primary: '#D4847A', soft: '#F0C0B8' },
+          rose: { primary: '#C97B8F', soft: '#E8C4CE' },
+          violet: { primary: '#8B7BB8', soft: '#CDC4E0' },
+          slate: { primary: '#7A8FA3', soft: '#C5D0DA' },
+        }
+        var key = 'orange'
+        try {
+          var raw = localStorage.getItem('user_data')
+          if (raw) {
+            var data = JSON.parse(raw)
+            if (data && typeof data.accent === 'string' && accents[data.accent]) {
+              key = data.accent
+            }
+          }
+        } catch (_) {}
+        var accent = accents[key]
+        var root = document.documentElement
+        root.style.setProperty('--boot-primary', accent.primary)
+        root.style.setProperty('--boot-primary-soft', accent.soft)
+      })()
+    </script>
     <style>
-      /* Splash estático — mesmo fundo do GradientBackground (home / páginas internas). */
+      /* Splash estático — layout Stitch initBoot + fundo GradientBackground.
+         Cor de realce: padrão orange; sobrescrita pelo script abaixo se houver preferência. */
       :root {
         --boot-bg: #131313;
-        --boot-primary: #2196f3;
+        --boot-primary: #E0895A;
+        --boot-primary-soft: #F0C4A8;
         --boot-on-surface: #e5e2e1;
+        --boot-muted: #94a3b8;
       }
       html, body {
         height: 100%;
@@ -73,62 +107,104 @@
         justify-content: center;
         padding: 2rem;
       }
+      #boot-splash .boot-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
       #boot-splash img {
         width: 80px;
         height: auto;
         margin-bottom: 1.5rem;
-        animation: boot-pulse 2s ease-in-out infinite;
       }
       #boot-splash h1 {
         margin: 0 0 0.5rem;
         font-size: 1.875rem;
         font-weight: 700;
         letter-spacing: -0.02em;
+        line-height: 2.25rem;
       }
-      #boot-splash p {
+      #boot-splash .boot-subtitle {
         margin: 0;
-        color: #94a3b8;
+        max-width: 28rem;
+        color: var(--boot-muted);
         font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.25rem;
       }
       #boot-splash .boot-progress {
+        display: flex;
         width: 100%;
         max-width: 450px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
         margin-top: 2.5rem;
       }
-      #boot-splash .boot-labels {
+      #boot-splash .boot-gears {
+        position: relative;
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        padding: 0 0.25rem;
-        font-size: 0.6875rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+      }
+      #boot-splash .boot-gear {
+        display: block;
+      }
+      #boot-splash .boot-gear--outer {
+        width: 3.75rem;
+        height: 3.75rem;
+        color: var(--boot-primary-soft);
+        animation: boot-spin 3s linear infinite;
+      }
+      #boot-splash .boot-gear--inner {
+        position: absolute;
+        width: 1.875rem;
+        height: 1.875rem;
+        color: var(--boot-primary);
+        animation: boot-spin-reverse 2s linear infinite;
+      }
+      #boot-splash .boot-meter {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
       #boot-splash .boot-percent {
-        color: #60a5fa;
+        color: var(--boot-primary-soft);
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-shadow: 0 0 10px color-mix(in srgb, var(--boot-primary) 50%, transparent);
+        animation: boot-pulse 2s ease-in-out infinite;
       }
-      #boot-splash .boot-track {
-        height: 3px;
-        overflow: hidden;
-        border-radius: 9999px;
-        background: #1e293b;
+      #boot-splash .boot-status {
+        margin-top: 0.5rem;
+        color: var(--boot-muted);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
       }
-      #boot-splash .boot-fill {
-        width: 8%;
-        height: 100%;
-        background: #2563eb;
-        border-radius: inherit;
-        animation: boot-bar 1.6s ease-in-out infinite;
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes boot-spin-reverse {
+        to { transform: rotate(-360deg); }
       }
       @keyframes boot-pulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.08); opacity: 0.85; }
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.72; }
       }
-      @keyframes boot-bar {
-        0% { width: 6%; }
-        50% { width: 38%; }
-        100% { width: 6%; }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash .boot-gear--outer,
+        #boot-splash .boot-gear--inner,
+        #boot-splash .boot-percent {
+          animation: none;
+        }
       }
     </style>
   </head>
@@ -137,15 +213,24 @@
       <div class="boot-splash__glow" aria-hidden="true"></div>
       <div class="boot-splash__dither" aria-hidden="true"></div>
       <div class="boot-splash__content">
-        <img src="./ico/favicon.svg" width="80" height="80" alt="Louvor JA">
-        <h1>Iniciando o Louvor JA</h1>
-        <p>Aguarde instantes enquanto organizamos tudo para você.</p>
+        <div class="boot-brand">
+          <img src="./ico/favicon.svg" width="80" height="80" alt="Louvor JA">
+          <h1>Iniciando o Louvor JA</h1>
+          <p class="boot-subtitle">Preparando o ambiente e os recursos do culto.</p>
+        </div>
         <div class="boot-progress">
-          <div class="boot-labels">
-            <span>Iniciando...</span>
-            <span class="boot-percent">…</span>
+          <div class="boot-gears" aria-hidden="true">
+            <svg class="boot-gear boot-gear--outer" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <svg class="boot-gear boot-gear--inner" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
           </div>
-          <div class="boot-track"><div class="boot-fill"></div></div>
+          <div class="boot-meter">
+            <span class="boot-percent">…</span>
+            <span class="boot-status">Iniciando sistema</span>
+          </div>
         </div>
       </div>
     </div>
