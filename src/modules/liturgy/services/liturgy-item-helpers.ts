@@ -56,6 +56,91 @@ export function findCategoryInsertIndex(
   return insertAt
 }
 
+/** Fim exclusivo do bloco categoria + filhos contíguos. */
+export function getCategoryBlockEnd(
+  items: LiturgyItem[],
+  categoryIndex: number,
+): number {
+  const category = items[categoryIndex]
+  if (!category || category.type !== 'category') return categoryIndex + 1
+  return findCategoryInsertIndex(items, category.id)
+}
+
+/**
+ * Resolve o índice da categoria-alvo ao soltar sobre um filho
+ * (ou o próprio índice se já for categoria / item solto).
+ */
+function resolveDropCategoryIndex(
+  items: LiturgyItem[],
+  toIndex: number,
+): number {
+  const target = items[toIndex]
+  if (!target) return toIndex
+  if (target.type === 'category') return toIndex
+  if (!target.categoryId) return toIndex
+  const parentIndex = items.findIndex(
+    (item) => item.type === 'category' && item.id === target.categoryId,
+  )
+  return parentIndex >= 0 ? parentIndex : toIndex
+}
+
+/**
+ * Reordena itens. Categorias movem com todos os subitens contíguos.
+ */
+export function reorderLiturgyItems(
+  items: LiturgyItem[],
+  fromIndex: number,
+  toIndex: number,
+): LiturgyItem[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= items.length ||
+    toIndex >= items.length
+  ) {
+    return items
+  }
+
+  const moved = items[fromIndex]
+  if (!moved) return items
+
+  if (moved.type !== 'category') {
+    const next = [...items]
+    const [item] = next.splice(fromIndex, 1)
+    if (!item) return items
+    next.splice(toIndex, 0, item)
+    return next
+  }
+
+  const blockEnd = getCategoryBlockEnd(items, fromIndex)
+  if (toIndex >= fromIndex && toIndex < blockEnd) return items
+
+  const targetCategoryIndex = resolveDropCategoryIndex(items, toIndex)
+  const target = items[targetCategoryIndex]
+
+  let insertAt: number
+  if (target?.type === 'category') {
+    const targetEnd = getCategoryBlockEnd(items, targetCategoryIndex)
+    insertAt =
+      fromIndex < targetCategoryIndex ? targetEnd : targetCategoryIndex
+  } else {
+    insertAt = fromIndex < toIndex ? toIndex + 1 : toIndex
+  }
+
+  if (insertAt >= fromIndex && insertAt <= blockEnd) return items
+
+  const block = items.slice(fromIndex, blockEnd)
+  const next = [...items.slice(0, fromIndex), ...items.slice(blockEnd)]
+  let dest = insertAt
+  if (insertAt > fromIndex) {
+    dest = insertAt - (blockEnd - fromIndex)
+  }
+  dest = Math.max(0, Math.min(dest, next.length))
+  next.splice(dest, 0, ...block)
+  return next
+}
+
 /** Copia itens com novos IDs, remapeando categoryId e limpando done. */
 export function cloneLiturgyItems(items: LiturgyItem[]): LiturgyItem[] {
   const idMap = new Map<string, string>()
@@ -154,8 +239,9 @@ export function isValidLiturgyUrl(raw: string): boolean {
 export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
   if (draft.type == null) return false
   if (draft.name.trim().length === 0) return false
-  if (draft.type === 'category' && !normalizeLiturgyTimeHHmm(draft.startTime)) {
-    return false
+  if (draft.type === 'category') {
+    if (!normalizeLiturgyTimeHHmm(draft.startTime)) return false
+    if (!normalizeLiturgyTimeHHmm(draft.endTime)) return false
   }
   if (draft.type === 'music' && draft.musicId == null) return false
   if (draft.type !== 'category' && !draft.categoryId) return false
@@ -218,6 +304,8 @@ export function buildLiturgyItemFromDraft(
     categoryId: type === 'category' ? null : draft.categoryId,
     startTime:
       type === 'category' ? normalizeLiturgyTimeHHmm(draft.startTime) : null,
+    endTime:
+      type === 'category' ? normalizeLiturgyTimeHHmm(draft.endTime) : null,
   }
 
   if (type === 'music') {
@@ -309,6 +397,10 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
     startTime:
       item.type === 'category'
         ? (normalizeLiturgyTimeHHmm(item.startTime) ?? '')
+        : '',
+    endTime:
+      item.type === 'category'
+        ? (normalizeLiturgyTimeHHmm(item.endTime) ?? '')
         : '',
     musicId: item.musicId ?? null,
     musicMode: item.musicMode ?? 'audio',

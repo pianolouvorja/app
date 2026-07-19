@@ -5,6 +5,7 @@ export {
   luminousClarity,
   accents,
   defaultAccent,
+  accentsLegacy,
   interactions,
   defaultInteraction,
   type ThemeId,

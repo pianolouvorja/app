@@ -1,8 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import AppearanceView from './views/AppearanceView.vue'
-import GeneralView from './views/GeneralView.vue'
-import MediaView from './views/MediaView.vue'
 import ProjectionView from './views/ProjectionView.vue'
 import SettingsView from './views/SettingsView.vue'
 
@@ -23,21 +21,16 @@ export const settingsRoutes: RouteRecordRaw[] = [
           navKey: 'settings',
         },
       },
+      // Geral / Mídia — ocultos no menu; redirect até reativarmos as seções.
       {
         path: 'general',
         name: 'settings-general',
-        component: GeneralView,
-        meta: {
-          navKey: 'settings',
-        },
+        redirect: { name: 'settings-appearance' },
       },
       {
         path: 'media',
         name: 'settings-media',
-        component: MediaView,
-        meta: {
-          navKey: 'settings',
-        },
+        redirect: { name: 'settings-appearance' },
       },
       {
         path: 'projection',

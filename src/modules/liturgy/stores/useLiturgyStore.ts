@@ -25,6 +25,7 @@ import {
   findCategoryInsertIndex,
   isLiturgyItemDraftValid,
   reconcileMusicItemTitles,
+  reorderLiturgyItems,
 } from '../services/liturgy-item-helpers'
 import {
   loadLiturgyState,
@@ -517,6 +518,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
           : itemDraft.value.durationMs || DEFAULT_MOMENT_DURATION_MS,
       categoryId: type === 'category' ? null : itemDraft.value.categoryId,
       startTime: type === 'category' ? itemDraft.value.startTime : '',
+      endTime: type === 'category' ? itemDraft.value.endTime : '',
     }
   }
 
@@ -526,7 +528,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     if (!item) return
     editingIndex.value = index
     itemDialogLockedCategory.value = false
-    itemDialogHideTypePicker.value = false
+    itemDialogHideTypePicker.value = item.type === 'category'
     itemDraft.value = draftFromLiturgyItem(item)
     musicSearchQuery.value = ''
     itemDialogOpen.value = true
@@ -688,21 +690,20 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   function reorderItems(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return
-    const next = [...currentItems.value]
-    const [moved] = next.splice(fromIndex, 1)
-    if (!moved) return
-    next.splice(toIndex, 0, moved)
+
+    const previous = currentItems.value
+    const selectedId =
+      selectedItemIndex.value != null
+        ? previous[selectedItemIndex.value]?.id
+        : null
+
+    const next = reorderLiturgyItems(previous, fromIndex, toIndex)
+    if (next === previous) return
     currentItems.value = next
 
-    if (selectedItemIndex.value === fromIndex) {
-      selectedItemIndex.value = toIndex
-    } else if (selectedItemIndex.value != null) {
-      const selected = selectedItemIndex.value
-      if (fromIndex < selected && toIndex >= selected) {
-        selectedItemIndex.value = selected - 1
-      } else if (fromIndex > selected && toIndex <= selected) {
-        selectedItemIndex.value = selected + 1
-      }
+    if (selectedId) {
+      const mapped = next.findIndex((item) => item.id === selectedId)
+      selectedItemIndex.value = mapped >= 0 ? mapped : null
     }
   }
 

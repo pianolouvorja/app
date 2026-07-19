@@ -107,6 +107,7 @@ export default {
     dialog: {
       title: 'Novo Momento',
       editTitle: 'Editar um sub item',
+      editCategoryTitle: 'Editar Categoria/Separador',
       addSubItemTitle: 'Adicionar Sub item',
       addCategoryTitle: 'Nova Categoria/Separador',
       itemType: 'Tipo de Item',
@@ -120,6 +121,7 @@ export default {
       complementaryTitlePlaceholder: 'Ex: Regência, Mensagem Musical',
       categoryMomentName: 'Nome do momento da programação',
       categoryStartTime: 'Hora de Início',
+      categoryEndTime: 'Hora término',
       categoryField: 'Categoria',
       categoryPlaceholder: 'Selecione uma categoria',
       categoryEmpty: 'Crie uma Categoria/Separador antes de adicionar outros itens.',
@@ -183,6 +185,7 @@ export default {
       discard: 'Descartar',
       addToService: 'Adicionar',
       edit: 'Editar',
+      editCategory: 'Editar Categoria/Separador',
       delete: 'Remover',
       duplicate: 'Duplicar',
       clearAll: 'Limpar tudo',

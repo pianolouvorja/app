@@ -216,9 +216,9 @@ function clearSearch() {
   align-items: center;
   gap: var(--ds-spacing-3, 12px);
   padding: var(--ds-spacing-2, 8px) var(--ds-spacing-6, 24px);
-  color: var(--ds-color-outline);
+  color: var(--ds-color-primary);
   font-size: 0.625rem;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 0.875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;

@@ -65,6 +65,14 @@ const executable = computed(() => isExecutableItem(props.item))
 const isMusicItem = computed(
   () => props.item.type === 'music' && props.item.musicId != null,
 )
+const categoryTimeRange = computed(() => {
+  const start = props.item.startTime?.trim()
+  const end = props.item.endTime?.trim()
+  if (start && end) return `${start} - ${end}`
+  if (start) return start
+  if (end) return end
+  return '—'
+})
 const isStreamVideo = computed(() => props.item.type === 'online_video')
 const isLocalVideo = computed(() => props.item.type === 'video')
 const isLocalImages = computed(() => props.item.type === 'images')
@@ -248,15 +256,17 @@ function onHandleDragEnd() {
           />
         </div>
 
-        <p
-          v-if="isCategory && item.startTime"
-          class="liturgy-item__start-time"
-        >
-          {{ item.startTime }}
-        </p>
-
         <div class="liturgy-item__body">
-          <p class="liturgy-item__type">
+          <p
+            v-if="isCategory"
+            class="liturgy-item__type liturgy-item__type--range"
+          >
+            {{ categoryTimeRange }}
+          </p>
+          <p
+            v-else
+            class="liturgy-item__type"
+          >
             {{ t(`liturgy.types.${item.type}`) }}
           </p>
           <div class="liturgy-item__heading">
@@ -494,8 +504,16 @@ function onHandleDragEnd() {
             v-if="!deletionLocked"
             type="button"
             class="liturgy-item__action"
-            :title="t('liturgy.actions.edit')"
-            :aria-label="t('liturgy.actions.edit')"
+            :title="
+              isCategory
+                ? t('liturgy.actions.editCategory')
+                : t('liturgy.actions.edit')
+            "
+            :aria-label="
+              isCategory
+                ? t('liturgy.actions.editCategory')
+                : t('liturgy.actions.edit')
+            "
             :disabled="item.done"
             @click="emit('edit')"
           >
@@ -872,6 +890,15 @@ function onHandleDragEnd() {
   overflow: hidden;
   text-overflow: ellipsis;
 
+  &--range {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--ds-color-primary);
+  }
+
   .liturgy-item--linked & {
     font-size: 0.55rem;
     letter-spacing: 0.04em;
@@ -884,6 +911,14 @@ function onHandleDragEnd() {
 
   .liturgy-item--selected & {
     color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
+  }
+
+  .liturgy-item--pending &--range {
+    color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
+  }
+
+  .liturgy-item--selected &--range {
+    color: var(--ds-color-primary);
   }
 }
 

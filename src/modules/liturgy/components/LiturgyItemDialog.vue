@@ -62,6 +62,9 @@ const nameRequiredMissing = computed(() => props.draft.name.trim().length === 0)
 const startTimeRequiredMissing = computed(
   () => isCategory.value && !normalizeLiturgyTimeHHmm(props.draft.startTime),
 )
+const endTimeRequiredMissing = computed(
+  () => isCategory.value && !normalizeLiturgyTimeHHmm(props.draft.endTime),
+)
 const categoryRequiredMissing = computed(
   () => hasTypeSelection.value && !isCategory.value && !props.draft.categoryId,
 )
@@ -124,6 +127,9 @@ const nameFieldError = computed(
 const startTimeFieldError = computed(
   () => showValidation.value && startTimeRequiredMissing.value,
 )
+const endTimeFieldError = computed(
+  () => showValidation.value && endTimeRequiredMissing.value,
+)
 const musicFieldError = computed(
   () => showValidation.value && musicRequiredMissing.value,
 )
@@ -151,6 +157,9 @@ const momentNamePlaceholder = computed(() => {
 })
 
 const dialogTitle = computed(() => {
+  if (props.isEditing && isCategory.value) {
+    return t('liturgy.dialog.editCategoryTitle')
+  }
   if (props.isEditing) return t('liturgy.dialog.editTitle')
   if (props.lockCategory) return t('liturgy.dialog.addSubItemTitle')
   if (props.hideTypePicker) return t('liturgy.dialog.addCategoryTitle')
@@ -234,6 +243,7 @@ function selectType(type: LiturgyItemType) {
     }
     next.categoryId = props.draft.categoryId ?? null
     next.startTime = ''
+    next.endTime = ''
   }
   if (type !== 'music') {
     next.musicId = null
@@ -261,6 +271,10 @@ function onNameInput(event: Event) {
 
 function onStartTimeInput(event: Event) {
   patch({ startTime: (event.target as HTMLInputElement).value })
+}
+
+function onEndTimeInput(event: Event) {
+  patch({ endTime: (event.target as HTMLInputElement).value })
 }
 
 function onDetailsInput(event: Event) {
@@ -713,31 +727,59 @@ function isLightDot(hex: string): boolean {
 
             <div
               v-if="isCategory"
-              class="moment-dialog__section moment-dialog__section--start-time"
+              class="moment-dialog__times"
             >
-              <label
-                class="moment-dialog__label"
-                :class="{ 'moment-dialog__label--error': startTimeFieldError }"
-                for="moment-start-time"
-              >
-                {{ t('liturgy.dialog.categoryStartTime') }}
-                <span
-                  class="moment-dialog__required"
-                  aria-hidden="true"
-                >*</span>
-              </label>
-              <input
-                id="moment-start-time"
-                class="moment-dialog__input moment-dialog__input--time"
-                :class="{ 'moment-dialog__input--error': startTimeFieldError }"
-                type="time"
-                :value="draft.startTime"
-                :aria-label="t('liturgy.dialog.categoryStartTime')"
-                :aria-invalid="startTimeFieldError"
-                :aria-required="true"
-                required
-                @input="onStartTimeInput"
-              >
+              <div class="moment-dialog__section moment-dialog__section--start-time">
+                <label
+                  class="moment-dialog__label"
+                  :class="{ 'moment-dialog__label--error': startTimeFieldError }"
+                  for="moment-start-time"
+                >
+                  {{ t('liturgy.dialog.categoryStartTime') }}
+                  <span
+                    class="moment-dialog__required"
+                    aria-hidden="true"
+                  >*</span>
+                </label>
+                <input
+                  id="moment-start-time"
+                  class="moment-dialog__input moment-dialog__input--time"
+                  :class="{ 'moment-dialog__input--error': startTimeFieldError }"
+                  type="time"
+                  :value="draft.startTime"
+                  :aria-label="t('liturgy.dialog.categoryStartTime')"
+                  :aria-invalid="startTimeFieldError"
+                  :aria-required="true"
+                  required
+                  @input="onStartTimeInput"
+                >
+              </div>
+
+              <div class="moment-dialog__section moment-dialog__section--end-time">
+                <label
+                  class="moment-dialog__label"
+                  :class="{ 'moment-dialog__label--error': endTimeFieldError }"
+                  for="moment-end-time"
+                >
+                  {{ t('liturgy.dialog.categoryEndTime') }}
+                  <span
+                    class="moment-dialog__required"
+                    aria-hidden="true"
+                  >*</span>
+                </label>
+                <input
+                  id="moment-end-time"
+                  class="moment-dialog__input moment-dialog__input--time"
+                  :class="{ 'moment-dialog__input--error': endTimeFieldError }"
+                  type="time"
+                  :value="draft.endTime"
+                  :aria-label="t('liturgy.dialog.categoryEndTime')"
+                  :aria-invalid="endTimeFieldError"
+                  :aria-required="true"
+                  required
+                  @input="onEndTimeInput"
+                >
+              </div>
             </div>
 
             <div
@@ -1192,6 +1234,13 @@ function isLightDot(hex: string): boolean {
     grid-template-columns:
       minmax(6.25rem, 7.25rem) minmax(12rem, 1.7fr) minmax(8rem, 0.95fr);
   }
+}
+
+.moment-dialog__times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 10rem));
+  gap: 0.9rem;
+  align-items: start;
 }
 
 .moment-dialog__type-hint {

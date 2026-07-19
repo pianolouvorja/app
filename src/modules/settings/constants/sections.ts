@@ -10,11 +10,15 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     id: 'general',
     routeName: 'settings-general',
     labelKey: 'settings.tabs.general',
+    // Temporariamente fora do menu — não estamos trabalhando nesta seção.
+    hidden: true,
   },
   {
     id: 'media',
     routeName: 'settings-media',
     labelKey: 'settings.tabs.media',
+    // Temporariamente fora do menu — não estamos trabalhando nesta seção.
+    hidden: true,
   },
   {
     id: 'projection',
@@ -22,3 +26,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     labelKey: 'settings.tabs.projection',
   },
 ]
+
+export const VISIBLE_SETTINGS_SECTIONS = SETTINGS_SECTIONS.filter(
+  (section) => !section.hidden,
+)

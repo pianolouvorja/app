@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { SETTINGS_SECTIONS } from '../constants/sections'
+import { VISIBLE_SETTINGS_SECTIONS } from '../constants/sections'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,7 +22,7 @@ function goTo(routeName: string) {
 <template>
   <nav class="settings-tabs" :aria-label="t('settings.title')">
     <button
-      v-for="section in SETTINGS_SECTIONS"
+      v-for="section in VISIBLE_SETTINGS_SECTIONS"
       :key="section.id"
       type="button"
       class="settings-tabs__item"
@@ -56,9 +56,9 @@ function goTo(routeName: string) {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   line-height: 20px;
-  text-transform: uppercase;
+  text-transform: none;
   transition:
     color 200ms ease,
     border-color 200ms ease;

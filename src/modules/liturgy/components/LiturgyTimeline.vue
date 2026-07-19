@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LiturgyItem } from '../types/liturgy'
+import { getCategoryBlockEnd } from '../services/liturgy-item-helpers'
 import LiturgyTimelineItem from './LiturgyTimelineItem.vue'
 
 const props = defineProps<{
@@ -130,6 +131,25 @@ function onDrop(toIndex: number) {
   dragFrom.value = null
 }
 
+const dragBlockRange = computed(() => {
+  if (dragFrom.value == null) return null
+  const item = props.items[dragFrom.value]
+  if (!item) return null
+  if (item.type !== 'category') {
+    return { start: dragFrom.value, end: dragFrom.value + 1 }
+  }
+  return {
+    start: dragFrom.value,
+    end: getCategoryBlockEnd(props.items, dragFrom.value),
+  }
+})
+
+function isDragBlockIndex(index: number): boolean {
+  const range = dragBlockRange.value
+  if (!range) return false
+  return index >= range.start && index < range.end
+}
+
 function isCategoryIndeterminate(categoryId: string): boolean {
   const children = props.items.filter(
     (item) => item.type !== 'category' && item.categoryId === categoryId,
@@ -249,7 +269,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           "
           :child-count="segment.childCount"
           :reorder-active="dragFrom != null"
-          :is-drag-source="dragFrom === segment.entry.index"
+          :is-drag-source="isDragBlockIndex(segment.entry.index)"
           :deletion-locked="deletionLocked"
           :has-instrumental="musicHasInstrumental(segment.entry.item)"
           :music-busy="isMusicBusy(segment.entry.item)"
@@ -289,7 +309,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
             :duration-label="durationLabels[child.index] ?? '—'"
             linked
             :reorder-active="dragFrom != null"
-            :is-drag-source="dragFrom === child.index"
+            :is-drag-source="isDragBlockIndex(child.index)"
             :deletion-locked="deletionLocked"
             :has-instrumental="musicHasInstrumental(child.item)"
             :music-busy="isMusicBusy(child.item)"

@@ -131,6 +131,8 @@ export interface LiturgyItem {
   categoryId?: string | null
   /** Horário de início da categoria/separador (HH:MM). */
   startTime?: string | null
+  /** Horário de término da categoria/separador (HH:MM). */
+  endTime?: string | null
   /** Título opcional ao lado do nome da música na listagem. */
   complementaryTitle?: string
   /** Anotações livres (em música, exibidas abaixo do álbum). */
@@ -186,6 +188,8 @@ export interface LiturgyItemDraft {
   categoryId: string | null
   /** Horário de início (HH:MM) — usado em categorias/separadores. */
   startTime: string
+  /** Horário de término (HH:MM) — usado em categorias/separadores. */
+  endTime: string
   musicId: number | null
   musicMode: LiturgyMusicMode
   verseBookId: number | null
@@ -228,6 +232,7 @@ export const DEFAULT_LITURGY_ITEM_DRAFT: LiturgyItemDraft = {
   accentColor: '#9ecaff',
   categoryId: null,
   startTime: '',
+  endTime: '',
   musicId: null,
   musicMode: 'audio',
   verseBookId: null,

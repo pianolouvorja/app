@@ -25,6 +25,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** Oculto por enquanto — reative para voltar o botão de letra nas listagens. */
+const SHOW_LYRIC_ACTION = false
 </script>
 
 <template>
@@ -55,7 +58,7 @@ const { t } = useI18n()
       @click.stop="emit('instrumental')"
     >
       <i
-        class="mdi mdi-play-circle-outline"
+        class="mdi mdi-piano"
         aria-hidden="true"
       />
     </button>
@@ -69,12 +72,13 @@ const { t } = useI18n()
       @click.stop="emit('slides')"
     >
       <i
-        class="mdi mdi-monitor"
+        class="mdi mdi-volume-off"
         aria-hidden="true"
       />
     </button>
 
     <button
+      v-if="SHOW_LYRIC_ACTION"
       type="button"
       class="music-track-actions__btn"
       :disabled="busy"

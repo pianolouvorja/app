@@ -77,6 +77,10 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
       type === 'category'
         ? normalizeTimeHHmm(source.startTime)
         : null,
+    endTime:
+      type === 'category'
+        ? normalizeTimeHHmm(source.endTime)
+        : null,
     complementaryTitle: asString(source.complementaryTitle).trim() || undefined,
     notes: asString(source.notes).trim() || undefined,
     musicId: asNumberOrNull(source.musicId),

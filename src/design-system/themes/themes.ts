@@ -15,6 +15,7 @@ export const defaultTheme: ThemeKey = 'etherealLumens'
 export { etherealLumens, luminousClarity }
 export {
   accents,
+  accentsLegacy,
   defaultAccent,
   type AccentDefinition,
   type AccentKey,

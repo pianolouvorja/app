@@ -78,9 +78,10 @@ function selectAccent(key: AccentKey) {
 }
 
 .accent-color__swatches {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.65rem 0.55rem;
+  justify-items: center;
 }
 
 .accent-color__swatch {

@@ -12,6 +12,8 @@ export interface SettingsSection {
   id: SettingsSectionId
   routeName: string
   labelKey: string
+  /** Oculto nas abas — rotas/views permanecem para reativar depois. */
+  hidden?: boolean
 }
 
 export type {
