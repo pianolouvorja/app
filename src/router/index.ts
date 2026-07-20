@@ -13,7 +13,6 @@ import { homeRoutes } from '@modules/home/routes'
 import { liturgyRoutes } from '@modules/liturgy/routes'
 import { mediaRoutes } from '@modules/media/routes'
 import { settingsRoutes } from '@modules/settings/routes'
-import { syncRoutes } from '@modules/sync/routes'
 import { randomRoutes } from '@modules/random/routes'
 import { timerRoutes } from '@modules/timer/routes'
 import ProjectionHost from '@shared/components/ProjectionHost.vue'
@@ -45,7 +44,6 @@ const router = createRouter({
         ...albumsRoutes,
         ...liturgyRoutes,
         ...mediaRoutes,
-        ...syncRoutes,
         ...bibleRoutes,
         ...utilitiesRoutes,
         ...timerRoutes,

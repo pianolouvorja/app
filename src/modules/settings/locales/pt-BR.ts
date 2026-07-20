@@ -104,10 +104,6 @@ export default {
       clearData: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
-      libraryTitle: 'Biblioteca Local',
-      libraryHint:
-        'Baixe coletâneas e hinários para reproduzir músicas sem conexão.',
-      libraryOpen: 'Abrir Biblioteca Local',
     },
   },
 }

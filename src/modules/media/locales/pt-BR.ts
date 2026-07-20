@@ -50,7 +50,7 @@ export default {
       trackMissing: 'Não foi possível carregar esta música no catálogo local.',
       audioMissing: 'Esta faixa não possui áudio disponível para o modo selecionado.',
       notDownloaded:
-        'Essa coletânea ainda não foi baixada. Acesse a Biblioteca Local para baixá-la.',
+        'Essa coletânea ainda não foi baixada. Baixe-a na Central de Mídia para usar offline.',
       slidesOnlyNotDownloaded:
         'Áudio indisponível (coletânea não baixada). Projetando apenas os slides.',
       slidesOnlyNoAudio:

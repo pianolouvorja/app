@@ -20,7 +20,6 @@ export default {
     home: 'Início',
     albums: 'Central de Mídia',
     liturgy: 'Liturgia',
-    library: 'Biblioteca',
     bible: 'Bíblia',
     utilities: 'Utilitários',
     settings: 'Configurações',
