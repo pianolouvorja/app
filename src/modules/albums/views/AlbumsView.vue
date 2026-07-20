@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
+import type { LibraryAlbum } from '@modules/sync/types/library'
 
 import AlbumCollectionCard from '../components/AlbumCollectionCard.vue'
+import AlbumHymnalCard from '../components/AlbumHymnalCard.vue'
 import AlbumLyricDialog from '../components/AlbumLyricDialog.vue'
 import AlbumSearchHitRow from '../components/AlbumSearchHitRow.vue'
+import DownloadFailureDialog from '@modules/sync/components/DownloadFailureDialog.vue'
 import { useAlbums } from '../composables/useAlbums'
+import type { AlbumCategory, AlbumCollection } from '../types/albums'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -25,9 +29,21 @@ const {
   lyricOpen,
   lyricDoc,
   isLoadingLyric,
+  isDesktop,
+  isDownloadingBatch,
+  hasIdleAlbums,
+  downloadErrorKey,
+  downloadFailure,
+  findLibraryAlbum,
   clearError,
   clearActionMessage,
+  clearDownloadError,
   hydrateCatalog,
+  downloadCollection,
+  cancelCollection,
+  downloadAll,
+  cancelAll,
+  removeCollection,
   playSung,
   playInstrumental,
   playSlides,
@@ -36,6 +52,35 @@ const {
 } = useAlbums()
 
 const busyMusicId = ref<number | null>(null)
+const albumPendingRemoval = ref<LibraryAlbum | null>(null)
+
+const showDownloadControls = computed(() => isDesktop)
+
+function isHymnalsCategory(category: AlbumCategory) {
+  return String(category.id) === 'hymnals'
+}
+
+function categoryTitle(category: AlbumCategory) {
+  if (isHymnalsCategory(category)) return t('sync.categories.hymnals')
+  if (
+    category.name === 'CDs Oficiais/Ano' ||
+    /cds?\s*oficiais/i.test(category.name)
+  ) {
+    return t('sync.categories.youthAlbums')
+  }
+  return category.name
+}
+
+function categorySubtitle(category: AlbumCategory) {
+  if (isHymnalsCategory(category)) return t('sync.categories.hymnalsSubtitle')
+  if (
+    category.name === 'CDs Oficiais/Ano' ||
+    /cds?\s*oficiais/i.test(category.name)
+  ) {
+    return t('sync.categories.albumsSubtitle')
+  }
+  return t('sync.categories.defaultSubtitle')
+}
 
 function openCollection(collectionId: string | number) {
   void router.push({
@@ -51,6 +96,23 @@ function retry() {
 
 function clearHubSearch() {
   hubSearchQuery.value = ''
+}
+
+function requestRemove(collection: AlbumCollection) {
+  const album = findLibraryAlbum(collection.id)
+  if (!album) return
+  albumPendingRemoval.value = album
+}
+
+function dismissRemove() {
+  albumPendingRemoval.value = null
+}
+
+async function confirmRemove() {
+  const album = albumPendingRemoval.value
+  if (!album) return
+  albumPendingRemoval.value = null
+  await removeCollection(album.id)
 }
 
 async function runAction(
@@ -86,32 +148,74 @@ async function runAction(
         </div>
       </div>
 
-      <label class="albums-view__search">
-        <i
-          class="ti ti-search"
-          aria-hidden="true"
-        />
-        <input
-          v-model="hubSearchQuery"
-          type="search"
-          :placeholder="t('albums.hubSearchPlaceholder')"
-          :aria-label="t('albums.hubSearchPlaceholder')"
-        >
+      <div class="albums-view__header-actions">
         <button
-          v-if="isHubSearching"
+          v-if="showDownloadControls && categories.length > 0 && !isDownloadingBatch"
           type="button"
-          class="albums-view__search-clear"
-          :aria-label="t('albums.clearSearch')"
-          :title="t('albums.clearSearch')"
-          @click="clearHubSearch"
+          class="albums-view__batch-btn"
+          :disabled="!hasIdleAlbums"
+          @click="downloadAll"
         >
           <i
-            class="ti ti-x"
+            class="ti ti-cloud-download"
             aria-hidden="true"
           />
+          {{ t('sync.downloadAll') }}
         </button>
-      </label>
+        <button
+          v-else-if="showDownloadControls && isDownloadingBatch"
+          type="button"
+          class="albums-view__batch-btn albums-view__batch-btn--cancel"
+          @click="cancelAll"
+        >
+          <i
+            class="ti ti-circles-relation"
+            aria-hidden="true"
+          />
+          {{ t('sync.cancelAll') }}
+        </button>
+
+        <label class="albums-view__search">
+          <i
+            class="ti ti-search"
+            aria-hidden="true"
+          />
+          <input
+            v-model="hubSearchQuery"
+            type="search"
+            :placeholder="t('albums.hubSearchPlaceholder')"
+            :aria-label="t('albums.hubSearchPlaceholder')"
+          >
+          <button
+            v-if="isHubSearching"
+            type="button"
+            class="albums-view__search-clear"
+            :aria-label="t('albums.clearSearch')"
+            :title="t('albums.clearSearch')"
+            @click="clearHubSearch"
+          >
+            <i
+              class="ti ti-x"
+              aria-hidden="true"
+            />
+          </button>
+        </label>
+      </div>
     </header>
+
+    <div
+      v-if="downloadErrorKey && !downloadFailure"
+      class="albums-view__alert"
+      role="alert"
+    >
+      <p>{{ t(downloadErrorKey) }}</p>
+      <button
+        type="button"
+        @click="clearDownloadError"
+      >
+        {{ t('albums.dismiss') }}
+      </button>
+    </div>
 
     <div
       v-if="lastActionMessageKey && !lastActionMessageKey.startsWith('media.messages.')"
@@ -176,7 +280,6 @@ async function runAction(
             :key="hit.musicId"
             :hit="hit"
             :busy="busyMusicId === hit.musicId"
-            @play="runAction(hit.musicId, () => playSung(hit.musicId))"
             @sung="runAction(hit.musicId, () => playSung(hit.musicId))"
             @instrumental="
               runAction(hit.musicId, () => playInstrumental(hit.musicId))
@@ -210,12 +313,38 @@ async function runAction(
         v-for="category in categories"
         :key="String(category.id)"
         class="albums-view__category"
+        :class="{
+          'albums-view__category--hymnals': isHymnalsCategory(category),
+        }"
       >
-        <h2 class="albums-view__category-title">
-          {{ category.name }}
-        </h2>
+        <header class="albums-view__category-header">
+          <h2 class="albums-view__category-title">
+            {{ categoryTitle(category) }}
+          </h2>
+          <p class="albums-view__category-subtitle">
+            {{ categorySubtitle(category) }}
+          </p>
+        </header>
+
+        <div
+          v-if="isHymnalsCategory(category)"
+          class="albums-view__hymnal-grid"
+        >
+          <AlbumHymnalCard
+            v-for="collection in category.collections"
+            :key="String(collection.id)"
+            :collection="collection"
+            :library-album="findLibraryAlbum(collection.id)"
+            :show-download-controls="showDownloadControls"
+            @open="openCollection(collection.id)"
+            @download="downloadCollection(collection.id)"
+            @cancel="cancelCollection(collection.id)"
+            @remove="requestRemove(collection)"
+          />
+        </div>
 
         <GlassCard
+          v-else
           class="albums-view__grid-wrap"
           :padding="false"
           elevated
@@ -225,7 +354,12 @@ async function runAction(
               v-for="collection in category.collections"
               :key="String(collection.id)"
               :collection="collection"
+              :library-album="findLibraryAlbum(collection.id)"
+              :show-download-controls="showDownloadControls"
               @open="openCollection(collection.id)"
+              @download="downloadCollection(collection.id)"
+              @cancel="cancelCollection(collection.id)"
+              @remove="requestRemove(collection)"
             />
           </div>
         </GlassCard>
@@ -238,6 +372,56 @@ async function runAction(
       :document="lyricDoc"
       @close="closeLyric"
     />
+
+    <DownloadFailureDialog
+      :failure="downloadFailure"
+      @close="clearDownloadError"
+    />
+
+    <Teleport to="body">
+      <div
+        v-if="albumPendingRemoval"
+        class="albums-confirm"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('sync.deleteConfirmTitle')"
+      >
+        <button
+          type="button"
+          class="albums-confirm__backdrop"
+          :aria-label="t('sync.deleteConfirmNo')"
+          @click="dismissRemove"
+        />
+        <div class="albums-confirm__panel">
+          <h2 class="albums-confirm__title">
+            {{ t('sync.deleteConfirmTitle') }}
+          </h2>
+          <p class="albums-confirm__text">
+            {{
+              t('sync.deleteConfirmText', {
+                name: albumPendingRemoval.name,
+              })
+            }}
+          </p>
+          <div class="albums-confirm__actions">
+            <button
+              type="button"
+              class="albums-confirm__btn"
+              @click="dismissRemove"
+            >
+              {{ t('sync.deleteConfirmNo') }}
+            </button>
+            <button
+              type="button"
+              class="albums-confirm__btn albums-confirm__btn--danger"
+              @click="confirmRemove"
+            >
+              {{ t('sync.deleteConfirmYes') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -307,11 +491,25 @@ async function runAction(
   color: var(--ds-color-primary);
 }
 
+.albums-view__header-actions {
+  display: flex;
+  flex-shrink: 1;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .albums-view__search {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: min(24rem, 100%);
+  width: 14rem;
+  max-width: 100%;
+  min-width: 0;
+  flex-shrink: 1;
+  box-sizing: border-box;
   padding: 0.55rem 0.9rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ds-color-surface-card) 82%, transparent);
@@ -319,6 +517,7 @@ async function runAction(
   color: var(--ds-color-on-surface-variant);
 
   .ti-search {
+    flex-shrink: 0;
     color: var(--ds-color-primary);
     font-size: 1.15rem;
   }
@@ -326,6 +525,7 @@ async function runAction(
   input {
     flex: 1;
     min-width: 0;
+    width: 100%;
     border: none;
     outline: none;
     background: transparent;
@@ -352,22 +552,86 @@ async function runAction(
   }
 }
 
+.albums-view__batch-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary, #003258);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--ds-color-primary) 20%, transparent);
+  transition:
+    filter 200ms ease,
+    opacity 200ms ease,
+    background-color 200ms ease;
+
+  .ti {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    box-shadow: none;
+  }
+
+  &--cancel {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 85%, transparent);
+    color: #fff;
+    box-shadow: none;
+  }
+}
+
 .albums-view__body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
   padding-right: 0.25rem;
 }
 
+.albums-view__category-header {
+  margin-bottom: 1rem;
+}
+
 .albums-view__category-title {
-  margin: 0 0 0.75rem;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ds-color-on-surface);
+}
+
+.albums-view__category-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
   color: var(--ds-color-on-surface-variant);
+  opacity: 0.85;
+}
+
+.albums-view__hymnal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .albums-view__grid {
@@ -436,6 +700,84 @@ async function runAction(
     background: transparent;
     color: var(--ds-color-on-surface);
     cursor: pointer;
+  }
+}
+
+.albums-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.albums-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 45%);
+  cursor: pointer;
+}
+
+.albums-confirm__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.5rem;
+  border-radius: var(--ds-radius-lg, 0.75rem);
+  border: 1px solid var(--ds-color-outline-strong, rgb(255 255 255 / 8%));
+  background: var(--ds-color-surface-elevated, #1e1e1e);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 40%);
+}
+
+.albums-confirm__title {
+  margin: 0 0 0.75rem;
+  color: var(--ds-color-on-surface);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.albums-confirm__text {
+  margin: 0;
+  color: var(--ds-color-on-surface-variant);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.albums-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.albums-confirm__btn {
+  height: 2.25rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--ds-radius-md, 0.5rem);
+  background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+  color: var(--ds-color-on-surface);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 200ms ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
+  }
+
+  &--danger {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 18%, transparent);
+    color: var(--ds-color-error, #ffb4ab);
+
+    &:hover {
+      background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 28%, transparent);
+    }
   }
 }
 </style>

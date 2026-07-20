@@ -1,22 +1,48 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { LibraryAlbum, LibraryCategory } from '../types/library'
+import { isDesktopApp } from '@shared/services/desktop-bridge'
+import { peekTrackDownloadCache } from '@shared/services/track-media'
+
+import type {
+  DownloadFailureNotice,
+  LibraryAlbum,
+  LibraryAlbumId,
+  LibraryCategory,
+} from '../types/library'
 import { loadLibraryCategories } from '../services/library-catalog'
 import {
   deleteAlbumMedia,
   downloadAlbumMedia,
+  listAlbumMusicIds,
+  markAlbumAsDownloaded,
+  resolveAlbumIdsForMusic,
+  unmarkAlbumAsDownloaded,
 } from '../services/library-download'
 
 function findAlbum(
   categories: LibraryCategory[],
   albumId: LibraryAlbum['id'],
 ): LibraryAlbum | null {
+  const key = String(albumId)
   for (const category of categories) {
-    const album = category.albums.find((item) => item.id === albumId)
+    const album = category.albums.find((item) => String(item.id) === key)
     if (album) return album
   }
   return null
+}
+
+function applyIdleStatus(album: LibraryAlbum) {
+  album.status = 'idle'
+  album.progress = 0
+  album.downloadedCount = 0
+  album.progressText = ''
+}
+
+function applyDownloadedStatus(album: LibraryAlbum) {
+  album.status = 'downloaded'
+  album.progress = 100
+  album.progressText = ''
 }
 
 export const useLocalLibraryStore = defineStore('localLibrary', () => {
@@ -25,6 +51,8 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
   const isDownloadingBatch = ref(false)
   const cancelBatchRequested = ref(false)
   const lastErrorKey = ref<string | null>(null)
+  const downloadFailure = ref<DownloadFailureNotice | null>(null)
+  const albumDownloadGen = new Map<string, number>()
 
   const hasIdleAlbums = computed(() =>
     categories.value.some((category) =>
@@ -40,10 +68,69 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
 
   function clearError() {
     lastErrorKey.value = null
+    downloadFailure.value = null
   }
 
   function setError(key: string) {
     lastErrorKey.value = key
+  }
+
+  function setDownloadFailure(notice: DownloadFailureNotice) {
+    downloadFailure.value = notice
+  }
+
+  /**
+   * Marca álbum completo só com cache em memória (zero IPC extra).
+   * Evita a saturação que travava os downloads.
+   */
+  async function reconcileAlbumsForMusic(musicId: number) {
+    if (!isDesktopApp()) return
+    if (!Number.isFinite(musicId) || musicId <= 0) return
+
+    if (categories.value.length === 0) {
+      try {
+        categories.value = await loadLibraryCategories()
+      } catch {
+        return
+      }
+    }
+
+    const linkedIds = await resolveAlbumIdsForMusic(musicId)
+    for (const albumId of linkedIds) {
+      const album = findAlbum(categories.value, albumId)
+      if (!album || album.isHymnal || album.status === 'downloading') continue
+
+      const musicIds = await listAlbumMusicIds(album)
+      if (musicIds.length === 0) continue
+
+      let allCachedDownloaded = true
+      for (const id of musicIds) {
+        if (peekTrackDownloadCache(id) !== true) {
+          allCachedDownloaded = false
+          break
+        }
+      }
+
+      if (allCachedDownloaded) {
+        await markAlbumAsDownloaded(album.id)
+        applyDownloadedStatus(album)
+        continue
+      }
+
+      // Se esta faixa foi removida e o álbum estava marcado, desmarca.
+      if (
+        peekTrackDownloadCache(musicId) === false &&
+        album.status === 'downloaded'
+      ) {
+        await unmarkAlbumAsDownloaded(album.id)
+        applyIdleStatus(album)
+      }
+    }
+  }
+
+  /** Mantido por compatibilidade — não há mais varredura em background. */
+  function stopBackgroundReconcile() {
+    // no-op intencional
   }
 
   async function refreshCollections() {
@@ -66,6 +153,11 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     if (cancelBatchRequested.value && isDownloadingBatch.value) return null
 
     clearError()
+
+    const albumKey = String(album.id)
+    const gen = (albumDownloadGen.get(albumKey) ?? 0) + 1
+    albumDownloadGen.set(albumKey, gen)
+
     album.status = 'downloading'
     album.progress = 0
     album.totalCount = 0
@@ -73,21 +165,35 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     album.cancelRequested = false
     album.progressText = 'sync.progress.preparing'
 
+    const isCurrent = () => albumDownloadGen.get(albumKey) === gen
+
     try {
       const result = await downloadAlbumMedia(album, {
         onPrepareProgress: (percent) => {
+          if (!isCurrent() || album.cancelRequested) return
           album.progress = percent
           album.progressText = 'sync.progress.preparing'
         },
         onDownloadProgress: (downloaded, total, percent) => {
+          if (!isCurrent() || album.cancelRequested) return
           album.downloadedCount = downloaded
           album.totalCount = total
           album.progress = percent
           album.progressText = 'sync.progress.downloading'
         },
         shouldAbort: () =>
-          album.cancelRequested || (isDownloadingBatch.value && cancelBatchRequested.value),
+          !isCurrent() ||
+          album.cancelRequested ||
+          (isDownloadingBatch.value && cancelBatchRequested.value),
       })
+
+      if (!isCurrent() || album.cancelRequested) {
+        if (isCurrent()) {
+          applyIdleStatus(album)
+          album.progressText = 'sync.progress.cancelled'
+        }
+        return 'idle' as const
+      }
 
       if (result.status === 'downloaded') {
         album.status = 'downloaded'
@@ -111,20 +217,29 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
           : 'sync.progress.serverError'
 
       if (!isDownloadingBatch.value) {
-        setError(
-          result.failureReason === 'offline'
-            ? 'sync.errors.downloadOffline'
-            : 'sync.errors.downloadServer',
-        )
+        if (result.failureReason === 'offline') {
+          setDownloadFailure({ reason: 'offline', failedCount: result.totalErrors })
+        } else if (result.failureReason === 'server') {
+          setDownloadFailure({
+            reason: 'server',
+            failedCount: Math.max(1, result.totalErrors),
+          })
+        } else {
+          setDownloadFailure({ reason: 'unknown', failedCount: result.totalErrors })
+        }
       }
 
       return result.status
     } catch (error) {
       console.error('[sync] erro ao baixar coletânea', error)
+      if (!isCurrent() || album.cancelRequested) {
+        if (isCurrent()) applyIdleStatus(album)
+        return 'idle' as const
+      }
       album.status = 'error'
       album.progressText = 'sync.progress.error'
       if (!isDownloadingBatch.value) {
-        setError('sync.errors.downloadUnknown')
+        setDownloadFailure({ reason: 'unknown', failedCount: 0 })
       }
       return 'error' as const
     }
@@ -137,28 +252,35 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     cancelBatchRequested.value = false
     clearError()
 
-    outer: for (const category of categories.value) {
-      for (const album of category.albums) {
-        if (cancelBatchRequested.value) break outer
-        if (album.status !== 'idle') continue
+    try {
+      outer: for (const category of categories.value) {
+        for (const album of category.albums) {
+          if (cancelBatchRequested.value) break outer
+          if (album.status !== 'idle') continue
 
-        const status = await downloadAlbum(album.id)
+          const status = await downloadAlbum(album.id)
 
-        if (status === 'error' && !navigator.onLine) {
-          cancelBatchRequested.value = true
-          setError('sync.errors.batchOffline')
-          break outer
+          if (status === 'error' && !navigator.onLine) {
+            cancelBatchRequested.value = true
+            setDownloadFailure({ reason: 'batchOffline', failedCount: 0 })
+            break outer
+          }
         }
       }
+    } finally {
+      isDownloadingBatch.value = false
+      cancelBatchRequested.value = false
     }
-
-    isDownloadingBatch.value = false
-    cancelBatchRequested.value = false
   }
 
-  function cancelAlbum(albumId: LibraryAlbum['id']) {
+  function cancelAlbum(albumId: LibraryAlbumId) {
     const album = findAlbum(categories.value, albumId)
-    if (album) album.cancelRequested = true
+    if (!album || album.status !== 'downloading') return
+    const albumKey = String(album.id)
+    albumDownloadGen.set(albumKey, (albumDownloadGen.get(albumKey) ?? 0) + 1)
+    album.cancelRequested = true
+    applyIdleStatus(album)
+    album.progressText = 'sync.progress.cancelled'
   }
 
   function cancelAllDownloads() {
@@ -166,7 +288,14 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     for (const category of categories.value) {
       for (const album of category.albums) {
         if (album.status === 'downloading') {
+          const albumKey = String(album.id)
+          albumDownloadGen.set(
+            albumKey,
+            (albumDownloadGen.get(albumKey) ?? 0) + 1,
+          )
           album.cancelRequested = true
+          applyIdleStatus(album)
+          album.progressText = 'sync.progress.cancelled'
         }
       }
     }
@@ -177,10 +306,7 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     if (!album || album.status !== 'downloaded') return
 
     await deleteAlbumMedia(album)
-    album.status = 'idle'
-    album.progress = 0
-    album.downloadedCount = 0
-    album.progressText = ''
+    applyIdleStatus(album)
   }
 
   return {
@@ -188,10 +314,13 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     isLoadingList,
     isDownloadingBatch,
     lastErrorKey,
+    downloadFailure,
     hasIdleAlbums,
     isAnyDownloading,
     clearError,
     refreshCollections,
+    reconcileAlbumsForMusic,
+    stopBackgroundReconcile,
     downloadAlbum,
     downloadAllIdleAlbums,
     cancelAlbum,

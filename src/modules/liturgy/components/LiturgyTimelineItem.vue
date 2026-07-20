@@ -164,6 +164,8 @@ function onHandleDragEnd() {
   window.setTimeout(() => clearDragGhost(), 0)
   emit('dragEnd')
 }
+
+const rowHovered = ref(false)
 </script>
 
 <template>
@@ -180,6 +182,8 @@ function onHandleDragEnd() {
       'liturgy-item--dimmed': isDimmed,
       'liturgy-item--drag-source': isDragSource,
     }"
+    @mouseenter="rowHovered = true"
+    @mouseleave="rowHovered = false"
     @dragover.prevent
     @drop.prevent="emit('drop', index)"
   >
@@ -373,8 +377,11 @@ function onHandleDragEnd() {
           />
           <MusicTrackActions
             v-if="isMusicItem && item.musicId != null"
+            :music-id="item.musicId"
+            :track-name="item.name"
             :has-instrumental="Boolean(hasInstrumental)"
             :busy="Boolean(musicBusy || item.done)"
+            :row-hovered="rowHovered"
             variant="contained"
             @sung="emit('musicSung')"
             @instrumental="emit('musicInstrumental')"

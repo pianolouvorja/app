@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { GlassCard } from '@design-system/index'
 
 import LibraryCategoryBlock from '../components/LibraryCategoryBlock.vue'
+import DownloadFailureDialog from '../components/DownloadFailureDialog.vue'
 import { useLocalLibrary } from '../composables/useLocalLibrary'
 import type { LibraryAlbum } from '../types/library'
 
@@ -14,6 +15,7 @@ const {
   isLoadingList,
   isDownloadingBatch,
   lastErrorKey,
+  downloadFailure,
   hasIdleAlbums,
   isDesktop,
   downloadAlbum,
@@ -95,7 +97,7 @@ async function confirmRemove() {
     >
       <div class="local-library-view__body">
         <div
-          v-if="lastErrorKey"
+          v-if="lastErrorKey && !downloadFailure"
           class="local-library-view__error"
           role="alert"
         >
@@ -196,6 +198,11 @@ async function confirmRemove() {
         </div>
       </div>
     </Teleport>
+
+    <DownloadFailureDialog
+      :failure="downloadFailure"
+      @close="clearError"
+    />
   </section>
 </template>
 

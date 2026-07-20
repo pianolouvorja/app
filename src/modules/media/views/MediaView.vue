@@ -29,6 +29,9 @@ const {
   slideCount,
   currentSlide,
   resolvedSlideImageUrl,
+  ondemandDownloadPercent,
+  ondemandNoticeVisible,
+  ondemandDownloadDone,
   currentTimeLabel,
   durationLabel,
   progressRatio,
@@ -59,6 +62,10 @@ const stageImage = computed(
   () => resolvedSlideImageUrl.value ?? currentSlide.value?.imageUrl ?? null,
 )
 const isCover = computed(() => Boolean(currentSlide.value?.isCover))
+const showOndemandNotice = computed(() => ondemandNoticeVisible.value)
+const ondemandProgressRatio = computed(() =>
+  Math.min(1, Math.max(0, (ondemandDownloadPercent.value ?? 0) / 100)),
+)
 
 const playlist = computed(() =>
   (session.value?.slides ?? []).map((slide, index) => ({
@@ -221,29 +228,67 @@ async function onToggleFullscreen() {
       </aside>
 
       <div class="media-window__pill-wrap">
-        <MediaPlayerPill
-          :title="session?.title || t('media.title')"
-          :subtitle="session?.subtitle || ''"
-          :is-playing="isPlaying"
-          :has-audio="hasAudio"
-          :has-instrumental="hasInstrumental"
-          :mode="playbackMode"
-          :current-time-label="currentTimeLabel"
-          :duration-label="durationLabel"
-          :progress-ratio="progressRatio"
-          :volume="volume"
-          :projecting="isProjecting"
-          :playlist-open="showPlaylist"
-          @toggle-play="togglePlay"
-          @previous-slide="previousSlide"
-          @next-slide="nextSlide"
-          @seek-ratio="seekRatio"
-          @update:volume="setVolume"
-          @update:mode="onMode"
-          @toggle-projection="toggleProjection"
-          @toggle-playlist="togglePlaylist"
-          @toggle-fullscreen="onToggleFullscreen"
-        />
+        <div class="media-window__pill-stack">
+          <MediaPlayerPill
+            :title="session?.title || t('media.title')"
+            :subtitle="session?.subtitle || ''"
+            :is-playing="isPlaying"
+            :has-audio="hasAudio"
+            :has-instrumental="hasInstrumental"
+            :mode="playbackMode"
+            :current-time-label="currentTimeLabel"
+            :duration-label="durationLabel"
+            :progress-ratio="progressRatio"
+            :volume="volume"
+            :projecting="isProjecting"
+            :playlist-open="showPlaylist"
+            @toggle-play="togglePlay"
+            @previous-slide="previousSlide"
+            @next-slide="nextSlide"
+            @seek-ratio="seekRatio"
+            @update:volume="setVolume"
+            @update:mode="onMode"
+            @toggle-projection="toggleProjection"
+            @toggle-playlist="togglePlaylist"
+            @toggle-fullscreen="onToggleFullscreen"
+          />
+          <div
+            v-if="showOndemandNotice"
+            class="media-window__ondemand"
+            :class="{ 'media-window__ondemand--done': ondemandDownloadDone }"
+            aria-live="polite"
+          >
+            <div
+              class="media-window__ondemand-track"
+              role="progressbar"
+              :aria-valuenow="ondemandDownloadPercent ?? 100"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="
+                ondemandDownloadDone
+                  ? t('media.ondemandDownloadSuccess')
+                  : t('media.ondemandDownload')
+              "
+            >
+              <div
+                class="media-window__ondemand-fill"
+                :style="{ transform: `scaleX(${ondemandProgressRatio})` }"
+              />
+            </div>
+            <p
+              class="media-window__ondemand-label"
+              :class="{
+                'media-window__ondemand-label--done': ondemandDownloadDone,
+              }"
+            >
+              {{
+                ondemandDownloadDone
+                  ? t('media.ondemandDownloadSuccess')
+                  : t('media.ondemandDownload')
+              }}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -418,6 +463,64 @@ async function onToggleFullscreen() {
   > * {
     pointer-events: auto;
   }
+}
+
+.media-window__pill-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+}
+
+.media-window__ondemand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.75rem;
+}
+
+.media-window__ondemand-track {
+  width: 100%;
+  height: 0.2rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.media-window__ondemand-fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #f5c542 0%, #f59e0b 100%);
+  transition: transform 0.2s ease-out;
+}
+
+.media-window__ondemand-label {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: rgb(255 255 255 / 0.72);
+  text-align: center;
+  transition:
+    color 0.25s ease,
+    text-shadow 0.25s ease,
+    font-weight 0.25s ease;
+}
+
+.media-window__ondemand-label--done {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #f5c542;
+  text-shadow: 0 0 12px rgb(245 197 66 / 0.45);
+}
+
+.media-window__ondemand--done .media-window__ondemand-fill {
+  background: linear-gradient(90deg, #f5c542 0%, #ffe08a 50%, #f59e0b 100%);
 }
 
 .media-window__empty,

@@ -102,13 +102,23 @@ function mapTrackRow(row: CatalogTrackRow): AlbumTrack | null {
   const name = String(row.name ?? '').trim()
   if (!name) return null
 
+  const trackNumber = asNumber(row.track)
+
   return {
     musicId,
     name,
-    track: asNumber(row.track),
+    track: trackNumber != null && trackNumber > 0 ? trackNumber : null,
     durationLabel: formatCatalogDuration(row.duration),
     hasInstrumental: hasInstrumentalFlag(row),
   }
+}
+
+/** Quando o catálogo não traz sequência válida, usa a ordem da lista (1, 2, 3…). */
+function withFallbackTrackNumbers(tracks: AlbumTrack[]): AlbumTrack[] {
+  return tracks.map((track, index) => {
+    if (track.track != null && track.track > 0) return track
+    return { ...track, track: index + 1 }
+  })
 }
 
 export async function loadCollectionTracks(
@@ -117,20 +127,24 @@ export async function loadCollectionTracks(
   if (collection.kind === 'hymnal') {
     const rows = await readOrFetchCatalog<CatalogTrackRow[]>(collection.catalogKey)
     if (!Array.isArray(rows)) return []
-    return rows
-      .map(mapTrackRow)
-      .filter((track): track is AlbumTrack => track != null)
-      .sort((a, b) => (a.track ?? a.musicId) - (b.track ?? b.musicId))
+    return withFallbackTrackNumbers(
+      rows
+        .map(mapTrackRow)
+        .filter((track): track is AlbumTrack => track != null)
+        .sort((a, b) => (a.track ?? a.musicId) - (b.track ?? b.musicId)),
+    )
   }
 
   const album = await readOrFetchCatalog<CatalogAlbumRecord>(collection.catalogKey)
   const rows = album?.musics
   if (!Array.isArray(rows)) return []
 
-  return rows
-    .map(mapTrackRow)
-    .filter((track): track is AlbumTrack => track != null)
-    .sort((a, b) => (a.track ?? a.musicId) - (b.track ?? b.musicId))
+  return withFallbackTrackNumbers(
+    rows
+      .map(mapTrackRow)
+      .filter((track): track is AlbumTrack => track != null)
+      .sort((a, b) => (a.track ?? a.musicId) - (b.track ?? b.musicId)),
+  )
 }
 
 export function filterAlbumTracks(

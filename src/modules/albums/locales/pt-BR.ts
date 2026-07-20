@@ -9,6 +9,7 @@ export default {
     catalogSearchPlaceholder: 'Buscar álbum ou coletânea...',
     searchResultsTitle: 'Resultados da Pesquisa',
     clearSearch: 'Limpar busca',
+    openCollection: 'Abrir {name}',
     columns: {
       number: '#',
       title: 'Título / Coletânea',

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import type { AlbumSearchHit } from '../types/albums'
@@ -9,23 +12,44 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  play: []
   sung: []
   instrumental: []
   slides: []
   lyric: []
 }>()
+
+const { t } = useI18n()
+const rowHovered = ref(false)
+const downloadProgress = ref<number | null>(null)
+const isDownloading = computed(() => downloadProgress.value != null)
+
+function onDownloadProgress(progress: number | null) {
+  downloadProgress.value = progress
+}
 </script>
 
 <template>
   <div
     class="album-search-hit"
-    role="button"
-    tabindex="0"
-    @click="emit('play')"
-    @keydown.enter.prevent="emit('play')"
-    @keydown.space.prevent="emit('play')"
+    :class="{ 'album-search-hit--downloading': isDownloading }"
+    @mouseenter="rowHovered = true"
+    @mouseleave="rowHovered = false"
   >
+    <div
+      v-if="isDownloading"
+      class="album-search-hit__download-overlay"
+      aria-live="polite"
+    >
+      <div
+        class="album-search-hit__download-fill"
+        :style="{ width: `${downloadProgress ?? 0}%` }"
+        aria-hidden="true"
+      />
+      <span class="album-search-hit__download-percent">
+        {{ downloadProgress }}%
+      </span>
+    </div>
+
     <span class="album-search-hit__info">
       <span class="album-search-hit__title-row">
         <span
@@ -47,23 +71,24 @@ const emit = defineEmits<{
       {{ hit.durationLabel }}
     </span>
 
-    <div
-      class="album-search-hit__actions"
-      @click.stop
-    >
+    <div class="album-search-hit__actions">
       <MonitorTargetSelect
         dense
         persist
-        :disabled="busy"
+        :disabled="busy || isDownloading"
       />
       <MusicTrackActions
+        :music-id="hit.musicId"
+        :track-name="hit.name"
         :has-instrumental="hit.hasInstrumental"
         :busy="busy"
+        :row-hovered="rowHovered"
         variant="contained"
         @sung="emit('sung')"
         @instrumental="emit('instrumental')"
         @slides="emit('slides')"
         @lyric="emit('lyric')"
+        @download-progress="onDownloadProgress"
       />
     </div>
   </div>
@@ -73,6 +98,7 @@ const emit = defineEmits<{
 .album-search-hit {
   --album-search-accent: #ff8a3d;
 
+  position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 4rem auto;
@@ -84,16 +110,57 @@ const emit = defineEmits<{
   background: transparent;
   color: var(--ds-color-on-surface);
   text-align: left;
-  cursor: pointer;
+  overflow: hidden;
   transition: background-color 140ms ease;
 
   &:hover {
     background: color-mix(in srgb, var(--ds-color-primary) 10%, transparent);
   }
 
+  &--downloading {
+    background: color-mix(in srgb, var(--ds-color-primary) 8%, transparent);
+  }
+
   &:last-child {
     border-bottom: none;
   }
+}
+
+.album-search-hit__download-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+}
+
+.album-search-hit__download-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ds-color-primary) 28%, transparent),
+    color-mix(in srgb, var(--ds-color-primary) 48%, transparent)
+  );
+  transition: width 200ms ease;
+}
+
+.album-search-hit__download-percent {
+  position: relative;
+  z-index: 1;
+  color: var(--ds-color-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 45%);
 }
 
 .album-search-hit__info {
@@ -143,6 +210,8 @@ const emit = defineEmits<{
 }
 
 .album-search-hit__actions {
+  position: relative;
+  z-index: 6;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;

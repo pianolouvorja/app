@@ -16,7 +16,7 @@ import {
 import { toRelativeMediaPath } from './media-paths'
 
 const DOWNLOAD_BATCH_SIZE = 5
-const MAX_CONSECUTIVE_ERRORS = 5
+const MAX_CONSECUTIVE_ERRORS = 3
 
 function collectLyricImageUrls(music: CatalogMusicRecord): string[] {
   if (!music.lyric) return []
@@ -89,6 +89,62 @@ async function collectMediaForAlbum(
   return { items, found: true }
 }
 
+/** IDs das faixas no catálogo (sem checar disco). */
+export async function listAlbumMusicIds(
+  album: LibraryAlbum,
+): Promise<number[]> {
+  let songRefs: Array<{ id_music: number | string }> = []
+
+  if (album.isHymnal) {
+    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(
+      `pt_${album.id}`,
+    )
+    if (!hymnalData || !Array.isArray(hymnalData)) return []
+    songRefs = hymnalData
+  } else {
+    const albumData = await readCatalogRecord<CatalogAlbumRecord>(
+      `album_${album.id}`,
+    )
+    if (!albumData?.musics || !Array.isArray(albumData.musics)) return []
+    songRefs = albumData.musics
+  }
+
+  const ids: number[] = []
+  for (const song of songRefs) {
+    const id = Number(song.id_music)
+    if (Number.isFinite(id) && id > 0) ids.push(id)
+  }
+  return ids
+}
+
+/** IDs de coletâneas ligados à faixa no catálogo. */
+export async function resolveAlbumIdsForMusic(
+  musicId: number,
+): Promise<Array<string | number>> {
+  if (!Number.isFinite(musicId) || musicId <= 0) return []
+
+  type MusicAlbumsRow = {
+    albums?: Array<{ id_album?: number | string }>
+  }
+
+  const music = await readCatalogRecord<MusicAlbumsRow>(`music_${musicId}`)
+  if (!music?.albums || !Array.isArray(music.albums)) return []
+
+  const ids: Array<string | number> = []
+  const seen = new Set<string>()
+  for (const row of music.albums) {
+    const raw = row.id_album
+    if (raw == null) continue
+    const asNum = Number(raw)
+    const id = Number.isFinite(asNum) ? asNum : String(raw)
+    const key = String(id)
+    if (seen.has(key)) continue
+    seen.add(key)
+    ids.push(id)
+  }
+  return ids
+}
+
 export type DownloadProgressHooks = {
   onPrepareProgress: (percent: number) => void
   onDownloadProgress: (downloaded: number, total: number, percent: number) => void
@@ -105,17 +161,18 @@ export async function markAlbumAsDownloaded(
   albumId: LibraryAlbum['id'],
 ): Promise<void> {
   const manifest = await readDownloadedAlbumIds()
-  if (!manifest.includes(albumId)) {
-    manifest.push(albumId)
-    await writeDownloadedAlbumIds(manifest)
-  }
+  const key = String(albumId)
+  if (manifest.some((id) => String(id) === key)) return
+  manifest.push(albumId)
+  await writeDownloadedAlbumIds(manifest)
 }
 
 export async function unmarkAlbumAsDownloaded(
   albumId: LibraryAlbum['id'],
 ): Promise<void> {
   const manifest = await readDownloadedAlbumIds()
-  await writeDownloadedAlbumIds(manifest.filter((id) => id !== albumId))
+  const key = String(albumId)
+  await writeDownloadedAlbumIds(manifest.filter((id) => String(id) !== key))
 }
 
 /**

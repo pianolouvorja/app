@@ -14,6 +14,7 @@ export function useLocalLibrary() {
     isLoadingList,
     isDownloadingBatch,
     lastErrorKey,
+    downloadFailure,
     hasIdleAlbums,
     isAnyDownloading,
   } = storeToRefs(store)
@@ -49,6 +50,7 @@ export function useLocalLibrary() {
     isLoadingList,
     isDownloadingBatch,
     lastErrorKey,
+    downloadFailure,
     hasIdleAlbums,
     isAnyDownloading,
     isDesktop: isDesktopApp(),

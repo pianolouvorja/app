@@ -28,7 +28,7 @@ export default {
       defaultSubtitle: 'Álbuns e produções para uso offline.',
     },
     hymnal: {
-      edition1996Name: 'Edição 1996',
+      edition1996Name: 'Hinário Adventista - Edição 1996',
       officialSubtitle: '{count} hinos com partituras e letras',
       edition1996Subtitle: 'Histórico - {count} hinos tradicionais',
     },
@@ -42,10 +42,11 @@ export default {
     },
     errors: {
       loadFailed: 'Não foi possível carregar as coletâneas.',
+      downloadFailureTitle: 'Falha no download',
       downloadOffline:
         'Não foi possível baixar os arquivos. Verifique sua conexão com a internet.',
       downloadServer:
-        'Não foi possível concluir o download pois o servidor está indisponível no momento. Tente novamente mais tarde.',
+        'Interrompemos o download após várias falhas seguidas — o servidor de mídia parece indisponível. {count} arquivo(s) não puderam ser baixados. Tente novamente mais tarde.',
       downloadUnknown: 'Ocorreu um erro ao baixar a coletânea.',
       batchOffline:
         'O download em lote foi cancelado porque não há conexão com a internet.',

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import type { AlbumTrack } from '../types/albums'
@@ -11,31 +14,63 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  play: []
   sung: []
   instrumental: []
   slides: []
   lyric: []
 }>()
+
+const rowHovered = ref(false)
+const downloadProgress = ref<number | null>(null)
+
+const isDownloading = computed(() => downloadProgress.value != null)
+
+const { t } = useI18n()
+
+function onDownloadProgress(progress: number | null) {
+  downloadProgress.value = progress
+}
 </script>
 
 <template>
   <div
     class="album-track-row"
-    role="button"
-    tabindex="0"
-    @click="emit('play')"
-    @keydown.enter.prevent="emit('play')"
-    @keydown.space.prevent="emit('play')"
+    :class="{ 'album-track-row--downloading': isDownloading }"
+    @mouseenter="rowHovered = true"
+    @mouseleave="rowHovered = false"
   >
+    <div
+      v-if="isDownloading"
+      class="album-track-row__download-overlay"
+      aria-live="polite"
+    >
+      <div
+        class="album-track-row__download-fill"
+        :style="{ width: `${downloadProgress ?? 0}%` }"
+        aria-hidden="true"
+      />
+      <span class="album-track-row__download-percent">
+        {{ downloadProgress }}%
+      </span>
+    </div>
+
     <span class="album-track-row__leading">
       <span class="album-track-row__number">
         {{ track.track ?? '—' }}
       </span>
-      <i
-        class="ti ti-player-play album-track-row__play"
-        aria-hidden="true"
-      />
+      <button
+        type="button"
+        class="album-track-row__play"
+        :disabled="busy || isDownloading"
+        :title="t('media.actions.sung')"
+        :aria-label="t('media.actions.sung')"
+        @click.stop="emit('sung')"
+      >
+        <i
+          class="ti ti-player-play"
+          aria-hidden="true"
+        />
+      </button>
     </span>
 
     <span class="album-track-row__info">
@@ -70,23 +105,24 @@ const emit = defineEmits<{
       {{ track.durationLabel }}
     </span>
 
-    <div
-      class="album-track-row__actions"
-      @click.stop
-    >
+    <div class="album-track-row__actions">
       <MonitorTargetSelect
         dense
         persist
-        :disabled="busy"
+        :disabled="busy || isDownloading"
       />
       <MusicTrackActions
+        :music-id="track.musicId"
+        :track-name="track.name"
         :has-instrumental="track.hasInstrumental"
         :busy="busy"
+        :row-hovered="rowHovered"
         variant="contained"
         @sung="emit('sung')"
         @instrumental="emit('instrumental')"
         @slides="emit('slides')"
         @lyric="emit('lyric')"
+        @download-progress="onDownloadProgress"
       />
     </div>
   </div>
@@ -94,6 +130,7 @@ const emit = defineEmits<{
 
 <style scoped lang="scss">
 .album-track-row {
+  position: relative;
   width: 100%;
   display: grid;
   grid-template-columns: 4rem minmax(0, 1fr) 7rem auto;
@@ -111,7 +148,7 @@ const emit = defineEmits<{
   );
   color: var(--ds-color-on-surface);
   text-align: left;
-  cursor: pointer;
+  overflow: hidden;
   backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
   transition:
@@ -132,121 +169,188 @@ const emit = defineEmits<{
     );
   }
 
+  &--downloading {
+    border-color: color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
+  }
+
   &:last-child {
     margin-bottom: 0;
   }
 }
 
-.album-track-row__leading {
+.album-track-row__download-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+}
+
+.album-track-row__download-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ds-color-primary) 28%, transparent),
+    color-mix(in srgb, var(--ds-color-primary) 48%, transparent)
+  );
+  transition: width 200ms ease;
+}
+
+.album-track-row__download-percent {
+  position: relative;
+  z-index: 1;
+  color: var(--ds-color-primary);
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 45%);
+}
+
+.album-track-row__leading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
 }
 
 .album-track-row__number {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--ds-color-on-surface-variant);
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ds-color-on-surface-variant);
+  transition: opacity 140ms ease;
 }
 
 .album-track-row__play {
-  display: none;
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--ds-color-primary);
-  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+
+  .ti {
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    transform: scale(1.08);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
 }
 
 .album-track-row:hover .album-track-row__number,
 .album-track-row:focus-within .album-track-row__number {
-  display: none;
+  opacity: 0;
 }
 
 .album-track-row:hover .album-track-row__play,
 .album-track-row:focus-within .album-track-row__play {
-  display: inline-block;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .album-track-row__info {
-  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
+  min-width: 0;
 }
 
 .album-track-row__artwork {
-  flex-shrink: 0;
   width: 3rem;
   height: 3rem;
-  border: 1px solid var(--ds-color-outline-strong);
-  border-radius: var(--ds-radius-sm, 8px);
+  border-radius: 0.65rem;
+  overflow: hidden;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ds-color-surface-container);
-  color: var(--ds-color-secondary);
-  overflow: hidden;
-
-  .ti {
-    font-size: 1.35rem;
-  }
+  background: color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
 
   img {
     width: 100%;
     height: 100%;
-    display: block;
     object-fit: cover;
+  }
+
+  .ti {
+    font-size: 1.35rem;
+    color: var(--ds-color-primary);
   }
 }
 
 .album-track-row__text {
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .album-track-row__title {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25rem;
-  white-space: nowrap;
+  font-weight: 650;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .album-track-row__collection {
+  font-size: 0.8rem;
   color: var(--ds-color-on-surface-variant);
-  font-size: 0.75rem;
-  font-weight: 400;
-  line-height: 1rem;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .album-track-row__duration {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--ds-color-on-surface-variant);
   font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: var(--ds-color-on-surface-variant);
   text-align: center;
 }
 
 .album-track-row__actions {
+  position: relative;
+  z-index: 6;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   justify-self: end;
-  opacity: 1;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 720px) {
   .album-track-row {
-    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    grid-template-columns: 3rem minmax(0, 1fr);
     grid-template-areas:
-      'num title duration'
-      'actions actions actions';
+      'num title'
+      'num duration'
+      'num actions';
   }
 
   .album-track-row__leading {
@@ -259,6 +363,7 @@ const emit = defineEmits<{
 
   .album-track-row__duration {
     grid-area: duration;
+    text-align: left;
   }
 
   .album-track-row__actions {

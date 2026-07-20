@@ -1,8 +1,8 @@
 import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
 
 export type MediaUrlResolveResult =
-  | { ok: true; url: string }
-  | { ok: false; reason: 'missing' | 'notDownloaded' }
+  | { ok: true; url: string; source: 'local' | 'remote' }
+  | { ok: false; reason: 'missing' }
 
 function toRelativeMediaPath(urlPath: string): string {
   return urlPath.replace(/^\/(musics|images|covers)\//, '')
@@ -14,7 +14,7 @@ function resolveRemoteFileUrl(urlPath: string): string {
   return `${base}/${cleanPath}`
 }
 
-/** Resolve URL de áudio (local no desktop; remoto no browser). */
+/** Resolve URL de áudio (local no desktop; remoto no browser ou sob demanda). */
 export async function resolveMusicAudioUrl(
   catalogPath: string | null,
 ): Promise<MediaUrlResolveResult> {
@@ -28,14 +28,15 @@ export async function resolveMusicAudioUrl(
 
     const relative = toRelativeMediaPath(catalogPath)
     const local = await bridge.media.check('music', relative)
-    if (!local) return { ok: false, reason: 'notDownloaded' }
-    return { ok: true, url: local }
+    if (local) return { ok: true, url: local, source: 'local' }
+    // Ainda não baixada: stream da API (como na web) enquanto baixa em background.
+    return { ok: true, url: resolveRemoteFileUrl(catalogPath), source: 'remote' }
   }
 
-  return { ok: true, url: resolveRemoteFileUrl(catalogPath) }
+  return { ok: true, url: resolveRemoteFileUrl(catalogPath), source: 'remote' }
 }
 
-/** Resolve URL de imagem de slide/capa. */
+/** Resolve URL de imagem de slide/capa (local, ou remoto sob demanda). */
 export async function resolveSlideImageUrl(
   catalogPath: string | null,
 ): Promise<string | null> {
@@ -50,7 +51,9 @@ export async function resolveSlideImageUrl(
     if (local) return local
 
     const cover = await bridge.media.check('covers', relative)
-    return cover || null
+    if (cover) return cover
+
+    return resolveRemoteFileUrl(catalogPath)
   }
 
   return resolveRemoteFileUrl(catalogPath)

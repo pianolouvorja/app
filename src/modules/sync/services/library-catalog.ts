@@ -96,7 +96,7 @@ async function buildHymnalCategory(
     albums.push(
       createAlbumBase({
         id: 'hymnal_1996',
-        name: 'Edição 1996',
+        name: 'Hinário Adventista - Edição 1996',
         subtitle: '',
         coverUrl: hymnal1996Cover,
         rawCoverUrl: null,

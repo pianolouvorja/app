@@ -2,11 +2,17 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
   closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isDesktopApp } from '@shared/services/desktop-bridge'
+import {
+  downloadTrackMedia,
+  isTrackMediaDownloaded,
+} from '@shared/services/track-media'
 
 import {
   attachMediaAudioListeners,
@@ -62,10 +68,19 @@ export const useMediaStore = defineStore('media', () => {
   const durationSec = ref(0)
   const volume = ref(1)
   const resolvedSlideImageUrl = ref<string | null>(null)
+  /** Progresso do download sob demanda (null = barra inativa). */
+  const ondemandDownloadPercent = ref<number | null>(null)
+  /** Mantém a mensagem visível até fechar o player. */
+  const ondemandNoticeVisible = ref(false)
+  /** Download sob demanda concluído com sucesso nesta sessão. */
+  const ondemandDownloadDone = ref(false)
 
   let projectionWatchTimer: ReturnType<typeof setInterval> | null = null
   let boundAudioElement: HTMLAudioElement | null = null
   let playPauseSeq = 0
+  let ondemandGen = 0
+  let ondemandAbort = false
+  let ondemandNoticeMusicId: number | null = null
   let audioHandlers: {
     onTimeUpdate: () => void
     onLoadedMetadata: () => void
@@ -204,6 +219,77 @@ export const useMediaStore = defineStore('media', () => {
     publishProjectionState()
   }
 
+  function cancelOndemandDownload() {
+    ondemandAbort = true
+    ondemandGen += 1
+    ondemandDownloadPercent.value = null
+    ondemandNoticeVisible.value = false
+    ondemandDownloadDone.value = false
+    ondemandNoticeMusicId = null
+  }
+
+  async function startOndemandDownload(musicId: number) {
+    if (!isDesktopApp()) return
+    if (!Number.isFinite(musicId) || musicId <= 0) return
+
+    // Cancela qualquer download sob demanda anterior desta sessão do player.
+    const gen = ++ondemandGen
+    ondemandAbort = false
+
+    try {
+      if (await isTrackMediaDownloaded(musicId)) {
+        if (gen !== ondemandGen) return
+        // Mesma faixa que baixou sob demanda: mantém a mensagem até fechar o player.
+        if (ondemandNoticeMusicId === musicId && ondemandNoticeVisible.value) {
+          ondemandDownloadPercent.value = 100
+          ondemandDownloadDone.value = true
+          return
+        }
+        ondemandDownloadPercent.value = null
+        ondemandNoticeVisible.value = false
+        ondemandDownloadDone.value = false
+        ondemandNoticeMusicId = null
+        return
+      }
+    } catch {
+      // segue com o download
+    }
+
+    if (gen !== ondemandGen) return
+    ondemandNoticeMusicId = musicId
+    ondemandNoticeVisible.value = true
+    ondemandDownloadDone.value = false
+    ondemandDownloadPercent.value = 0
+
+    const result = await downloadTrackMedia(musicId, {
+      onProgress: (percent) => {
+        if (gen !== ondemandGen) return
+        ondemandDownloadPercent.value = percent
+      },
+      shouldAbort: () => gen !== ondemandGen || ondemandAbort,
+    })
+
+    if (gen !== ondemandGen) return
+
+    if (result.status === 'downloaded') {
+      ondemandDownloadPercent.value = 100
+      ondemandNoticeVisible.value = true
+      ondemandDownloadDone.value = true
+      void useLocalLibraryStore().reconcileAlbumsForMusic(musicId)
+      return
+    }
+
+    ondemandDownloadPercent.value = null
+    ondemandNoticeVisible.value = false
+    ondemandDownloadDone.value = false
+    ondemandNoticeMusicId = null
+  }
+
+  async function maybeStartOndemandDownload(musicId: number) {
+    if (!isDesktopApp()) return
+    void startOndemandDownload(musicId)
+  }
+
   function unbindAudio() {
     if (!audioHandlers || !boundAudioElement) {
       audioHandlers = null
@@ -332,12 +418,9 @@ export const useMediaStore = defineStore('media', () => {
       if (resolved.ok) {
         playbackUrl = resolved.url
       } else {
-        // Slides/projeção seguem mesmo sem áudio local (padrão culto).
+        // Sem path de áudio no catálogo: segue só com slides.
         mode = 'no_audio'
-        warningKey =
-          resolved.reason === 'notDownloaded'
-            ? 'media.messages.slidesOnlyNotDownloaded'
-            : 'media.messages.slidesOnlyNoAudio'
+        warningKey = 'media.messages.slidesOnlyNoAudio'
       }
     }
 
@@ -389,6 +472,7 @@ export const useMediaStore = defineStore('media', () => {
     }
 
     await refreshResolvedSlideImage()
+    void maybeStartOndemandDownload(musicId)
 
     if (params.project || !minimized.value) {
       await startProjection()
@@ -591,10 +675,7 @@ export const useMediaStore = defineStore('media', () => {
       playbackUrl = resolved.url
     } else {
       nextMode = 'no_audio'
-      warningKey =
-        resolved.reason === 'notDownloaded'
-          ? 'media.messages.slidesOnlyNotDownloaded'
-          : 'media.messages.slidesOnlyNoAudio'
+      warningKey = 'media.messages.slidesOnlyNoAudio'
     }
 
     const slideTimesSec = buildSlideTimesSec(current.slides, nextMode)
@@ -723,6 +804,7 @@ export const useMediaStore = defineStore('media', () => {
 
     await refreshResolvedSlideImage()
     publishProjectionState()
+    void maybeStartOndemandDownload(current.musicId)
 
     return { ok: true, warningKey }
   }
@@ -755,6 +837,7 @@ export const useMediaStore = defineStore('media', () => {
 
   function close(): void {
     closeConfirmOpen.value = false
+    cancelOndemandDownload()
     unbindAudio()
     try {
       stopAllMediaAudio()
@@ -807,6 +890,9 @@ export const useMediaStore = defineStore('media', () => {
     durationSec,
     volume,
     resolvedSlideImageUrl,
+    ondemandDownloadPercent,
+    ondemandNoticeVisible,
+    ondemandDownloadDone,
     hasSession,
     isPlaying,
     isPaused,

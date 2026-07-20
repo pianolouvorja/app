@@ -108,7 +108,7 @@ async function runAction(
     </header>
 
     <div
-      v-if="lastActionMessageKey"
+      v-if="lastActionMessageKey && !lastActionMessageKey.startsWith('media.messages.')"
       class="album-collection-view__alert"
       role="status"
     >
@@ -160,7 +160,6 @@ async function runAction(
         :collection-name="title"
         :artwork-url="activeCollection?.coverUrl"
         :busy="busyMusicId === track.musicId"
-        @play="runAction(track.musicId, () => playSung(track.musicId))"
         @sung="runAction(track.musicId, () => playSung(track.musicId))"
         @instrumental="
           runAction(track.musicId, () => playInstrumental(track.musicId))

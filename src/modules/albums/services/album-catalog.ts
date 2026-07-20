@@ -82,7 +82,7 @@ async function buildHymnalCollections(): Promise<AlbumCollection[]> {
     collections.push({
       id: 'hymnal_1996',
       kind: 'hymnal',
-      name: 'Hinário Adventista 1996',
+      name: 'Hinário Adventista - Edição 1996',
       subtitle: '',
       coverUrl: hymnal1996Cover,
       trackCount: hymnal1996.length,

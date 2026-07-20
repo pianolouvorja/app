@@ -204,7 +204,7 @@ async function downloadMediaViaFtp(mediaType, filename, filePath) {
   const root = ftpParams.root || '/'
   const remotePath = `${root}${root.endsWith('/') ? '' : '/'}${ftpFolder}/${cleanFilename}`
 
-  const client = new Client()
+  const client = new Client(12_000)
   try {
     await client.access({
       host: ftpParams.host,
@@ -225,36 +225,63 @@ async function downloadMediaViaFtp(mediaType, filename, filePath) {
  * @param {string} filename
  */
 export async function downloadMediaFile(_url, mediaType, filename) {
-  await getFtpParams().catch((error) => {
-    console.warn('[media] pré-fetch FTP falhou:', error.message)
-  })
+  const TIMEOUT_MS = 20_000
 
-  const destFolder = resolveMediaDirectory(mediaType)
-  const decodedFilename = decodeURIComponent(filename)
-  const filePath = path.join(destFolder, decodedFilename)
-  mkdirSync(path.dirname(filePath), { recursive: true })
+  /** @returns {Promise<boolean>} */
+  const run = async () => {
+    await getFtpParams().catch((error) => {
+      console.warn('[media] pré-fetch FTP falhou:', error.message)
+    })
 
-  if (useFtpFallback) {
-    resetFtpFallbackTimer()
-    await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
+    const destFolder = resolveMediaDirectory(mediaType)
+    const decodedFilename = decodeURIComponent(filename)
+    const filePath = path.join(destFolder, decodedFilename)
+    mkdirSync(path.dirname(filePath), { recursive: true })
+
+    if (useFtpFallback) {
+      resetFtpFallbackTimer()
+      await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
+      return true
+    }
+
+    const apiUrl = buildApiMediaUrl(mediaType, decodedFilename)
+    const response = await net.fetch(apiUrl)
+
+    if (response.status === 429) {
+      useFtpFallback = true
+      resetFtpFallbackTimer()
+      await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
+      return true
+    }
+
+    if (!response.ok) return false
+
+    const buffer = Buffer.from(await response.arrayBuffer())
+    writeFileSync(filePath, buffer)
     return true
   }
 
-  const apiUrl = buildApiMediaUrl(mediaType, decodedFilename)
-  const response = await net.fetch(apiUrl)
-
-  if (response.status === 429) {
-    useFtpFallback = true
-    resetFtpFallbackTimer()
-    await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
-    return true
+  let timer
+  try {
+    const work = run()
+    // Evita unhandled rejection se o timeout vencer primeiro.
+    work.catch(() => {})
+    return await Promise.race([
+      work,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`media download timeout (${TIMEOUT_MS}ms)`))
+        }, TIMEOUT_MS)
+      }),
+    ])
+  } catch (error) {
+    console.warn('[media] download falhou/timeout:', error?.message || error)
+    // Se FTP travou, volta para API na próxima tentativa.
+    useFtpFallback = false
+    return false
+  } finally {
+    if (timer) clearTimeout(timer)
   }
-
-  if (!response.ok) return false
-
-  const buffer = Buffer.from(await response.arrayBuffer())
-  writeFileSync(filePath, buffer)
-  return true
 }
 
 /**
