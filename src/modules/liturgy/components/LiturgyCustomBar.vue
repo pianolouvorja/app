@@ -133,7 +133,7 @@ function onWheel(event: WheelEvent) {
   gap: 0.35rem;
   min-height: 2rem;
   padding: 0.35rem 0.85rem;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   border: 1px solid color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
   color: var(--ds-color-primary);

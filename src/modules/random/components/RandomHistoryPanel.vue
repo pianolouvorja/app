@@ -84,7 +84,7 @@ const { t } = useI18n()
   overflow: hidden;
   padding: 1.25rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
-  border-radius: 1.5rem;
+  border-radius: 1.5rem 0 1.5rem 0;
   background: color-mix(in srgb, var(--ds-color-surface-elevated) 72%, transparent);
   backdrop-filter: blur(16px);
   box-sizing: border-box;
@@ -138,7 +138,7 @@ const { t } = useI18n()
   margin-bottom: 0.5rem;
   padding: 0.7rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 20%, transparent);
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 10%, transparent);
 }
 

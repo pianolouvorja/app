@@ -187,7 +187,7 @@ const coverIcon = computed(() =>
   gap: 1.5rem;
   padding: 1.5rem;
   overflow: hidden;
-  border-radius: 1rem !important;
+  border-radius: 1rem 0 1rem 0 !important;
   transition:
     background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
     border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -245,7 +245,7 @@ const coverIcon = computed(() =>
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
   box-shadow: 0 12px 24px rgb(0 0 0 / 35%);
@@ -329,7 +329,7 @@ const coverIcon = computed(() =>
   gap: 0.5rem;
   height: 2.25rem;
   padding: 0 1rem;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;

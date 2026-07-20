@@ -215,7 +215,7 @@ function onFileChange(event: Event) {
   overflow: hidden;
   padding: 1.25rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
-  border-radius: 1.5rem;
+  border-radius: 1.5rem 0 1.5rem 0;
   background: color-mix(in srgb, var(--ds-color-surface-elevated) 72%, transparent);
   backdrop-filter: blur(16px);
   box-sizing: border-box;
@@ -265,7 +265,7 @@ function onFileChange(event: Event) {
   height: 2.75rem;
   padding: 0 2.5rem 0 1rem;
   border: 0;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   background: color-mix(
     in srgb,
     var(--ds-color-on-surface) 6%,
@@ -308,7 +308,7 @@ function onFileChange(event: Event) {
   justify-content: center;
   gap: 0.4rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   background: transparent;
   color: var(--ds-color-primary);
   cursor: pointer;
@@ -363,7 +363,7 @@ function onFileChange(event: Event) {
     height: 2.5rem;
     padding: 0 0.65rem;
     border: 0;
-    border-radius: 0.75rem;
+    border-radius: 0.75rem 0 0.75rem 0;
     background: color-mix(
       in srgb,
       var(--ds-color-on-surface) 6%,
@@ -409,7 +409,7 @@ function onFileChange(event: Event) {
   margin-bottom: 0.4rem;
   padding: 0.7rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   background: color-mix(in srgb, var(--ds-color-on-surface) 5%, transparent);
   color: var(--ds-color-on-surface);
   font-size: 0.875rem;

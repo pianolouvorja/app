@@ -276,7 +276,7 @@ async function onImportFile(file: File) {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-primary) 16%, transparent);
   color: var(--ds-color-primary);
 
@@ -298,7 +298,7 @@ async function onImportFile(file: File) {
   margin-left: 0.5rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   background: color-mix(in srgb, var(--ds-color-on-surface) 4%, transparent);
 }
 
@@ -325,7 +325,7 @@ async function onImportFile(file: File) {
   gap: 0.35rem;
   padding: 0 0.95rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-error, #ffb4ab) 30%, transparent);
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 14%, transparent);
   color: var(--ds-color-error, #ffb4ab);
   cursor: pointer;

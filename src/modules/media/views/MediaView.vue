@@ -307,7 +307,7 @@ async function onToggleFullscreen() {
   height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height) - 1.75rem);
   max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height) - 1.75rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;
   background: #000;
   border: 1px solid rgb(255 255 255 / 0.08);
@@ -326,7 +326,7 @@ async function onToggleFullscreen() {
   display: inline-flex;
   gap: 0.35rem;
   padding: 0.25rem;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: rgb(30 30 30 / 0.75);
   border: 1px solid rgb(255 255 255 / 0.12);
 }
@@ -400,7 +400,7 @@ async function onToggleFullscreen() {
   align-items: flex-start;
   gap: 0.55rem;
   border: none;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   padding: 0.55rem 0.5rem;
   background: transparent;
   color: #fff;

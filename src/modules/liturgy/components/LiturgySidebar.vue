@@ -306,7 +306,7 @@ function onEndTimeChange(event: Event) {
   width: 6.75rem;
   min-height: 2rem;
   padding: 0.2rem 0.4rem;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 14%, transparent);
   background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
   color: var(--ds-color-on-surface);
@@ -325,7 +325,7 @@ function onEndTimeChange(event: Event) {
   min-height: 2rem;
   padding: 0;
   width: 1.75rem;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 14%, transparent);
   background: transparent;
   color: color-mix(in srgb, var(--ds-color-on-surface) 55%, transparent);
@@ -385,7 +385,7 @@ function onEndTimeChange(event: Event) {
   width: 100%;
   min-height: 2.75rem;
   margin-top: 0.25rem;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   background: transparent;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
@@ -431,7 +431,7 @@ function onEndTimeChange(event: Event) {
   min-height: 5.5rem;
   resize: vertical;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   background: transparent;
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
   font: inherit;

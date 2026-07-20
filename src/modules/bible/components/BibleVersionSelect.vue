@@ -251,7 +251,7 @@ onUnmounted(() => {
   max-height: min(18rem, calc(100vh - 24px));
   overflow-y: auto;
   padding: 0.4rem;
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background: color-mix(in srgb, var(--ds-color-surface-elevated) 92%, transparent);
   border: 1px solid var(--ds-color-outline-strong);
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
@@ -278,7 +278,7 @@ onUnmounted(() => {
   gap: 0.75rem;
   width: 100%;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: transparent;
   color: var(--ds-color-on-surface);
   padding: 0.65rem 0.75rem;

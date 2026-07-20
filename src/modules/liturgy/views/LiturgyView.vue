@@ -381,7 +381,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-tertiary, #ffb77b) 35%, transparent);
   background: color-mix(in srgb, var(--ds-color-tertiary, #ffb77b) 12%, transparent);
 

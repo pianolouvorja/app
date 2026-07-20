@@ -24,8 +24,4 @@ export default {
     utilities: 'Utilitários',
     settings: 'Configurações',
   },
-  home: {
-    title: 'O que vamos cantar?',
-    searchPlaceholder: 'Procure aqui...',
-  },
 }

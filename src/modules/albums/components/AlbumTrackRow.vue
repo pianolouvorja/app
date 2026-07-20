@@ -140,7 +140,7 @@ function onDownloadProgress(progress: number | null) {
   margin-bottom: 0.5rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--ds-color-outline-strong);
-  border-radius: var(--ds-radius-lg, 16px);
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
     var(--ds-color-surface-elevated) var(--ds-glass-fill, 72%),
@@ -285,7 +285,7 @@ function onDownloadProgress(progress: number | null) {
 .album-track-row__artwork {
   width: 3rem;
   height: 3rem;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   overflow: hidden;
   flex-shrink: 0;
   display: inline-flex;

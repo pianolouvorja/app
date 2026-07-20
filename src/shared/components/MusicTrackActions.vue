@@ -494,7 +494,7 @@ watch(
   width: 100%;
   max-width: 26rem;
   padding: 1.5rem;
-  border-radius: var(--ds-radius-lg, 0.75rem);
+  border-radius: var(--ds-radius-lg, 0.75rem 0 0.75rem 0);
   border: 1px solid var(--ds-color-outline-strong, rgb(255 255 255 / 8%));
   background: var(--ds-color-surface-elevated, #1e1e1e);
   box-shadow: 0 24px 48px rgb(0 0 0 / 40%);
@@ -526,7 +526,7 @@ watch(
   height: 2.25rem;
   padding: 0 1rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
   color: var(--ds-color-on-surface);
   cursor: pointer;

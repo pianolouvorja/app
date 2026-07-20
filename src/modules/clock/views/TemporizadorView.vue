@@ -107,7 +107,7 @@ function goBack() {
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: transparent;
   color: var(--ds-color-on-surface);
   cursor: pointer;

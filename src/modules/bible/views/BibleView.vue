@@ -212,7 +212,7 @@ function onNextVerse() {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background: color-mix(in srgb, var(--ds-color-surface-card) 72%, transparent);
   border: 1px solid var(--ds-color-outline-strong);
   padding: 1.5rem;
@@ -237,7 +237,7 @@ function onNextVerse() {
 
 .bible-view__alert-btn {
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
   color: var(--ds-color-primary-soft);
   padding: 0.4rem 0.85rem;

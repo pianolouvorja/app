@@ -15,6 +15,7 @@ export const USER_PREFERENCE_KEYS = {
   autoBrightness: 'autoBrightness',
   bibleSelectedVersion: 'bible.selectedVersionId',
   projectionSettings: 'projection.settings',
+  homeLocation: 'home.location',
   clockConfig: 'clock.config',
   timerConfig: 'timer.config',
   countdownConfig: 'countdown.config',

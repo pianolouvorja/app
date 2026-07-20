@@ -254,7 +254,7 @@ function onToggleProjection() {
   height: 2.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-primary) 16%, transparent);
   color: var(--ds-color-primary);
 
@@ -356,7 +356,7 @@ function onToggleProjection() {
   gap: 0.35rem;
   padding: 0 0.95rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: 700;

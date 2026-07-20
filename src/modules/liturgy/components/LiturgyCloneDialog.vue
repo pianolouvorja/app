@@ -153,7 +153,7 @@ function onSelectChange(event: Event) {
 
   select {
     min-height: 2.75rem;
-    border-radius: var(--ds-radius-md, 0.75rem);
+    border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
     border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
     background: color-mix(in srgb, var(--ds-color-surface) 60%, transparent);
     color: var(--ds-color-on-surface);

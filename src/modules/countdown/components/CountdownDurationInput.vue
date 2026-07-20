@@ -124,7 +124,7 @@ function onSeconds(event: Event) {
   flex-direction: column;
   gap: 0.85rem;
   padding: 0.85rem 1rem;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-on-surface) 5%, transparent);
 
   &--disabled {
@@ -184,7 +184,7 @@ function onSeconds(event: Event) {
     width: 100%;
     height: 2.5rem;
     border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 16%, transparent);
-    border-radius: var(--ds-radius-md, 0.5rem);
+    border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
     background: color-mix(in srgb, var(--ds-color-surface, #111) 70%, transparent);
     color: var(--ds-color-on-surface);
     font-family: ui-monospace, monospace;

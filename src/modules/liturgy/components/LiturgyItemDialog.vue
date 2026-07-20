@@ -977,7 +977,7 @@ function isLightDot(hex: string): boolean {
   width: min(58rem, 100%);
   max-height: min(90vh, 52rem);
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 1rem 0 1rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   background: var(--ds-color-surface-card, #242424);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
@@ -1098,7 +1098,7 @@ function isLightDot(hex: string): boolean {
   flex-direction: column;
   gap: 1rem;
   padding: 0.85rem;
-  border-radius: 0.9rem;
+  border-radius: 0.9rem 0 0.9rem 0;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
 }
@@ -1146,7 +1146,7 @@ function isLightDot(hex: string): boolean {
   gap: 0.45rem;
   min-height: 2rem;
   padding: 0.35rem 0.7rem;
-  border-radius: 0.55rem;
+  border-radius: 0.55rem 0 0.55rem 0;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: color-mix(in srgb, #fff 5%, transparent);
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
@@ -1258,7 +1258,7 @@ function isLightDot(hex: string): boolean {
   width: 100%;
   min-height: 2.5rem;
   padding: 0.35rem 0.55rem;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container, #201f1f);
 }
@@ -1267,7 +1267,7 @@ function isLightDot(hex: string): boolean {
   width: 1.85rem;
   height: 1.85rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   display: grid;
   place-items: center;
   background: color-mix(in srgb, #fff 5%, transparent);
@@ -1305,7 +1305,7 @@ function isLightDot(hex: string): boolean {
   min-height: 2.5rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
   color: var(--ds-color-primary);
   font-size: 0.875rem;
@@ -1347,7 +1347,7 @@ function isLightDot(hex: string): boolean {
   max-height: 7rem;
   overflow: auto;
   list-style: none;
-  border-radius: 0.55rem;
+  border-radius: 0.55rem 0 0.55rem 0;
   border: 1px solid color-mix(in srgb, #fff 8%, transparent);
   background: color-mix(in srgb, #fff 4%, transparent);
 
@@ -1368,7 +1368,7 @@ function isLightDot(hex: string): boolean {
   min-height: 2.5rem;
   padding: 0.5rem 0.85rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: #fff;
   font-size: 0.875rem;
@@ -1423,7 +1423,7 @@ function isLightDot(hex: string): boolean {
   min-height: 2.5rem;
   padding: 0.4rem 0.85rem;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: var(--ds-color-primary);
 
@@ -1470,7 +1470,7 @@ function isLightDot(hex: string): boolean {
   padding: 0.25rem;
   max-height: 11rem;
   overflow: auto;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
 }
@@ -1483,7 +1483,7 @@ function isLightDot(hex: string): boolean {
   gap: 0.1rem;
   padding: 0.45rem 0.7rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0;
   background: transparent;
   color: inherit;
   text-align: left;
@@ -1515,7 +1515,7 @@ function isLightDot(hex: string): boolean {
   align-items: center;
   gap: 0.55rem;
   padding: 0.55rem 0.7rem;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 35%, transparent);
   background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 12%, transparent);
 }
@@ -1559,7 +1559,7 @@ function isLightDot(hex: string): boolean {
   min-height: 4.5rem;
   resize: vertical;
   padding: 0.7rem 0.85rem;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   border: 1px solid color-mix(in srgb, #fff 10%, transparent);
   background: var(--ds-color-surface-container-low, #1c1b1b);
   color: var(--ds-color-on-surface-variant, var(--ds-color-on-surface));
@@ -1604,7 +1604,7 @@ function isLightDot(hex: string): boolean {
   min-height: 2.15rem;
   padding: 0.4rem 1rem;
   border: 0;
-  border-radius: 0.6rem;
+  border-radius: 0.6rem 0 0.6rem 0;
   background: var(--ds-color-primary);
   color: var(--ds-color-on-primary);
   font-size: 0.8125rem;

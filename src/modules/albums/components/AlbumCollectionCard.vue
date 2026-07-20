@@ -208,7 +208,7 @@ function onRemove(event: MouseEvent) {
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--ds-color-outline-strong);
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--ds-color-primary) 35%, #111), #1a1a1a);
   background-size: cover;

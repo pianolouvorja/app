@@ -16,9 +16,11 @@
   --ds-color-on-primary: #003258;
   --ds-color-outline: rgba(255, 255, 255, 0.05);
   --ds-color-outline-strong: rgba(255, 255, 255, 0.1);
-  --ds-radius-sm: 8px;
-  --ds-radius-md: 12px;
-  --ds-radius-lg: 16px;
+  /* Assimetria de marca: TL + BR arredondados; TR + BL retos */
+  --ds-radius-sm: 8px 0 8px 0;
+  --ds-radius-md: 12px 0 12px 0;
+  --ds-radius-lg: 16px 0 16px 0;
+  --ds-radius-xl: 24px 0 24px 0;
   --ds-radius-full: 9999px;
   --ds-blur-default: 16px;
   --ds-blur-active: 16px;

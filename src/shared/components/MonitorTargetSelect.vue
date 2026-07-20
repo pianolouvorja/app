@@ -280,7 +280,7 @@ watch(open, async (isOpen) => {
   height: 2.05rem;
   padding: 0 0.45rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 0.4rem 0 0.4rem 0;
   background: color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   color: var(--ds-color-on-surface);
   cursor: pointer;
@@ -352,7 +352,7 @@ watch(open, async (isOpen) => {
 
 .monitor-target-select__panel {
   padding: 0.75rem;
-  border-radius: 0.65rem;
+  border-radius: 0.65rem 0 0.65rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
   background: color-mix(
     in srgb,
@@ -384,7 +384,7 @@ watch(open, async (isOpen) => {
   gap: 0.3rem;
   padding: 0.3rem 0.5rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 0.4rem 0 0.4rem 0;
   background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 18%, transparent);
   color: var(--ds-color-secondary, #78d6d2);
   font-size: 0.68rem;
@@ -440,7 +440,7 @@ watch(open, async (isOpen) => {
   align-items: flex-start;
   gap: 0.55rem;
   padding: 0.55rem 0.6rem;
-  border-radius: 0.45rem;
+  border-radius: 0.45rem 0 0.45rem 0;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
   background: color-mix(in srgb, var(--ds-color-on-surface) 4%, transparent);
   cursor: pointer;
@@ -501,7 +501,7 @@ watch(open, async (isOpen) => {
 .monitor-target-select__empty {
   margin: 0;
   padding: 0.7rem 0.75rem;
-  border-radius: 0.45rem;
+  border-radius: 0.45rem 0 0.45rem 0;
   background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
   color: color-mix(in srgb, var(--ds-color-on-surface) 62%, transparent);
   font-size: 0.72rem;

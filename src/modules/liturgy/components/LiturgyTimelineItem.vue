@@ -659,7 +659,7 @@ const rowHovered = ref(false)
 .liturgy-item__check-box {
   width: 100%;
   height: 100%;
-  border-radius: 0.3rem;
+  border-radius: 0.3rem 0 0.3rem 0;
   border: 1.5px solid color-mix(in srgb, var(--ds-color-on-surface) 35%, transparent);
   background: var(--ds-color-surface-container-high, #2a2a2a);
   display: grid;
@@ -677,7 +677,7 @@ const rowHovered = ref(false)
   }
 
   .liturgy-item__check--linked & {
-    border-radius: 0.22rem;
+    border-radius: 0.22rem 0 0.22rem 0;
 
     i {
       font-size: 0.68rem;
@@ -729,7 +729,7 @@ const rowHovered = ref(false)
   width: 100%;
   box-sizing: border-box;
   padding: 0.65rem 0.85rem;
-  border-radius: 0.6rem;
+  border-radius: 0.6rem 0 0.6rem 0;
   background: color-mix(
     in srgb,
     var(--ds-color-surface-card, #242424) 55%,
@@ -791,7 +791,7 @@ const rowHovered = ref(false)
   height: 1.7rem;
   margin-left: -0.25rem;
   margin-right: -0.2rem;
-  border-radius: 0.35rem;
+  border-radius: 0.35rem 0 0.35rem 0;
   color: color-mix(in srgb, var(--ds-color-on-surface) 35%, transparent);
   cursor: grab;
   user-select: none;
@@ -837,7 +837,7 @@ const rowHovered = ref(false)
   flex: 0 0 auto;
   width: 2.15rem;
   height: 2.15rem;
-  border-radius: 0.45rem;
+  border-radius: 0.45rem 0 0.45rem 0;
   display: grid;
   place-items: center;
   background: var(--ds-color-surface-container-highest, #353534);
@@ -1094,7 +1094,7 @@ const rowHovered = ref(false)
   margin-right: 0.15rem;
   padding: 0 0.55rem 0 0.4rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 0.4rem 0 0.4rem 0;
   background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
   color: var(--ds-color-primary);
   font-size: 0.72rem;
@@ -1135,7 +1135,7 @@ const rowHovered = ref(false)
   width: 1.7rem;
   height: 1.7rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 0.4rem 0 0.4rem 0;
   background: transparent;
   color: var(--ds-color-on-surface);
   cursor: pointer;

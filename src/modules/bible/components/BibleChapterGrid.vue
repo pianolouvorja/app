@@ -83,7 +83,7 @@ const { t } = useI18n()
 .bible-chapters__search-input {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.55rem 0.75rem 0.55rem 2.35rem;
@@ -135,7 +135,7 @@ const { t } = useI18n()
 .bible-chapters__btn {
   aspect-ratio: 1;
   border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
-  border-radius: var(--ds-radius-lg, 0.75rem);
+  border-radius: var(--ds-radius-lg, 0.75rem 0 0.75rem 0);
   background: var(--ds-color-surface-container-high);
   color: var(--ds-color-on-surface);
   font-size: 1.1rem;

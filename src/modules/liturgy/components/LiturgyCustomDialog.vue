@@ -113,7 +113,7 @@ function onInput(event: Event) {
 
   input {
     min-height: 2.75rem;
-    border-radius: var(--ds-radius-md, 0.75rem);
+    border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
     border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
     background: color-mix(in srgb, var(--ds-color-surface) 60%, transparent);
     color: var(--ds-color-on-surface);
@@ -136,7 +136,7 @@ function onInput(event: Event) {
   min-height: 2.4rem;
   padding: 0.45rem 1.1rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: var(--ds-color-primary);
   color: var(--ds-color-on-primary, #fff);
   font-weight: 700;

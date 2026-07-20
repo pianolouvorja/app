@@ -58,7 +58,7 @@ function onInput(event: Event) {
   min-height: 10rem;
   resize: vertical;
   border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 10%, transparent);
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-surface) 55%, transparent);
   color: var(--ds-color-on-surface);
   padding: 0.85rem 1rem;

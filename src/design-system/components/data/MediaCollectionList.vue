@@ -112,18 +112,20 @@ function clearSearch() {
   min-height: 0;
   flex-direction: column;
   gap: var(--ds-spacing-6, 24px);
+  container-type: inline-size;
+  container-name: media-collection-list;
 }
 
 .ds-media-collection-list__search {
   align-self: center;
   display: flex;
-  width: min(42rem, 100%);
+  width: 100%;
   min-height: 3.5rem;
   align-items: center;
   gap: var(--ds-spacing-2, 8px);
   padding: 0 var(--ds-spacing-4, 16px);
   border: 1px solid var(--ds-color-outline-strong);
-  border-radius: var(--ds-radius-lg, 16px);
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
     var(--ds-color-surface-elevated) var(--ds-glass-fill, 80%),
@@ -136,6 +138,11 @@ function clearSearch() {
     border-color var(--ds-motion-duration, 280ms) ease,
     box-shadow var(--ds-motion-duration, 280ms) ease,
     background-color var(--ds-motion-duration, 280ms) ease;
+
+  /* Mesma proporção dos containers de hinário (2 colunas). */
+  @media (min-width: 768px) {
+    width: calc((100cqi - 1.25rem) / 2);
+  }
 
   &:focus-within {
     border-color: var(--ds-color-primary);

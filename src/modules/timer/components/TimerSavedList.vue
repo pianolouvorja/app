@@ -76,7 +76,7 @@ function labelFor(ms: number) {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-on-surface) 5%, transparent);
 }
 
@@ -112,7 +112,7 @@ function labelFor(ms: number) {
 .timer-saved__clear {
   height: 2rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 16%, transparent);
   color: var(--ds-color-error, #ffb4ab);
   cursor: pointer;

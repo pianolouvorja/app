@@ -107,7 +107,7 @@ const { t } = useI18n()
   max-height: min(80vh, 40rem);
   display: flex;
   flex-direction: column;
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background: var(--ds-color-surface-card, #1e1e1e);
   border: 1px solid var(--ds-color-outline-strong);
   box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);

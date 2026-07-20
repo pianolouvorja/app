@@ -279,10 +279,16 @@ function isSelected(verseNumber: number): boolean {
 
 .bible-reader__search {
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 8rem;
-  max-width: 16rem;
+  width: calc((100% - 1.25rem) / 2);
+  max-width: calc((100% - 1.25rem) / 2);
   margin-left: auto;
+
+  @media (max-width: 767px) {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .bible-reader__search-icon {
@@ -298,7 +304,7 @@ function isSelected(verseNumber: number): boolean {
 .bible-reader__search-input {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.5rem 0.75rem 0.5rem 2.25rem;
@@ -387,7 +393,7 @@ function isSelected(verseNumber: number): boolean {
   background: transparent;
   color: inherit;
   padding: 0.65rem 0.5rem;
-  border-radius: 0.35rem;
+  border-radius: 0.35rem 0 0.35rem 0;
   cursor: pointer;
   opacity: 0.65;
   transition:
@@ -442,7 +448,7 @@ function isSelected(verseNumber: number): boolean {
   gap: 0.5rem;
   padding: 1rem;
   text-align: center;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: #000;
   border: 1px solid rgb(255 255 255 / 0.2);
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);

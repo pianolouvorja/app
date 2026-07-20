@@ -28,7 +28,7 @@ defineProps<{
   justify-content: flex-end;
   gap: 0.45rem;
   padding: 0.85rem;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   background: rgb(0 0 0 / 0.88);
   border: 1px solid rgb(255 255 255 / 0.2);
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);

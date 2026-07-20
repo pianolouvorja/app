@@ -188,7 +188,7 @@ function onToggleProjection() {
   height: 2.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-primary) 16%, transparent);
   color: var(--ds-color-primary);
 

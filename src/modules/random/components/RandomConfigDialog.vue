@@ -436,7 +436,7 @@ function onBackdropClick(event: MouseEvent) {
 
 .random-config__section {
   padding: 1rem;
-  border-radius: var(--ds-radius-md, 0.75rem);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
   background: color-mix(in srgb, var(--ds-color-on-surface) 4%, transparent);
 }
 
@@ -572,7 +572,7 @@ function onBackdropClick(event: MouseEvent) {
   gap: 0.35rem;
   padding: 0.4rem 0.5rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-primary) 30%, transparent);
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: transparent;
   color: var(--ds-color-on-surface);
   cursor: pointer;
@@ -606,7 +606,7 @@ function onBackdropClick(event: MouseEvent) {
   justify-content: center;
   padding: 0 1.25rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 700;

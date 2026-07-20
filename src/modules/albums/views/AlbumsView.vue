@@ -435,6 +435,8 @@ async function runAction(
   max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
   padding: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   overflow: hidden;
+  container-type: inline-size;
+  container-name: albums-view;
 }
 
 .albums-view__header {
@@ -456,7 +458,7 @@ async function runAction(
 .albums-view__icon {
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -511,7 +513,7 @@ async function runAction(
   flex-shrink: 1;
   box-sizing: border-box;
   padding: 0.55rem 0.9rem;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(in srgb, var(--ds-color-surface-card) 82%, transparent);
   border: 1px solid var(--ds-color-outline-strong);
   color: var(--ds-color-on-surface-variant);
@@ -560,7 +562,7 @@ async function runAction(
   height: 2.5rem;
   padding: 0 1.25rem;
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: var(--ds-color-primary);
   color: var(--ds-color-on-primary, #003258);
   cursor: pointer;
@@ -672,7 +674,7 @@ async function runAction(
 .albums-view__alert {
   flex: 1;
   min-height: 0;
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background: color-mix(in srgb, var(--ds-color-surface-card) 72%, transparent);
   border: 1px solid var(--ds-color-outline-strong);
   padding: 1.5rem;
@@ -727,7 +729,7 @@ async function runAction(
   width: 100%;
   max-width: 26rem;
   padding: 1.5rem;
-  border-radius: var(--ds-radius-lg, 0.75rem);
+  border-radius: var(--ds-radius-lg, 0.75rem 0 0.75rem 0);
   border: 1px solid var(--ds-color-outline-strong, rgb(255 255 255 / 8%));
   background: var(--ds-color-surface-elevated, #1e1e1e);
   box-shadow: 0 24px 48px rgb(0 0 0 / 40%);
@@ -759,7 +761,7 @@ async function runAction(
   height: 2.25rem;
   padding: 0 1rem;
   border: 0;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
   color: var(--ds-color-on-surface);
   cursor: pointer;

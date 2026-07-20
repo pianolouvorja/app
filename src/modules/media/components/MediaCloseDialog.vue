@@ -74,7 +74,7 @@ const { t } = useI18n()
   z-index: 1;
   width: min(22rem, calc(100% - 2rem));
   padding: 1.25rem 1.25rem 1rem;
-  border-radius: 1rem;
+  border-radius: 1rem 0 1rem 0;
   background: #2a2a2a;
   border: 1px solid rgb(255 255 255 / 0.12);
   box-shadow: 0 18px 50px rgb(0 0 0 / 0.5);

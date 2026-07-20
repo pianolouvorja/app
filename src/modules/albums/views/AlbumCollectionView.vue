@@ -222,7 +222,7 @@ async function runAction(
 .album-collection-view__icon {
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -245,7 +245,7 @@ async function runAction(
 }
 
 .album-collection-view__alert {
-  border-radius: var(--ds-radius-lg, 1rem);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   background: color-mix(in srgb, var(--ds-color-surface-card) 72%, transparent);
   border: 1px solid var(--ds-color-outline-strong);
   padding: 1.25rem 1.4rem;

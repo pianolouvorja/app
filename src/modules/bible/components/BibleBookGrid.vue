@@ -121,7 +121,7 @@ const { t } = useI18n()
 .bible-books__search-input {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--ds-color-outline-strong) 80%, transparent);
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: var(--ds-color-surface-container);
   color: var(--ds-color-on-surface);
   padding: 0.55rem 0.75rem 0.55rem 2.35rem;
@@ -162,13 +162,13 @@ const { t } = useI18n()
   display: inline-flex;
   gap: 0.15rem;
   padding: 0.2rem;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   background: var(--ds-color-surface-container);
 }
 
 .bible-books__tab {
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: 0.4rem 0 0.4rem 0;
   background: transparent;
   color: var(--ds-color-on-surface-variant);
   font-size: 0.8rem;
@@ -226,7 +226,7 @@ const { t } = useI18n()
   justify-content: center;
   gap: 0.15rem;
   border: 1px solid transparent;
-  border-radius: var(--ds-radius-md, 0.5rem);
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
   padding: 0.35rem;
   text-align: center;
   cursor: pointer;

@@ -280,7 +280,7 @@ function selectMode(mode: MediaPlaybackMode) {
   gap: 0.85rem 1.1rem;
   width: min(920px, calc(100vw - 3rem));
   padding: 0.7rem 1.25rem;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-xl, 24px 0 24px 0);
   background: rgb(24 24 24 / 0.88);
   border: 1px solid rgb(255 255 255 / 0.12);
   backdrop-filter: blur(16px);
@@ -393,7 +393,7 @@ function selectMode(mode: MediaPlaybackMode) {
   bottom: calc(100% + 0.55rem);
   right: 0;
   z-index: 5;
-  border-radius: 0.75rem;
+  border-radius: 0.75rem 0 0.75rem 0;
   background: rgb(20 20 20 / 0.95);
   border: 1px solid rgb(255 255 255 / 0.12);
   box-shadow: 0 10px 28px rgb(0 0 0 / 0.4);
@@ -424,7 +424,7 @@ function selectMode(mode: MediaPlaybackMode) {
     color: #fff;
     text-align: left;
     padding: 0.55rem 0.65rem;
-    border-radius: 0.55rem;
+    border-radius: 0.55rem 0 0.55rem 0;
     cursor: pointer;
     font-size: 0.85rem;
 
@@ -445,7 +445,7 @@ function selectMode(mode: MediaPlaybackMode) {
 
 @media (max-width: 780px) {
   .media-player-pill {
-    border-radius: 1.25rem;
+    border-radius: 1.25rem 0 1.25rem 0;
     width: min(100%, calc(100vw - 1.5rem));
   }
 
