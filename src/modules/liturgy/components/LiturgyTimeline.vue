@@ -206,10 +206,17 @@ function isCategorySectionInProgress(categoryId: string): boolean {
       <p class="liturgy-timeline__empty-hint">
         {{ t('liturgy.emptyListHint') }}
       </p>
+      <p class="liturgy-timeline__clone-note">
+        {{
+          canClone
+            ? t('liturgy.emptyListCloneReady')
+            : t('liturgy.emptyListCloneLocked')
+        }}
+      </p>
       <button
-        v-if="canClone"
         type="button"
         class="liturgy-timeline__clone"
+        :disabled="!canClone"
         @click="emit('clone')"
       >
         <i
@@ -378,11 +385,19 @@ function isCategorySectionInProgress(categoryId: string): boolean {
   white-space: pre-line;
 }
 
+.liturgy-timeline__clone-note {
+  margin: 0.85rem 0 0;
+  max-width: 18rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--ds-color-on-surface) 55%, transparent);
+}
+
 .liturgy-timeline__clone {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.85rem;
+  margin-top: 0.65rem;
   min-height: 2.25rem;
   padding: 0.4rem 0.95rem;
   border: 1px solid color-mix(in srgb, var(--ds-color-primary) 40%, transparent);
@@ -394,14 +409,20 @@ function isCategorySectionInProgress(categoryId: string): boolean {
   cursor: pointer;
   transition:
     background-color 160ms ease,
-    transform 140ms ease;
+    transform 140ms ease,
+    opacity 160ms ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   i {

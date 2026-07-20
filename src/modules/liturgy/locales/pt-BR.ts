@@ -11,7 +11,10 @@ export default {
     editItem: 'Editar item',
     emptyList: 'Liturgia vazia',
     emptyListHint:
-      'Primeiro passo é você adicionar a primeira Categoria/Separador no botão acima, somente depois você adiciona os sub itens\n--- ou clone uma liturgia no botão abaixo!',
+      'Primeiro passo é você adicionar a primeira Categoria/Separador no botão acima, somente depois você adiciona os sub itens.',
+    emptyListCloneLocked:
+      'Após a criação da primeira liturgia, você poderá clonar para os demais dias.',
+    emptyListCloneReady: '--- ou clone uma liturgia no botão abaixo!',
     clone: {
       action: 'Clonar Liturgia',
       title: 'Clonar Liturgia',
