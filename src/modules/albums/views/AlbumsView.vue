@@ -386,11 +386,9 @@ async function runAction(
         aria-modal="true"
         :aria-label="t('sync.deleteConfirmTitle')"
       >
-        <button
-          type="button"
+        <div
           class="albums-confirm__backdrop"
-          :aria-label="t('sync.deleteConfirmNo')"
-          @click="dismissRemove"
+          aria-hidden="true"
         />
         <div class="albums-confirm__panel">
           <h2 class="albums-confirm__title">
@@ -720,7 +718,6 @@ async function runAction(
   inset: 0;
   border: 0;
   background: rgb(0 0 0 / 45%);
-  cursor: pointer;
 }
 
 .albums-confirm__panel {

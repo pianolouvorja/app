@@ -69,11 +69,6 @@ function bumpFont(delta: number, current: number) {
   emit('update:fontSizePc', current + delta)
 }
 
-function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
 </script>
 
 <template>
@@ -85,7 +80,6 @@ function onBackdropClick(event: MouseEvent) {
         role="dialog"
         aria-modal="true"
         :aria-label="t('random.configTitle')"
-        @click="onBackdropClick"
       >
         <GlassCard
           class="random-config__panel"

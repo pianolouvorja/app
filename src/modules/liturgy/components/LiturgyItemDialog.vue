@@ -213,11 +213,6 @@ watch(
   },
 )
 
-function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
 
 function patch(partial: Partial<LiturgyItemDraft>) {
   emit('update:draft', { ...props.draft, ...partial })
@@ -432,7 +427,6 @@ function isLightDot(hex: string): boolean {
     <div
       v-if="open"
       class="moment-dialog-backdrop"
-      @click="onBackdropClick"
     >
       <section
         class="moment-dialog"

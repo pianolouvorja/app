@@ -25,11 +25,9 @@ const { t } = useI18n()
       aria-modal="true"
       :aria-label="t('albums.lyric.title')"
     >
-      <button
-        type="button"
+      <div
         class="album-lyric-dialog__backdrop"
-        :aria-label="t('albums.lyric.close')"
-        @click="emit('close')"
+        aria-hidden="true"
       />
 
       <div class="album-lyric-dialog__panel">
@@ -97,7 +95,6 @@ const { t } = useI18n()
   inset: 0;
   border: none;
   background: rgb(0 0 0 / 0.55);
-  cursor: pointer;
 }
 
 .album-lyric-dialog__panel {

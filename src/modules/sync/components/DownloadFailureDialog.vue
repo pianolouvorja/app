@@ -45,11 +45,9 @@ const message = computed(() => {
       aria-modal="true"
       :aria-label="t('sync.errors.downloadFailureTitle')"
     >
-      <button
-        type="button"
+      <div
         class="download-failure-dialog__backdrop"
-        :aria-label="t('sync.close')"
-        @click="emit('close')"
+        aria-hidden="true"
       />
       <div class="download-failure-dialog__panel">
         <h2 class="download-failure-dialog__title">
@@ -88,7 +86,6 @@ const message = computed(() => {
   inset: 0;
   border: 0;
   background: rgb(0 0 0 / 45%);
-  cursor: pointer;
 }
 
 .download-failure-dialog__panel {

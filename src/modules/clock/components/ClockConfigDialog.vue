@@ -37,11 +37,6 @@ function onTextInput(event: Event) {
   emit('update:textColor', target.value)
 }
 
-function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
 </script>
 
 <template>
@@ -53,7 +48,6 @@ function onBackdropClick(event: MouseEvent) {
         role="dialog"
         aria-modal="true"
         :aria-label="t('clock.configTitle')"
-        @click="onBackdropClick"
       >
         <GlassCard
           class="clock-config__panel"

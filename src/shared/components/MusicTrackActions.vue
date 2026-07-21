@@ -314,11 +314,9 @@ watch(
       :aria-label="t('media.actions.removeConfirmTitle')"
       @click.stop
     >
-      <button
-        type="button"
+      <div
         class="music-track-confirm__backdrop"
-        :aria-label="t('media.actions.removeConfirmNo')"
-        @click="dismissRemove"
+        aria-hidden="true"
       />
       <div class="music-track-confirm__panel">
         <h2 class="music-track-confirm__title">
@@ -485,7 +483,6 @@ watch(
   inset: 0;
   border: 0;
   background: rgb(0 0 0 / 45%);
-  cursor: pointer;
 }
 
 .music-track-confirm__panel {

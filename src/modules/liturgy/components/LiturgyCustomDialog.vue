@@ -16,11 +16,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
 
 function onInput(event: Event) {
   const target = event.target as HTMLInputElement
@@ -33,7 +28,6 @@ function onInput(event: Event) {
     <div
       v-if="open"
       class="liturgy-dialog-backdrop"
-      @click="onBackdropClick"
     >
       <GlassCard
         class="liturgy-dialog"

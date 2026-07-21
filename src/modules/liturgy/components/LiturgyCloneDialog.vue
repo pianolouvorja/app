@@ -34,11 +34,6 @@ function sourceOptionLabel(source: LiturgyCloneSource): string {
   return `${t('liturgy.days.custom')}: ${source.name} (${source.itemCount})`
 }
 
-function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    emit('close')
-  }
-}
 
 function onSelectChange(event: Event) {
   emit('update:sourceKey', (event.target as HTMLSelectElement).value)
@@ -50,7 +45,6 @@ function onSelectChange(event: Event) {
     <div
       v-if="open"
       class="liturgy-dialog-backdrop"
-      @click="onBackdropClick"
     >
       <GlassCard
         class="liturgy-dialog"

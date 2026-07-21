@@ -21,11 +21,9 @@ const { t } = useI18n()
     aria-modal="true"
     :aria-label="t('media.closeConfirmTitle')"
   >
-    <button
-      type="button"
+    <div
       class="media-close-dialog__backdrop"
-      :aria-label="t('media.closeConfirmNo')"
-      @click="emit('cancel')"
+      aria-hidden="true"
     />
     <div class="media-close-dialog__panel">
       <p class="media-close-dialog__text">
@@ -66,7 +64,6 @@ const { t } = useI18n()
   inset: 0;
   border: none;
   background: rgb(0 0 0 / 0.45);
-  cursor: pointer;
 }
 
 .media-close-dialog__panel {
