@@ -1,8 +1,8 @@
 /** Nome do produto no SO (janela, atalhos, productName do build). */
 export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
-/** Pasta userData no ambiente do cliente (ex.: ~/.config/LouvorJA - codenamePIANO). */
-export const APP_USER_DATA_DIR = 'LouvorJA - codenamePIANO'
+/** Pasta userData no ambiente do cliente (ex.: ~/.config/LouvorJA-PIANO). */
+export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'
 
 export const WORKSPACE_DIRS = {
   sysdata: '.sysdata',

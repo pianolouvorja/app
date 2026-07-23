@@ -5,4 +5,4 @@ export const APP_VERSION = `v${__APP_VERSION__}`
 export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
 /** Pasta userData no ambiente do cliente. */
-export const APP_USER_DATA_DIR = 'LouvorJA - codenamePIANO'
+export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'
