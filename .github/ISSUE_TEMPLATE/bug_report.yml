@@ -1,0 +1,46 @@
+name: Bug Report
+description: Reporta um bug no PIANO
+labels: ["bug", "triage"]
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: Descrição do bug
+      description: O que aconteceu? Seja específico.
+    validations:
+      required: true
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Abri o app em...
+        2. Cliquei em...
+        3. Vi que...
+    validations:
+      required: true
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade
+      options:
+        - P0 — Crítico (app não funciona)
+        - P1 — Alto (funciona mas quebra UX)
+        - P2 — Médio (workaround existe)
+        - P3 — Baixo (cosmético)
+    validations:
+      required: true
+  - type: textarea
+    id: dispositivo
+    attributes:
+      label: Dispositivo/Navegador
+      placeholder: iPhone 12 / Safari, Desktop / Chrome 120, etc
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do app
+      placeholder: "1.14.8"
+    validations:
+      required: true

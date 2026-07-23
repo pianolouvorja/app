@@ -1,0 +1,31 @@
+# CodeRabbit AI Code Review — Config
+# Repo público = plano free ilimitado
+# https://coderabbit.ai
+
+reviews:
+  # Auto-review em todo PR
+  auto_review:
+    enabled: true
+    drafts: false
+  # Linguagem dos comentários
+  language: pt-BR
+  # Foco do review
+  path_filters:
+    - "!**/*.lock"
+    - "!**/package-lock.json"
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+  # Instrução customizada pro contexto do projeto
+  review_status: true
+  high_level_summary: true
+  poem: false
+
+# Regras específicas do projeto
+instructions:
+  - "Use TypeScript strict mode — nenhum `any` explícito."
+  - "Composition API apenas — NUNCA Options API."
+  - "Tabler Icons com prefixo `ti-` — não usar MDI."
+  - "Tailwind + CSS vars — não usar SCSS."
+  - "Conventional commits: feat:, fix:, docs:, chore:, refactor:"
+  - "Verificar responsividade mobile (min 375px) em mudanças de UI."
+  - "Não adicionar `console.log` em código de produção."

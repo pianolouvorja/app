@@ -1,0 +1,92 @@
+# CI Pipeline - PIANO
+# Roda em todo PR e push pra main
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # Gate 1: Lint + Format check (rápido, <30s)
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx biome ci
+
+  # Gate 2: Type check (garante que TypeScript compila)
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run type-check
+
+  # Gate 3: Build (garante que Vite gera o bundle)
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  # Gate 4: Testes unitários (quando Vitest existir)
+  # Descomentar quando adicionar vitest
+  # test:
+  #   name: Tests
+  #   runs-on: ubuntu-latest
+  #   needs: [lint, typecheck]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npx vitest run --coverage
+  #     - name: Upload coverage
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: coverage
+  #         path: coverage/
+
+  # Resumo: bloqueia merge se qualquer gate falhar
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, build]
+    if: always()
+    steps:
+      - name: Verifica se todos os gates passaram
+        run: |
+          echo "lint: ${{ needs.lint.result }}"
+          echo "typecheck: ${{ needs.typecheck.result }}"
+          echo "build: ${{ needs.build.result }}"
+          if [[ "${{ needs.lint.result }}" != "success" || "${{ needs.typecheck.result }}" != "success" || "${{ needs.build.result }}" != "success" ]]; then
+            echo "::error::Quality Gate FALHOU — corrija os erros antes do merge"
+            exit 1
+          fi
+          echo "Quality Gate PASSOU"
