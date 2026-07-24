@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
 const { t } = useI18n()
-const {
-  extendedMonitorOptions,
-  hasExtendedDisplays,
-  toggleExtendedMonitor,
-} = useProjectionSettings()
+const { extendedMonitorOptions, hasExtendedDisplays, toggleExtendedMonitor } =
+  useProjectionSettings()
 </script>
 
 <template>

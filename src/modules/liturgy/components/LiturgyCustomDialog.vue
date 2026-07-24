@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
 defineProps<{
   open: boolean
   name: string
@@ -16,8 +14,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-
-function onInput(event: Event) {
+function _onInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:name', target.value)
 }

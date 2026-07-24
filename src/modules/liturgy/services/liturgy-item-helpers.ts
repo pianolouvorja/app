@@ -4,13 +4,13 @@ import {
   INTERNAL_FILE_TYPES,
   LITURGY_ITEM_TYPE_META,
   LITURGY_ITEM_TYPES,
-  MOMENT_DURATION_MAX_MS,
-  MOMENT_DURATION_MIN_MS,
+  type LiturgyBibleBookOption,
   type LiturgyItem,
   type LiturgyItemDraft,
   type LiturgyItemType,
   type LiturgyMusicOption,
-  type LiturgyBibleBookOption,
+  MOMENT_DURATION_MAX_MS,
+  MOMENT_DURATION_MIN_MS,
 } from '../types/liturgy'
 import { normalizeLiturgyTimeHHmm, pad2 } from './liturgy-format'
 
@@ -37,10 +37,7 @@ export function resolvePreferredCategoryId(
  * Índice de inserção: imediatamente após o último filho da categoria
  * (necessário para a timeline aninhar por sequência contígua).
  */
-export function findCategoryInsertIndex(
-  items: LiturgyItem[],
-  categoryId: string,
-): number {
+export function findCategoryInsertIndex(items: LiturgyItem[], categoryId: string): number {
   const categoryIndex = items.findIndex(
     (item) => item.type === 'category' && item.id === categoryId,
   )
@@ -57,12 +54,9 @@ export function findCategoryInsertIndex(
 }
 
 /** Fim exclusivo do bloco categoria + filhos contíguos. */
-export function getCategoryBlockEnd(
-  items: LiturgyItem[],
-  categoryIndex: number,
-): number {
+export function getCategoryBlockEnd(items: LiturgyItem[], categoryIndex: number): number {
   const category = items[categoryIndex]
-  if (!category || category.type !== 'category') return categoryIndex + 1
+  if (category?.type !== 'category') return categoryIndex + 1
   return findCategoryInsertIndex(items, category.id)
 }
 
@@ -70,10 +64,7 @@ export function getCategoryBlockEnd(
  * Resolve o índice da categoria-alvo ao soltar sobre um filho
  * (ou o próprio índice se já for categoria / item solto).
  */
-function resolveDropCategoryIndex(
-  items: LiturgyItem[],
-  toIndex: number,
-): number {
+function resolveDropCategoryIndex(items: LiturgyItem[], toIndex: number): number {
   const target = items[toIndex]
   if (!target) return toIndex
   if (target.type === 'category') return toIndex
@@ -122,8 +113,7 @@ export function reorderLiturgyItems(
   let insertAt: number
   if (target?.type === 'category') {
     const targetEnd = getCategoryBlockEnd(items, targetCategoryIndex)
-    insertAt =
-      fromIndex < targetCategoryIndex ? targetEnd : targetCategoryIndex
+    insertAt = fromIndex < targetCategoryIndex ? targetEnd : targetCategoryIndex
   } else {
     insertAt = fromIndex < toIndex ? toIndex + 1 : toIndex
   }
@@ -149,8 +139,7 @@ export function cloneLiturgyItems(items: LiturgyItem[]): LiturgyItem[] {
   }
 
   return items.map((item) => {
-    const nextCategoryId =
-      item.categoryId != null ? (idMap.get(item.categoryId) ?? null) : null
+    const nextCategoryId = item.categoryId != null ? (idMap.get(item.categoryId) ?? null) : null
     return {
       ...item,
       id: idMap.get(item.id) ?? createLiturgyItemId(),
@@ -182,10 +171,7 @@ export function normalizeItemType(raw: unknown): LiturgyItemType | null {
   return null
 }
 
-export function getSectionItemNumber(
-  items: LiturgyItem[],
-  index: number,
-): number | null {
+export function getSectionItemNumber(items: LiturgyItem[], index: number): number | null {
   if (!items[index] || items[index].type === 'category') return null
 
   let count = 0
@@ -203,10 +189,7 @@ export function getSectionItemNumber(
 export function clampMomentDurationMs(value: number): number {
   if (value <= 0) return 0
   const stepped = Math.round(value / 1000) * 1000
-  return Math.min(
-    MOMENT_DURATION_MAX_MS,
-    Math.max(MOMENT_DURATION_MIN_MS, stepped),
-  )
+  return Math.min(MOMENT_DURATION_MAX_MS, Math.max(MOMENT_DURATION_MIN_MS, stepped))
 }
 
 export function formatMomentDuration(ms: number): string {
@@ -247,25 +230,16 @@ export function isLiturgyItemDraftValid(draft: LiturgyItemDraft): boolean {
   if (draft.type !== 'category' && !draft.categoryId) return false
   if (draft.type === 'images') {
     const paths =
-      draft.filePaths.length > 0
-        ? draft.filePaths
-        : draft.filePath.trim()
-          ? [draft.filePath]
-          : []
+      draft.filePaths.length > 0 ? draft.filePaths : draft.filePath.trim() ? [draft.filePath] : []
     if (paths.length === 0) return false
   }
   if (
-    (draft.type === 'video' ||
-      draft.type === 'pdf' ||
-      draft.type === 'presentation') &&
+    (draft.type === 'video' || draft.type === 'pdf' || draft.type === 'presentation') &&
     !draft.filePath.trim()
   ) {
     return false
   }
-  if (
-    (draft.type === 'site' || draft.type === 'online_video') &&
-    !isValidLiturgyUrl(draft.url)
-  ) {
+  if ((draft.type === 'site' || draft.type === 'online_video') && !isValidLiturgyUrl(draft.url)) {
     return false
   }
   return true
@@ -302,10 +276,8 @@ export function buildLiturgyItemFromDraft(
           : clampMomentDurationMs(draft.durationMs),
     accentColor: getTypeDotColor(type),
     categoryId: type === 'category' ? null : draft.categoryId,
-    startTime:
-      type === 'category' ? normalizeLiturgyTimeHHmm(draft.startTime) : null,
-    endTime:
-      type === 'category' ? normalizeLiturgyTimeHHmm(draft.endTime) : null,
+    startTime: type === 'category' ? normalizeLiturgyTimeHHmm(draft.startTime) : null,
+    endTime: type === 'category' ? normalizeLiturgyTimeHHmm(draft.endTime) : null,
   }
 
   if (type === 'music') {
@@ -345,7 +317,9 @@ export function buildLiturgyItemFromDraft(
             : draft.filePath.trim()
               ? [draft.filePath.trim()]
               : []
-          ).map((entry) => entry.trim()).filter(Boolean)
+          )
+            .map((entry) => entry.trim())
+            .filter(Boolean)
         : draft.filePath.trim()
           ? [draft.filePath.trim()]
           : []
@@ -356,7 +330,7 @@ export function buildLiturgyItemFromDraft(
       if (!details) {
         item.subtitle =
           paths.length === 1
-            ? (paths[0]!.split(/[\\/]/).pop() ?? paths[0]!)
+            ? (paths[0]?.split(/[\\/]/).pop() ?? paths[0]!)
             : `${paths.length} imagens`
       }
     } else if (item.filePath && !details) {
@@ -378,12 +352,8 @@ export function buildLiturgyItemFromDraft(
 export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
   return {
     type: item.type,
-    name:
-      item.type === 'music'
-        ? (item.complementaryTitle ?? '').trim()
-        : item.name,
-    subtitle:
-      item.type === 'music' ? (item.notes ?? '').trim() : item.subtitle,
+    name: item.type === 'music' ? (item.complementaryTitle ?? '').trim() : item.name,
+    subtitle: item.type === 'music' ? (item.notes ?? '').trim() : item.subtitle,
     durationMs:
       item.type === 'category'
         ? 0
@@ -394,14 +364,8 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
           : clampMomentDurationMs(item.durationMs),
     accentColor: getTypeDotColor(item.type),
     categoryId: item.type === 'category' ? null : (item.categoryId ?? null),
-    startTime:
-      item.type === 'category'
-        ? (normalizeLiturgyTimeHHmm(item.startTime) ?? '')
-        : '',
-    endTime:
-      item.type === 'category'
-        ? (normalizeLiturgyTimeHHmm(item.endTime) ?? '')
-        : '',
+    startTime: item.type === 'category' ? (normalizeLiturgyTimeHHmm(item.startTime) ?? '') : '',
+    endTime: item.type === 'category' ? (normalizeLiturgyTimeHHmm(item.endTime) ?? '') : '',
     musicId: item.musicId ?? null,
     musicMode: item.musicMode ?? 'audio',
     verseBookId: item.verseBookId ?? null,

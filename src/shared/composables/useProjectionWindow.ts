@@ -49,9 +49,7 @@ function buildPopupUrl(moduleId: string): string {
   return `${window.location.origin}/popup?${params}`
 }
 
-async function resolveMonitorTargets(
-  preferredIds?: number[] | null,
-): Promise<MonitorTargets> {
+async function resolveMonitorTargets(preferredIds?: number[] | null): Promise<MonitorTargets> {
   const displays = await listSystemDisplays()
   const extendedIds = new Set(listExtendedDisplays(displays).map((display) => display.id))
 
@@ -194,9 +192,7 @@ export async function openProjectionModule(moduleId: string): Promise<boolean> {
  * Espelha setVideoTargetMonitors / setSiteTargetMonitors: troca as telas
  * sem “desligar” a projeção.
  */
-export async function reapplyProjectionTargets(
-  preferredIds?: number[] | null,
-): Promise<boolean> {
+export async function reapplyProjectionTargets(preferredIds?: number[] | null): Promise<boolean> {
   pruneWindows()
   const moduleId = activeModule ?? lastProjectedModule
   if (!moduleId) return false

@@ -3,10 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { MediaCollectionList } from '@design-system/index'
-
-import AlbumLyricDialog from '../components/AlbumLyricDialog.vue'
-import AlbumTrackRow from '../components/AlbumTrackRow.vue'
 import { useAlbums } from '../composables/useAlbums'
 
 const { t } = useI18n()
@@ -37,9 +33,7 @@ const busyMusicId = ref<number | null>(null)
 
 const collectionId = computed(() => String(route.params.collectionId ?? ''))
 
-const title = computed(
-  () => activeCollection.value?.name || t('albums.collectionFallback'),
-)
+const _title = computed(() => activeCollection.value?.name || t('albums.collectionFallback'))
 
 async function load() {
   clearError()
@@ -54,14 +48,11 @@ watch(collectionId, () => {
   void load()
 })
 
-function goBack() {
+function _goBack() {
   void router.push({ name: 'albums' })
 }
 
-async function runAction(
-  musicId: number,
-  action: () => Promise<boolean | void>,
-) {
+async function _runAction(musicId: number, action: () => Promise<boolean | undefined>) {
   busyMusicId.value = musicId
   try {
     await action()

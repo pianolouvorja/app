@@ -1,9 +1,6 @@
 import { computed, ref } from 'vue'
 
-import {
-  loadHomeLocation,
-  saveHomeLocation,
-} from '../services/home-preferences'
+import { loadHomeLocation, saveHomeLocation } from '../services/home-preferences'
 import type { HomeLocationProfile } from '../types/home'
 
 export function useHomeLocation() {

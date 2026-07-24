@@ -2,12 +2,6 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { GlassCard } from '@design-system/index'
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
-
-import ClockConfigDialog from '../components/ClockConfigDialog.vue'
-import ClockPreview from '../components/ClockPreview.vue'
-import ClockProjectFab from '../components/ClockProjectFab.vue'
 import { useClockFeature } from '../composables/useClock'
 
 const { t } = useI18n()
@@ -28,11 +22,11 @@ const {
   toggleProjection,
 } = useClockFeature()
 
-function goBack() {
+function _goBack() {
   void router.push({ name: 'utilities-temporizador' })
 }
 
-function onToggleProjection() {
+function _onToggleProjection() {
   void toggleProjection()
 }
 </script>

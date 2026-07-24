@@ -12,17 +12,17 @@ export type ThemeId = ThemeDefinition['id']
 
 export const defaultTheme: ThemeKey = 'etherealLumens'
 
-export { etherealLumens, luminousClarity }
 export {
+  type AccentDefinition,
+  type AccentKey,
   accents,
   accentsLegacy,
   defaultAccent,
-  type AccentDefinition,
-  type AccentKey,
 } from './accents'
 export {
-  interactions,
   defaultInteraction,
   type InteractionDefinition,
   type InteractionKey,
+  interactions,
 } from './interactions'
+export { etherealLumens, luminousClarity }

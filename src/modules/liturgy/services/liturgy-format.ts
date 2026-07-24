@@ -9,12 +9,7 @@ export function normalizeLiturgyTimeHHmm(raw: unknown): string | null {
   if (!match) return null
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (
-    !Number.isFinite(hours) ||
-    !Number.isFinite(minutes) ||
-    hours > 23 ||
-    minutes > 59
-  ) {
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) {
     return null
   }
   return `${pad2(hours)}:${pad2(minutes)}`

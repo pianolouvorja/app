@@ -1,10 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-
-import { GlassCard } from '@design-system/index'
-
-import BibleBookGrid from './BibleBookGrid.vue'
-import BibleChapterGrid from './BibleChapterGrid.vue'
 import type { BibleBook, BibleTestament } from '../types/bible'
 
 defineProps<{
@@ -17,7 +12,7 @@ defineProps<{
   chapterSearchQuery: string
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:bookSearchQuery': [value: string]
   'update:chapterSearchQuery': [value: string]
   'update:testament': [value: BibleTestament]

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import UtilitiesHubCard from '../components/UtilitiesHubCard.vue'
 import type { UtilityHubItem } from '../types/clock'
 
 const { t } = useI18n()
 
-const items: UtilityHubItem[] = [
+const _items: UtilityHubItem[] = [
   {
     key: 'temporizador',
     titleKey: 'utilities.temporizador',

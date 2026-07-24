@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = withDefaults(
+const _props = withDefaults(
   defineProps<{
     modelValue: string
     searchPlaceholder: string
@@ -28,11 +28,11 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-function updateSearch(event: Event) {
+function _updateSearch(event: Event) {
   emit('update:modelValue', (event.target as HTMLInputElement).value)
 }
 
-function clearSearch() {
+function _clearSearch() {
   emit('update:modelValue', '')
 }
 </script>

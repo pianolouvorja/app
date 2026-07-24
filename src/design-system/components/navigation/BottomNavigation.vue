@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import DockFooter from './DockFooter.vue'
 import type { DockNavItem } from '@design-system/types/navigation'
 
 defineProps<{

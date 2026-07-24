@@ -2,8 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
 import { useAppearanceSettings } from '../composables/useAppearanceSettings'
 
 const { t } = useI18n()
@@ -19,11 +17,11 @@ watch(themeMode, (mode) => {
   sliderValue.value = mode === 'dark' ? 100 : 0
 })
 
-const sliderStyle = computed(() => ({
+const _sliderStyle = computed(() => ({
   '--slider-fill': `${sliderValue.value}%`,
 }))
 
-const sphereRotation = computed(() => `${sliderValue.value * 3.6}deg`)
+const _sphereRotation = computed(() => `${sliderValue.value * 3.6}deg`)
 
 function applyFromSlider(value: number) {
   sliderValue.value = value
@@ -33,20 +31,20 @@ function applyFromSlider(value: number) {
   }
 }
 
-function onThemeInput(event: Event) {
+function _onThemeInput(event: Event) {
   const input = event.target as HTMLInputElement
   applyFromSlider(Number(input.value))
 }
 
-function onThemeCommit() {
+function _onThemeCommit() {
   sliderValue.value = themeMode.value === 'dark' ? 100 : 0
 }
 
-function preferLight() {
+function _preferLight() {
   applyFromSlider(0)
 }
 
-function preferDark() {
+function _preferDark() {
   applyFromSlider(100)
 }
 </script>

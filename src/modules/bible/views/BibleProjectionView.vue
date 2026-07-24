@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { ProjectionBackground } from '@design-system/index'
-
 import {
   BIBLE_RUNTIME_CHANNEL,
   BIBLE_RUNTIME_STORAGE_KEY,
+  type BibleProjectionRuntime,
   DEFAULT_BIBLE_RUNTIME,
   normalizeBibleRuntime,
   readBibleRuntimeFromStorage,
-  type BibleProjectionRuntime,
 } from '../services/bible-runtime'
 
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
@@ -48,13 +46,11 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const showContent = computed(
+const _showContent = computed(
   () => runtime.value.active && Boolean(runtime.value.text || runtime.value.reference),
 )
 
-const contentKey = computed(
-  () => `${runtime.value.text}|${runtime.value.reference}`,
-)
+const _contentKey = computed(() => `${runtime.value.text}|${runtime.value.reference}`)
 </script>
 
 <template>

@@ -1,19 +1,11 @@
-import { Client } from 'basic-ftp'
-import {
-  existsSync,
-  mkdirSync,
-  unlinkSync,
-  writeFileSync,
-  readFileSync,
-  statSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { Client } from 'basic-ftp'
 import { net } from 'electron'
-
+import { CatalogExtractor } from './catalog-extractor.mjs'
 import { API_BASE_URL } from './constants.mjs'
 import { obfuscateText, revealText } from './crypto.mjs'
 import { getFtpParams } from './ftp.mjs'
-import { CatalogExtractor } from './catalog-extractor.mjs'
 import {
   ensureWorkspaceDirectories,
   getWorkspacePaths,

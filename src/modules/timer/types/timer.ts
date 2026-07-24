@@ -1,8 +1,4 @@
-export type TimerTimeFormat =
-  | 'hh:mm:ss.ms'
-  | 'hh:mm:ss'
-  | 'mm:ss.ms'
-  | 'mm:ss'
+export type TimerTimeFormat = 'hh:mm:ss.ms' | 'hh:mm:ss' | 'mm:ss.ms' | 'mm:ss'
 
 export type TimerStatus = 'idle' | 'running' | 'paused'
 

@@ -161,10 +161,7 @@ export async function loadAlbumMusicIndex(): Promise<AlbumSearchHit[]> {
     const mapped = mapMusicIndexRow(row)
     if (!mapped) continue
     const existing = byId.get(mapped.musicId)
-    byId.set(
-      mapped.musicId,
-      existing ? mergeHits(existing, mapped) : mapped,
-    )
+    byId.set(mapped.musicId, existing ? mergeHits(existing, mapped) : mapped)
   }
 
   return [...byId.values()]
@@ -174,10 +171,7 @@ export async function loadAlbumMusicIndex(): Promise<AlbumSearchHit[]> {
  * Busca estilo Home legado: nome, álbum ou número do hinário (máx. 50).
  * Número prioriza Hinário Adventista atual, depois 1996.
  */
-export function filterAlbumMusicIndex(
-  index: AlbumSearchHit[],
-  query: string,
-): AlbumSearchHit[] {
+export function filterAlbumMusicIndex(index: AlbumSearchHit[], query: string): AlbumSearchHit[] {
   const trimmed = query.trim().toLowerCase()
   if (!trimmed) return []
 
@@ -201,10 +195,7 @@ export function filterAlbumMusicIndex(
   if (isNum && numQuery != null) {
     // Exibe o número buscado quando a faixa tem esse track no hinário.
     results = results.map((entry) => {
-      if (
-        !(entry.hymnalTracks ?? []).includes(numQuery) &&
-        entry.track !== numQuery
-      ) {
+      if (!(entry.hymnalTracks ?? []).includes(numQuery) && entry.track !== numQuery) {
         return entry
       }
       return {
@@ -216,14 +207,9 @@ export function filterAlbumMusicIndex(
 
     results = [...results].sort((a, b) => {
       const score = (entry: AlbumSearchHit) => {
-        const hasNumber =
-          entry.track === numQuery ||
-          (entry.hymnalTracks ?? []).includes(numQuery)
+        const hasNumber = entry.track === numQuery || (entry.hymnalTracks ?? []).includes(numQuery)
         if (!hasNumber) return 0
-        if (
-          entry.albumNames.includes('Hinário Adventista') &&
-          !entry.albumNames.includes('1996')
-        ) {
+        if (entry.albumNames.includes('Hinário Adventista') && !entry.albumNames.includes('1996')) {
           return 2
         }
         if (entry.albumNames.includes('Hinário Adventista 1996')) {

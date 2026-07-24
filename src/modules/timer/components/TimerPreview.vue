@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, useTemplateRef, ref } from 'vue'
-
-import type { TimerDisplayConfig, TimerRuntimeState } from '../types/timer'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { useTimerDisplay } from '../composables/useTimer'
+import type { TimerDisplayConfig, TimerRuntimeState } from '../types/timer'
 
 const props = withDefaults(
   defineProps<{
@@ -24,14 +23,14 @@ const { formattedTime } = useTimerDisplay(
   () => props.runtime,
 )
 
-const digitalFontSize = computed(() => {
+const _digitalFontSize = computed(() => {
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   const hasMs = props.config.timeFormat.includes('ms')
   const ratio = hasMs ? 0.28 : 0.36
   return Math.max(v * ratio, 20)
 })
 
-const surfaceStyle = computed(() => ({
+const _surfaceStyle = computed(() => ({
   background: props.preview ? 'transparent' : props.config.bgColor,
   color: props.preview ? 'var(--ds-color-on-surface)' : props.config.textColor,
 }))

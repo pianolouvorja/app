@@ -2,17 +2,9 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import BibleProjectionView from '@modules/bible/views/BibleProjectionView.vue'
-import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
-import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
-import LiturgyWebProjectionView from '@modules/liturgy/views/LiturgyWebProjectionView.vue'
-import MediaProjectionView from '@modules/media/views/MediaProjectionView.vue'
-import RandomProjectionView from '@modules/random/views/RandomProjectionView.vue'
-import TimerProjectionView from '@modules/timer/views/TimerProjectionView.vue'
-
 const route = useRoute()
 
-const moduleId = computed(() => {
+const _moduleId = computed(() => {
   const value = route.query.module
   return typeof value === 'string' ? value : ''
 })

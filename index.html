@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
       /* Aplica cor de realce salva (user_data.accent) ou o padrão orange da 1ª inicialização. */
-      ;(function () {
+      ;(() => {
         var accents = {
           azure: { primary: '#5B9BD5', soft: '#B4D4F0' },
           sky: { primary: '#5BA4C9', soft: '#B5D8E8' },
@@ -65,7 +65,7 @@
         text-align: center;
       }
       #boot-splash[hidden] {
-        display: none !important;
+        display: none;
       }
       #boot-splash .boot-splash__glow {
         position: absolute;

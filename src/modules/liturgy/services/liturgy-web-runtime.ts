@@ -116,9 +116,7 @@ export function toProjectionEmbedUrl(raw: string): string | null {
   return parseLiturgyWebTarget(raw)?.url ?? null
 }
 
-export function normalizeLiturgyWebRuntime(
-  raw: unknown,
-): LiturgyWebProjectionRuntime {
+export function normalizeLiturgyWebRuntime(raw: unknown): LiturgyWebProjectionRuntime {
   if (!raw || typeof raw !== 'object') {
     return { ...DEFAULT_LITURGY_WEB_RUNTIME }
   }
@@ -127,9 +125,7 @@ export function normalizeLiturgyWebRuntime(
   const url = asString(source.url).trim()
   const kindRaw = asString(source.kind)
   const kind: LiturgyWebKind =
-    kindRaw === 'youtube' || kindRaw === 'vimeo' || kindRaw === 'site'
-      ? kindRaw
-      : 'site'
+    kindRaw === 'youtube' || kindRaw === 'vimeo' || kindRaw === 'site' ? kindRaw : 'site'
 
   return {
     active: source.active === true && url.length > 0,
@@ -151,9 +147,7 @@ export function readLiturgyWebRuntimeFromStorage(): LiturgyWebProjectionRuntime 
   }
 }
 
-export function publishLiturgyWebRuntime(
-  runtime: LiturgyWebProjectionRuntime,
-): void {
+export function publishLiturgyWebRuntime(runtime: LiturgyWebProjectionRuntime): void {
   try {
     localStorage.removeItem('louvorja-liturgy-yt-leader')
   } catch {

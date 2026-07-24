@@ -1,13 +1,7 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import {
-  getUserPreference,
-  setUserPreference,
-} from '@shared/services/user-preferences'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
-import {
-  DEFAULT_HOME_LOCATION,
-  type HomeLocationProfile,
-} from '../types/home'
+import { DEFAULT_HOME_LOCATION, type HomeLocationProfile } from '../types/home'
 
 function asTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
@@ -27,10 +21,7 @@ export function normalizeHomeLocation(raw: unknown): HomeLocationProfile {
 }
 
 export function loadHomeLocation(): HomeLocationProfile {
-  const stored = getUserPreference<unknown>(
-    USER_PREFERENCE_KEYS.homeLocation,
-    null,
-  )
+  const stored = getUserPreference<unknown>(USER_PREFERENCE_KEYS.homeLocation, null)
   return normalizeHomeLocation(stored)
 }
 

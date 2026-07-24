@@ -1,16 +1,8 @@
 <script setup lang="ts">
+import type { LibraryAlbum } from '@modules/sync/types/library'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-
-import { GlassCard } from '@design-system/index'
-import type { LibraryAlbum } from '@modules/sync/types/library'
-
-import AlbumCollectionCard from '../components/AlbumCollectionCard.vue'
-import AlbumHymnalCard from '../components/AlbumHymnalCard.vue'
-import AlbumLyricDialog from '../components/AlbumLyricDialog.vue'
-import AlbumSearchHitRow from '../components/AlbumSearchHitRow.vue'
-import DownloadFailureDialog from '@modules/sync/components/DownloadFailureDialog.vue'
 import { useAlbums } from '../composables/useAlbums'
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
 
@@ -54,71 +46,62 @@ const {
 const busyMusicId = ref<number | null>(null)
 const albumPendingRemoval = ref<LibraryAlbum | null>(null)
 
-const showDownloadControls = computed(() => isDesktop)
+const _showDownloadControls = computed(() => isDesktop)
 
 function isHymnalsCategory(category: AlbumCategory) {
   return String(category.id) === 'hymnals'
 }
 
-function categoryTitle(category: AlbumCategory) {
+function _categoryTitle(category: AlbumCategory) {
   if (isHymnalsCategory(category)) return t('sync.categories.hymnals')
-  if (
-    category.name === 'CDs Oficiais/Ano' ||
-    /cds?\s*oficiais/i.test(category.name)
-  ) {
+  if (category.name === 'CDs Oficiais/Ano' || /cds?\s*oficiais/i.test(category.name)) {
     return t('sync.categories.youthAlbums')
   }
   return category.name
 }
 
-function categorySubtitle(category: AlbumCategory) {
+function _categorySubtitle(category: AlbumCategory) {
   if (isHymnalsCategory(category)) return t('sync.categories.hymnalsSubtitle')
-  if (
-    category.name === 'CDs Oficiais/Ano' ||
-    /cds?\s*oficiais/i.test(category.name)
-  ) {
+  if (category.name === 'CDs Oficiais/Ano' || /cds?\s*oficiais/i.test(category.name)) {
     return t('sync.categories.albumsSubtitle')
   }
   return t('sync.categories.defaultSubtitle')
 }
 
-function openCollection(collectionId: string | number) {
+function _openCollection(collectionId: string | number) {
   void router.push({
     name: 'albums-collection',
     params: { collectionId: String(collectionId) },
   })
 }
 
-function retry() {
+function _retry() {
   clearError()
   void hydrateCatalog()
 }
 
-function clearHubSearch() {
+function _clearHubSearch() {
   hubSearchQuery.value = ''
 }
 
-function requestRemove(collection: AlbumCollection) {
+function _requestRemove(collection: AlbumCollection) {
   const album = findLibraryAlbum(collection.id)
   if (!album) return
   albumPendingRemoval.value = album
 }
 
-function dismissRemove() {
+function _dismissRemove() {
   albumPendingRemoval.value = null
 }
 
-async function confirmRemove() {
+async function _confirmRemove() {
   const album = albumPendingRemoval.value
   if (!album) return
   albumPendingRemoval.value = null
   await removeCollection(album.id)
 }
 
-async function runAction(
-  musicId: number,
-  action: () => Promise<boolean | void>,
-) {
+async function _runAction(musicId: number, action: () => Promise<boolean | undefined>) {
   busyMusicId.value = musicId
   try {
     await action()

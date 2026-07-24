@@ -5,7 +5,7 @@ defineProps<{
   open: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
