@@ -36,34 +36,34 @@ const props = withDefaults(
   },
 )
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   draw: []
   openConfig: []
 }>()
 
 const { t } = useI18n()
 const particlesLayerRef = useTemplateRef<HTMLElement>('particlesLayer')
-const _particles = createParticles()
+const particles = createParticles()
 
 const animations: Animation[] = []
 let cancelled = false
 
-const _hasResult = computed(
+const hasResult = computed(
   () => props.runtime.currentDisplay.length > 0 && !props.runtime.isDrawing,
 )
 
-const _statusLabel = computed(() => {
+const statusLabel = computed(() => {
   if (props.runtime.isDrawing) return t('random.drawing')
   if (props.canDraw) return t('random.readyToDraw')
   return t('random.emptyList')
 })
 
-const _displayText = computed(() => {
+const displayText = computed(() => {
   if (props.runtime.currentDisplay) return props.runtime.currentDisplay
   return t('random.placeholderDisplay')
 })
 
-const _displayStyle = computed(() => ({
+const displayStyle = computed(() => ({
   color: props.runtime.isDrawing
     ? 'var(--ds-color-on-surface-variant)'
     : props.preview

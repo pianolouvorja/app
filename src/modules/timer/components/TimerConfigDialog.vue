@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { TimerDisplayConfig, TimerTimeFormat } from '../types/timer'
+import { TIMER_BG_PRESETS, TIMER_TEXT_PRESETS, TIMER_TIME_FORMATS } from '../types/timer'
 
 defineProps<{
   open: boolean
@@ -18,12 +19,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onBgInput(event: Event) {
+function onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function _onTextInput(event: Event) {
+function onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }

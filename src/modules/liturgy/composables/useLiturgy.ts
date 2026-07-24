@@ -150,7 +150,7 @@ export function useLiturgy() {
     window.alert(t('liturgy.team.comingSoon'))
   }
 
-  async function runMusicAction(index: number, action: () => Promise<boolean | undefined>) {
+  async function runMusicAction(index: number, action: () => Promise<void | boolean | undefined>) {
     const item = currentItems.value[index]
     const musicId = item?.type === 'music' && item.musicId != null ? item.musicId : null
     busyMusicId.value = musicId

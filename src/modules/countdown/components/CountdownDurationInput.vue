@@ -30,17 +30,17 @@ function commit(next: { hours?: number; minutes?: number; seconds?: number }) {
   emit('update:durationMs', ms)
 }
 
-function _onHours(event: Event) {
+function onHours(event: Event) {
   const target = event.target as HTMLInputElement
   commit({ hours: clampDurationPart(target.value) })
 }
 
-function _onMinutes(event: Event) {
+function onMinutes(event: Event) {
   const target = event.target as HTMLInputElement
   commit({ minutes: clampDurationPart(target.value, 59) })
 }
 
-function _onSeconds(event: Event) {
+function onSeconds(event: Event) {
   const target = event.target as HTMLInputElement
   commit({ seconds: clampDurationPart(target.value, 59) })
 }

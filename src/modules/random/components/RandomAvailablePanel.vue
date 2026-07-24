@@ -28,28 +28,28 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const fileInputRef = useTemplateRef<HTMLInputElement>('fileInput')
 
-const _drawnSet = computed(() => new Set(props.drawn))
+const drawnSet = computed(() => new Set(props.drawn))
 
-function _onDraftInput(event: Event) {
+function onDraftInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:draftName', target.value)
 }
 
-function _onMinInput(event: Event) {
+function onMinInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:numberMin', Number(target.value))
 }
 
-function _onMaxInput(event: Event) {
+function onMaxInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:numberMax', Number(target.value))
 }
 
-function _openFilePicker() {
+function openFilePicker() {
   fileInputRef.value?.click()
 }
 
-function _onFileChange(event: Event) {
+function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) emit('importFile', file)

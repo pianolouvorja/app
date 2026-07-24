@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const _moduleId = computed(() => {
+const moduleId = computed(() => {
   const value = route.query.module
   return typeof value === 'string' ? value : ''
 })

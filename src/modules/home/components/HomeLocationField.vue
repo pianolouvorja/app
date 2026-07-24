@@ -23,7 +23,7 @@ const { t } = useI18n()
 const editing = ref(props.value.trim().length === 0)
 const draft = ref(props.value)
 const inputRef = ref<HTMLInputElement | null>(null)
-const _isFilled = computed(() => props.value.trim().length > 0)
+const isFilled = computed(() => props.value.trim().length > 0)
 
 watch(
   () => props.value,
@@ -38,7 +38,7 @@ watch(
   },
 )
 
-async function _startEdit() {
+async function startEdit() {
   draft.value = props.value
   editing.value = true
   await nextTick()
@@ -55,7 +55,7 @@ function commit() {
   }
 }
 
-function _onKeydown(event: KeyboardEvent) {
+function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
     event.preventDefault()
     commit()

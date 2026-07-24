@@ -46,11 +46,11 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const _showContent = computed(
+const showContent = computed(
   () => runtime.value.active && Boolean(runtime.value.text || runtime.value.reference),
 )
 
-const _contentKey = computed(() => `${runtime.value.text}|${runtime.value.reference}`)
+const contentKey = computed(() => `${runtime.value.text}|${runtime.value.reference}`)
 </script>
 
 <template>

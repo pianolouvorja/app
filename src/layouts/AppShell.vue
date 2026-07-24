@@ -5,6 +5,9 @@ import { mainNavRoutes } from '@shared/constants/navigation'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import codenamePianoUrl from '@/assets/brand/codenamePIANO.svg'
+import logoUrl from '@/assets/brand/logo-louvor-ja.svg'
+import { APP_PRODUCT_NAME, APP_VERSION } from '@/shared/constants/app'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,7 +15,7 @@ const { t } = useI18n()
 const { transitionName } = usePageTransition()
 
 /** Login Google — reativar quando o fluxo de autenticação existir */
-const _showAccountButton = false
+const showAccountButton = false
 
 const activeKey = computed(() => {
   const navKey = route.meta.navKey
@@ -20,11 +23,11 @@ const activeKey = computed(() => {
 })
 
 /** Na liturgia o FAB de mídia fica na própria view (padrão Bíblia). */
-const _showMediaChrome = computed(() => activeKey.value !== 'liturgy')
+const showMediaChrome = computed(() => activeKey.value !== 'liturgy')
 
-const _showHeaderLogo = computed(() => activeKey.value !== 'home')
+const showHeaderLogo = computed(() => activeKey.value !== 'home')
 
-const _navItems = computed<DockNavItem[]>(() =>
+const navItems = computed<DockNavItem[]>(() =>
   mainNavRoutes.map((item) => ({
     key: item.key,
     icon: item.icon,
@@ -33,14 +36,14 @@ const _navItems = computed<DockNavItem[]>(() =>
   })),
 )
 
-function _onNavigate(key: string) {
+function onNavigate(key: string) {
   const item = mainNavRoutes.find((nav) => nav.key === key)
   if (item) {
     void router.push(item.to)
   }
 }
 
-function _viewKey(viewRoute: typeof route) {
+function viewKey(viewRoute: typeof route) {
   const navKey = viewRoute.meta.navKey
   return typeof navKey === 'string' ? navKey : String(viewRoute.name ?? viewRoute.path)
 }

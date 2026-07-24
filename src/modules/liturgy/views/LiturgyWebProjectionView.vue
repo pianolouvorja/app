@@ -17,7 +17,7 @@ let runtimeChannel: BroadcastChannel | null = null
 
 const showFrame = computed(() => runtime.value.active && Boolean(runtime.value.url))
 
-const _frameSrc = computed(() => {
+const frameSrc = computed(() => {
   if (!showFrame.value) return ''
   const url = runtime.value.url
   if (runtime.value.kind !== 'youtube') return url

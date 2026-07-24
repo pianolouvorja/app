@@ -5,7 +5,7 @@ import type { UtilityHubItem } from '../types/clock'
 
 const { t } = useI18n()
 
-const _items: UtilityHubItem[] = [
+const items: UtilityHubItem[] = [
   {
     key: 'temporizador',
     titleKey: 'utilities.temporizador',

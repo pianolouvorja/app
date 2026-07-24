@@ -7,7 +7,7 @@ defineProps<{
   searchQuery: string
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   'update:searchQuery': [value: string]
   selectChapter: [chapter: number]
 }>()

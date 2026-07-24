@@ -2,6 +2,11 @@
 import { useI18n } from 'vue-i18n'
 
 import type { CountdownDisplayConfig, CountdownTimeFormat } from '../types/countdown'
+import {
+  COUNTDOWN_BG_PRESETS,
+  COUNTDOWN_TEXT_PRESETS,
+  COUNTDOWN_TIME_FORMATS,
+} from '../types/countdown'
 
 defineProps<{
   open: boolean
@@ -18,12 +23,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onBgInput(event: Event) {
+function onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function _onTextInput(event: Event) {
+function onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }

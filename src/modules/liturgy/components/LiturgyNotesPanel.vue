@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onInput(event: Event) {
+function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('update:modelValue', target.value)
 }
