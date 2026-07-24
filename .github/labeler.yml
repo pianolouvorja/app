@@ -1,0 +1,77 @@
+# Mapeamento: path do arquivo → label aplicada automaticamente no PR
+# Labels alinhadas com as que o Ezequias criou no repo
+# Módulos reais: albums, bible, clock, countdown, draw, home, liturgy, media, random, settings, starting, sync, timer
+
+modulo:liturgia:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/liturgy/**
+
+modulo:biblia:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/bible/**
+
+modulo:relogio:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/clock/**
+
+modulo:cronometro:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/timer/**
+    - any-glob-to-any-file: src/modules/countdown/**
+
+modulo:sorteio:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/random/**
+
+modulo:configuracoes:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/settings/**
+
+modulo:home:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/home/**
+
+modulo:shared:
+  - changed-files:
+    - any-glob-to-any-file: src/shared/**
+    - any-glob-to-any-file: src/modules/sync/**
+    - any-glob-to-any-file: src/modules/starting/**
+
+modulo:router:
+  - changed-files:
+    - any-glob-to-any-file: src/router/**
+    - any-glob-to-any-file: src/modules/*/routes.ts
+
+modulo:pinia:
+  - changed-files:
+    - any-glob-to-any-file: src/stores/**
+    - any-glob-to-any-file: src/modules/*/stores/**
+
+modulo:ui:
+  - changed-files:
+    - any-glob-to-any-file: src/design-system/**
+    - any-glob-to-any-file: src/styles/**
+    - any-glob-to-any-file: src/modules/albums/**
+    - any-glob-to-any-file: src/modules/media/**
+
+modulo:electron:
+  - changed-files:
+    - any-glob-to-any-file: src/shared/services/desktop-bridge*
+    - any-glob-to-any-file: src/shared/types/desktop-bridge*
+
+modulo:i18n:
+  - changed-files:
+    - any-glob-to-any-file: src/modules/*/locales/**
+    - any-glob-to-any-file: src/locales/**
+    - any-glob-to-any-file: src/plugins/i18n*
+
+modulo:infra:
+  - changed-files:
+    - any-glob-to-any-file: vite.config.*
+    - any-glob-to-any-file: tsconfig*.json
+    - any-glob-to-any-file: package.json
+
+modulo:docs:
+  - changed-files:
+    - any-glob-to-any-file: "**/*.md"
+    - any-glob-to-any-file: docs/**

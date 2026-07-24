@@ -1,0 +1,46 @@
+name: Feature Request
+description: Sugere uma nova feature ou melhoria
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema que resolve
+      description: Qual dor o usuário sente hoje?
+    validations:
+      required: true
+  - type: textarea
+    id: solucao
+    attributes:
+      label: Solução proposta
+      description: O que você quer que aconteça?
+    validations:
+      required: true
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade
+      options:
+        - P0 — Crítico (bloqueia uso)
+        - P1 — Alto (impacto grande na UX)
+        - P2 — Médio (seria bom ter)
+        - P3 — Baixo (nice to have)
+    validations:
+      required: true
+  - type: dropdown
+    id: modulo
+    attributes:
+      label: Módulo afetado
+      options:
+        - Router / Navegação
+        - Liturgia
+        - Bíblia
+        - Álbuns / Hinos
+        - Mídia / Player
+        - Countdown / Timer / Clock
+        - Settings / Aparência
+        - Design System
+        - Desktop (Electron)
+        - PWA
+        - Infra / Deploy
+        - Outro
