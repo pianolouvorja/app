@@ -170,22 +170,22 @@ function normalizeNotes(raw: unknown): WeekdayNotes {
 function normalizeCustomLiturgies(raw: unknown): CustomLiturgy[] {
   if (!Array.isArray(raw)) return []
 
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null
-      const source = entry as Record<string, unknown>
-      const name = asString(source.name).trim()
-      if (!name) return null
-      return {
-        id: asString(source.id) || createLiturgyItemId(),
-        name,
-        items: normalizeItems(source.items),
-        notes: asString(source.notes),
-        startTime: normalizeTimeHHmm(source.startTime),
-        endTime: normalizeTimeHHmm(source.endTime),
-      } satisfies CustomLiturgy
+  const result: CustomLiturgy[] = []
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue
+    const source = entry as Record<string, unknown>
+    const name = asString(source.name).trim()
+    if (!name) continue
+    result.push({
+      id: asString(source.id) || createLiturgyItemId(),
+      name,
+      items: normalizeItems(source.items),
+      notes: asString(source.notes),
+      startTime: normalizeTimeHHmm(source.startTime),
+      endTime: normalizeTimeHHmm(source.endTime),
     })
-    .filter((entry): entry is CustomLiturgy => entry != null)
+  }
+  return result
 }
 
 function normalizeDeletionLocks(raw: unknown): Record<string, boolean> {

@@ -21,6 +21,7 @@ export const USER_PREFERENCE_KEYS = {
   countdownConfig: 'countdown.config',
   randomConfig: 'random.config',
   randomSession: 'random.session',
+  liturgyState: 'liturgy.state',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */
