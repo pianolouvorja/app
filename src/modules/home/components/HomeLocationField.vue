@@ -89,6 +89,7 @@ function _onKeydown(event: KeyboardEvent) {
         class="home-location-field__input"
         type="text"
         :placeholder="placeholder"
+        :aria-label="label"
         autocomplete="off"
         spellcheck="false"
         @keydown="onKeydown"

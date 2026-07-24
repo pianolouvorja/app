@@ -112,6 +112,7 @@ function _onFileChange(event: Event) {
         type="file"
         accept=".txt,text/plain"
         class="random-available__file"
+        :aria-label="t('random.importList')"
         @change="onFileChange"
       >
     </div>
@@ -126,6 +127,7 @@ function _onFileChange(event: Event) {
           <input
             type="number"
             :value="numberMin"
+            :aria-label="t('random.minNumber')"
             @input="onMinInput"
           >
         </label>
@@ -134,6 +136,7 @@ function _onFileChange(event: Event) {
           <input
             type="number"
             :value="numberMax"
+            :aria-label="t('random.maxNumber')"
             @input="onMaxInput"
             @keydown.enter.prevent="emit('generateRange')"
           >

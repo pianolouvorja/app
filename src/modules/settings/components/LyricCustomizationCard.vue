@@ -278,6 +278,7 @@ async function _onFileSelected(event: Event) {
           type="file"
           accept="image/*"
           class="lyric-custom__file"
+          :aria-label="t('settings.projection.lyrics.selectImage')"
           @change="onFileSelected"
         >
       </div>
