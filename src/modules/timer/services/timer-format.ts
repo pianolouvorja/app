@@ -4,10 +4,7 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0')
 }
 
-export function formatElapsedMs(
-  elapsedMs: number,
-  timeFormat: TimerTimeFormat,
-): string {
+export function formatElapsedMs(elapsedMs: number, timeFormat: TimerTimeFormat): string {
   const safe = Math.max(0, Math.floor(elapsedMs))
   const hours = Math.floor(safe / 3_600_000)
   const minutes = Math.floor((safe % 3_600_000) / 60_000)

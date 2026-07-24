@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useBlurSystem } from '@design-system/composables'
 import type { BlurToken } from '@design-system/tokens'
 import { blur as blurTokens } from '@design-system/tokens'
+import { computed } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -16,11 +15,9 @@ const props = withDefaults(
 
 const { backdropFilter, currentBlur } = useBlurSystem()
 
-const style = computed(() => {
+const _style = computed(() => {
   const amount = props.level ? blurTokens[props.level] : currentBlur.value
-  const filter = props.level
-    ? `blur(${amount}) saturate(140%)`
-    : backdropFilter.value
+  const filter = props.level ? `blur(${amount}) saturate(140%)` : backdropFilter.value
 
   return {
     backdropFilter: filter,

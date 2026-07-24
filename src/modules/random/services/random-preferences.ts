@@ -1,17 +1,14 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import {
-  getUserPreference,
-  setUserPreference,
-} from '@shared/services/user-preferences'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
 import {
   DEFAULT_RANDOM_DISPLAY_CONFIG,
   DEFAULT_RANDOM_SESSION,
+  emptyModePool,
   RANDOM_ANIMATION_SPEEDS,
   RANDOM_FONT_SIZE_MAX,
   RANDOM_FONT_SIZE_MIN,
   RANDOM_TEXT_TRANSFORMS,
-  emptyModePool,
   type RandomAnimationSpeed,
   type RandomDisplayConfig,
   type RandomDrawMode,
@@ -68,8 +65,7 @@ function asModePool(raw: unknown): RandomModePool {
   return {
     available: asStringArray(source.available),
     drawn: asStringArray(source.drawn),
-    currentDisplay:
-      typeof source.currentDisplay === 'string' ? source.currentDisplay : '',
+    currentDisplay: typeof source.currentDisplay === 'string' ? source.currentDisplay : '',
   }
 }
 
@@ -81,14 +77,8 @@ export function normalizeRandomDisplayConfig(raw: unknown): RandomDisplayConfig 
   const source = raw as Record<string, unknown>
 
   return {
-    bgColor: asString(
-      source.bgColor ?? source.background,
-      DEFAULT_RANDOM_DISPLAY_CONFIG.bgColor,
-    ),
-    textColor: asString(
-      source.textColor ?? source.color,
-      DEFAULT_RANDOM_DISPLAY_CONFIG.textColor,
-    ),
+    bgColor: asString(source.bgColor ?? source.background, DEFAULT_RANDOM_DISPLAY_CONFIG.bgColor),
+    textColor: asString(source.textColor ?? source.color, DEFAULT_RANDOM_DISPLAY_CONFIG.textColor),
     fontSizePc: asFontSize(source.fontSizePc),
     textTransform: asTextTransform(source.textTransform),
     animationSpeed: asAnimationSpeed(source.animationSpeed),

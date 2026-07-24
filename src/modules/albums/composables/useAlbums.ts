@@ -1,11 +1,10 @@
-import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import type { LibraryAlbum, LibraryAlbumId } from '@modules/sync/types/library'
 import { isDesktopApp } from '@shared/services/desktop-bridge'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useAlbumsStore } from '../stores/useAlbumsStore'
 import type { AlbumCollectionId } from '../types/albums'
@@ -52,9 +51,7 @@ export function useAlbums() {
     }
   })
 
-  function findLibraryAlbum(
-    collectionId: AlbumCollectionId | LibraryAlbumId,
-  ): LibraryAlbum | null {
+  function findLibraryAlbum(collectionId: AlbumCollectionId | LibraryAlbumId): LibraryAlbum | null {
     const id = String(collectionId)
     for (const category of libraryCategories.value) {
       const album = category.albums.find((item) => String(item.id) === id)
@@ -78,9 +75,7 @@ export function useAlbums() {
   }
 
   async function playSlides(musicId: number) {
-    return openPlayerWindow(
-      await store.playTrack(musicId, 'no_audio', { project: true }),
-    )
+    return openPlayerWindow(await store.playTrack(musicId, 'no_audio', { project: true }))
   }
 
   async function playMode(musicId: number, mode: MediaPlaybackMode) {

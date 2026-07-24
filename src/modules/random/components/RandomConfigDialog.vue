@@ -1,18 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
-import {
-  RANDOM_ANIMATION_SPEEDS,
-  RANDOM_BG_PRESETS,
-  RANDOM_FONT_SIZE_MAX,
-  RANDOM_FONT_SIZE_MIN,
-  RANDOM_TEXT_PRESETS,
-  RANDOM_TEXT_TRANSFORMS,
-  type RandomAnimationSpeed,
-  type RandomDisplayConfig,
-  type RandomTextTransform,
+import type {
+  RandomAnimationSpeed,
+  RandomDisplayConfig,
+  RandomTextTransform,
 } from '../types/random'
 
 defineProps<{
@@ -32,43 +24,42 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const transformLabels: Record<RandomTextTransform, string> = {
+const _transformLabels: Record<RandomTextTransform, string> = {
   none: 'random.transformNone',
   uppercase: 'random.transformUpper',
   lowercase: 'random.transformLower',
 }
 
-const speedLabels: Record<RandomAnimationSpeed, string> = {
+const _speedLabels: Record<RandomAnimationSpeed, string> = {
   fast: 'random.speedFast',
   normal: 'random.speedNormal',
   slow: 'random.speedSlow',
 }
 
-const speedIcons: Record<RandomAnimationSpeed, string> = {
+const _speedIcons: Record<RandomAnimationSpeed, string> = {
   fast: 'ti-run',
   normal: 'ti-run',
   slow: 'ti-walk',
 }
 
-function onBgInput(event: Event) {
+function _onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function onTextInput(event: Event) {
+function _onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }
 
-function onFontInput(event: Event) {
+function _onFontInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:fontSizePc', Number(target.value))
 }
 
-function bumpFont(delta: number, current: number) {
+function _bumpFont(delta: number, current: number) {
   emit('update:fontSizePc', current + delta)
 }
-
 </script>
 
 <template>

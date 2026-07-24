@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { resolveBookTone } from '../services/bible-catalog'
 import type { BibleBook, BibleTestament } from '../types/bible'
 
 defineProps<{
@@ -11,7 +10,7 @@ defineProps<{
   searchQuery: string
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:searchQuery': [value: string]
   'update:testament': [value: BibleTestament]
   selectBook: [bookId: number]

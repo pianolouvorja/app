@@ -27,6 +27,4 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   },
 ]
 
-export const VISIBLE_SETTINGS_SECTIONS = SETTINGS_SECTIONS.filter(
-  (section) => !section.hidden,
-)
+export const VISIBLE_SETTINGS_SECTIONS = SETTINGS_SECTIONS.filter((section) => !section.hidden)

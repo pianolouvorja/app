@@ -2,15 +2,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import AlbumLyricDialog from '@modules/albums/components/AlbumLyricDialog.vue'
-
-import LiturgyCloneDialog from '../components/LiturgyCloneDialog.vue'
-import LiturgyCustomBar from '../components/LiturgyCustomBar.vue'
-import LiturgyCustomDialog from '../components/LiturgyCustomDialog.vue'
-import LiturgyDayTabs from '../components/LiturgyDayTabs.vue'
-import LiturgyItemDialog from '../components/LiturgyItemDialog.vue'
-import LiturgySidebar from '../components/LiturgySidebar.vue'
-import LiturgyTimeline from '../components/LiturgyTimeline.vue'
 import { useLiturgy } from '../composables/useLiturgy'
 
 const { t } = useI18n()
@@ -101,7 +92,7 @@ const {
 } = useLiturgy()
 
 /** Exibe avisos da liturgia e do player (ex.: áudio indisponível). */
-const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
+const _liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 </script>
 
 <template>

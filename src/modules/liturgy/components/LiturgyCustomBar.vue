@@ -8,7 +8,7 @@ defineProps<{
   selectedIndex: number
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   select: [index: number]
   remove: [index: number]
   create: []
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onWheel(event: WheelEvent) {
+function _onWheel(event: WheelEvent) {
   const target = event.currentTarget as HTMLElement
   if (event.deltaY !== 0) {
     target.scrollLeft += event.deltaY

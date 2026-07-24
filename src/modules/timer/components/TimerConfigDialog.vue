@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
-import {
-  TIMER_BG_PRESETS,
-  TIMER_TEXT_PRESETS,
-  TIMER_TIME_FORMATS,
-  type TimerDisplayConfig,
-  type TimerTimeFormat,
-} from '../types/timer'
+import type { TimerDisplayConfig, TimerTimeFormat } from '../types/timer'
 
 defineProps<{
   open: boolean
@@ -26,16 +18,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onBgInput(event: Event) {
+function _onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function onTextInput(event: Event) {
+function _onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }
-
 </script>
 
 <template>

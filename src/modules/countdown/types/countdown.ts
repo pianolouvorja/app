@@ -1,8 +1,4 @@
-export type CountdownTimeFormat =
-  | 'hh:mm:ss.ms'
-  | 'hh:mm:ss'
-  | 'mm:ss.ms'
-  | 'mm:ss'
+export type CountdownTimeFormat = 'hh:mm:ss.ms' | 'hh:mm:ss' | 'mm:ss.ms' | 'mm:ss'
 
 export type CountdownStatus = 'idle' | 'running' | 'paused'
 

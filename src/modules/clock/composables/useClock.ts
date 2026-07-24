@@ -1,14 +1,6 @@
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  ref,
-  toValue,
-  type MaybeRefOrGetter,
-} from 'vue'
-
-import type { ClockConfig } from '../types/clock'
+import { computed, type MaybeRefOrGetter, onMounted, onUnmounted, ref, toValue } from 'vue'
 import { useClockStore } from '../stores/useClockStore'
+import type { ClockConfig } from '../types/clock'
 
 export function useClockTick() {
   const now = ref(new Date())
@@ -60,14 +52,10 @@ export function useClockDisplay(configSource?: MaybeRefOrGetter<ClockConfig>) {
       minute: '2-digit',
       hour12: !config.value.format24h,
     }
-    return now.value
-      .toLocaleTimeString('pt-BR', opts)
-      .replace(/[a-zA-Z\s]/g, '')
+    return now.value.toLocaleTimeString('pt-BR', opts).replace(/[a-zA-Z\s]/g, '')
   })
 
-  const formattedSeconds = computed(() =>
-    now.value.getSeconds().toString().padStart(2, '0'),
-  )
+  const formattedSeconds = computed(() => now.value.getSeconds().toString().padStart(2, '0'))
 
   const ampm = computed(() => (now.value.getHours() >= 12 ? 'PM' : 'AM'))
 

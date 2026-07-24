@@ -8,10 +8,7 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0')
 }
 
-function resolveDisplayFormat(
-  hours: number,
-  timeFormat: CountdownTimeFormat,
-): CountdownTimeFormat {
+function resolveDisplayFormat(hours: number, timeFormat: CountdownTimeFormat): CountdownTimeFormat {
   // Se há horas restantes e o formato omitiu `hh`, força inclusão (ex.: 1:14:40).
   if (hours > 0 && !timeFormat.includes('hh')) {
     return timeFormat.includes('ms') ? 'hh:mm:ss.ms' : 'hh:mm:ss'
@@ -19,10 +16,7 @@ function resolveDisplayFormat(
   return timeFormat
 }
 
-export function formatElapsedMs(
-  elapsedMs: number,
-  timeFormat: CountdownTimeFormat,
-): string {
+export function formatElapsedMs(elapsedMs: number, timeFormat: CountdownTimeFormat): string {
   const safe = Math.max(0, Math.floor(elapsedMs))
   const hours = Math.floor(safe / 3_600_000)
   const minutes = Math.floor((safe % 3_600_000) / 60_000)

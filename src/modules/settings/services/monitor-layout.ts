@@ -1,8 +1,4 @@
-import type {
-  DisplayBounds,
-  MonitorArrangementSlot,
-  SystemDisplay,
-} from '../types/projection'
+import type { DisplayBounds, MonitorArrangementSlot, SystemDisplay } from '../types/projection'
 
 export type MonitorLayoutTile = {
   id: number
@@ -82,15 +78,12 @@ export function buildMonitorLayout(
     }
   }
 
-  const virtualBounds = displays.map((display) =>
-    resolveVirtualBounds(display, arrangement),
-  )
+  const virtualBounds = displays.map((display) => resolveVirtualBounds(display, arrangement))
   const world = computeWorldBox(virtualBounds)
 
   const availableW = Math.max(1, stageWidth - CANVAS_PADDING * 2)
   const availableH = Math.max(1, stageHeight - CANVAS_PADDING * 2)
-  const scale =
-    Math.min(availableW / world.width, availableH / world.height) * FIT_FACTOR
+  const scale = Math.min(availableW / world.width, availableH / world.height) * FIT_FACTOR
 
   const contentW = world.width * scale
   const contentH = world.height * scale
@@ -107,10 +100,8 @@ export function buildMonitorLayout(
       height *= PRIMARY_SCALE_BOOST
     }
 
-    const centerX =
-      offsetX + (virtual.x - world.minX + virtual.width / 2) * scale
-    const centerY =
-      offsetY + (virtual.y - world.minY + virtual.height / 2) * scale
+    const centerX = offsetX + (virtual.x - world.minX + virtual.width / 2) * scale
+    const centerY = offsetY + (virtual.y - world.minY + virtual.height / 2) * scale
 
     return {
       id: display.id,
@@ -161,9 +152,7 @@ export function upsertArrangementSlot(
 }
 
 /** Gera arranjo inicial espelhando os bounds do sistema. */
-export function arrangementFromSystemBounds(
-  displays: SystemDisplay[],
-): MonitorArrangementSlot[] {
+export function arrangementFromSystemBounds(displays: SystemDisplay[]): MonitorArrangementSlot[] {
   return displays.map((display) => ({
     displayId: display.id,
     x: display.bounds.x,

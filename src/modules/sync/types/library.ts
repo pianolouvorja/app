@@ -1,8 +1,4 @@
-export type LibraryAlbumStatus =
-  | 'idle'
-  | 'downloading'
-  | 'downloaded'
-  | 'error'
+export type LibraryAlbumStatus = 'idle' | 'downloading' | 'downloaded' | 'error'
 
 export type LibraryAlbumId = string | number
 
@@ -62,12 +58,7 @@ export type MediaDownloadItem = {
   type: 'music' | 'slides' | 'covers'
 }
 
-export type DownloadFailureReason =
-  | 'offline'
-  | 'server'
-  | 'cancelled'
-  | 'unknown'
-  | null
+export type DownloadFailureReason = 'offline' | 'server' | 'cancelled' | 'unknown' | null
 
 /** Aviso exibido ao usuário quando o download é abortado. */
 export type DownloadFailureNotice = {

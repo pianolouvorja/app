@@ -2,8 +2,6 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { GlassCard } from '@design-system/index'
-
 const props = defineProps<{
   titleKey: string
   descriptionKey: string
@@ -22,7 +20,7 @@ function onActivate() {
   void router.push(props.to)
 }
 
-function onKeydown(event: KeyboardEvent) {
+function _onKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     onActivate()

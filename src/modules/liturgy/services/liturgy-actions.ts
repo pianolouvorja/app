@@ -69,9 +69,7 @@ export async function openLiturgyMusicPlayer(
 }
 
 /** Abre música no player e projeta nas telas (fluxo legado do clique único). */
-export async function openLiturgyMusicOnScreens(
-  item: LiturgyItem,
-): Promise<LiturgyActionResult> {
+export async function openLiturgyMusicOnScreens(item: LiturgyItem): Promise<LiturgyActionResult> {
   return openLiturgyMusicPlayer(item, item.musicMode ?? 'audio', {
     project: true,
   })
@@ -123,10 +121,7 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.urlMissing' }
       }
 
-      const opened = await openLiturgyVideoControl(
-        rawUrl,
-        item.name?.trim() || rawUrl,
-      )
+      const opened = await openLiturgyVideoControl(rawUrl, item.name?.trim() || rawUrl)
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
@@ -139,10 +134,7 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
       }
 
-      const opened = await openLiturgyLocalVideoControl(
-        filePath,
-        item.name?.trim() || filePath,
-      )
+      const opened = await openLiturgyLocalVideoControl(filePath, item.name?.trim() || filePath)
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
@@ -171,10 +163,7 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
       }
 
-      const opened = await openLiturgyLocalPdfControl(
-        filePath,
-        item.name?.trim() || filePath,
-      )
+      const opened = await openLiturgyLocalPdfControl(filePath, item.name?.trim() || filePath)
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
@@ -212,10 +201,7 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.urlMissing' }
       }
 
-      const opened = await openLiturgySiteControl(
-        rawUrl,
-        item.name?.trim() || rawUrl,
-      )
+      const opened = await openLiturgySiteControl(rawUrl, item.name?.trim() || rawUrl)
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
@@ -235,9 +221,7 @@ export async function executeLiturgyItem(
 }
 
 /** Abre o controle (se preciso) e dá play — telas estendidas seguem. */
-export async function playLiturgyItemOnScreens(
-  item: LiturgyItem,
-): Promise<LiturgyActionResult> {
+export async function playLiturgyItemOnScreens(item: LiturgyItem): Promise<LiturgyActionResult> {
   if (item.type === 'music') {
     return openLiturgyMusicOnScreens(item)
   }
@@ -247,10 +231,7 @@ export async function playLiturgyItemOnScreens(
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
-    const ok = await playLiturgyLocalVideoOnScreens(
-      filePath,
-      item.name?.trim() || filePath,
-    )
+    const ok = await playLiturgyLocalVideoOnScreens(filePath, item.name?.trim() || filePath)
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
     }
@@ -277,10 +258,7 @@ export async function playLiturgyItemOnScreens(
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
-    const ok = await playLiturgyLocalPdfOnScreens(
-      filePath,
-      item.name?.trim() || filePath,
-    )
+    const ok = await playLiturgyLocalPdfOnScreens(filePath, item.name?.trim() || filePath)
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
     }
@@ -300,10 +278,7 @@ export async function playLiturgyItemOnScreens(
         messageKey: 'liturgy.messages.presentationOfficeMissing',
       }
     }
-    const ok = await playLiturgyLocalPresentationOnScreens(
-      filePath,
-      item.name?.trim() || filePath,
-    )
+    const ok = await playLiturgyLocalPresentationOnScreens(filePath, item.name?.trim() || filePath)
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
     }

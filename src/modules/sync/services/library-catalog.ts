@@ -2,10 +2,7 @@ import hymnalCover from '@assets/library/hymnal.jpeg'
 import hymnal1996Cover from '@assets/library/hymnal_1996.jpeg'
 import { WORKSPACE_RECORD_KEYS } from '@shared/constants/storage-keys'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
-import {
-  readCatalogRecord,
-  writeCatalogRecord,
-} from '@shared/services/workspace-api'
+import { readCatalogRecord, writeCatalogRecord } from '@shared/services/workspace-api'
 
 import type {
   CatalogCategory,
@@ -42,12 +39,7 @@ async function resolveCoverUrl(urlImage: string | null | undefined): Promise<str
 function createAlbumBase(
   partial: Omit<
     LibraryAlbum,
-    | 'progress'
-    | 'progressText'
-    | 'totalCount'
-    | 'downloadedCount'
-    | 'cancelRequested'
-    | 'songCount'
+    'progress' | 'progressText' | 'totalCount' | 'downloadedCount' | 'cancelRequested' | 'songCount'
   > & { songCount?: number | null },
 ): LibraryAlbum {
   return {
@@ -122,9 +114,7 @@ async function buildHymnalCategory(
 export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
   const categories = await readCatalogRecord<CatalogCategory[]>('pt_categories')
   const downloaded =
-    (await readCatalogRecord<Array<string | number>>(
-      WORKSPACE_RECORD_KEYS.downloadedAlbums,
-    )) ?? []
+    (await readCatalogRecord<Array<string | number>>(WORKSPACE_RECORD_KEYS.downloadedAlbums)) ?? []
 
   const result: LibraryCategory[] = []
 
@@ -172,14 +162,10 @@ export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
 
 export async function readDownloadedAlbumIds(): Promise<Array<string | number>> {
   return (
-    (await readCatalogRecord<Array<string | number>>(
-      WORKSPACE_RECORD_KEYS.downloadedAlbums,
-    )) ?? []
+    (await readCatalogRecord<Array<string | number>>(WORKSPACE_RECORD_KEYS.downloadedAlbums)) ?? []
   )
 }
 
-export async function writeDownloadedAlbumIds(
-  ids: Array<string | number>,
-): Promise<boolean> {
+export async function writeDownloadedAlbumIds(ids: Array<string | number>): Promise<boolean> {
   return writeCatalogRecord(WORKSPACE_RECORD_KEYS.downloadedAlbums, ids)
 }

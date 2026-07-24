@@ -22,13 +22,7 @@ export type BibleChapterVerses = Record<string, string>
 export type BibleTestament = 'ot' | 'nt'
 
 /** Tom visual do tile do livro (Stitch). */
-export type BibleBookTone =
-  | 'law'
-  | 'history'
-  | 'prophets'
-  | 'gospels'
-  | 'letters'
-  | 'neutral'
+export type BibleBookTone = 'law' | 'history' | 'prophets' | 'gospels' | 'letters' | 'neutral'
 
 /** Seleção ativa para leitura e projeção. */
 export interface BibleSelection {

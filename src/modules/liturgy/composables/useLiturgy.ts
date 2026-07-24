@@ -1,10 +1,9 @@
+import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
+import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-
-import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
-import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import { formatMomentDuration } from '../services/liturgy-item-helpers'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
@@ -129,9 +128,7 @@ export function useLiturgy() {
 
   function confirmRemoveCustom(index: number) {
     const name = customLiturgies.value[index]?.name ?? ''
-    if (
-      !window.confirm(t('liturgy.messages.confirmDeleteCustom', { name }))
-    ) {
+    if (!window.confirm(t('liturgy.messages.confirmDeleteCustom', { name }))) {
       return
     }
     store.removeCustomLiturgy(index)
@@ -153,13 +150,9 @@ export function useLiturgy() {
     window.alert(t('liturgy.team.comingSoon'))
   }
 
-  async function runMusicAction(
-    index: number,
-    action: () => Promise<boolean | void>,
-  ) {
+  async function runMusicAction(index: number, action: () => Promise<boolean | undefined>) {
     const item = currentItems.value[index]
-    const musicId =
-      item?.type === 'music' && item.musicId != null ? item.musicId : null
+    const musicId = item?.type === 'music' && item.musicId != null ? item.musicId : null
     busyMusicId.value = musicId
     try {
       await action()
@@ -170,16 +163,12 @@ export function useLiturgy() {
 
   function onMusicSung(index: number) {
     albumsStore.closeLyric()
-    void runMusicAction(index, () =>
-      store.playMusicMode(index, 'audio', router),
-    )
+    void runMusicAction(index, () => store.playMusicMode(index, 'audio', router))
   }
 
   function onMusicInstrumental(index: number) {
     albumsStore.closeLyric()
-    void runMusicAction(index, () =>
-      store.playMusicMode(index, 'instrumental', router),
-    )
+    void runMusicAction(index, () => store.playMusicMode(index, 'instrumental', router))
   }
 
   function onMusicSlides(index: number) {

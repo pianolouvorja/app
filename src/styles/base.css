@@ -34,13 +34,15 @@
   --ds-spacing-page: 32px;
   --ds-dock-height: 72px;
   --app-titlebar-height: 0px;
-  --ds-font-family: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ds-font-family:
+    "Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI",
+    sans-serif;
   --ds-motion-duration: 280ms;
   --ds-motion-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
   color-scheme: dark;
 }
 
-[data-mode='light'] {
+[data-mode="light"] {
   color-scheme: light;
 }
 
@@ -55,33 +57,33 @@
  * As cores são intencionalmente fixas para não variarem com tema ou destaque.
  */
 * {
-  scrollbar-width: thin !important;
-  scrollbar-color: #7a7a7a #282828 !important;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a #282828;
 }
 
 *::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+  width: 6px;
+  height: 6px;
 }
 
 *::-webkit-scrollbar-track {
-  border-radius: 9999px !important;
-  background: #282828 !important;
+  border-radius: 9999px;
+  background: #282828;
 }
 
 *::-webkit-scrollbar-thumb {
   min-width: 32px;
   min-height: 32px;
-  border-radius: 9999px !important;
-  background: #7a7a7a !important;
+  border-radius: 9999px;
+  background: #7a7a7a;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #929292 !important;
+  background: #929292;
 }
 
 *::-webkit-scrollbar-corner {
-  background: #282828 !important;
+  background: #282828;
 }
 
 html,

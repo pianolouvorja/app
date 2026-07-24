@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { usePageTransition } from '@design-system/composables'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { usePageTransition } from '@design-system/composables'
-
-import SettingsTabs from '../components/SettingsTabs.vue'
 import { SETTINGS_SECTIONS } from '../constants/sections'
 import type { SettingsSectionId } from '../types/settings'
 
@@ -19,13 +17,11 @@ const activeSection = computed<SettingsSectionId>(() => {
   return match?.id ?? 'appearance'
 })
 
-const isAppearance = computed(() => activeSection.value === 'appearance')
+const _isAppearance = computed(() => activeSection.value === 'appearance')
 
-const sectionTitleKey = computed(
-  () => `settings.sectionTitle.${activeSection.value}`,
-)
+const _sectionTitleKey = computed(() => `settings.sectionTitle.${activeSection.value}`)
 
-function goBack() {
+function _goBack() {
   void router.push({ name: 'home' })
 }
 </script>
