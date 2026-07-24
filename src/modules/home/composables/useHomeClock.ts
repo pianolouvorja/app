@@ -1,6 +1,5 @@
-import { computed } from 'vue'
-
 import { useClockTick } from '@modules/clock/composables/useClock'
+import { computed } from 'vue'
 
 /** Relógio digital HH:MM:SS da Home (Stitch). */
 export function useHomeClock() {

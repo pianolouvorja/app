@@ -1,8 +1,8 @@
 import {
-  DEFAULT_COUNTDOWN_DURATION_MS,
-  DEFAULT_COUNTDOWN_RUNTIME,
   type CountdownRuntimeState,
   type CountdownStatus,
+  DEFAULT_COUNTDOWN_DURATION_MS,
+  DEFAULT_COUNTDOWN_RUNTIME,
 } from '../types/countdown'
 
 export const COUNTDOWN_RUNTIME_CHANNEL = 'louvorja-countdown-runtime'

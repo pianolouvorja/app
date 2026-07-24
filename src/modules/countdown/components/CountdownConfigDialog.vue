@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
-import {
-  COUNTDOWN_BG_PRESETS,
-  COUNTDOWN_TEXT_PRESETS,
-  COUNTDOWN_TIME_FORMATS,
-  type CountdownDisplayConfig,
-  type CountdownTimeFormat,
-} from '../types/countdown'
+import type { CountdownDisplayConfig, CountdownTimeFormat } from '../types/countdown'
 
 defineProps<{
   open: boolean
@@ -26,16 +18,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onBgInput(event: Event) {
+function _onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function onTextInput(event: Event) {
+function _onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }
-
 </script>
 
 <template>

@@ -6,7 +6,7 @@ defineProps<{
   totalCount: number
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   undo: [index: number]
   clear: []
 }>()

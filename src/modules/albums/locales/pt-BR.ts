@@ -33,8 +33,7 @@ export default {
       tracksFailed: 'Não foi possível carregar as faixas.',
       searchEmpty: 'Nenhuma música encontrada.',
       lyricMissing: 'Letra indisponível para esta faixa.',
-      projectionFailed:
-        'Não foi possível abrir a projeção nas telas configuradas.',
+      projectionFailed: 'Não foi possível abrir a projeção nas telas configuradas.',
     },
   },
 }

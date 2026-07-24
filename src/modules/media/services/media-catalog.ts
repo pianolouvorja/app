@@ -1,10 +1,6 @@
 import { readCatalogRecord } from '@shared/services/workspace-api'
 
-import type {
-  MediaAlbumRef,
-  MediaLyricSlide,
-  MediaTrackRecord,
-} from '../types/media'
+import type { MediaAlbumRef, MediaLyricSlide, MediaTrackRecord } from '../types/media'
 
 type CatalogLyricRow = {
   order?: number | string
@@ -116,9 +112,7 @@ function mapTrack(row: CatalogMusicRow, musicId: number): MediaTrackRecord | nul
   }
 }
 
-export async function loadMediaTrack(
-  musicId: number,
-): Promise<MediaTrackRecord | null> {
+export async function loadMediaTrack(musicId: number): Promise<MediaTrackRecord | null> {
   if (!Number.isFinite(musicId) || musicId <= 0) return null
 
   const row = await readCatalogRecord<CatalogMusicRow>(`music_${musicId}`)
@@ -126,16 +120,10 @@ export async function loadMediaTrack(
   return mapTrack(row, musicId)
 }
 
-export function resolveAlbumSubtitle(
-  track: MediaTrackRecord,
-  albumId: number | null,
-): string {
+export function resolveAlbumSubtitle(track: MediaTrackRecord, albumId: number | null): string {
   if (track.albums.length === 0) return ''
 
-  const preferred =
-    albumId != null
-      ? track.albums.find((album) => album.id === albumId)
-      : undefined
+  const preferred = albumId != null ? track.albums.find((album) => album.id === albumId) : undefined
 
   return (preferred ?? track.albums[0])?.name ?? ''
 }

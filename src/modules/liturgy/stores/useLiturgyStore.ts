@@ -1,10 +1,8 @@
+import type { MediaPlaybackMode } from '@modules/media/types/media'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Router } from 'vue-router'
-
-import { getDesktopBridge } from '@shared/services/desktop-bridge'
-
-import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import {
   executeLiturgyItem,
@@ -16,6 +14,7 @@ import {
   loadLiturgyBibleBooks,
   loadLiturgyMusicOptions,
 } from '../services/liturgy-catalog'
+import { pad2 } from '../services/liturgy-format'
 import {
   buildLiturgyItemFromDraft,
   clampMomentDurationMs,
@@ -27,18 +26,14 @@ import {
   reconcileMusicItemTitles,
   reorderLiturgyItems,
 } from '../services/liturgy-item-helpers'
+import { loadLiturgyState, saveLiturgyState, todayWeekday } from '../services/liturgy-preferences'
 import {
-  loadLiturgyState,
-  saveLiturgyState,
-  todayWeekday,
-} from '../services/liturgy-preferences'
-import {
+  type CustomLiturgy,
   DEFAULT_LITURGY_ITEM_DRAFT,
   DEFAULT_MOMENT_DURATION_MS,
   getTypeDotColor,
   LITURGY_DAY_TAB_ORDER,
   LITURGY_WEEKDAYS,
-  type CustomLiturgy,
   type LiturgyBibleBookOption,
   type LiturgyCloneSource,
   type LiturgyDayKey,
@@ -51,7 +46,6 @@ import {
   type WeekdayNotes,
   type WeekdaySessionTimes,
 } from '../types/liturgy'
-import { pad2 } from '../services/liturgy-format'
 
 export const useLiturgyStore = defineStore('liturgy', () => {
   const initialState = loadLiturgyState()
@@ -221,10 +215,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     customLiturgies.value.forEach((custom, index) => {
       if (custom.items.length === 0) return
-      if (
-        selectedDay.value === 'custom' &&
-        selectedCustomIndex.value === index
-      ) {
+      if (selectedDay.value === 'custom' && selectedCustomIndex.value === index) {
         return
       }
       sources.push({
@@ -273,9 +264,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
   const currentTitleKey = computed(() => {
     if (selectedDay.value === 'custom') {
-      return currentCustom.value
-        ? null
-        : 'liturgy.custom.title'
+      return currentCustom.value ? null : 'liturgy.custom.title'
     }
     return `liturgy.days.${selectedDay.value}`
   })
@@ -288,11 +277,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   })
 
   const filteredMusic = computed(() =>
-    filterLiturgyMusicOptions(
-      musicList.value,
-      musicSearchQuery.value,
-      itemDraft.value.musicId,
-    ),
+    filterLiturgyMusicOptions(musicList.value, musicSearchQuery.value, itemDraft.value.musicId),
   )
 
   const isDraftValid = computed(() => isLiturgyItemDraftValid(itemDraft.value))
@@ -325,20 +310,14 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   })
 
   const selectedMusic = computed(
-    () =>
-      musicList.value.find((entry) => entry.id === itemDraft.value.musicId) ??
-      null,
+    () => musicList.value.find((entry) => entry.id === itemDraft.value.musicId) ?? null,
   )
 
-  const musicCatalogEmpty = computed(
-    () => hydrated.value && musicList.value.length === 0,
-  )
+  const musicCatalogEmpty = computed(() => hydrated.value && musicList.value.length === 0)
 
   const verseChapterOptions = computed(() => {
     if (itemDraft.value.verseBookId == null) return []
-    const book = bibleBooks.value.find(
-      (entry) => entry.id === itemDraft.value.verseBookId,
-    )
+    const book = bibleBooks.value.find((entry) => entry.id === itemDraft.value.verseBookId)
     if (!book) return []
     return Array.from({ length: book.chapters }, (_, index) => index + 1)
   })
@@ -367,10 +346,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     catalogLoading.value = true
     try {
-      const [music, books] = await Promise.all([
-        loadLiturgyMusicOptions(),
-        loadLiturgyBibleBooks(),
-      ])
+      const [music, books] = await Promise.all([loadLiturgyMusicOptions(), loadLiturgyBibleBooks()])
       musicList.value = music
       bibleBooks.value = books
 
@@ -407,10 +383,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     countdownRunning.value = false
     if (day === 'custom' && customLiturgies.value.length === 0) {
       selectedCustomIndex.value = 0
-    } else if (
-      day === 'custom' &&
-      selectedCustomIndex.value >= customLiturgies.value.length
-    ) {
+    } else if (day === 'custom' && selectedCustomIndex.value >= customLiturgies.value.length) {
       selectedCustomIndex.value = Math.max(0, customLiturgies.value.length - 1)
     }
   }
@@ -427,12 +400,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     if (!match) return null
     const hours = Number(match[1])
     const minutes = Number(match[2])
-    if (
-      !Number.isFinite(hours) ||
-      !Number.isFinite(minutes) ||
-      hours > 23 ||
-      minutes > 59
-    ) {
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) {
       return null
     }
     return `${pad2(hours)}:${pad2(minutes)}`
@@ -513,9 +481,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       type,
       accentColor: getTypeDotColor(type),
       durationMs:
-        type === 'category'
-          ? 0
-          : itemDraft.value.durationMs || DEFAULT_MOMENT_DURATION_MS,
+        type === 'category' ? 0 : itemDraft.value.durationMs || DEFAULT_MOMENT_DURATION_MS,
       categoryId: type === 'category' ? null : itemDraft.value.categoryId,
       startTime: type === 'category' ? itemDraft.value.startTime : '',
       endTime: type === 'category' ? itemDraft.value.endTime : '',
@@ -554,13 +520,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       musicList: musicList.value,
       bibleBooks: bibleBooks.value,
       existingId:
-        editingIndex.value != null
-          ? currentItems.value[editingIndex.value]?.id
-          : undefined,
-      done:
-        editingIndex.value != null
-          ? currentItems.value[editingIndex.value]?.done
-          : false,
+        editingIndex.value != null ? currentItems.value[editingIndex.value]?.id : undefined,
+      done: editingIndex.value != null ? currentItems.value[editingIndex.value]?.done : false,
     })
 
     const next = [...currentItems.value]
@@ -643,9 +604,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     })
   }
 
-  function clearSelectionIfMatches(
-    predicate: (item: LiturgyItem, index: number) => boolean,
-  ) {
+  function clearSelectionIfMatches(predicate: (item: LiturgyItem, index: number) => boolean) {
     const selected = selectedItemIndex.value
     if (selected == null) return
     const item = currentItems.value[selected]
@@ -667,9 +626,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
         return item
       })
       if (nextDone) {
-        clearSelectionIfMatches(
-          (item) => item.id === target.id || item.categoryId === target.id,
-        )
+        clearSelectionIfMatches((item) => item.id === target.id || item.categoryId === target.id)
       }
       return
     }
@@ -693,9 +650,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     const previous = currentItems.value
     const selectedId =
-      selectedItemIndex.value != null
-        ? previous[selectedItemIndex.value]?.id
-        : null
+      selectedItemIndex.value != null ? previous[selectedItemIndex.value]?.id : null
 
     const next = reorderLiturgyItems(previous, fromIndex, toIndex)
     if (next === previous) return
@@ -746,13 +701,9 @@ export const useLiturgyStore = defineStore('liturgy', () => {
    * Controles do álbum/hinário na linha de música:
    * cantado, instrumental ou slides sem áudio (abre /media).
    */
-  async function playMusicMode(
-    index: number,
-    mode: MediaPlaybackMode,
-    router: Router,
-  ) {
+  async function playMusicMode(index: number, mode: MediaPlaybackMode, router: Router) {
     const item = markItemStarted(index)
-    if (!item || item.type !== 'music') {
+    if (item?.type !== 'music') {
       lastActionMessageKey.value = 'liturgy.messages.catalogEmpty'
       return false
     }
@@ -855,9 +806,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     } else if (siteState.projecting) {
       if (siteProjectionItemId.value == null) {
         const selected =
-          selectedItemIndex.value != null
-            ? currentItems.value[selectedItemIndex.value]
-            : null
+          selectedItemIndex.value != null ? currentItems.value[selectedItemIndex.value] : null
         const siteItem =
           selected?.type === 'site'
             ? selected
@@ -879,9 +828,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     if (videoProjectionItemId.value != null) return
     const selected =
-      selectedItemIndex.value != null
-        ? currentItems.value[selectedItemIndex.value]
-        : null
+      selectedItemIndex.value != null ? currentItems.value[selectedItemIndex.value] : null
     if (
       selected?.type === 'online_video' ||
       selected?.type === 'video' ||
@@ -954,9 +901,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   }
 
   function cloneSourceKeyOf(source: LiturgyCloneSource): string {
-    return source.kind === 'weekday'
-      ? `weekday:${source.day}`
-      : `custom:${source.id}`
+    return source.kind === 'weekday' ? `weekday:${source.day}` : `custom:${source.id}`
   }
 
   function openCloneDialog() {
@@ -1014,9 +959,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       ...itemDraft.value,
       musicId,
       durationMs:
-        music.durationMs && music.durationMs > 0
-          ? clampMomentDurationMs(music.durationMs)
-          : 0,
+        music.durationMs && music.durationMs > 0 ? clampMomentDurationMs(music.durationMs) : 0,
     }
   }
 

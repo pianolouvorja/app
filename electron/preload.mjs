@@ -66,8 +66,7 @@ contextBridge.exposeInMainWorld('louvorja', {
     remotePause: () => ipcRenderer.invoke('projection:remote-pause'),
     remoteSeek: (seconds) => ipcRenderer.invoke('projection:remote-seek', seconds),
     remoteToggleMute: () => ipcRenderer.invoke('projection:remote-toggle-mute'),
-    remoteSetVolume: (volume) =>
-      ipcRenderer.invoke('projection:remote-set-volume', volume),
+    remoteSetVolume: (volume) => ipcRenderer.invoke('projection:remote-set-volume', volume),
     getPlaybackState: () => ipcRenderer.invoke('projection:get-playback-state'),
     getNavigationState: () => ipcRenderer.invoke('projection:get-navigation-state'),
     remoteGoBack: () => ipcRenderer.invoke('projection:remote-go-back'),
@@ -77,28 +76,21 @@ contextBridge.exposeInMainWorld('louvorja', {
     toggleVideoScreens: () => ipcRenderer.invoke('projection:toggle-video-screens'),
     remoteImageNext: () => ipcRenderer.invoke('projection:remote-image-next'),
     remoteImagePrev: () => ipcRenderer.invoke('projection:remote-image-prev'),
-    getImageSlideState: () =>
-      ipcRenderer.invoke('projection:get-image-slide-state'),
+    getImageSlideState: () => ipcRenderer.invoke('projection:get-image-slide-state'),
     remotePdfNext: () => ipcRenderer.invoke('projection:remote-pdf-next'),
     remotePdfPrev: () => ipcRenderer.invoke('projection:remote-pdf-prev'),
     getPdfPageState: () => ipcRenderer.invoke('projection:get-pdf-page-state'),
     remotePptNext: () => ipcRenderer.invoke('projection:remote-ppt-next'),
     remotePptPrev: () => ipcRenderer.invoke('projection:remote-ppt-prev'),
-    getPptSlideState: () =>
-      ipcRenderer.invoke('projection:get-ppt-slide-state'),
-    getSiteTargetMonitors: () =>
-      ipcRenderer.invoke('projection:get-site-target-monitors'),
-    setSiteTargetMonitors: (ids) =>
-      ipcRenderer.invoke('projection:set-site-target-monitors', ids),
-    getVideoTargetMonitors: () =>
-      ipcRenderer.invoke('projection:get-video-target-monitors'),
+    getPptSlideState: () => ipcRenderer.invoke('projection:get-ppt-slide-state'),
+    getSiteTargetMonitors: () => ipcRenderer.invoke('projection:get-site-target-monitors'),
+    setSiteTargetMonitors: (ids) => ipcRenderer.invoke('projection:set-site-target-monitors', ids),
+    getVideoTargetMonitors: () => ipcRenderer.invoke('projection:get-video-target-monitors'),
     setVideoTargetMonitors: (ids) =>
       ipcRenderer.invoke('projection:set-video-target-monitors', ids),
     setSiteControlPanelOpen: (open) =>
       ipcRenderer.invoke('projection:set-site-control-panel-open', open),
-    onSiteTargetsChanged: (callback) =>
-      subscribe('projection:site-targets-changed', callback),
-    onVideoTargetsChanged: (callback) =>
-      subscribe('projection:video-targets-changed', callback),
+    onSiteTargetsChanged: (callback) => subscribe('projection:site-targets-changed', callback),
+    onVideoTargetsChanged: (callback) => subscribe('projection:video-targets-changed', callback),
   },
 })

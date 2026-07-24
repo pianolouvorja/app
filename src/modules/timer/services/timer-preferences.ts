@@ -1,8 +1,5 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import {
-  getUserPreference,
-  setUserPreference,
-} from '@shared/services/user-preferences'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
 import {
   DEFAULT_TIMER_DISPLAY_CONFIG,

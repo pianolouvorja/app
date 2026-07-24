@@ -13,9 +13,7 @@ export type OpenMusicPlayerParams = {
  * Abre o player de mídia no mesmo contrato dos Álbuns:
  * cantado / playback / sem áudio (+ projeção quando aplicável).
  */
-export async function openMusicPlayer(
-  params: OpenMusicPlayerParams,
-): Promise<MediaOpenResult> {
+export async function openMusicPlayer(params: OpenMusicPlayerParams): Promise<MediaOpenResult> {
   const musicId = Number(params.musicId)
   if (!Number.isFinite(musicId) || musicId <= 0) {
     return { ok: false, messageKey: 'media.messages.trackMissing' }

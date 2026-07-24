@@ -1,14 +1,11 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import {
-  getUserPreference,
-  setUserPreference,
-} from '@shared/services/user-preferences'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
 import {
   COUNTDOWN_TIME_FORMATS,
-  DEFAULT_COUNTDOWN_DISPLAY_CONFIG,
   type CountdownDisplayConfig,
   type CountdownTimeFormat,
+  DEFAULT_COUNTDOWN_DISPLAY_CONFIG,
 } from '../types/countdown'
 
 export const COUNTDOWN_CONFIG_CHANNEL = 'louvorja-countdown-config'

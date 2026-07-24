@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
-import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import type { AlbumSearchHit } from '../types/albums'
 
 defineProps<{
@@ -11,7 +8,7 @@ defineProps<{
   busy?: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   sung: []
   instrumental: []
   slides: []
@@ -19,11 +16,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const rowHovered = ref(false)
+const _rowHovered = ref(false)
 const downloadProgress = ref<number | null>(null)
-const isDownloading = computed(() => downloadProgress.value != null)
+const _isDownloading = computed(() => downloadProgress.value != null)
 
-function onDownloadProgress(progress: number | null) {
+function _onDownloadProgress(progress: number | null) {
   downloadProgress.value = progress
 }
 </script>

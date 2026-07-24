@@ -1,6 +1,6 @@
-import { app, screen } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
+import { app, screen } from 'electron'
 
 const DEFAULT_WIDTH = 1440
 const DEFAULT_HEIGHT = 900
@@ -59,10 +59,7 @@ function ensureOnScreen(state) {
 
   const overlaps = displays.some((display) => {
     const { x, y, width, height } = display.workArea
-    const overlapX = Math.max(
-      0,
-      Math.min(state.x + state.width, x + width) - Math.max(state.x, x),
-    )
+    const overlapX = Math.max(0, Math.min(state.x + state.width, x + width) - Math.max(state.x, x))
     const overlapY = Math.max(
       0,
       Math.min(state.y + state.height, y + height) - Math.max(state.y, y),

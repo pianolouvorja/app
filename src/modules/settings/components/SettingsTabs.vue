@@ -2,17 +2,15 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { VISIBLE_SETTINGS_SECTIONS } from '../constants/sections'
-
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 
-function isActive(routeName: string) {
+function _isActive(routeName: string) {
   return route.name === routeName
 }
 
-function goTo(routeName: string) {
+function _goTo(routeName: string) {
   if (route.name !== routeName) {
     void router.push({ name: routeName })
   }

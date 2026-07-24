@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
 defineProps<{
   remainingCountdown: string
   countdownExpired: boolean
@@ -26,12 +24,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onNotesInput(event: Event) {
+function _onNotesInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('update:notes', target.value)
 }
 
-function onStartTimeChange(event: Event) {
+function _onStartTimeChange(event: Event) {
   const value = (event.target as HTMLInputElement).value
   if (!value) {
     emit('clearStart')
@@ -40,7 +38,7 @@ function onStartTimeChange(event: Event) {
   emit('setStartFromInput', value)
 }
 
-function onEndTimeChange(event: Event) {
+function _onEndTimeChange(event: Event) {
   const value = (event.target as HTMLInputElement).value
   if (!value) {
     emit('clearEnd')

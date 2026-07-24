@@ -1,15 +1,8 @@
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  ref,
-  toValue,
-  type MaybeRefOrGetter,
-} from 'vue'
+import { computed, type MaybeRefOrGetter, onMounted, onUnmounted, ref, toValue } from 'vue'
 
 import { computeElapsedMs, formatElapsedMs } from '../services/timer-format'
-import type { TimerDisplayConfig, TimerRuntimeState } from '../types/timer'
 import { useTimerStore } from '../stores/useTimerStore'
+import type { TimerDisplayConfig, TimerRuntimeState } from '../types/timer'
 
 export function useTimerTick(active: MaybeRefOrGetter<boolean> = true) {
   const now = ref(Date.now())
@@ -51,9 +44,7 @@ export function useTimerDisplay(
     ),
   )
 
-  const formattedTime = computed(() =>
-    formatElapsedMs(elapsedMs.value, config.value.timeFormat),
-  )
+  const formattedTime = computed(() => formatElapsedMs(elapsedMs.value, config.value.timeFormat))
 
   return {
     now,

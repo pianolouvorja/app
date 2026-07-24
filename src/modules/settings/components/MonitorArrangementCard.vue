@@ -2,19 +2,13 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { GlassCard } from '@design-system/index'
-
 import { useMonitorArrangement } from '../composables/useMonitorArrangement'
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
 const { t } = useI18n()
 const stageRef = ref<HTMLElement | null>(null)
 
-const {
-  isLoadingDisplays,
-  isIdentifying,
-  identifyMonitors,
-} = useProjectionSettings()
+const { isLoadingDisplays, isIdentifying, identifyMonitors } = useProjectionSettings()
 
 const {
   tiles,

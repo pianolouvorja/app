@@ -1,10 +1,7 @@
 <script setup lang="ts">
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { ProjectionBackground } from '@design-system/index'
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
-
-import ClockPreview from '../components/ClockPreview.vue'
 import {
   CLOCK_CONFIG_CHANNEL,
   loadClockConfig,
@@ -48,7 +45,7 @@ onUnmounted(() => {
   channel = null
 })
 
-const surfaceStyle = computed(() => ({
+const _surfaceStyle = computed(() => ({
   background: config.value.bgColor,
 }))
 </script>

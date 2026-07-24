@@ -1,10 +1,7 @@
 <script setup lang="ts">
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { ProjectionBackground } from '@design-system/index'
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
-
-import CountdownPreview from '../components/CountdownPreview.vue'
 import {
   COUNTDOWN_CONFIG_CHANNEL,
   loadCountdownDisplayConfig,
@@ -16,10 +13,7 @@ import {
   normalizeCountdownRuntime,
   readCountdownRuntimeFromStorage,
 } from '../services/countdown-runtime'
-import type {
-  CountdownDisplayConfig,
-  CountdownRuntimeState,
-} from '../types/countdown'
+import type { CountdownDisplayConfig, CountdownRuntimeState } from '../types/countdown'
 import {
   DEFAULT_COUNTDOWN_DISPLAY_CONFIG,
   DEFAULT_COUNTDOWN_DURATION_MS,
@@ -92,7 +86,7 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
+const _surfaceStyle = computed(() => ({
   background: config.value.bgColor,
 }))
 </script>

@@ -1,26 +1,14 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import {
-  formatClock,
-  formatCountdown,
-  formatDateBr,
-} from '../services/liturgy-format'
+import { formatClock, formatCountdown, formatDateBr } from '../services/liturgy-format'
 
-function timestampFromHHmm(
-  value: string | null,
-  referenceMs: number,
-): number | null {
+function timestampFromHHmm(value: string | null, referenceMs: number): number | null {
   if (!value) return null
   const match = value.trim().match(/^(\d{1,2}):(\d{2})$/)
   if (!match) return null
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (
-    !Number.isFinite(hours) ||
-    !Number.isFinite(minutes) ||
-    hours > 23 ||
-    minutes > 59
-  ) {
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) {
     return null
   }
   const date = new Date(referenceMs)

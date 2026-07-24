@@ -1,30 +1,26 @@
-import { computed, ref, watchEffect } from 'vue'
+import {
+  type AccentKey,
+  accents,
+  defaultAccent,
+  defaultInteraction,
+  defaultTheme,
+  type InteractionKey,
+  interactions,
+  type ThemeKey,
+  themes,
+} from '@design-system/themes'
 
 import {
-  blur as blurTokens,
+  type BlurToken,
   blurPxFromIntensity,
   blurTokenFromIntensity,
   glassFillFromIntensity,
   intensityFromBlurToken,
   resolveGlassIntensity,
-  type BlurToken,
 } from '@design-system/tokens'
-import {
-  accents,
-  defaultAccent,
-  defaultInteraction,
-  defaultTheme,
-  interactions,
-  themes,
-  type AccentKey,
-  type InteractionKey,
-  type ThemeKey,
-} from '@design-system/themes'
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import {
-  getUserPreference,
-  setUserPreference,
-} from '@shared/services/user-preferences'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
+import { computed, ref, watchEffect } from 'vue'
 
 function isThemeKey(value: unknown): value is ThemeKey {
   return typeof value === 'string' && value in themes
@@ -44,9 +40,7 @@ function readStoredTheme(): ThemeKey {
 }
 
 function readStoredGlassIntensity(): number {
-  return resolveGlassIntensity(
-    getUserPreference<unknown>(USER_PREFERENCE_KEYS.blur),
-  )
+  return resolveGlassIntensity(getUserPreference<unknown>(USER_PREFERENCE_KEYS.blur))
 }
 
 function readStoredAccent(): AccentKey {
@@ -159,9 +153,7 @@ export function useThemeManager() {
   const currentTheme = computed(() => themes[themeKey.value])
   const blurLevel = computed(() => blurTokenFromIntensity(glassIntensity.value))
   const currentBlur = computed(() => blurPxFromIntensity(glassIntensity.value))
-  const currentGlassFill = computed(() =>
-    glassFillFromIntensity(glassIntensity.value),
-  )
+  const currentGlassFill = computed(() => glassFillFromIntensity(glassIntensity.value))
   const currentAccent = computed(() => accents[accentKey.value])
   const currentInteraction = computed(() => interactions[interactionKey.value])
 
@@ -175,9 +167,7 @@ export function useThemeManager() {
   }
 
   function toggleTheme() {
-    setTheme(
-      themeKey.value === 'etherealLumens' ? 'luminousClarity' : 'etherealLumens',
-    )
+    setTheme(themeKey.value === 'etherealLumens' ? 'luminousClarity' : 'etherealLumens')
   }
 
   function setGlassIntensity(value: number) {

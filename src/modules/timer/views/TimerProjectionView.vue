@@ -1,26 +1,20 @@
 <script setup lang="ts">
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { ProjectionBackground } from '@design-system/index'
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
-
-import TimerPreview from '../components/TimerPreview.vue'
 import {
-  TIMER_CONFIG_CHANNEL,
   loadTimerDisplayConfig,
   normalizeTimerDisplayConfig,
+  TIMER_CONFIG_CHANNEL,
 } from '../services/timer-preferences'
 import {
-  TIMER_RUNTIME_CHANNEL,
-  TIMER_RUNTIME_STORAGE_KEY,
   normalizeTimerRuntime,
   readTimerRuntimeFromStorage,
+  TIMER_RUNTIME_CHANNEL,
+  TIMER_RUNTIME_STORAGE_KEY,
 } from '../services/timer-runtime'
 import type { TimerDisplayConfig, TimerRuntimeState } from '../types/timer'
-import {
-  DEFAULT_TIMER_DISPLAY_CONFIG,
-  DEFAULT_TIMER_RUNTIME,
-} from '../types/timer'
+import { DEFAULT_TIMER_DISPLAY_CONFIG, DEFAULT_TIMER_RUNTIME } from '../types/timer'
 
 const config = ref<TimerDisplayConfig>({ ...DEFAULT_TIMER_DISPLAY_CONFIG })
 const runtime = ref<TimerRuntimeState>({
@@ -87,7 +81,7 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
+const _surfaceStyle = computed(() => ({
   background: config.value.bgColor,
 }))
 </script>

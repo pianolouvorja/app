@@ -1,21 +1,13 @@
-import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-
 import {
   closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 
-import {
-  loadClockConfig,
-  saveClockConfig,
-} from '../services/clock-preferences'
-import {
-  DEFAULT_CLOCK_CONFIG,
-  type ClockConfig,
-  type ClockStyle,
-} from '../types/clock'
+import { loadClockConfig, saveClockConfig } from '../services/clock-preferences'
+import { type ClockConfig, type ClockStyle, DEFAULT_CLOCK_CONFIG } from '../types/clock'
 
 export const useClockStore = defineStore('clock', () => {
   const config = ref<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG })

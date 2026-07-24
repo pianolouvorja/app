@@ -1,7 +1,6 @@
+import type { BootstrapPhase } from '@modules/starting/types/bootstrap'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-
-import type { BootstrapPhase } from '@modules/starting/types/bootstrap'
 
 export const useStartingStore = defineStore('starting', () => {
   /** Overlay de boot visível (inclui first-boot e warm boot). */

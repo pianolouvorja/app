@@ -56,7 +56,7 @@
         z-index: 3;
       }
       .status[hidden] {
-        display: none !important;
+        display: none;
       }
     </style>
   </head>
@@ -76,7 +76,7 @@
       ></video>
     </div>
     <script>
-      ;(function () {
+      ;(() => {
         var params = new URLSearchParams(window.location.search)
         if (params.get('mode') === 'video') {
           document.body.classList.add('mode-video')
@@ -101,7 +101,7 @@
 
         function stopStream() {
           if (!activeStream) return
-          activeStream.getTracks().forEach(function (track) {
+          activeStream.getTracks().forEach((track) => {
             track.stop()
           })
           activeStream = null
@@ -129,21 +129,21 @@
             stream = await navigator.mediaDevices.getUserMedia(
               constraintsFor(sourceId, 'tab'),
             )
-          } catch (errTab) {
+          } catch (_errTab) {
             stream = await navigator.mediaDevices.getUserMedia(
               constraintsFor(sourceId, 'desktop'),
             )
           }
           activeStream = stream
           videoEl.srcObject = stream
-          await videoEl.play().catch(function () {})
+          await videoEl.play().catch(() => {})
           setStatus('')
         }
 
         async function startMirror() {
           attempts += 1
           try {
-            if (!window.louvorja || !window.louvorja.projection) {
+            if (!window.louvorja?.projection) {
               throw new Error('Bridge de projeção indisponível')
             }
             var sourceId = await window.louvorja.projection.getSourceMediaId()
@@ -152,8 +152,8 @@
             }
             await attachStream(sourceId)
           } catch (error) {
-            var message = error && error.message ? error.message : String(error)
-            setStatus('Aguardando player…\n' + message)
+            var message = error?.message ? error.message : String(error)
+            setStatus(`Aguardando player…\n${message}`)
             if (attempts < 40) {
               setTimeout(startMirror, 350)
             }

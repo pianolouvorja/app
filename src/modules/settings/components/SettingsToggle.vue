@@ -4,7 +4,7 @@ defineProps<{
   label: string
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 </script>
