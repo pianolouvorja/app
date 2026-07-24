@@ -16,7 +16,7 @@ const runtime = ref<MediaProjectionRuntime>({ ...DEFAULT_MEDIA_PROJECTION })
 let channel: BroadcastChannel | null = null
 
 const lyric = computed(() => stripHtmlBreaks(runtime.value.lyric))
-const _showTitle = computed(
+const showTitle = computed(
   () => runtime.value.isCover || (!lyric.value && Boolean(runtime.value.title)),
 )
 

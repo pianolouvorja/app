@@ -43,19 +43,19 @@ const {
   refresh,
 } = useBibleReader()
 
-function _onProject() {
+function onProject() {
   void toggleProjection()
 }
 
-function _onClearProjection() {
+function onClearProjection() {
   clearProjectionWindow()
 }
 
-function _onPreviousVerse() {
+function onPreviousVerse() {
   void goToAdjacentVerse(-1)
 }
 
-function _onNextVerse() {
+function onNextVerse() {
   void goToAdjacentVerse(1)
 }
 </script>

@@ -56,7 +56,7 @@ const {
   },
 })
 
-const _triggerLabel = computed(() => {
+const triggerLabel = computed(() => {
   if (selectedCount.value > 0) {
     return t('monitors.selectedCount', { count: selectedCount.value })
   }
@@ -98,12 +98,12 @@ function onWindowChange() {
   updatePanelPosition()
 }
 
-function _onToggle(displayId: number) {
+function onToggle(displayId: number) {
   if (props.disabled) return
   toggle(displayId)
 }
 
-async function _onIdentify() {
+async function onIdentify() {
   if (props.disabled || identifying.value) return
   await identify()
 }

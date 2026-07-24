@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
 import { useI18n } from 'vue-i18n'
+import codenamePianoUrl from '@/assets/brand/codenamePIANO.svg'
+import logoUrl from '@/assets/brand/logo-louvor-ja.svg'
 
 const { t } = useI18n()
 const { isVisible, showContent, progress, isFirstBoot, hasError, statusKey, retryBootstrap } =

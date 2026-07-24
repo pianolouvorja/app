@@ -12,7 +12,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onClick(projecting: boolean) {
+function onClick(projecting: boolean) {
   if (projecting) emit('clear')
   else emit('project')
 }

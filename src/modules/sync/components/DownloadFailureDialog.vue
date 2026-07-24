@@ -8,15 +8,15 @@ const props = defineProps<{
   failure: DownloadFailureNotice | null
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
 
 const { t } = useI18n()
 
-const _open = computed(() => props.failure != null)
+const open = computed(() => props.failure != null)
 
-const _message = computed(() => {
+const message = computed(() => {
   const failure = props.failure
   if (!failure) return ''
 

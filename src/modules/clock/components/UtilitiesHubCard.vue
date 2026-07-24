@@ -20,7 +20,7 @@ function onActivate() {
   void router.push(props.to)
 }
 
-function _onKeydown(event: KeyboardEvent) {
+function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     onActivate()

@@ -24,12 +24,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onNotesInput(event: Event) {
+function onNotesInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('update:notes', target.value)
 }
 
-function _onStartTimeChange(event: Event) {
+function onStartTimeChange(event: Event) {
   const value = (event.target as HTMLInputElement).value
   if (!value) {
     emit('clearStart')
@@ -38,7 +38,7 @@ function _onStartTimeChange(event: Event) {
   emit('setStartFromInput', value)
 }
 
-function _onEndTimeChange(event: Event) {
+function onEndTimeChange(event: Event) {
   const value = (event.target as HTMLInputElement).value
   if (!value) {
     emit('clearEnd')

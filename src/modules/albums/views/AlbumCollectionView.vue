@@ -33,7 +33,7 @@ const busyMusicId = ref<number | null>(null)
 
 const collectionId = computed(() => String(route.params.collectionId ?? ''))
 
-const _title = computed(() => activeCollection.value?.name || t('albums.collectionFallback'))
+const title = computed(() => activeCollection.value?.name || t('albums.collectionFallback'))
 
 async function load() {
   clearError()
@@ -48,11 +48,11 @@ watch(collectionId, () => {
   void load()
 })
 
-function _goBack() {
+function goBack() {
   void router.push({ name: 'albums' })
 }
 
-async function _runAction(musicId: number, action: () => Promise<boolean | undefined>) {
+async function runAction(musicId: number, action: () => Promise<void | boolean | undefined>) {
   busyMusicId.value = musicId
   try {
     await action()

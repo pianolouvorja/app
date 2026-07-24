@@ -46,13 +46,13 @@ const {
 const busyMusicId = ref<number | null>(null)
 const albumPendingRemoval = ref<LibraryAlbum | null>(null)
 
-const _showDownloadControls = computed(() => isDesktop)
+const showDownloadControls = computed(() => isDesktop)
 
 function isHymnalsCategory(category: AlbumCategory) {
   return String(category.id) === 'hymnals'
 }
 
-function _categoryTitle(category: AlbumCategory) {
+function categoryTitle(category: AlbumCategory) {
   if (isHymnalsCategory(category)) return t('sync.categories.hymnals')
   if (category.name === 'CDs Oficiais/Ano' || /cds?\s*oficiais/i.test(category.name)) {
     return t('sync.categories.youthAlbums')
@@ -60,7 +60,7 @@ function _categoryTitle(category: AlbumCategory) {
   return category.name
 }
 
-function _categorySubtitle(category: AlbumCategory) {
+function categorySubtitle(category: AlbumCategory) {
   if (isHymnalsCategory(category)) return t('sync.categories.hymnalsSubtitle')
   if (category.name === 'CDs Oficiais/Ano' || /cds?\s*oficiais/i.test(category.name)) {
     return t('sync.categories.albumsSubtitle')
@@ -68,40 +68,40 @@ function _categorySubtitle(category: AlbumCategory) {
   return t('sync.categories.defaultSubtitle')
 }
 
-function _openCollection(collectionId: string | number) {
+function openCollection(collectionId: string | number) {
   void router.push({
     name: 'albums-collection',
     params: { collectionId: String(collectionId) },
   })
 }
 
-function _retry() {
+function retry() {
   clearError()
   void hydrateCatalog()
 }
 
-function _clearHubSearch() {
+function clearHubSearch() {
   hubSearchQuery.value = ''
 }
 
-function _requestRemove(collection: AlbumCollection) {
+function requestRemove(collection: AlbumCollection) {
   const album = findLibraryAlbum(collection.id)
   if (!album) return
   albumPendingRemoval.value = album
 }
 
-function _dismissRemove() {
+function dismissRemove() {
   albumPendingRemoval.value = null
 }
 
-async function _confirmRemove() {
+async function confirmRemove() {
   const album = albumPendingRemoval.value
   if (!album) return
   albumPendingRemoval.value = null
   await removeCollection(album.id)
 }
 
-async function _runAction(musicId: number, action: () => Promise<boolean | undefined>) {
+async function runAction(musicId: number, action: () => Promise<void | boolean | undefined>) {
   busyMusicId.value = musicId
   try {
     await action()

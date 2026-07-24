@@ -17,7 +17,7 @@ const plainLyric = computed(() => stripHtmlBreaks(props.lyric))
 const showTitleAsLyric = computed(
   () => Boolean(props.isCover) || (!plainLyric.value && Boolean(props.title)),
 )
-const _displayText = computed(() => {
+const displayText = computed(() => {
   if (showTitleAsLyric.value) return props.title || t('media.title')
   return plainLyric.value
 })

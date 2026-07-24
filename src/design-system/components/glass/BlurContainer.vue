@@ -15,7 +15,7 @@ const props = withDefaults(
 
 const { backdropFilter, currentBlur } = useBlurSystem()
 
-const _style = computed(() => {
+const style = computed(() => {
   const amount = props.level ? blurTokens[props.level] : currentBlur.value
   const filter = props.level ? `blur(${amount}) saturate(140%)` : backdropFilter.value
 

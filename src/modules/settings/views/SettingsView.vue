@@ -17,11 +17,11 @@ const activeSection = computed<SettingsSectionId>(() => {
   return match?.id ?? 'appearance'
 })
 
-const _isAppearance = computed(() => activeSection.value === 'appearance')
+const isAppearance = computed(() => activeSection.value === 'appearance')
 
-const _sectionTitleKey = computed(() => `settings.sectionTitle.${activeSection.value}`)
+const sectionTitleKey = computed(() => `settings.sectionTitle.${activeSection.value}`)
 
-function _goBack() {
+function goBack() {
   void router.push({ name: 'home' })
 }
 </script>

@@ -11,7 +11,7 @@ const props = defineProps<{
   showDownloadControls?: boolean
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   open: []
   download: []
   cancel: []
@@ -21,15 +21,15 @@ const _emit = defineEmits<{
 const { t } = useI18n()
 
 const status = computed(() => props.libraryAlbum?.status ?? 'idle')
-const _progress = computed(() => props.libraryAlbum?.progress ?? 0)
-const _isDownloaded = computed(() => status.value === 'downloaded')
+const progress = computed(() => props.libraryAlbum?.progress ?? 0)
+const isDownloaded = computed(() => status.value === 'downloaded')
 
-const _displayName = computed(() => {
+const displayName = computed(() => {
   if (props.collection.id === 'hymnal_1996') return t('sync.hymnal.edition1996Name')
   return props.collection.name
 })
 
-const _subtitle = computed(() => {
+const subtitle = computed(() => {
   if (status.value === 'downloading') {
     return t(props.libraryAlbum?.progressText || 'sync.progress.downloading')
   }
@@ -46,7 +46,7 @@ const _subtitle = computed(() => {
   return props.collection.subtitle || null
 })
 
-const _coverIcon = computed(() =>
+const coverIcon = computed(() =>
   props.collection.id === 'hymnal_1996' ? 'ti-history' : 'ti-book-2',
 )
 </script>

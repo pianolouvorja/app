@@ -17,11 +17,11 @@ watch(themeMode, (mode) => {
   sliderValue.value = mode === 'dark' ? 100 : 0
 })
 
-const _sliderStyle = computed(() => ({
+const sliderStyle = computed(() => ({
   '--slider-fill': `${sliderValue.value}%`,
 }))
 
-const _sphereRotation = computed(() => `${sliderValue.value * 3.6}deg`)
+const sphereRotation = computed(() => `${sliderValue.value * 3.6}deg`)
 
 function applyFromSlider(value: number) {
   sliderValue.value = value
@@ -31,20 +31,20 @@ function applyFromSlider(value: number) {
   }
 }
 
-function _onThemeInput(event: Event) {
+function onThemeInput(event: Event) {
   const input = event.target as HTMLInputElement
   applyFromSlider(Number(input.value))
 }
 
-function _onThemeCommit() {
+function onThemeCommit() {
   sliderValue.value = themeMode.value === 'dark' ? 100 : 0
 }
 
-function _preferLight() {
+function preferLight() {
   applyFromSlider(0)
 }
 
-function _preferDark() {
+function preferDark() {
   applyFromSlider(100)
 }
 </script>
