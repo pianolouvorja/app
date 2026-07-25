@@ -184,7 +184,6 @@ function _onEndTimeChange(event: Event) {
         class="liturgy-sidebar__note-input"
         :value="notes"
         :placeholder="t('liturgy.broadcastNote.placeholder')"
-        :aria-label="t('liturgy.broadcastNote.title')"
         rows="4"
         @input="onNotesInput"
       />

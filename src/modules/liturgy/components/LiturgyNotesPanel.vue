@@ -26,7 +26,6 @@ function _onInput(event: Event) {
       class="liturgy-notes__input"
       :value="modelValue"
       :placeholder="t('liturgy.notesPlaceholder')"
-      :aria-label="t('liturgy.notes')"
       rows="12"
       @input="onInput"
     />
