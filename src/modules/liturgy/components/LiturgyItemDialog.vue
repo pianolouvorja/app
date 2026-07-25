@@ -65,9 +65,9 @@ const categoryRequiredMissing = computed(
   () => hasTypeSelection.value && !isCategory.value && !props.draft.categoryId,
 )
 
-const durationLabel = computed(() => formatMomentDuration(props.draft.durationMs))
+const _durationLabel = computed(() => formatMomentDuration(props.draft.durationMs))
 
-const showFilePath = computed(
+const _showFilePath = computed(
   () => props.draft.type != null && INTERNAL_FILE_TYPES.includes(props.draft.type),
 )
 
@@ -104,28 +104,28 @@ const showUrl = computed(() => props.draft.type === 'site' || props.draft.type =
 
 const urlRequiredMissing = computed(() => showUrl.value && !isValidLiturgyUrl(props.draft.url))
 
-const nameFieldError = computed(() => showValidation.value && nameRequiredMissing.value)
-const startTimeFieldError = computed(() => showValidation.value && startTimeRequiredMissing.value)
-const endTimeFieldError = computed(() => showValidation.value && endTimeRequiredMissing.value)
-const musicFieldError = computed(() => showValidation.value && musicRequiredMissing.value)
-const categoryFieldError = computed(() => showValidation.value && categoryRequiredMissing.value)
-const urlFieldError = computed(() => showValidation.value && urlRequiredMissing.value)
+const _nameFieldError = computed(() => showValidation.value && nameRequiredMissing.value)
+const _startTimeFieldError = computed(() => showValidation.value && startTimeRequiredMissing.value)
+const _endTimeFieldError = computed(() => showValidation.value && endTimeRequiredMissing.value)
+const _musicFieldError = computed(() => showValidation.value && musicRequiredMissing.value)
+const _categoryFieldError = computed(() => showValidation.value && categoryRequiredMissing.value)
+const _urlFieldError = computed(() => showValidation.value && urlRequiredMissing.value)
 
-const showMusicResults = computed(() => isMusic.value && props.musicQuery.trim().length > 0)
+const _showMusicResults = computed(() => isMusic.value && props.musicQuery.trim().length > 0)
 
-const momentNameLabel = computed(() => {
+const _momentNameLabel = computed(() => {
   if (isCategory.value) return t('liturgy.dialog.categoryMomentName')
   if (isMusic.value) return t('liturgy.dialog.complementaryTitle')
   return t('liturgy.dialog.momentName')
 })
 
-const momentNamePlaceholder = computed(() => {
+const _momentNamePlaceholder = computed(() => {
   if (isCategory.value) return t('liturgy.namePlaceholders.category')
   if (isMusic.value) return t('liturgy.dialog.complementaryTitlePlaceholder')
   return t('liturgy.dialog.momentNamePlaceholder')
 })
 
-const dialogTitle = computed(() => {
+const _dialogTitle = computed(() => {
   if (props.isEditing && isCategory.value) {
     return t('liturgy.dialog.editCategoryTitle')
   }
@@ -135,7 +135,7 @@ const dialogTitle = computed(() => {
   return t('liturgy.dialog.title')
 })
 
-const typeGroups = computed(() => {
+const _typeGroups = computed(() => {
   const groups = LITURGY_TYPE_GROUPS.map((group) => ({
     ...group,
     types: props.lockCategory
@@ -157,11 +157,11 @@ const typeGroups = computed(() => {
   return groups
 })
 
-const showCategoryField = computed(
+const _showCategoryField = computed(
   () => hasTypeSelection.value && !isCategory.value && !props.lockCategory,
 )
 
-const showDurationTitleRow = computed(() => hasTypeSelection.value && !isCategory.value)
+const _showDurationTitleRow = computed(() => hasTypeSelection.value && !isCategory.value)
 
 watch(
   () => props.open,
@@ -184,7 +184,7 @@ function patch(partial: Partial<LiturgyItemDraft>) {
   emit('update:draft', { ...props.draft, ...partial })
 }
 
-function selectType(type: LiturgyItemType) {
+function _selectType(type: LiturgyItemType) {
   if (props.lockCategory && type === 'category') return
 
   const previousType = props.draft.type
@@ -215,29 +215,29 @@ function selectType(type: LiturgyItemType) {
   }
 }
 
-function bumpDuration(deltaSteps: number) {
+function _bumpDuration(deltaSteps: number) {
   const next = props.draft.durationMs + deltaSteps * MOMENT_DURATION_STEP_MS
   const clamped = Math.min(MOMENT_DURATION_MAX_MS, Math.max(MOMENT_DURATION_MIN_MS, next))
   patch({ durationMs: clamped })
 }
 
-function onNameInput(event: Event) {
+function _onNameInput(event: Event) {
   patch({ name: (event.target as HTMLInputElement).value })
 }
 
-function onStartTimeInput(event: Event) {
+function _onStartTimeInput(event: Event) {
   patch({ startTime: (event.target as HTMLInputElement).value })
 }
 
-function onEndTimeInput(event: Event) {
+function _onEndTimeInput(event: Event) {
   patch({ endTime: (event.target as HTMLInputElement).value })
 }
 
-function onDetailsInput(event: Event) {
+function _onDetailsInput(event: Event) {
   patch({ subtitle: (event.target as HTMLTextAreaElement).value })
 }
 
-function onUrlInput(event: Event) {
+function _onUrlInput(event: Event) {
   patch({ url: (event.target as HTMLInputElement).value })
 }
 
@@ -293,7 +293,7 @@ function fileFiltersForType(type: LiturgyItemType | null): FileDialogFilter[] {
   }
 }
 
-async function selectLocalFile() {
+async function _selectLocalFile() {
   filePickerError.value = null
   if (!isDesktopApp()) {
     filePickerError.value = t('liturgy.fields.fileDesktopOnly')
@@ -339,26 +339,26 @@ async function selectLocalFile() {
   }
 }
 
-function onCategoryChange(event: Event) {
+function _onCategoryChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   patch({ categoryId: value || null })
 }
 
-function onMusicQueryInput(event: Event) {
+function _onMusicQueryInput(event: Event) {
   emit('update:musicQuery', (event.target as HTMLInputElement).value)
 }
 
-function pickMusic(musicId: number) {
+function _pickMusic(musicId: number) {
   emit('pick-music', musicId)
   emit('update:musicQuery', '')
 }
 
-function clearMusic() {
+function _clearMusic() {
   emit('clear-music')
   emit('update:musicQuery', '')
 }
 
-function onSubmit(event: Event) {
+function _onSubmit(event: Event) {
   event.preventDefault()
   if (!props.isValid) {
     showValidation.value = true
@@ -373,7 +373,7 @@ function onSubmit(event: Event) {
 }
 
 /** Pontos claros (ex.: branco) precisam de contorno no tema escuro. */
-function isLightDot(hex: string): boolean {
+function _isLightDot(hex: string): boolean {
   const value = hex.replace('#', '')
   if (value.length !== 6) return false
   const r = Number.parseInt(value.slice(0, 2), 16)

@@ -7,9 +7,9 @@ import { useAppearanceSettings } from '../composables/useAppearanceSettings'
 const { t } = useI18n()
 const { accents, accentKey, setAccentColor } = useAppearanceSettings()
 
-const accentEntries = Object.entries(accents) as Array<[AccentKey, (typeof accents)[AccentKey]]>
+const _accentEntries = Object.entries(accents) as Array<[AccentKey, (typeof accents)[AccentKey]]>
 
-function selectAccent(key: AccentKey) {
+function _selectAccent(key: AccentKey) {
   setAccentColor(key)
 }
 </script>

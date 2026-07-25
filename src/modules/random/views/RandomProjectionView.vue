@@ -82,7 +82,7 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
+const _surfaceStyle = computed(() => ({
   background: config.value.bgColor,
 }))
 </script>

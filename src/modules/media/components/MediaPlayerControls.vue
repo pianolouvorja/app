@@ -26,12 +26,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onSeekInput(event: Event) {
+function _onSeekInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('seekRatio', Number(target.value) / 100)
 }
 
-function onVolumeInput(event: Event) {
+function _onVolumeInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:volume', Number(target.value) / 100)
 }

@@ -33,25 +33,25 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const modeMenuOpen = ref(false)
-const volumeOpen = ref(false)
+const _volumeOpen = ref(false)
 
-const modeIcon = computed(() => {
+const _modeIcon = computed(() => {
   if (props.mode === 'instrumental') return 'ti-piano'
   if (props.mode === 'no_audio') return 'ti-device-desktop'
   return 'ti-microphone'
 })
 
-function onSeekInput(event: Event) {
+function _onSeekInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('seekRatio', Number(target.value) / 100)
 }
 
-function onVolumeInput(event: Event) {
+function _onVolumeInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:volume', Number(target.value) / 100)
 }
 
-function selectMode(mode: MediaPlaybackMode) {
+function _selectMode(mode: MediaPlaybackMode) {
   modeMenuOpen.value = false
   emit('update:mode', mode)
 }

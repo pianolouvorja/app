@@ -12,7 +12,7 @@ const props = defineProps<{
   versionsDisabled?: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   selectVersion: [versionId: number]
   toggleNav: []
   'update:bibleSearchQuery': [value: string]
@@ -22,11 +22,11 @@ const { t } = useI18n()
 
 /** false = versículos; true = livros e capítulos.
  *  O rótulo indica o destino do próximo clique. */
-const browseLabel = computed(() =>
+const _browseLabel = computed(() =>
   props.showNavPanel ? t('bible.browseVerses') : t('bible.browseBooksAndChapters'),
 )
 
-const browseIcon = computed(() => (props.showNavPanel ? 'ti-list-numbers' : 'ti-book-2'))
+const _browseIcon = computed(() => (props.showNavPanel ? 'ti-list-numbers' : 'ti-book-2'))
 </script>
 
 <template>

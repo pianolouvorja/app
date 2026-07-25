@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
+
+import { isExecutableItem } from '../services/liturgy-item-helpers'
 import type { LiturgyItem } from '../types/liturgy'
 
 const props = defineProps<{
@@ -56,10 +57,10 @@ const rootEl = ref<HTMLElement | null>(null)
 let dragGhostEl: HTMLElement | null = null
 
 const isCategory = computed(() => props.item.type === 'category')
-const isLinked = computed(() => Boolean(props.linked))
-const executable = computed(() => isExecutableItem(props.item))
-const isMusicItem = computed(() => props.item.type === 'music' && props.item.musicId != null)
-const categoryTimeRange = computed(() => {
+const _isLinked = computed(() => Boolean(props.linked))
+const _executable = computed(() => isExecutableItem(props.item))
+const _isMusicItem = computed(() => props.item.type === 'music' && props.item.musicId != null)
+const _categoryTimeRange = computed(() => {
   const start = props.item.startTime?.trim()
   const end = props.item.endTime?.trim()
   if (start && end) return `${start} - ${end}`
@@ -72,7 +73,7 @@ const isLocalVideo = computed(() => props.item.type === 'video')
 const isLocalImages = computed(() => props.item.type === 'images')
 const isLocalPdf = computed(() => props.item.type === 'pdf')
 const isLocalPresentation = computed(() => props.item.type === 'presentation')
-const isVideoRemote = computed(
+const _isVideoRemote = computed(
   () =>
     isStreamVideo.value ||
     isLocalVideo.value ||
@@ -80,8 +81,8 @@ const isVideoRemote = computed(
     isLocalPdf.value ||
     isLocalPresentation.value,
 )
-const isSiteItem = computed(() => props.item.type === 'site')
-const isDimmed = computed(() => Boolean(props.reorderActive) && !props.isDragSource)
+const _isSiteItem = computed(() => props.item.type === 'site')
+const _isDimmed = computed(() => Boolean(props.reorderActive) && !props.isDragSource)
 
 const showInProgress = computed(() => {
   if (props.item.done) return false
@@ -94,18 +95,18 @@ const showWaiting = computed(
   () => isCategory.value && Boolean(props.sectionWaiting) && !props.item.done,
 )
 
-const statusKey = computed(() => {
+const _statusKey = computed(() => {
   if (props.item.done) return 'liturgy.done'
   if (showWaiting.value) return 'liturgy.waiting'
   if (showInProgress.value) return 'liturgy.inProgress'
   return null
 })
 
-const doneLabel = computed(() =>
+const _doneLabel = computed(() =>
   props.item.done ? t('liturgy.actions.markPending') : t('liturgy.actions.markDone'),
 )
 
-const collapseLabel = computed(() =>
+const _collapseLabel = computed(() =>
   props.collapsed ? t('liturgy.actions.expandCategory') : t('liturgy.actions.collapseCategory'),
 )
 
@@ -115,7 +116,7 @@ function clearDragGhost() {
   dragGhostEl = null
 }
 
-function onHandleDragStart(event: DragEvent) {
+function _onHandleDragStart(event: DragEvent) {
   const row = rootEl.value
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
@@ -142,12 +143,12 @@ function onHandleDragStart(event: DragEvent) {
   emit('dragStart', props.index)
 }
 
-function onHandleDragEnd() {
+function _onHandleDragEnd() {
   window.setTimeout(() => clearDragGhost(), 0)
   emit('dragEnd')
 }
 
-const rowHovered = ref(false)
+const _rowHovered = ref(false)
 </script>
 
 <template>

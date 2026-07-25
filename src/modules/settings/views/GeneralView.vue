@@ -5,13 +5,12 @@ import { isDesktopApp } from '@shared/services/desktop-bridge'
 import { clearWorkspace } from '@shared/services/workspace-api'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { APP_USER_DATA_DIR } from '@/shared/constants/app'
 
 const { t } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
 
-async function clearAllLocalData() {
+async function _clearAllLocalData() {
   if (!isDesktopApp() || isClearing.value) return
 
   isClearing.value = true

@@ -21,22 +21,22 @@ const {
   maximize,
 } = useMediaPlayer()
 
-const visible = computed(() => hasSession.value && minimized.value)
+const _visible = computed(() => hasSession.value && minimized.value)
 
-async function onProject() {
+async function _onProject() {
   await toggleProjection()
 }
 
-function onClear() {
+function _onClear() {
   clearProjection()
 }
 
-async function onExpand() {
+async function _onExpand() {
   maximize()
   await router.push({ name: 'media' })
 }
 
-async function onToggleAudio() {
+async function _onToggleAudio() {
   await togglePlay()
 }
 </script>

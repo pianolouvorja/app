@@ -2,7 +2,6 @@
 import { useI18n } from 'vue-i18n'
 
 import type { ClockConfig, ClockStyle } from '../types/clock'
-import { CLOCK_BG_PRESETS, CLOCK_TEXT_PRESETS } from '../types/clock'
 
 defineProps<{
   open: boolean
@@ -21,12 +20,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onBgInput(event: Event) {
+function _onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function onTextInput(event: Event) {
+function _onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }

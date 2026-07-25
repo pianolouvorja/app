@@ -2,19 +2,18 @@
 import { useI18n } from 'vue-i18n'
 
 import type { LiturgyDayKey } from '../types/liturgy'
-import { LITURGY_DAY_TAB_ORDER } from '../types/liturgy'
 
 defineProps<{
   selectedDay: LiturgyDayKey
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   select: [day: LiturgyDayKey]
 }>()
 
 const { t } = useI18n()
 
-function onWheel(event: WheelEvent) {
+function _onWheel(event: WheelEvent) {
   const target = event.currentTarget as HTMLElement
   if (event.deltaY !== 0) {
     target.scrollLeft += event.deltaY

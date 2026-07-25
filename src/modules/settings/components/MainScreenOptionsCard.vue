@@ -11,7 +11,7 @@ const {
   setAutoMinimizePlayer,
 } = useProjectionSettings()
 
-const toggles = [
+const _toggles = [
   {
     key: 'openFullscreenOnPrimary' as const,
     labelKey: 'settings.projection.mainScreen.openFullscreen',

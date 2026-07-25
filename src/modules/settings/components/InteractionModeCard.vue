@@ -7,13 +7,13 @@ import { useAppearanceSettings } from '../composables/useAppearanceSettings'
 const { t } = useI18n()
 const { interactionKey, setInteractionMode } = useAppearanceSettings()
 
-const modes: Array<{ id: InteractionKey; labelKey: string }> = [
+const _modes: Array<{ id: InteractionKey; labelKey: string }> = [
   { id: 'dynamic', labelKey: 'settings.appearance.interactionDynamic' },
   { id: 'soft', labelKey: 'settings.appearance.interactionSoft' },
   { id: 'mist', labelKey: 'settings.appearance.interactionMist' },
 ]
 
-function selectMode(mode: InteractionKey) {
+function _selectMode(mode: InteractionKey) {
   setInteractionMode(mode)
 }
 </script>

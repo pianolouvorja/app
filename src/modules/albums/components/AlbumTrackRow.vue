@@ -10,21 +10,21 @@ defineProps<{
   busy?: boolean
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   sung: []
   instrumental: []
   slides: []
   lyric: []
 }>()
 
-const rowHovered = ref(false)
+const _rowHovered = ref(false)
 const downloadProgress = ref<number | null>(null)
 
-const isDownloading = computed(() => downloadProgress.value != null)
+const _isDownloading = computed(() => downloadProgress.value != null)
 
 const { t } = useI18n()
 
-function onDownloadProgress(progress: number | null) {
+function _onDownloadProgress(progress: number | null) {
   downloadProgress.value = progress
 }
 </script>

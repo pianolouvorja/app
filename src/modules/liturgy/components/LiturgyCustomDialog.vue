@@ -14,7 +14,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function onInput(event: Event) {
+function _onInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:name', target.value)
 }

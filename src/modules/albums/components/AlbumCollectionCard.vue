@@ -21,24 +21,24 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const status = computed(() => props.libraryAlbum?.status ?? 'idle')
-const progress = computed(() => props.libraryAlbum?.progress ?? 0)
-const progressLabel = computed(() =>
+const _progress = computed(() => props.libraryAlbum?.progress ?? 0)
+const _progressLabel = computed(() =>
   t(props.libraryAlbum?.progressText || 'sync.progress.downloading'),
 )
 
 const canRemove = computed(() => status.value === 'downloaded')
 const isBusy = computed(() => status.value === 'downloading')
-const showPersistentDownload = computed(
+const _showPersistentDownload = computed(
   () =>
     Boolean(props.showDownloadControls) &&
     (status.value === 'idle' || status.value === 'error' || isBusy.value),
 )
 
-function onOpen() {
+function _onOpen() {
   emit('open')
 }
 
-function onDownload(event: MouseEvent) {
+function _onDownload(event: MouseEvent) {
   event.stopPropagation()
   if (status.value === 'downloading') {
     emit('cancel')
@@ -47,7 +47,7 @@ function onDownload(event: MouseEvent) {
   emit('download')
 }
 
-function onRemove(event: MouseEvent) {
+function _onRemove(event: MouseEvent) {
   event.stopPropagation()
   if (!canRemove.value) return
   emit('remove')

@@ -12,7 +12,7 @@ defineProps<{
   chapterSearchQuery: string
 }>()
 
-const emit = defineEmits<{
+const _emit = defineEmits<{
   'update:bookSearchQuery': [value: string]
   'update:chapterSearchQuery': [value: string]
   'update:testament': [value: BibleTestament]
