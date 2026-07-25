@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SettingsPlaceholder from '../components/SettingsPlaceholder.vue'
 </script>
 
 <template>

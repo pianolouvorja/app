@@ -312,7 +312,7 @@
     </div>
     </div>
     <script>
-      ;(() => {
+      ;(function () {
         var playBtn = document.getElementById('play')
         var playIcon = document.getElementById('playIcon')
         var muteBtn = document.getElementById('mute')
@@ -343,7 +343,7 @@
           sec = Math.max(0, Math.floor(Number(sec) || 0))
           var m = Math.floor(sec / 60)
           var s = sec % 60
-          return `${m}:${String(s).padStart(2, '0')}`
+          return m + ':' + String(s).padStart(2, '0')
         }
 
         function setMuteUi(nextMuted) {
@@ -368,13 +368,13 @@
             projectBtn.title = 'Retirar projeção'
             projectBtn.setAttribute('aria-label', 'Retirar projeção')
             projectBtn.setAttribute('aria-pressed', 'true')
-            projectIcon.innerHTML = `<path d="${STOP_PATH}" />`
+            projectIcon.innerHTML = '<path d="' + STOP_PATH + '" />'
           } else {
             projectBtn.classList.remove('is-active')
             projectBtn.title = 'Projetar nas telas'
             projectBtn.setAttribute('aria-label', 'Projetar nas telas')
             projectBtn.setAttribute('aria-pressed', 'false')
-            projectIcon.innerHTML = `<path d="${ARROW_PATH}" />`
+            projectIcon.innerHTML = '<path d="' + ARROW_PATH + '" />'
           }
         }
 
@@ -384,7 +384,9 @@
         }
 
         function renderMonitorList() {
-          var extended = displays.filter((display) => !display.isPrimary)
+          var extended = displays.filter(function (display) {
+            return !display.isPrimary
+          })
           if (!extended.length) {
             monitorList.innerHTML =
               '<p class="panel__empty">Nenhum monitor estendido encontrado.</p>'
@@ -408,7 +410,7 @@
               display.resolution +
               '</span></span></label></li>'
           }
-          monitorList.innerHTML = `${html}</ul>`
+          monitorList.innerHTML = html + '</ul>'
 
           var inputs = monitorList.querySelectorAll('input[type="checkbox"]')
           for (var j = 0; j < inputs.length; j++) {
@@ -419,20 +421,23 @@
         async function loadMonitors() {
           if (!window.louvorja) return
           var list =
-            window.louvorja.displays?.list
+            window.louvorja.displays && window.louvorja.displays.list
               ? (await window.louvorja.displays.list()) || []
               : []
-          displays = list.map((display, index) => ({
+          displays = list.map(function (display, index) {
+            return {
               id: display.id,
-              label: `Monitor ${index + 1}`,
+              label: 'Monitor ' + (index + 1),
               resolution: display.bounds
-                ? `${display.bounds.width} × ${display.bounds.height}`
+                ? display.bounds.width + ' × ' + display.bounds.height
                 : '',
               isPrimary: Boolean(display.isPrimary),
-            }))
+            }
+          })
 
           if (
-            window.louvorja.projection?.getVideoTargetMonitors
+            window.louvorja.projection &&
+            window.louvorja.projection.getVideoTargetMonitors
           ) {
             selectedIds =
               (await window.louvorja.projection.getVideoTargetMonitors()) || []
@@ -446,7 +451,9 @@
           shell.classList.toggle('is-panel-open', panelOpen)
           monitorBtn.setAttribute('aria-expanded', panelOpen ? 'true' : 'false')
           if (
-            window.louvorja?.projection?.setSiteControlPanelOpen
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setSiteControlPanelOpen
           ) {
             await window.louvorja.projection.setSiteControlPanelOpen(panelOpen)
           }
@@ -460,12 +467,16 @@
           if (input.checked) {
             if (selectedIds.indexOf(id) < 0) selectedIds.push(id)
           } else {
-            selectedIds = selectedIds.filter((item) => item !== id)
+            selectedIds = selectedIds.filter(function (item) {
+              return item !== id
+            })
           }
           updateMonitorBadge()
           renderMonitorList()
           if (
-            window.louvorja?.projection?.setVideoTargetMonitors
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setVideoTargetMonitors
           ) {
             await window.louvorja.projection.setVideoTargetMonitors(
               selectedIds.slice(),
@@ -474,7 +485,7 @@
         }
 
         async function refresh() {
-          if (!window.louvorja?.projection) return
+          if (!window.louvorja || !window.louvorja.projection) return
           var state = await window.louvorja.projection.getPlaybackState()
           if (!state) return
           playIcon.textContent = state.paused ? '▶' : '❚❚'
@@ -491,11 +502,11 @@
             seek.value = String(Math.round((state.currentTime / state.duration) * 1000))
           }
           timeEl.textContent =
-            `${fmt(state.currentTime)} / ${fmt(state.duration || 0)}`
+            fmt(state.currentTime) + ' / ' + fmt(state.duration || 0)
         }
 
-        playBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        playBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           var state = await window.louvorja.projection.getPlaybackState()
           if (state && !state.paused) {
             await window.louvorja.projection.remotePause()
@@ -505,8 +516,8 @@
           refresh()
         })
 
-        muteBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        muteBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           if (typeof window.louvorja.projection.remoteToggleMute !== 'function') {
             return
           }
@@ -521,8 +532,8 @@
           }
         })
 
-        projectBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        projectBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           if (typeof window.louvorja.projection.toggleVideoScreens !== 'function') {
             return
           }
@@ -530,12 +541,12 @@
           refresh()
         })
 
-        monitorBtn.addEventListener('click', async () => {
+        monitorBtn.addEventListener('click', async function () {
           await setPanelOpen(!panelOpen)
         })
 
-        identifyBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.displays) return
+        identifyBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.displays) return
           identifyBtn.disabled = true
           try {
             await window.louvorja.displays.identify()
@@ -547,7 +558,7 @@
 
         document.addEventListener(
           'pointerdown',
-          (event) => {
+          function (event) {
             if (!panelOpen) return
             var target = event.target
             if (!(target instanceof Node)) return
@@ -558,9 +569,11 @@
         )
 
         if (
-          window.louvorja?.projection?.onVideoTargetsChanged
+          window.louvorja &&
+          window.louvorja.projection &&
+          window.louvorja.projection.onVideoTargetsChanged
         ) {
-          window.louvorja.projection.onVideoTargetsChanged((ids) => {
+          window.louvorja.projection.onVideoTargetsChanged(function (ids) {
             selectedIds = Array.isArray(ids) ? ids.slice() : []
             updateMonitorBadge()
             if (panelOpen) renderMonitorList()
@@ -568,7 +581,7 @@
         }
 
         async function applyVolume() {
-          if (!window.louvorja?.projection) return
+          if (!window.louvorja || !window.louvorja.projection) return
           if (typeof window.louvorja.projection.remoteSetVolume !== 'function') {
             return
           }
@@ -579,29 +592,29 @@
           }
         }
 
-        volume.addEventListener('pointerdown', () => {
+        volume.addEventListener('pointerdown', function () {
           adjustingVolume = true
         })
-        volume.addEventListener('pointerup', async () => {
+        volume.addEventListener('pointerup', async function () {
           adjustingVolume = false
           await applyVolume()
         })
-        volume.addEventListener('input', () => {
+        volume.addEventListener('input', function () {
           var value = Number(volume.value) / 100
           setMuteUi(value <= 0)
           if (value > 0) lastAudibleVolume = value
         })
-        volume.addEventListener('change', async () => {
+        volume.addEventListener('change', async function () {
           adjustingVolume = false
           await applyVolume()
         })
 
-        seek.addEventListener('pointerdown', () => {
+        seek.addEventListener('pointerdown', function () {
           seeking = true
         })
-        seek.addEventListener('pointerup', async () => {
+        seek.addEventListener('pointerup', async function () {
           seeking = false
-          if (!window.louvorja?.projection) return
+          if (!window.louvorja || !window.louvorja.projection) return
           var state = await window.louvorja.projection.getPlaybackState()
           if (!state || !(state.duration > 0)) return
           var t = (Number(seek.value) / 1000) * state.duration

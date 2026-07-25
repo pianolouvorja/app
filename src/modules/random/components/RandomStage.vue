@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  useTemplateRef,
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RandomDisplayConfig, RandomRuntimeState } from '../types/random'
@@ -36,34 +41,34 @@ const props = withDefaults(
   },
 )
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   draw: []
   openConfig: []
 }>()
 
 const { t } = useI18n()
 const particlesLayerRef = useTemplateRef<HTMLElement>('particlesLayer')
-const _particles = createParticles()
+const particles = createParticles()
 
 const animations: Animation[] = []
 let cancelled = false
 
-const _hasResult = computed(
+const hasResult = computed(
   () => props.runtime.currentDisplay.length > 0 && !props.runtime.isDrawing,
 )
 
-const _statusLabel = computed(() => {
+const statusLabel = computed(() => {
   if (props.runtime.isDrawing) return t('random.drawing')
   if (props.canDraw) return t('random.readyToDraw')
   return t('random.emptyList')
 })
 
-const _displayText = computed(() => {
+const displayText = computed(() => {
   if (props.runtime.currentDisplay) return props.runtime.currentDisplay
   return t('random.placeholderDisplay')
 })
 
-const _displayStyle = computed(() => ({
+const displayStyle = computed(() => ({
   color: props.runtime.isDrawing
     ? 'var(--ds-color-on-surface-variant)'
     : props.preview
@@ -71,7 +76,9 @@ const _displayStyle = computed(() => ({
       : props.config.textColor,
   textTransform: props.config.textTransform,
   textShadow:
-    props.runtime.isDrawing || props.preview ? 'none' : `0 10px 40px ${props.config.textColor}60`,
+    props.runtime.isDrawing || props.preview
+      ? 'none'
+      : `0 10px 40px ${props.config.textColor}60`,
   opacity: props.runtime.currentDisplay || props.preview ? 1 : 0.55,
 }))
 

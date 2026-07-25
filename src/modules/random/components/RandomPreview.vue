@@ -8,17 +8,19 @@ const props = defineProps<{
   runtime: RandomRuntimeState
 }>()
 
-const _surfaceStyle = computed(() => ({
+const surfaceStyle = computed(() => ({
   background: props.config.bgColor,
   color: props.config.textColor,
 }))
 
-const _textStyle = computed(() => ({
+const textStyle = computed(() => ({
   fontSize: props.runtime.isDrawing
     ? `${props.config.fontSizePc * 0.8}vw`
     : `${props.config.fontSizePc}vw`,
   textTransform: props.config.textTransform,
-  textShadow: props.runtime.isDrawing ? 'none' : `0 10px 40px ${props.config.textColor}60`,
+  textShadow: props.runtime.isDrawing
+    ? 'none'
+    : `0 10px 40px ${props.config.textColor}60`,
   opacity: props.runtime.currentDisplay ? 1 : 0,
 }))
 </script>

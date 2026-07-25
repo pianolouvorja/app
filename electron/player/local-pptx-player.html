@@ -47,7 +47,7 @@
     <script src="./vendor/pptx/jszip.min.js"></script>
     <script src="./vendor/pptx/PptxViewJS.min.js"></script>
     <script>
-      ;(() => {
+      ;(function () {
         var params = new URLSearchParams(window.location.search)
         var src = (params.get('src') || '').trim()
         var canvas = document.getElementById('frame')
@@ -94,7 +94,7 @@
             )
             return false
           }
-          if (!window.PptxViewJS?.PPTXViewer) {
+          if (!window.PptxViewJS || !window.PptxViewJS.PPTXViewer) {
             showError(true, 'Biblioteca de apresentação indisponível.')
             return false
           }
@@ -129,20 +129,22 @@
         }
 
         window.__liturgyPpt = {
-          getState: () => state(),
-          next: async () => {
+          getState: function () {
+            return state()
+          },
+          next: async function () {
             if (!(await ensureReady())) return state()
             if (total <= 0) return state()
             pageIndex = (pageIndex + 1) % total
             return renderCurrent()
           },
-          prev: async () => {
+          prev: async function () {
             if (!(await ensureReady())) return state()
             if (total <= 0) return state()
             pageIndex = (pageIndex - 1 + total) % total
             return renderCurrent()
           },
-          goTo: async (i) => {
+          goTo: async function (i) {
             if (!(await ensureReady())) return state()
             if (total <= 0) return state()
             pageIndex = ((Number(i) || 0) % total + total) % total
@@ -151,9 +153,9 @@
         }
 
         var resizeTimer = null
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', function () {
           clearTimeout(resizeTimer)
-          resizeTimer = setTimeout(() => {
+          resizeTimer = setTimeout(function () {
             if (ready) void renderCurrent()
           }, 120)
         })

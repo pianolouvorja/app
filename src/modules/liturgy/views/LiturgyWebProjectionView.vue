@@ -5,9 +5,9 @@ import {
   DEFAULT_LITURGY_WEB_RUNTIME,
   LITURGY_WEB_RUNTIME_CHANNEL,
   LITURGY_WEB_RUNTIME_STORAGE_KEY,
-  type LiturgyWebProjectionRuntime,
   normalizeLiturgyWebRuntime,
   readLiturgyWebRuntimeFromStorage,
+  type LiturgyWebProjectionRuntime,
 } from '../services/liturgy-web-runtime'
 
 const runtime = ref<LiturgyWebProjectionRuntime>({
@@ -15,9 +15,11 @@ const runtime = ref<LiturgyWebProjectionRuntime>({
 })
 let runtimeChannel: BroadcastChannel | null = null
 
-const showFrame = computed(() => runtime.value.active && Boolean(runtime.value.url))
+const showFrame = computed(
+  () => runtime.value.active && Boolean(runtime.value.url),
+)
 
-const _frameSrc = computed(() => {
+const frameSrc = computed(() => {
   if (!showFrame.value) return ''
   const url = runtime.value.url
   if (runtime.value.kind !== 'youtube') return url

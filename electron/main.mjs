@@ -1,6 +1,6 @@
+import { app, BrowserWindow, screen, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, screen, shell } from 'electron'
 
 import {
   APP_DESKTOP_ID,

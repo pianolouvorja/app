@@ -1,5 +1,5 @@
-import type { BibleSelection } from '../types/bible'
 import { emptySelection } from './scripture-format'
+import type { BibleSelection } from '../types/bible'
 
 export const BIBLE_RUNTIME_CHANNEL = 'louvorja-bible-runtime'
 export const BIBLE_RUNTIME_STORAGE_KEY = 'louvorja-bible-runtime-state'

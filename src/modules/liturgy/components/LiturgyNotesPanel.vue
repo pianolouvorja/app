@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { GlassCard } from '@design-system/index'
+
 defineProps<{
   modelValue: string
 }>()
@@ -11,7 +13,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onInput(event: Event) {
+function onInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('update:modelValue', target.value)
 }

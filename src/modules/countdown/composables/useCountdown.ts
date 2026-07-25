@@ -1,12 +1,22 @@
-import { computed, type MaybeRefOrGetter, onMounted, onUnmounted, ref, toValue } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  toValue,
+  type MaybeRefOrGetter,
+} from 'vue'
 
 import {
   computeRemainingMs,
   durationPartsFromMs,
   formatElapsedMs,
 } from '../services/countdown-format'
+import type {
+  CountdownDisplayConfig,
+  CountdownRuntimeState,
+} from '../types/countdown'
 import { useCountdownStore } from '../stores/useCountdownStore'
-import type { CountdownDisplayConfig, CountdownRuntimeState } from '../types/countdown'
 
 export function useCountdownTick(active: MaybeRefOrGetter<boolean> = true) {
   const now = ref(Date.now())
@@ -49,7 +59,9 @@ export function useCountdownDisplay(
     ),
   )
 
-  const formattedTime = computed(() => formatElapsedMs(remainingMs.value, config.value.timeFormat))
+  const formattedTime = computed(() =>
+    formatElapsedMs(remainingMs.value, config.value.timeFormat),
+  )
 
   const isUrgent = computed(
     () =>
@@ -61,7 +73,9 @@ export function useCountdownDisplay(
   const isFinished = computed(
     () =>
       runtime.value.finished ||
-      (remainingMs.value <= 0 && runtime.value.durationMs > 0 && runtime.value.accumulatedMs > 0),
+      (remainingMs.value <= 0 &&
+        runtime.value.durationMs > 0 &&
+        runtime.value.accumulatedMs > 0),
   )
 
   return {

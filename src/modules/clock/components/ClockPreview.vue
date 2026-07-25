@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
-import { useClockDisplay } from '../composables/useClock'
+
 import type { ClockConfig } from '../types/clock'
+import { useClockDisplay } from '../composables/useClock'
 
 const props = withDefaults(
   defineProps<{
@@ -17,21 +18,28 @@ const containerRef = useTemplateRef<HTMLElement>('container')
 const sizeWidth = ref(0)
 const sizeHeight = ref(0)
 
-const { config, hourAngle, minuteAngle, secondAngle, formattedTime, formattedSeconds, ampm } =
-  useClockDisplay(() => props.config)
+const {
+  config,
+  hourAngle,
+  minuteAngle,
+  secondAngle,
+  formattedTime,
+  formattedSeconds,
+  ampm,
+} = useClockDisplay(() => props.config)
 
-const _digitalFontSize = computed(() => {
+const digitalFontSize = computed(() => {
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   const ratio = config.value.showSeconds ? 0.35 : 0.4
   return Math.max(v * ratio, 20)
 })
 
-const _analogSize = computed(() => {
+const analogSize = computed(() => {
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   return Math.max(v * 0.8, 100)
 })
 
-const _surfaceStyle = computed(() => ({
+const surfaceStyle = computed(() => ({
   background: props.preview ? 'transparent' : config.value.bgColor,
   color: props.preview ? 'var(--ds-color-on-surface)' : config.value.textColor,
 }))

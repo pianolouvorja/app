@@ -9,7 +9,10 @@ import type {
   LibraryAlbum,
   MediaDownloadItem,
 } from '../types/library'
-import { readDownloadedAlbumIds, writeDownloadedAlbumIds } from './library-catalog'
+import {
+  readDownloadedAlbumIds,
+  writeDownloadedAlbumIds,
+} from './library-catalog'
 import { toRelativeMediaPath } from './media-paths'
 
 const DOWNLOAD_BATCH_SIZE = 5
@@ -18,9 +21,13 @@ const MAX_CONSECUTIVE_ERRORS = 3
 function collectLyricImageUrls(music: CatalogMusicRecord): string[] {
   if (!music.lyric) return []
 
-  const entries = Array.isArray(music.lyric) ? music.lyric : Object.values(music.lyric)
+  const entries = Array.isArray(music.lyric)
+    ? music.lyric
+    : Object.values(music.lyric)
 
-  return entries.map((entry) => entry.url_image).filter((url): url is string => Boolean(url))
+  return entries
+    .map((entry) => entry.url_image)
+    .filter((url): url is string => Boolean(url))
 }
 
 type CollectResult = {
@@ -83,15 +90,21 @@ async function collectMediaForAlbum(
 }
 
 /** IDs das faixas no catálogo (sem checar disco). */
-export async function listAlbumMusicIds(album: LibraryAlbum): Promise<number[]> {
+export async function listAlbumMusicIds(
+  album: LibraryAlbum,
+): Promise<number[]> {
   let songRefs: Array<{ id_music: number | string }> = []
 
   if (album.isHymnal) {
-    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(`pt_${album.id}`)
+    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(
+      `pt_${album.id}`,
+    )
     if (!hymnalData || !Array.isArray(hymnalData)) return []
     songRefs = hymnalData
   } else {
-    const albumData = await readCatalogRecord<CatalogAlbumRecord>(`album_${album.id}`)
+    const albumData = await readCatalogRecord<CatalogAlbumRecord>(
+      `album_${album.id}`,
+    )
     if (!albumData?.musics || !Array.isArray(albumData.musics)) return []
     songRefs = albumData.musics
   }
@@ -105,7 +118,9 @@ export async function listAlbumMusicIds(album: LibraryAlbum): Promise<number[]> 
 }
 
 /** IDs de coletâneas ligados à faixa no catálogo. */
-export async function resolveAlbumIdsForMusic(musicId: number): Promise<Array<string | number>> {
+export async function resolveAlbumIdsForMusic(
+  musicId: number,
+): Promise<Array<string | number>> {
   if (!Number.isFinite(musicId) || musicId <= 0) return []
 
   type MusicAlbumsRow = {
@@ -142,7 +157,9 @@ export type DownloadAlbumResult = {
   totalErrors: number
 }
 
-export async function markAlbumAsDownloaded(albumId: LibraryAlbum['id']): Promise<void> {
+export async function markAlbumAsDownloaded(
+  albumId: LibraryAlbum['id'],
+): Promise<void> {
   const manifest = await readDownloadedAlbumIds()
   const key = String(albumId)
   if (manifest.some((id) => String(id) === key)) return
@@ -150,7 +167,9 @@ export async function markAlbumAsDownloaded(albumId: LibraryAlbum['id']): Promis
   await writeDownloadedAlbumIds(manifest)
 }
 
-export async function unmarkAlbumAsDownloaded(albumId: LibraryAlbum['id']): Promise<void> {
+export async function unmarkAlbumAsDownloaded(
+  albumId: LibraryAlbum['id'],
+): Promise<void> {
   const manifest = await readDownloadedAlbumIds()
   const key = String(albumId)
   await writeDownloadedAlbumIds(manifest.filter((id) => String(id) !== key))
@@ -171,9 +190,12 @@ export async function downloadAlbumMedia(
 
   hooks.onPrepareProgress(0)
 
-  const { items: allMediaFiles, found } = await collectMediaForAlbum(album, (fetched, total) => {
-    hooks.onPrepareProgress(Math.floor((fetched / total) * 10))
-  })
+  const { items: allMediaFiles, found } = await collectMediaForAlbum(
+    album,
+    (fetched, total) => {
+      hooks.onPrepareProgress(Math.floor((fetched / total) * 10))
+    },
+  )
 
   if (!found) {
     return { status: 'idle', failureReason: null, totalErrors: 0 }
@@ -211,7 +233,11 @@ export async function downloadAlbumMedia(
         const exists = await bridge.media.check(media.type, relativePath)
 
         if (!exists) {
-          const success = await bridge.media.download(media.url, media.type, relativePath)
+          const success = await bridge.media.download(
+            media.url,
+            media.type,
+            relativePath,
+          )
           if (!success) {
             consecutiveErrors += 1
             totalErrors += 1

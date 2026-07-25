@@ -2,6 +2,13 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
+import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
+import RandomConfigDialog from '../components/RandomConfigDialog.vue'
+import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
+import RandomProjectFab from '../components/RandomProjectFab.vue'
+import RandomStage from '../components/RandomStage.vue'
 import { useRandomFeature } from '../composables/useRandom'
 import type { RandomDrawMode } from '../types/random'
 
@@ -42,25 +49,25 @@ const {
   toggleProjection,
 } = useRandomFeature()
 
-function _goBack() {
+function goBack() {
   void router.push({ name: 'utilities' })
 }
 
-function _onToggleProjection() {
+function onToggleProjection() {
   void toggleProjection()
 }
 
-function _onResetAll() {
+function onResetAll() {
   if (window.confirm(t('random.resetConfirm'))) {
     resetAll()
   }
 }
 
-function _onModeChange(mode: RandomDrawMode) {
+function onModeChange(mode: RandomDrawMode) {
   setMode(mode)
 }
 
-async function _onImportFile(file: File) {
+async function onImportFile(file: File) {
   try {
     const text = await file.text()
     importNamesFromText(text)

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import logoUrl from '@assets/brand/logo-louvor-ja.svg'
+import { APP_PRODUCT_NAME } from '@shared/constants/app'
+import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
 
 const isMaximized = ref(false)
 const isFocused = ref(true)
-const _isMac = computed(() => getDesktopBridge()?.platform === 'darwin')
-const _visible = computed(() => isDesktopApp())
+const isMac = computed(() => getDesktopBridge()?.platform === 'darwin')
+const visible = computed(() => isDesktopApp())
 
 let unsubscribeMaximized: (() => void) | null = null
 
@@ -17,15 +20,15 @@ function onBlur() {
   isFocused.value = false
 }
 
-async function _minimize() {
+async function minimize() {
   await getDesktopBridge()?.window?.control('minimize')
 }
 
-async function _maximize() {
+async function maximize() {
   await getDesktopBridge()?.window?.control('maximize')
 }
 
-async function _close() {
+async function close() {
   await getDesktopBridge()?.window?.control('close')
 }
 

@@ -55,7 +55,13 @@ export type MediaSession = {
   slideTimesSec: number[]
 }
 
-export type MediaPlayerStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'error'
+export type MediaPlayerStatus =
+  | 'idle'
+  | 'loading'
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'error'
 
 export type MediaProjectionRuntime = {
   active: boolean
@@ -69,7 +75,9 @@ export type MediaProjectionRuntime = {
   slideCount: number
 }
 
-export type MediaOpenResult = { ok: true; warningKey?: string } | { ok: false; messageKey: string }
+export type MediaOpenResult =
+  | { ok: true; warningKey?: string }
+  | { ok: false; messageKey: string }
 
 export const DEFAULT_MEDIA_PROJECTION: MediaProjectionRuntime = {
   active: false,

@@ -1,3 +1,6 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
@@ -6,9 +9,10 @@ import {
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
 import { isDesktopApp } from '@shared/services/desktop-bridge'
-import { downloadTrackMedia, isTrackMediaDownloaded } from '@shared/services/track-media'
-import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import {
+  downloadTrackMedia,
+  isTrackMediaDownloaded,
+} from '@shared/services/track-media'
 
 import {
   attachMediaAudioListeners,
@@ -25,8 +29,14 @@ import {
   stopAllMediaAudio,
   switchMediaAudioElement,
 } from '../services/media-audio'
-import { loadMediaTrack, resolveAlbumSubtitle } from '../services/media-catalog'
-import { clearMediaRuntime, publishMediaRuntime } from '../services/media-runtime'
+import {
+  loadMediaTrack,
+  resolveAlbumSubtitle,
+} from '../services/media-catalog'
+import {
+  clearMediaRuntime,
+  publishMediaRuntime,
+} from '../services/media-runtime'
 import {
   buildMediaSlides,
   buildSlideTimesSec,
@@ -127,7 +137,10 @@ export const useMediaStore = defineStore('media', () => {
     }
 
     if (end <= start) return 0
-    return Math.min(1, Math.max(0, (currentTimeSec.value - start) / (end - start)))
+    return Math.min(
+      1,
+      Math.max(0, (currentTimeSec.value - start) / (end - start)),
+    )
   })
 
   const currentTimeLabel = computed(() => formatMediaClock(currentTimeSec.value))
@@ -440,7 +453,8 @@ export const useMediaStore = defineStore('media', () => {
     slideIndex.value = 0
     currentTimeSec.value = 0
     durationSec.value = 0
-    minimized.value = params.minimized ?? loadProjectionSettings().autoMinimizePlayer === true
+    minimized.value =
+      params.minimized ?? loadProjectionSettings().autoMinimizePlayer === true
 
     if (playbackUrl) {
       bindAudio()
@@ -667,7 +681,11 @@ export const useMediaStore = defineStore('media', () => {
     const slideTimesSec = buildSlideTimesSec(current.slides, nextMode)
 
     // Mesma fonte já carregada (ex.: sair de Sem áudio): só restaura o volume.
-    if (playbackUrl && current.audioUrl === playbackUrl && current.mode === 'no_audio') {
+    if (
+      playbackUrl &&
+      current.audioUrl === playbackUrl &&
+      current.mode === 'no_audio'
+    ) {
       session.value = {
         ...current,
         mode: nextMode,
@@ -854,7 +872,9 @@ export const useMediaStore = defineStore('media', () => {
     publishProjectionState()
   }
 
-  const hasInstrumental = computed(() => Boolean(session.value?.hasInstrumental))
+  const hasInstrumental = computed(
+    () => Boolean(session.value?.hasInstrumental),
+  )
   const playbackMode = computed(() => session.value?.mode ?? 'audio')
 
   return {

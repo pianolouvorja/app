@@ -1,4 +1,8 @@
-import { DEFAULT_TIMER_RUNTIME, type TimerRuntimeState, type TimerStatus } from '../types/timer'
+import {
+  DEFAULT_TIMER_RUNTIME,
+  type TimerRuntimeState,
+  type TimerStatus,
+} from '../types/timer'
 
 export const TIMER_RUNTIME_CHANNEL = 'louvorja-timer-runtime'
 export const TIMER_RUNTIME_STORAGE_KEY = 'louvorja-timer-runtime-state'

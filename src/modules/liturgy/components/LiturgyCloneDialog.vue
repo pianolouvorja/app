@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { GlassCard } from '@design-system/index'
 import type { LiturgyCloneSource } from '../types/liturgy'
 
 const props = defineProps<{
@@ -17,20 +19,23 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const _canConfirm = computed(() => Boolean(props.sourceKey))
+const canConfirm = computed(() => Boolean(props.sourceKey))
 
-function _sourceOptionValue(source: LiturgyCloneSource): string {
-  return source.kind === 'weekday' ? `weekday:${source.day}` : `custom:${source.id}`
+function sourceOptionValue(source: LiturgyCloneSource): string {
+  return source.kind === 'weekday'
+    ? `weekday:${source.day}`
+    : `custom:${source.id}`
 }
 
-function _sourceOptionLabel(source: LiturgyCloneSource): string {
+function sourceOptionLabel(source: LiturgyCloneSource): string {
   if (source.kind === 'weekday') {
     return `${t(source.labelKey)} (${source.itemCount})`
   }
   return `${t('liturgy.days.custom')}: ${source.name} (${source.itemCount})`
 }
 
-function _onSelectChange(event: Event) {
+
+function onSelectChange(event: Event) {
   emit('update:sourceKey', (event.target as HTMLSelectElement).value)
 }
 </script>

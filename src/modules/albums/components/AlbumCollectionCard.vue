@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { LibraryAlbum } from '@modules/sync/types/library'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import type { LibraryAlbum } from '@modules/sync/types/library'
 
 import type { AlbumCollection } from '../types/albums'
 
@@ -21,24 +22,24 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const status = computed(() => props.libraryAlbum?.status ?? 'idle')
-const _progress = computed(() => props.libraryAlbum?.progress ?? 0)
-const _progressLabel = computed(() =>
+const progress = computed(() => props.libraryAlbum?.progress ?? 0)
+const progressLabel = computed(() =>
   t(props.libraryAlbum?.progressText || 'sync.progress.downloading'),
 )
 
 const canRemove = computed(() => status.value === 'downloaded')
 const isBusy = computed(() => status.value === 'downloading')
-const _showPersistentDownload = computed(
+const showPersistentDownload = computed(
   () =>
     Boolean(props.showDownloadControls) &&
     (status.value === 'idle' || status.value === 'error' || isBusy.value),
 )
 
-function _onOpen() {
+function onOpen() {
   emit('open')
 }
 
-function _onDownload(event: MouseEvent) {
+function onDownload(event: MouseEvent) {
   event.stopPropagation()
   if (status.value === 'downloading') {
     emit('cancel')
@@ -47,7 +48,7 @@ function _onDownload(event: MouseEvent) {
   emit('download')
 }
 
-function _onRemove(event: MouseEvent) {
+function onRemove(event: MouseEvent) {
   event.stopPropagation()
   if (!canRemove.value) return
   emit('remove')

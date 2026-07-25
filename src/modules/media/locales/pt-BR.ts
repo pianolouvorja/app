@@ -53,7 +53,8 @@ export default {
         'Essa coletânea ainda não foi baixada. Baixe-a na Central de Mídia para usar offline.',
       slidesOnlyNotDownloaded:
         'Áudio indisponível (coletânea não baixada). Projetando apenas os slides.',
-      slidesOnlyNoAudio: 'Áudio indisponível para esta faixa. Projetando apenas os slides.',
+      slidesOnlyNoAudio:
+        'Áudio indisponível para esta faixa. Projetando apenas os slides.',
       playbackFailed: 'Não foi possível iniciar a reprodução do áudio.',
     },
   },

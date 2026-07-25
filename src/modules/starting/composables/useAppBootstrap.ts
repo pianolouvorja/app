@@ -1,3 +1,7 @@
+import { storeToRefs } from 'pinia'
+import { onMounted, onUnmounted } from 'vue'
+
+import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import {
   downloadAndExtractCatalog,
   isBootstrapComplete,
@@ -7,11 +11,11 @@ import {
   syncRemoteConfig,
 } from '@modules/starting/services/bootstrap-service'
 import { startCoverBackgroundSync } from '@modules/starting/services/cover-background-sync'
-
-import { useStartingStore } from '@modules/starting/stores/useStartingStore'
-import { getDesktopBridge, isDesktopApp, isElectronShell } from '@shared/services/desktop-bridge'
-import { storeToRefs } from 'pinia'
-import { onMounted, onUnmounted } from 'vue'
+import {
+  getDesktopBridge,
+  isDesktopApp,
+  isElectronShell,
+} from '@shared/services/desktop-bridge'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -26,8 +30,15 @@ function dismissStaticHtmlSplash() {
 
 export function useAppBootstrap() {
   const store = useStartingStore()
-  const { isVisible, showContent, isAppReady, progress, isFirstBoot, hasError, statusKey } =
-    storeToRefs(store)
+  const {
+    isVisible,
+    showContent,
+    isAppReady,
+    progress,
+    isFirstBoot,
+    hasError,
+    statusKey,
+  } = storeToRefs(store)
 
   let warmInterval: ReturnType<typeof setInterval> | null = null
 

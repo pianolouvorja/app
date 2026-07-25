@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { isDesktopApp } from '@shared/services/desktop-bridge'
 import {
   deleteTrackMedia,
   downloadTrackMedia,
   isTrackMediaDownloaded,
 } from '@shared/services/track-media'
-import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 
 /**
  * Controles reutilizáveis de faixa: Cantado / Playback / Sem áudio / Letra.
@@ -47,7 +48,7 @@ const { t } = useI18n()
 const libraryStore = useLocalLibraryStore()
 
 /** Oculto por enquanto — reative para voltar o botão de letra nas listagens. */
-const _SHOW_LYRIC_ACTION = false
+const SHOW_LYRIC_ACTION = false
 
 type OfflineStatus = 'idle' | 'downloaded' | 'downloading' | 'checking'
 
@@ -60,11 +61,14 @@ const showOfflineControls = computed(
   () => isDesktopApp() && props.musicId != null && props.musicId > 0,
 )
 
-const _isOfflineBusy = computed(
-  () => offlineStatus.value === 'downloading' || offlineStatus.value === 'checking',
+const isOfflineBusy = computed(
+  () =>
+    offlineStatus.value === 'downloading' || offlineStatus.value === 'checking',
 )
 
-const _confirmTrackLabel = computed(() => props.trackName.trim() || t('media.actions.thisTrack'))
+const confirmTrackLabel = computed(
+  () => props.trackName.trim() || t('media.actions.thisTrack'),
+)
 
 function emitDownloadProgress(progress: number | null) {
   emit('downloadProgress', progress)
@@ -89,11 +93,11 @@ function requestRemove() {
   confirmRemoveOpen.value = true
 }
 
-function _dismissRemove() {
+function dismissRemove() {
   confirmRemoveOpen.value = false
 }
 
-async function _confirmRemove() {
+async function confirmRemove() {
   if (props.musicId == null) return
   confirmRemoveOpen.value = false
   await deleteTrackMedia(props.musicId)
@@ -103,7 +107,7 @@ async function _confirmRemove() {
   void libraryStore.reconcileAlbumsForMusic(props.musicId)
 }
 
-async function _onOfflineAction() {
+async function onOfflineAction() {
   if (!showOfflineControls.value || props.musicId == null) return
   if (offlineStatus.value === 'downloading') {
     cancelRequested.value = true

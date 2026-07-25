@@ -1,9 +1,11 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
+import {
+  getUserPreference,
+  setUserPreference,
+} from '@shared/services/user-preferences'
 import { getBrowserItem, setBrowserItem } from '@shared/services/browser-storage'
-import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
 import {
-  type CustomLiturgy,
   createEmptySessionTimes,
   createEmptyWeekdayLiturgies,
   createEmptyWeekdayNotes,
@@ -11,6 +13,7 @@ import {
   DEFAULT_MOMENT_DURATION_MS,
   getTypeDotColor,
   LITURGY_WEEKDAYS,
+  type CustomLiturgy,
   type LiturgyItem,
   type LiturgyPersistedState,
   type LiturgySessionTimes,
@@ -20,8 +23,8 @@ import {
   type WeekdaySessionTimes,
 } from '../types/liturgy'
 import {
-  clampMomentDurationMs,
   clearDoneFlags,
+  clampMomentDurationMs,
   createLiturgyItemId,
   normalizeItemType,
 } from './liturgy-item-helpers'
@@ -68,9 +71,16 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
     done: Boolean(source.done),
     durationMs,
     accentColor: getTypeDotColor(type),
-    categoryId: type === 'category' ? null : asString(source.categoryId) || null,
-    startTime: type === 'category' ? normalizeTimeHHmm(source.startTime) : null,
-    endTime: type === 'category' ? normalizeTimeHHmm(source.endTime) : null,
+    categoryId:
+      type === 'category' ? null : asString(source.categoryId) || null,
+    startTime:
+      type === 'category'
+        ? normalizeTimeHHmm(source.startTime)
+        : null,
+    endTime:
+      type === 'category'
+        ? normalizeTimeHHmm(source.endTime)
+        : null,
     complementaryTitle: asString(source.complementaryTitle).trim() || undefined,
     notes: asString(source.notes).trim() || undefined,
     musicId: asNumberOrNull(source.musicId),
@@ -81,7 +91,9 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
     filePath: asString(source.filePath),
     filePaths: (() => {
       if (Array.isArray(source.filePaths)) {
-        return source.filePaths.map((entry) => asString(entry).trim()).filter(Boolean)
+        return source.filePaths
+          .map((entry) => asString(entry).trim())
+          .filter(Boolean)
       }
       const single = asString(source.filePath).trim()
       return single ? [single] : undefined
@@ -114,7 +126,12 @@ function normalizeTimeHHmm(raw: unknown): string | null {
   if (!match) return null
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours > 23 || minutes > 59) {
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours > 23 ||
+    minutes > 59
+  ) {
     return null
   }
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`

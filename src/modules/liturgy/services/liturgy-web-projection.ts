@@ -9,7 +9,10 @@ import {
 } from '@shared/composables/useProjectionWindow'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
-import { parseLiturgyWebTarget, publishLiturgyWebRuntime } from './liturgy-web-runtime'
+import {
+  parseLiturgyWebTarget,
+  publishLiturgyWebRuntime,
+} from './liturgy-web-runtime'
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -18,7 +21,9 @@ function sleep(ms: number) {
 async function resolveTargetMonitorIds(): Promise<number[]> {
   const settings = loadProjectionSettings()
   const displays = await listSystemDisplays()
-  const extendedIds = new Set(listExtendedDisplays(displays).map((display) => display.id))
+  const extendedIds = new Set(
+    listExtendedDisplays(displays).map((display) => display.id),
+  )
   return settings.targetDisplayIds.filter((id) => extendedIds.has(id))
 }
 
@@ -71,7 +76,10 @@ export async function openLiturgyWebOnConfiguredScreens(
 }
 
 /** Popup de controle do site, sem espelhar nas telas estendidas. */
-export async function openLiturgySiteControl(rawUrl: string, title = ''): Promise<boolean> {
+export async function openLiturgySiteControl(
+  rawUrl: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyWebOnConfiguredScreens(rawUrl, title, {
     mode: 'site',
     withScreens: false,
@@ -79,7 +87,10 @@ export async function openLiturgySiteControl(rawUrl: string, title = ''): Promis
 }
 
 /** Popup de controle do vídeo online, sem projetar nas telas estendidas. */
-export async function openLiturgyVideoControl(rawUrl: string, title = ''): Promise<boolean> {
+export async function openLiturgyVideoControl(
+  rawUrl: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyWebOnConfiguredScreens(rawUrl, title, {
     mode: 'video',
     withScreens: false,
@@ -87,7 +98,10 @@ export async function openLiturgyVideoControl(rawUrl: string, title = ''): Promi
 }
 
 /** Popup de controle do site + espelho nas telas estendidas (zoom normal). */
-export async function openLiturgySiteOnScreens(rawUrl: string, title = ''): Promise<boolean> {
+export async function openLiturgySiteOnScreens(
+  rawUrl: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyWebOnConfiguredScreens(rawUrl, title, {
     mode: 'site',
     withScreens: true,
@@ -162,7 +176,10 @@ async function openLiturgyLocalVideo(
 }
 
 /** Popup de controle de vídeo local, sem projetar nas telas estendidas. */
-export async function openLiturgyLocalVideoControl(filePath: string, title = ''): Promise<boolean> {
+export async function openLiturgyLocalVideoControl(
+  filePath: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyLocalVideo(filePath, title, false)
 }
 
@@ -239,12 +256,18 @@ async function openLiturgyLocalPdf(
 }
 
 /** Popup de controle do PDF, sem projetar nas telas. */
-export async function openLiturgyLocalPdfControl(filePath: string, title = ''): Promise<boolean> {
+export async function openLiturgyLocalPdfControl(
+  filePath: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyLocalPdf(filePath, title, false)
 }
 
 /** Popup de PDF + espelho nas telas estendidas. */
-export async function playLiturgyLocalPdfOnScreens(filePath: string, title = ''): Promise<boolean> {
+export async function playLiturgyLocalPdfOnScreens(
+  filePath: string,
+  title = '',
+): Promise<boolean> {
   return openLiturgyLocalPdf(filePath, title, true)
 }
 

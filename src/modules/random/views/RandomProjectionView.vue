@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import { ProjectionBackground } from '@design-system/index'
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
+
+import RandomPreview from '../components/RandomPreview.vue'
 import {
+  RANDOM_CONFIG_CHANNEL,
   loadRandomDisplayConfig,
   normalizeRandomDisplayConfig,
-  RANDOM_CONFIG_CHANNEL,
 } from '../services/random-preferences'
 import {
-  normalizeRandomRuntime,
   RANDOM_RUNTIME_CHANNEL,
   RANDOM_RUNTIME_STORAGE_KEY,
+  normalizeRandomRuntime,
   readRandomRuntimeFromStorage,
 } from '../services/random-runtime'
 import {
@@ -82,7 +85,7 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const _surfaceStyle = computed(() => ({
+const surfaceStyle = computed(() => ({
   background: config.value.bgColor,
 }))
 </script>

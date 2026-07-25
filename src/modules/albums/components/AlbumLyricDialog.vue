@@ -9,7 +9,7 @@ defineProps<{
   document: AlbumLyricDocument | null
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
 

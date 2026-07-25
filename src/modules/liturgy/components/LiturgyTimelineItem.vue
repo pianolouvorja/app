@@ -2,7 +2,10 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isExecutableItem } from '../services/liturgy-item-helpers'
+import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
+import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
 import type { LiturgyItem } from '../types/liturgy'
 
 const props = defineProps<{
@@ -57,10 +60,12 @@ const rootEl = ref<HTMLElement | null>(null)
 let dragGhostEl: HTMLElement | null = null
 
 const isCategory = computed(() => props.item.type === 'category')
-const _isLinked = computed(() => Boolean(props.linked))
-const _executable = computed(() => isExecutableItem(props.item))
-const _isMusicItem = computed(() => props.item.type === 'music' && props.item.musicId != null)
-const _categoryTimeRange = computed(() => {
+const isLinked = computed(() => Boolean(props.linked))
+const executable = computed(() => isExecutableItem(props.item))
+const isMusicItem = computed(
+  () => props.item.type === 'music' && props.item.musicId != null,
+)
+const categoryTimeRange = computed(() => {
   const start = props.item.startTime?.trim()
   const end = props.item.endTime?.trim()
   if (start && end) return `${start} - ${end}`
@@ -73,7 +78,7 @@ const isLocalVideo = computed(() => props.item.type === 'video')
 const isLocalImages = computed(() => props.item.type === 'images')
 const isLocalPdf = computed(() => props.item.type === 'pdf')
 const isLocalPresentation = computed(() => props.item.type === 'presentation')
-const _isVideoRemote = computed(
+const isVideoRemote = computed(
   () =>
     isStreamVideo.value ||
     isLocalVideo.value ||
@@ -81,8 +86,10 @@ const _isVideoRemote = computed(
     isLocalPdf.value ||
     isLocalPresentation.value,
 )
-const _isSiteItem = computed(() => props.item.type === 'site')
-const _isDimmed = computed(() => Boolean(props.reorderActive) && !props.isDragSource)
+const isSiteItem = computed(() => props.item.type === 'site')
+const isDimmed = computed(
+  () => Boolean(props.reorderActive) && !props.isDragSource,
+)
 
 const showInProgress = computed(() => {
   if (props.item.done) return false
@@ -95,19 +102,23 @@ const showWaiting = computed(
   () => isCategory.value && Boolean(props.sectionWaiting) && !props.item.done,
 )
 
-const _statusKey = computed(() => {
+const statusKey = computed(() => {
   if (props.item.done) return 'liturgy.done'
   if (showWaiting.value) return 'liturgy.waiting'
   if (showInProgress.value) return 'liturgy.inProgress'
   return null
 })
 
-const _doneLabel = computed(() =>
-  props.item.done ? t('liturgy.actions.markPending') : t('liturgy.actions.markDone'),
+const doneLabel = computed(() =>
+  props.item.done
+    ? t('liturgy.actions.markPending')
+    : t('liturgy.actions.markDone'),
 )
 
-const _collapseLabel = computed(() =>
-  props.collapsed ? t('liturgy.actions.expandCategory') : t('liturgy.actions.collapseCategory'),
+const collapseLabel = computed(() =>
+  props.collapsed
+    ? t('liturgy.actions.expandCategory')
+    : t('liturgy.actions.collapseCategory'),
 )
 
 function clearDragGhost() {
@@ -116,7 +127,7 @@ function clearDragGhost() {
   dragGhostEl = null
 }
 
-function _onHandleDragStart(event: DragEvent) {
+function onHandleDragStart(event: DragEvent) {
   const row = rootEl.value
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
@@ -134,8 +145,14 @@ function _onHandleDragStart(event: DragEvent) {
       document.body.appendChild(ghost)
       dragGhostEl = ghost
 
-      const offsetX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width)
-      const offsetY = Math.min(Math.max(event.clientY - rect.top, 0), rect.height)
+      const offsetX = Math.min(
+        Math.max(event.clientX - rect.left, 0),
+        rect.width,
+      )
+      const offsetY = Math.min(
+        Math.max(event.clientY - rect.top, 0),
+        rect.height,
+      )
       event.dataTransfer.setDragImage(ghost, offsetX, offsetY)
     }
   }
@@ -143,12 +160,12 @@ function _onHandleDragStart(event: DragEvent) {
   emit('dragStart', props.index)
 }
 
-function _onHandleDragEnd() {
+function onHandleDragEnd() {
   window.setTimeout(() => clearDragGhost(), 0)
   emit('dragEnd')
 }
 
-const _rowHovered = ref(false)
+const rowHovered = ref(false)
 </script>
 
 <template>

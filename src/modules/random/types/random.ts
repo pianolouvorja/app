@@ -66,11 +66,22 @@ export const DEFAULT_RANDOM_SESSION: RandomSessionState = {
   numberMax: 100,
 }
 
-export const RANDOM_ANIMATION_SPEEDS: RandomAnimationSpeed[] = ['fast', 'normal', 'slow']
+export const RANDOM_ANIMATION_SPEEDS: RandomAnimationSpeed[] = [
+  'fast',
+  'normal',
+  'slow',
+]
 
-export const RANDOM_TEXT_TRANSFORMS: RandomTextTransform[] = ['none', 'uppercase', 'lowercase']
+export const RANDOM_TEXT_TRANSFORMS: RandomTextTransform[] = [
+  'none',
+  'uppercase',
+  'lowercase',
+]
 
-export const RANDOM_ANIMATION_PROFILES: Record<RandomAnimationSpeed, RandomAnimationProfile> = {
+export const RANDOM_ANIMATION_PROFILES: Record<
+  RandomAnimationSpeed,
+  RandomAnimationProfile
+> = {
   fast: {
     maxTicks: 15,
     intervalMs: 30,

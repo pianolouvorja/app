@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import type { ClockConfig, ClockStyle } from '../types/clock'
+import { GlassCard } from '@design-system/index'
+
+import {
+  CLOCK_BG_PRESETS,
+  CLOCK_TEXT_PRESETS,
+  type ClockConfig,
+  type ClockStyle,
+} from '../types/clock'
 
 defineProps<{
   open: boolean
@@ -20,15 +27,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onBgInput(event: Event) {
+function onBgInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:bgColor', target.value)
 }
 
-function _onTextInput(event: Event) {
+function onTextInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:textColor', target.value)
 }
+
 </script>
 
 <template>

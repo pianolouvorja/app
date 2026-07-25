@@ -30,7 +30,8 @@ export default {
       interactionSoft: 'Suave',
       interactionMist: 'Névoa',
       preview: 'Pré-visualização',
-      previewHint: 'Este é um exemplo de como sua interface será exibida em apresentações.',
+      previewHint:
+        'Este é um exemplo de como sua interface será exibida em apresentações.',
       tipTitle: 'Dica de Performance',
       tipDark:
         'O Modo Escuro reduz o consumo de energia em monitores OLED e diminui a fadiga ocular em ambientes de culto.',
@@ -56,12 +57,14 @@ export default {
         title: 'Slides de Músicas',
         multiScreens: 'Múltiplas Telas',
         projectOn: 'Projetar nas seguintes telas:',
-        noExtended: 'Nenhum monitor estendido (secundário) detectado no sistema.',
+        noExtended:
+          'Nenhum monitor estendido (secundário) detectado no sistema.',
       },
       mainScreen: {
         title: 'Tela Principal',
         openFullscreen: 'Abrir música em tela cheia na tela principal',
-        disablePrimaryWhenExtended: 'Desativar tela principal caso haja monitor estendido',
+        disablePrimaryWhenExtended:
+          'Desativar tela principal caso haja monitor estendido',
         autoMinimizePlayer: 'Minimizar o player automaticamente',
       },
       lyrics: {
@@ -89,7 +92,8 @@ export default {
       errors: {
         loadDisplays: 'Não foi possível carregar os monitores.',
         identify: 'Não foi possível identificar os monitores.',
-        identifyDesktopOnly: 'Identificação de monitores disponível apenas no aplicativo desktop.',
+        identifyDesktopOnly:
+          'Identificação de monitores disponível apenas no aplicativo desktop.',
         backgroundImage: 'Não foi possível carregar a imagem de fundo.',
       },
     },

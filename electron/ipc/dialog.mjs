@@ -12,10 +12,9 @@ export function registerDialogIpc() {
       const multiple = Boolean(options?.multiple)
       const result = await dialog.showOpenDialog(win ?? undefined, {
         title: options?.title || (multiple ? 'Selecionar Arquivos' : 'Selecionar Arquivo'),
-        filters:
-          Array.isArray(options?.filters) && options.filters.length > 0
-            ? options.filters
-            : [{ name: 'Todos', extensions: ['*'] }],
+        filters: Array.isArray(options?.filters) && options.filters.length > 0
+          ? options.filters
+          : [{ name: 'Todos', extensions: ['*'] }],
         properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'],
       })
       if (result.canceled || !result.filePaths?.length) return null

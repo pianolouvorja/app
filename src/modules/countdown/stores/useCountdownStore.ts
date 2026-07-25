@@ -1,12 +1,16 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
 import {
   closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
-import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
 
-import { computeElapsedMs, computeRemainingMs } from '../services/countdown-format'
+import {
+  computeElapsedMs,
+  computeRemainingMs,
+} from '../services/countdown-format'
 import {
   loadCountdownDisplayConfig,
   saveCountdownDisplayConfig,
@@ -16,12 +20,12 @@ import {
   readCountdownRuntimeFromStorage,
 } from '../services/countdown-runtime'
 import {
-  type CountdownDisplayConfig,
-  type CountdownRuntimeState,
-  type CountdownTimeFormat,
   DEFAULT_COUNTDOWN_DISPLAY_CONFIG,
   DEFAULT_COUNTDOWN_DURATION_MS,
   DEFAULT_COUNTDOWN_RUNTIME,
+  type CountdownDisplayConfig,
+  type CountdownRuntimeState,
+  type CountdownTimeFormat,
 } from '../types/countdown'
 
 export const useCountdownStore = defineStore('countdown', () => {
@@ -40,7 +44,9 @@ export const useCountdownStore = defineStore('countdown', () => {
 
   const isRunning = computed(() => runtime.value.status === 'running')
   const isPaused = computed(() => runtime.value.status === 'paused')
-  const canStart = computed(() => runtime.value.durationMs > 0 && !runtime.value.finished)
+  const canStart = computed(
+    () => runtime.value.durationMs > 0 && !runtime.value.finished,
+  )
 
   function stopProjectionWatch() {
     if (!projectionWatchTimer) return

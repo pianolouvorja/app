@@ -23,7 +23,10 @@ export function mapBootstrapError(error: unknown): string {
   if (message.includes('Bridge Electron') || message.includes('indisponível')) {
     return 'starting.status.bridgeMissing'
   }
-  if (message.includes('baixar banco') || message.includes('Falha ao baixar')) {
+  if (
+    message.includes('baixar banco') ||
+    message.includes('Falha ao baixar')
+  ) {
     return 'starting.status.errorDownload'
   }
   if (

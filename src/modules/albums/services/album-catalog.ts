@@ -1,7 +1,7 @@
 import hymnalCover from '@assets/library/hymnal.jpeg'
 import hymnal1996Cover from '@assets/library/hymnal_1996.jpeg'
-import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
@@ -134,7 +134,7 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
 
     if (collections.length > 0) {
       result.push({
-        id: category.id_category ?? category.name ?? collections[0]?.id,
+        id: category.id_category ?? category.name ?? collections[0]!.id,
         name: String(category.name ?? '').trim() || 'Coletâneas',
         collections,
       })

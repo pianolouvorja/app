@@ -121,7 +121,9 @@ function withFallbackTrackNumbers(tracks: AlbumTrack[]): AlbumTrack[] {
   })
 }
 
-export async function loadCollectionTracks(collection: AlbumCollection): Promise<AlbumTrack[]> {
+export async function loadCollectionTracks(
+  collection: AlbumCollection,
+): Promise<AlbumTrack[]> {
   if (collection.kind === 'hymnal') {
     const rows = await readOrFetchCatalog<CatalogTrackRow[]>(collection.catalogKey)
     if (!Array.isArray(rows)) return []
@@ -145,7 +147,10 @@ export async function loadCollectionTracks(collection: AlbumCollection): Promise
   )
 }
 
-export function filterAlbumTracks(tracks: AlbumTrack[], query: string): AlbumTrack[] {
+export function filterAlbumTracks(
+  tracks: AlbumTrack[],
+  query: string,
+): AlbumTrack[] {
   const normalized = query.trim().toLowerCase()
   if (!normalized) return tracks
 
@@ -166,7 +171,9 @@ function stripHtml(text: string): string {
     .trim()
 }
 
-export async function loadAlbumLyric(musicId: number): Promise<AlbumLyricDocument | null> {
+export async function loadAlbumLyric(
+  musicId: number,
+): Promise<AlbumLyricDocument | null> {
   if (!Number.isFinite(musicId) || musicId <= 0) return null
 
   const record = await readOrFetchCatalog<CatalogMusicRecord>(`music_${musicId}`)

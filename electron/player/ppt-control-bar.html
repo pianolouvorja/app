@@ -201,7 +201,7 @@
       </div>
     </div>
     <script>
-      ;(() => {
+      ;(function () {
         var prevBtn = document.getElementById('prev')
         var nextBtn = document.getElementById('next')
         var projectBtn = document.getElementById('project')
@@ -223,19 +223,19 @@
             projectBtn.classList.add('is-active')
             projectBtn.title = 'Retirar projeção'
             projectBtn.setAttribute('aria-pressed', 'true')
-            projectIcon.innerHTML = `<path d="${STOP_PATH}"/>`
+            projectIcon.innerHTML = '<path d="' + STOP_PATH + '"/>'
           } else {
             projectBtn.classList.remove('is-active')
             projectBtn.title = 'Projetar nas telas'
             projectBtn.setAttribute('aria-pressed', 'false')
-            projectIcon.innerHTML = `<path d="${ARROW_PATH}"/>`
+            projectIcon.innerHTML = '<path d="' + ARROW_PATH + '"/>'
           }
         }
 
         function setCounter(index, total) {
           var safeTotal = Math.max(0, Number(total) || 0)
           var safeIndex = safeTotal > 0 ? Math.min(safeTotal, (Number(index) || 0) + 1) : 0
-          counterEl.textContent = `${safeIndex} / ${safeTotal}`
+          counterEl.textContent = safeIndex + ' / ' + safeTotal
           prevBtn.disabled = safeTotal <= 1
           nextBtn.disabled = safeTotal <= 1
         }
@@ -247,7 +247,7 @@
         }
 
         function renderMonitorList() {
-          var extended = displays.filter((d) => !d.isPrimary)
+          var extended = displays.filter(function (d) { return !d.isPrimary })
           if (!extended.length) {
             monitorList.innerHTML = '<p class="panel__empty">Nenhum monitor estendido encontrado.</p>'
             return
@@ -269,7 +269,7 @@
               display.resolution +
               '</span></span></label></li>'
           }
-          monitorList.innerHTML = `${html}</ul>`
+          monitorList.innerHTML = html + '</ul>'
           var inputs = monitorList.querySelectorAll('input[type="checkbox"]')
           for (var j = 0; j < inputs.length; j++) {
             inputs[j].addEventListener('change', onToggleMonitor)
@@ -279,18 +279,20 @@
         async function loadMonitors() {
           if (!window.louvorja) return
           var list =
-            window.louvorja.displays?.list
+            window.louvorja.displays && window.louvorja.displays.list
               ? (await window.louvorja.displays.list()) || []
               : []
-          displays = list.map((display, index) => ({
+          displays = list.map(function (display, index) {
+            return {
               id: display.id,
-              label: `Monitor ${index + 1}`,
+              label: 'Monitor ' + (index + 1),
               resolution: display.bounds
-                ? `${display.bounds.width} × ${display.bounds.height}`
+                ? display.bounds.width + ' × ' + display.bounds.height
                 : '',
               isPrimary: Boolean(display.isPrimary),
-            }))
-          if (window.louvorja.projection?.getVideoTargetMonitors) {
+            }
+          })
+          if (window.louvorja.projection && window.louvorja.projection.getVideoTargetMonitors) {
             selectedIds = (await window.louvorja.projection.getVideoTargetMonitors()) || []
           }
           updateMonitorBadge()
@@ -301,7 +303,7 @@
           panelOpen = Boolean(open)
           shell.classList.toggle('is-panel-open', panelOpen)
           monitorBtn.setAttribute('aria-expanded', panelOpen ? 'true' : 'false')
-          if (window.louvorja?.projection?.setSiteControlPanelOpen) {
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.setSiteControlPanelOpen) {
             await window.louvorja.projection.setSiteControlPanelOpen(panelOpen)
           }
           if (panelOpen) await loadMonitors()
@@ -314,17 +316,17 @@
           if (input.checked) {
             if (selectedIds.indexOf(id) < 0) selectedIds.push(id)
           } else {
-            selectedIds = selectedIds.filter((item) => item !== id)
+            selectedIds = selectedIds.filter(function (item) { return item !== id })
           }
           updateMonitorBadge()
           renderMonitorList()
-          if (window.louvorja?.projection?.setVideoTargetMonitors) {
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.setVideoTargetMonitors) {
             await window.louvorja.projection.setVideoTargetMonitors(selectedIds.slice())
           }
         }
 
         async function refresh() {
-          if (!window.louvorja?.projection) return
+          if (!window.louvorja || !window.louvorja.projection) return
           var state = window.louvorja.projection.getPptSlideState
             ? await window.louvorja.projection.getPptSlideState()
             : null
@@ -339,36 +341,36 @@
           if (playback) setProjectingUi(Boolean(playback.projecting))
         }
 
-        prevBtn.addEventListener('click', async () => {
-          if (window.louvorja?.projection?.remotePptPrev) {
+        prevBtn.addEventListener('click', async function () {
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePptPrev) {
             await window.louvorja.projection.remotePptPrev()
             await refresh()
           }
         })
-        nextBtn.addEventListener('click', async () => {
-          if (window.louvorja?.projection?.remotePptNext) {
+        nextBtn.addEventListener('click', async function () {
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePptNext) {
             await window.louvorja.projection.remotePptNext()
             await refresh()
           }
         })
-        projectBtn.addEventListener('click', async () => {
-          if (window.louvorja?.projection?.toggleVideoScreens) {
+        projectBtn.addEventListener('click', async function () {
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.toggleVideoScreens) {
             await window.louvorja.projection.toggleVideoScreens()
             await refresh()
           }
         })
-        monitorBtn.addEventListener('click', () => {
+        monitorBtn.addEventListener('click', function () {
           void setPanelOpen(!panelOpen)
         })
-        identifyBtn.addEventListener('click', async () => {
-          if (window.louvorja?.displays?.identify) {
+        identifyBtn.addEventListener('click', async function () {
+          if (window.louvorja && window.louvorja.displays && window.louvorja.displays.identify) {
             await window.louvorja.displays.identify()
           }
         })
 
         void loadMonitors()
         void refresh()
-        setInterval(() => { void refresh() }, 500)
+        setInterval(function () { void refresh() }, 500)
       })()
     </script>
   </body>

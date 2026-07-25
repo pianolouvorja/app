@@ -10,9 +10,9 @@ import {
   saveProjectionSettings,
 } from '@modules/settings/services/projection-preferences'
 import type { SystemDisplay } from '@modules/settings/types/projection'
-import { reapplyProjectionTargets } from '@shared/composables/useProjectionWindow'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
-import { computed, onBeforeUnmount, onMounted, type Ref, ref, watch } from 'vue'
+import { reapplyProjectionTargets } from '@shared/composables/useProjectionWindow'
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
 
 export type MonitorTargetOption = {
   id: number
@@ -33,7 +33,9 @@ export type UseMonitorTargetSelectOptions = {
   onUpdate?: (ids: number[]) => void
 }
 
-function readModel(modelValue: UseMonitorTargetSelectOptions['modelValue']): number[] | undefined {
+function readModel(
+  modelValue: UseMonitorTargetSelectOptions['modelValue'],
+): number[] | undefined {
   if (!modelValue) return undefined
   return typeof modelValue === 'function' ? modelValue() : modelValue.value
 }
@@ -60,7 +62,9 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
 
   const optionsList = computed<MonitorTargetOption[]>(() => {
     const all = displays.value
-    const source = extendedOnly ? listExtendedDisplays(all) : all
+    const source = extendedOnly
+      ? listExtendedDisplays(all)
+      : all
 
     return source.map((display) => {
       // Mesmo número do overlay "Identificar monitores" (índice na lista completa).
@@ -88,7 +92,9 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
     if (applyingRemote) return
     const seq = ++syncSeq
     // Como no controle YouTube/site: snapshot local é a fonte da verdade.
-    const snapshot = ids.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    const snapshot = ids
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id))
     const bridge = getDesktopBridge()
 
     // Ignora ecos IPC da própria atualização (senão a seleção “volta”/some).
@@ -110,7 +116,9 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   function allowedDisplayIds(nextDisplays: SystemDisplay[]): number[] {
-    return (extendedOnly ? listExtendedDisplays(nextDisplays) : nextDisplays).map((item) => item.id)
+    return (extendedOnly ? listExtendedDisplays(nextDisplays) : nextDisplays).map(
+      (item) => item.id,
+    )
   }
 
   function applySelectionFromSettings(nextDisplays: SystemDisplay[]) {
@@ -120,7 +128,9 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
     // Nunca persiste/seleciona o monitor principal
     settings = {
       ...settings,
-      targetDisplayIds: settings.targetDisplayIds.filter((id) => extendedIds.includes(id)),
+      targetDisplayIds: settings.targetDisplayIds.filter((id) =>
+        extendedIds.includes(id),
+      ),
     }
     saveProjectionSettings(settings)
     selectedIds.value = [...settings.targetDisplayIds]
@@ -142,7 +152,9 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   function applyRemoteIds(ids: number[]) {
     if (applyingRemote) return
     const allowed = new Set(allowedDisplayIds(displays.value))
-    const normalized = ids.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+    const normalized = ids
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id))
     const next = displays.value.length
       ? normalized.filter((id) => allowed.has(id))
       : [...normalized]
@@ -227,15 +239,15 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   onMounted(() => {
-    void refresh().then(() => {
-      // Alinha o main process com as preferências já mostradas no badge.
-      void syncToMain([...selectedIds.value])
-    })
-    const bridge = getDesktopBridge()
-    unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
-      applyRemoteIds(Array.isArray(ids) ? ids : [])
-    })
+  void refresh().then(() => {
+    // Alinha o main process com as preferências já mostradas no badge.
+    void syncToMain([...selectedIds.value])
   })
+  const bridge = getDesktopBridge()
+  unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
+    applyRemoteIds(Array.isArray(ids) ? ids : [])
+  })
+})
 
   onBeforeUnmount(() => {
     unsubscribeTargets?.()

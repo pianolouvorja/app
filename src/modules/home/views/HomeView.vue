@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import logoUrl from '@assets/brand/logo-louvor-ja.svg'
+
+import HomeLocationField from '../components/HomeLocationField.vue'
 import { useHomeClock } from '../composables/useHomeClock'
 import { useHomeLocation } from '../composables/useHomeLocation'
 

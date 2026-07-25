@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useBlurSystem } from '@design-system/composables'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useBlurSystem } from '@design-system/composables'
 
 import type { BibleVersion } from '../types/bible'
 
@@ -29,12 +30,12 @@ const selectedVersion = computed(
   () => props.versions.find((item) => item.id === props.selectedVersionId) ?? null,
 )
 
-const _selectedLabel = computed(() => {
+const selectedLabel = computed(() => {
   if (!selectedVersion.value) return t('bible.selectVersion')
   return formatVersionLabel(selectedVersion.value)
 })
 
-const _menuStyle = computed(() => ({
+const menuStyle = computed(() => ({
   top: `${menuPosition.value.top}px`,
   left: `${menuPosition.value.left}px`,
   minWidth: `${menuPosition.value.minWidth}px`,
@@ -63,7 +64,7 @@ function updateMenuPosition() {
   }
 }
 
-async function _toggle() {
+async function toggle() {
   if (props.disabled || props.versions.length === 0) return
   open.value = !open.value
   if (open.value) {
@@ -72,7 +73,7 @@ async function _toggle() {
   }
 }
 
-function _choose(versionId: number) {
+function choose(versionId: number) {
   open.value = false
   if (versionId === props.selectedVersionId) return
   emit('select', versionId)

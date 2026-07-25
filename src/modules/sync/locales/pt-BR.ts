@@ -37,11 +37,13 @@ export default {
     errors: {
       loadFailed: 'Não foi possível carregar as coletâneas.',
       downloadFailureTitle: 'Falha no download',
-      downloadOffline: 'Não foi possível baixar os arquivos. Verifique sua conexão com a internet.',
+      downloadOffline:
+        'Não foi possível baixar os arquivos. Verifique sua conexão com a internet.',
       downloadServer:
         'Interrompemos o download após várias falhas seguidas — o servidor de mídia parece indisponível. {count} arquivo(s) não puderam ser baixados. Tente novamente mais tarde.',
       downloadUnknown: 'Ocorreu um erro ao baixar a coletânea.',
-      batchOffline: 'O download em lote foi cancelado porque não há conexão com a internet.',
+      batchOffline:
+        'O download em lote foi cancelado porque não há conexão com a internet.',
     },
   },
 }

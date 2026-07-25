@@ -1,11 +1,11 @@
-import { createPinia } from 'pinia'
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import '@styles/tailwind.css'
-import { useThemeManager } from '@design-system/composables'
-import i18n from '@plugins/i18n'
 import vuetify from '@plugins/vuetify'
+import i18n from '@plugins/i18n'
 import router from '@/router'
+import { useThemeManager } from '@design-system/composables'
 
 useThemeManager()
 

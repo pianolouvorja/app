@@ -1,5 +1,5 @@
-import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { execFile } from 'node:child_process'
 import {
   accessSync,
   constants,
@@ -35,7 +35,8 @@ const OFFICE_CANDIDATES = [
 function whichSync(command) {
   const pathEnv = process.env.PATH || ''
   const parts = pathEnv.split(path.delimiter)
-  const extensions = process.platform === 'win32' ? ['.exe', '', '.bat', '.cmd'] : ['']
+  const extensions =
+    process.platform === 'win32' ? ['.exe', '', '.bat', '.cmd'] : ['']
 
   for (const dir of parts) {
     for (const ext of extensions) {
@@ -134,7 +135,9 @@ export async function convertPresentationToPdf(filePath) {
       },
     )
 
-    const produced = readdirSync(workDir).find((name) => name.toLowerCase().endsWith('.pdf'))
+    const produced = readdirSync(workDir).find((name) =>
+      name.toLowerCase().endsWith('.pdf'),
+    )
     if (!produced) {
       throw new Error('presentation-convert-failed')
     }

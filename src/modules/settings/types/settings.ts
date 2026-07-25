@@ -1,4 +1,8 @@
-export type SettingsSectionId = 'appearance' | 'general' | 'media' | 'projection'
+export type SettingsSectionId =
+  | 'appearance'
+  | 'general'
+  | 'media'
+  | 'projection'
 
 export type ThemeMode = 'light' | 'dark'
 

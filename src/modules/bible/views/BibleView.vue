@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import BibleNavPanel from '../components/BibleNavPanel.vue'
+import BibleProjectFab from '../components/BibleProjectFab.vue'
+import BibleToolbar from '../components/BibleToolbar.vue'
+import BibleVerseList from '../components/BibleVerseList.vue'
 import { useBibleReader } from '../composables/useBibleReader'
 
 const { t } = useI18n()
@@ -43,19 +47,19 @@ const {
   refresh,
 } = useBibleReader()
 
-function _onProject() {
+function onProject() {
   void toggleProjection()
 }
 
-function _onClearProjection() {
+function onClearProjection() {
   clearProjectionWindow()
 }
 
-function _onPreviousVerse() {
+function onPreviousVerse() {
   void goToAdjacentVerse(-1)
 }
 
-function _onNextVerse() {
+function onNextVerse() {
   void goToAdjacentVerse(1)
 }
 </script>

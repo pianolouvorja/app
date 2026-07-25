@@ -15,11 +15,11 @@ const emit = defineEmits<{
   select: [key: string]
 }>()
 
-function _isActive(key: string) {
+function isActive(key: string) {
   return props.activeKey === key
 }
 
-function _onSelect(key: string) {
+function onSelect(key: string) {
   emit('select', key)
 }
 </script>

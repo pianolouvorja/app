@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
-import { removeBrowserItem, removeBrowserItemsByPrefix } from '@shared/services/browser-storage'
-import { isDesktopApp } from '@shared/services/desktop-bridge'
-import { clearWorkspace } from '@shared/services/workspace-api'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { isDesktopApp } from '@shared/services/desktop-bridge'
+import { clearWorkspace } from '@shared/services/workspace-api'
+import {
+  removeBrowserItem,
+  removeBrowserItemsByPrefix,
+} from '@shared/services/browser-storage'
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
+import { APP_USER_DATA_DIR } from '@shared/constants/app'
 
 const { t } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
 
-async function _clearAllLocalData() {
+async function clearAllLocalData() {
   if (!isDesktopApp() || isClearing.value) return
 
   isClearing.value = true

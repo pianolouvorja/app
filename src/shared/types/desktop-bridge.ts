@@ -57,7 +57,9 @@ export type OpenFileDialogOptions = {
 }
 
 export type DialogApi = {
-  openFile: (options?: OpenFileDialogOptions) => Promise<string | string[] | null>
+  openFile: (
+    options?: OpenFileDialogOptions,
+  ) => Promise<string | string[] | null>
 }
 
 export type PresentationApi = {
@@ -112,7 +114,9 @@ export type ProjectionApi = {
   remotePause?: () => Promise<boolean>
   remoteSeek?: (seconds: number) => Promise<boolean>
   remoteToggleMute?: () => Promise<{ muted: boolean; volume?: number } | null>
-  remoteSetVolume?: (volume: number) => Promise<{ muted: boolean; volume: number } | null>
+  remoteSetVolume?: (
+    volume: number,
+  ) => Promise<{ muted: boolean; volume: number } | null>
   getPlaybackState?: () => Promise<ProjectionPlaybackState | null>
   getNavigationState?: () => Promise<ProjectionNavigationState | null>
   remoteGoBack?: () => Promise<boolean>

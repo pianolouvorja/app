@@ -1,4 +1,12 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, type Ref, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+  type Ref,
+} from 'vue'
 
 import {
   buildMonitorLayout,
@@ -82,7 +90,9 @@ export function useMonitorArrangement(stageRef: Ref<HTMLElement | null>) {
     if (!tile) return
 
     event.preventDefault()
-    ;(event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId)
+    ;(event.currentTarget as HTMLElement | null)?.setPointerCapture?.(
+      event.pointerId,
+    )
 
     drag = {
       displayId,
@@ -115,7 +125,11 @@ export function useMonitorArrangement(stageRef: Ref<HTMLElement | null>) {
       return
     }
 
-    const delta = canvasDeltaToVirtual(drag.offsetX, drag.offsetY, baseLayout.value.scale)
+    const delta = canvasDeltaToVirtual(
+      drag.offsetX,
+      drag.offsetY,
+      baseLayout.value.scale,
+    )
 
     moveMonitorInArrangement(
       drag.displayId,

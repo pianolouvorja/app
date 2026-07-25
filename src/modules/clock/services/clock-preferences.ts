@@ -1,7 +1,14 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
+import {
+  getUserPreference,
+  setUserPreference,
+} from '@shared/services/user-preferences'
 
-import { type ClockConfig, type ClockStyle, DEFAULT_CLOCK_CONFIG } from '../types/clock'
+import {
+  DEFAULT_CLOCK_CONFIG,
+  type ClockConfig,
+  type ClockStyle,
+} from '../types/clock'
 
 export const CLOCK_CONFIG_CHANNEL = 'louvorja-clock-config'
 

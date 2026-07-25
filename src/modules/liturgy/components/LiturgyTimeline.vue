@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getCategoryBlockEnd } from '../services/liturgy-item-helpers'
+
 import type { LiturgyItem } from '../types/liturgy'
+import { getCategoryBlockEnd } from '../services/liturgy-item-helpers'
+import LiturgyTimelineItem from './LiturgyTimelineItem.vue'
 
 const props = defineProps<{
   items: LiturgyItem[]
@@ -33,12 +35,12 @@ const emit = defineEmits<{
   musicLyric: [index: number]
 }>()
 
-function _musicHasInstrumental(item: LiturgyItem): boolean {
+function musicHasInstrumental(item: LiturgyItem): boolean {
   if (item.type !== 'music' || item.musicId == null) return false
   return Boolean(props.musicInstrumentalById?.[item.musicId])
 }
 
-function _isMusicBusy(item: LiturgyItem): boolean {
+function isMusicBusy(item: LiturgyItem): boolean {
   if (item.type !== 'music' || item.musicId == null) return false
   return props.busyMusicId === item.musicId
 }
@@ -54,7 +56,7 @@ type TimelineSegment =
   | { kind: 'item'; entry: TimelineEntry; linked: boolean; childCount: number }
   | { kind: 'branch'; categoryId: string; children: TimelineEntry[] }
 
-const _segments = computed((): TimelineSegment[] => {
+const segments = computed((): TimelineSegment[] => {
   const result: TimelineSegment[] = []
   let index = 0
 
@@ -104,26 +106,26 @@ const _segments = computed((): TimelineSegment[] => {
   return result
 })
 
-function _isCategoryCollapsed(categoryId: string): boolean {
+function isCategoryCollapsed(categoryId: string): boolean {
   return collapsedCategoryIds.value.has(categoryId)
 }
 
-function _toggleCategoryCollapse(categoryId: string) {
+function toggleCategoryCollapse(categoryId: string) {
   const next = new Set(collapsedCategoryIds.value)
   if (next.has(categoryId)) next.delete(categoryId)
   else next.add(categoryId)
   collapsedCategoryIds.value = next
 }
 
-function _onDragStart(itemIndex: number) {
+function onDragStart(itemIndex: number) {
   dragFrom.value = itemIndex
 }
 
-function _onDragEnd() {
+function onDragEnd() {
   dragFrom.value = null
 }
 
-function _onDrop(toIndex: number) {
+function onDrop(toIndex: number) {
   if (dragFrom.value == null) return
   emit('reorder', dragFrom.value, toIndex)
   dragFrom.value = null
@@ -142,13 +144,13 @@ const dragBlockRange = computed(() => {
   }
 })
 
-function _isDragBlockIndex(index: number): boolean {
+function isDragBlockIndex(index: number): boolean {
   const range = dragBlockRange.value
   if (!range) return false
   return index >= range.start && index < range.end
 }
 
-function _isCategoryIndeterminate(categoryId: string): boolean {
+function isCategoryIndeterminate(categoryId: string): boolean {
   const children = props.items.filter(
     (item) => item.type !== 'category' && item.categoryId === categoryId,
   )
@@ -168,16 +170,16 @@ function arePreviousCategoriesDone(categoryId: string): boolean {
 }
 
 /** Categoria abaixo de outra ainda incompleta → Aguardando. */
-function _isCategorySectionWaiting(categoryId: string): boolean {
+function isCategorySectionWaiting(categoryId: string): boolean {
   const category = props.items.find((item) => item.id === categoryId)
-  if (category?.type !== 'category' || category.done) return false
+  if (!category || category.type !== 'category' || category.done) return false
   return !arePreviousCategoriesDone(categoryId)
 }
 
 /** Categoria atual (anteriores ok) com filhos incompletos → Em andamento. */
-function _isCategorySectionInProgress(categoryId: string): boolean {
+function isCategorySectionInProgress(categoryId: string): boolean {
   const category = props.items.find((item) => item.id === categoryId)
-  if (category?.type !== 'category' || category.done) return false
+  if (!category || category.type !== 'category' || category.done) return false
   if (!arePreviousCategoriesDone(categoryId)) return false
 
   const children = props.items.filter(

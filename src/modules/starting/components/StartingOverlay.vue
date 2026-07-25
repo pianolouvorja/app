@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
 import { useI18n } from 'vue-i18n'
 
+import { GradientBackground } from '@design-system/index'
+import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
+import logoUrl from '@assets/brand/logo-louvor-ja.svg'
+import codenamePianoUrl from '@assets/brand/codenamePIANO.svg'
+
 const { t } = useI18n()
-const { isVisible, showContent, progress, isFirstBoot, hasError, statusKey, retryBootstrap } =
-  useAppBootstrap()
+const {
+  isVisible,
+  showContent,
+  progress,
+  isFirstBoot,
+  hasError,
+  statusKey,
+  retryBootstrap,
+} = useAppBootstrap()
 </script>
 
 <template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { useMonitorTargetSelect } from '@shared/composables/useMonitorTargetSelect'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useMonitorTargetSelect } from '@shared/composables/useMonitorTargetSelect'
 
 const props = withDefaults(
   defineProps<{
@@ -56,7 +57,7 @@ const {
   },
 })
 
-const _triggerLabel = computed(() => {
+const triggerLabel = computed(() => {
   if (selectedCount.value > 0) {
     return t('monitors.selectedCount', { count: selectedCount.value })
   }
@@ -69,7 +70,10 @@ function updatePanelPosition() {
 
   const rect = trigger.getBoundingClientRect()
   const panelWidth = Math.min(296, window.innerWidth - 16)
-  const left = Math.min(Math.max(8, rect.right - panelWidth), window.innerWidth - panelWidth - 8)
+  const left = Math.min(
+    Math.max(8, rect.right - panelWidth),
+    window.innerWidth - panelWidth - 8,
+  )
   const spaceBelow = window.innerHeight - rect.bottom
   const openUp = spaceBelow < 280 && rect.top > spaceBelow
 
@@ -98,12 +102,12 @@ function onWindowChange() {
   updatePanelPosition()
 }
 
-function _onToggle(displayId: number) {
+function onToggle(displayId: number) {
   if (props.disabled) return
   toggle(displayId)
 }
 
-async function _onIdentify() {
+async function onIdentify() {
   if (props.disabled || identifying.value) return
   await identify()
 }

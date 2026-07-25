@@ -1,11 +1,22 @@
-import { openMusicPlayer } from '@modules/media/services/open-music-player'
-import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { findCollectionById, loadAlbumCategories } from '../services/album-catalog'
-import { filterAlbumMusicIndex, loadAlbumMusicIndex } from '../services/album-music-search'
-import { filterAlbumTracks, loadAlbumLyric, loadCollectionTracks } from '../services/album-tracks'
+import { openMusicPlayer } from '@modules/media/services/open-music-player'
+import type { MediaPlaybackMode } from '@modules/media/types/media'
+
+import {
+  findCollectionById,
+  loadAlbumCategories,
+} from '../services/album-catalog'
+import {
+  filterAlbumMusicIndex,
+  loadAlbumMusicIndex,
+} from '../services/album-music-search'
+import {
+  filterAlbumTracks,
+  loadAlbumLyric,
+  loadCollectionTracks,
+} from '../services/album-tracks'
 import type {
   AlbumCategory,
   AlbumCollection,
@@ -31,7 +42,9 @@ export const useAlbumsStore = defineStore('albums', () => {
   const lyricDoc = ref<AlbumLyricDocument | null>(null)
   const isLoadingLyric = ref(false)
 
-  const filteredTracks = computed(() => filterAlbumTracks(tracks.value, searchQuery.value))
+  const filteredTracks = computed(() =>
+    filterAlbumTracks(tracks.value, searchQuery.value),
+  )
 
   const hubSearchResults = computed(() =>
     filterAlbumMusicIndex(musicIndex.value, hubSearchQuery.value),
@@ -132,7 +145,9 @@ export const useAlbumsStore = defineStore('albums', () => {
     options?: { project?: boolean },
   ) {
     const albumId =
-      activeCollection.value?.kind === 'album' ? Number(activeCollection.value.id) : null
+      activeCollection.value?.kind === 'album'
+        ? Number(activeCollection.value.id)
+        : null
 
     const result = await openMusicPlayer({
       musicId,

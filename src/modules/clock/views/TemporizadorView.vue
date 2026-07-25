@@ -2,12 +2,13 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import UtilitiesHubCard from '../components/UtilitiesHubCard.vue'
 import type { UtilityHubItem } from '../types/clock'
 
 const { t } = useI18n()
 const router = useRouter()
 
-const _items: UtilityHubItem[] = [
+const items: UtilityHubItem[] = [
   {
     key: 'clock',
     titleKey: 'utilities.clock',
@@ -34,7 +35,7 @@ const _items: UtilityHubItem[] = [
   },
 ]
 
-function _goBack() {
+function goBack() {
   void router.push({ name: 'utilities' })
 }
 </script>

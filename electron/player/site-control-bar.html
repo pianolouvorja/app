@@ -344,7 +344,7 @@
       </div>
     </div>
     <script>
-      ;(() => {
+      ;(function () {
         var shell = document.getElementById('shell')
         var backBtn = document.getElementById('back')
         var forwardBtn = document.getElementById('forward')
@@ -371,13 +371,13 @@
             projectBtn.title = 'Parar projeção do site'
             projectBtn.setAttribute('aria-label', 'Parar projeção do site')
             projectBtn.setAttribute('aria-pressed', 'true')
-            projectIcon.innerHTML = `<path d="${STOP_PATH}" />`
+            projectIcon.innerHTML = '<path d="' + STOP_PATH + '" />'
           } else {
             projectBtn.classList.remove('is-active')
             projectBtn.title = 'Projetar site nas telas estendidas'
             projectBtn.setAttribute('aria-label', 'Projetar site nas telas estendidas')
             projectBtn.setAttribute('aria-pressed', 'false')
-            projectIcon.innerHTML = `<path d="${ARROW_PATH}" />`
+            projectIcon.innerHTML = '<path d="' + ARROW_PATH + '" />'
           }
         }
 
@@ -389,7 +389,9 @@
         }
 
         function renderList() {
-          var extended = displays.filter((d) => !d.isPrimary)
+          var extended = displays.filter(function (d) {
+            return !d.isPrimary
+          })
           if (!extended.length) {
             monitorList.innerHTML =
               '<p class="panel__empty">Nenhum monitor estendido encontrado.</p>'
@@ -430,21 +432,24 @@
         async function loadMonitors() {
           if (!window.louvorja) return
           var list = []
-          if (window.louvorja.displays?.list) {
+          if (window.louvorja.displays && window.louvorja.displays.list) {
             list = (await window.louvorja.displays.list()) || []
           }
-          displays = list.map((d, index) => ({
+          displays = list.map(function (d, index) {
+            return {
               id: d.id,
-              label: `Monitor ${index + 1}`,
+              label: 'Monitor ' + (index + 1),
               resolution: d.bounds
-                ? `${d.bounds.width} × ${d.bounds.height}`
+                ? d.bounds.width + ' × ' + d.bounds.height
                 : '',
               isPrimary: Boolean(d.isPrimary),
-            }))
+            }
+          })
 
           var ids = []
           if (
-            window.louvorja.projection?.getSiteTargetMonitors
+            window.louvorja.projection &&
+            window.louvorja.projection.getSiteTargetMonitors
           ) {
             ids = (await window.louvorja.projection.getSiteTargetMonitors()) || []
           }
@@ -452,7 +457,9 @@
           for (var i = 0; i < displays.length; i++) {
             if (!displays[i].isPrimary) allowed[displays[i].id] = true
           }
-          selectedIds = ids.filter((id) => allowed[id])
+          selectedIds = ids.filter(function (id) {
+            return allowed[id]
+          })
           updateBadge()
           renderList()
         }
@@ -462,7 +469,9 @@
           shell.classList.toggle('is-panel-open', panelOpen)
           monitorBtn.setAttribute('aria-expanded', panelOpen ? 'true' : 'false')
           if (
-            window.louvorja?.projection?.setSiteControlPanelOpen
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setSiteControlPanelOpen
           ) {
             await window.louvorja.projection.setSiteControlPanelOpen(panelOpen)
           }
@@ -476,19 +485,23 @@
           if (input.checked) {
             if (selectedIds.indexOf(id) < 0) selectedIds.push(id)
           } else {
-            selectedIds = selectedIds.filter((item) => item !== id)
+            selectedIds = selectedIds.filter(function (item) {
+              return item !== id
+            })
           }
           updateBadge()
           renderList()
           if (
-            window.louvorja?.projection?.setSiteTargetMonitors
+            window.louvorja &&
+            window.louvorja.projection &&
+            window.louvorja.projection.setSiteTargetMonitors
           ) {
             await window.louvorja.projection.setSiteTargetMonitors(selectedIds.slice())
           }
         }
 
         async function refreshNav() {
-          if (!window.louvorja?.projection) return
+          if (!window.louvorja || !window.louvorja.projection) return
           var state = await window.louvorja.projection.getNavigationState()
           if (!state) return
           backBtn.disabled = !state.canGoBack
@@ -496,36 +509,36 @@
           setProjectingUi(Boolean(state.projecting))
         }
 
-        backBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        backBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           await window.louvorja.projection.remoteGoBack()
           refreshNav()
         })
 
-        forwardBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        forwardBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           await window.louvorja.projection.remoteGoForward()
           refreshNav()
         })
 
-        reloadBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        reloadBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           await window.louvorja.projection.remoteReload()
           refreshNav()
         })
 
-        projectBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.projection) return
+        projectBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.projection) return
           await window.louvorja.projection.toggleSiteScreens()
           refreshNav()
         })
 
-        monitorBtn.addEventListener('click', async () => {
+        monitorBtn.addEventListener('click', async function () {
           await setPanelOpen(!panelOpen)
         })
 
-        identifyBtn.addEventListener('click', async () => {
-          if (!window.louvorja?.displays) return
+        identifyBtn.addEventListener('click', async function () {
+          if (!window.louvorja || !window.louvorja.displays) return
           identifyBtn.disabled = true
           try {
             await window.louvorja.displays.identify()
@@ -537,7 +550,7 @@
 
         document.addEventListener(
           'pointerdown',
-          (event) => {
+          function (event) {
             if (!panelOpen) return
             var target = event.target
             if (!(target instanceof Node)) return
@@ -549,9 +562,11 @@
         )
 
         if (
-          window.louvorja?.projection?.onSiteTargetsChanged
+          window.louvorja &&
+          window.louvorja.projection &&
+          window.louvorja.projection.onSiteTargetsChanged
         ) {
-          window.louvorja.projection.onSiteTargetsChanged((ids) => {
+          window.louvorja.projection.onSiteTargetsChanged(function (ids) {
             selectedIds = Array.isArray(ids) ? ids.slice() : []
             updateBadge()
             if (panelOpen) renderList()

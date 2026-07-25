@@ -1,7 +1,15 @@
-import { isDesktopApp } from '@shared/services/desktop-bridge'
-import { peekTrackDownloadCache } from '@shared/services/track-media'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+
+import { isDesktopApp } from '@shared/services/desktop-bridge'
+import { peekTrackDownloadCache } from '@shared/services/track-media'
+
+import type {
+  DownloadFailureNotice,
+  LibraryAlbum,
+  LibraryAlbumId,
+  LibraryCategory,
+} from '../types/library'
 import { loadLibraryCategories } from '../services/library-catalog'
 import {
   deleteAlbumMedia,
@@ -11,12 +19,6 @@ import {
   resolveAlbumIdsForMusic,
   unmarkAlbumAsDownloaded,
 } from '../services/library-download'
-import type {
-  DownloadFailureNotice,
-  LibraryAlbum,
-  LibraryAlbumId,
-  LibraryCategory,
-} from '../types/library'
 
 function findAlbum(
   categories: LibraryCategory[],
@@ -53,7 +55,9 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
   const albumDownloadGen = new Map<string, number>()
 
   const hasIdleAlbums = computed(() =>
-    categories.value.some((category) => category.albums.some((album) => album.status === 'idle')),
+    categories.value.some((category) =>
+      category.albums.some((album) => album.status === 'idle'),
+    ),
   )
 
   const isAnyDownloading = computed(() =>
@@ -114,7 +118,10 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
       }
 
       // Se esta faixa foi removida e o álbum estava marcado, desmarca.
-      if (peekTrackDownloadCache(musicId) === false && album.status === 'downloaded') {
+      if (
+        peekTrackDownloadCache(musicId) === false &&
+        album.status === 'downloaded'
+      ) {
         await unmarkAlbumAsDownloaded(album.id)
         applyIdleStatus(album)
       }
@@ -198,13 +205,16 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
       if (result.status === 'idle') {
         album.status = 'idle'
         album.progress = 0
-        album.progressText = result.failureReason === 'cancelled' ? 'sync.progress.cancelled' : ''
+        album.progressText =
+          result.failureReason === 'cancelled' ? 'sync.progress.cancelled' : ''
         return result.status
       }
 
       album.status = 'error'
       album.progressText =
-        result.failureReason === 'offline' ? 'sync.progress.offline' : 'sync.progress.serverError'
+        result.failureReason === 'offline'
+          ? 'sync.progress.offline'
+          : 'sync.progress.serverError'
 
       if (!isDownloadingBatch.value) {
         if (result.failureReason === 'offline') {
@@ -265,7 +275,7 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
 
   function cancelAlbum(albumId: LibraryAlbumId) {
     const album = findAlbum(categories.value, albumId)
-    if (album?.status !== 'downloading') return
+    if (!album || album.status !== 'downloading') return
     const albumKey = String(album.id)
     albumDownloadGen.set(albumKey, (albumDownloadGen.get(albumKey) ?? 0) + 1)
     album.cancelRequested = true
@@ -279,7 +289,10 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
       for (const album of category.albums) {
         if (album.status === 'downloading') {
           const albumKey = String(album.id)
-          albumDownloadGen.set(albumKey, (albumDownloadGen.get(albumKey) ?? 0) + 1)
+          albumDownloadGen.set(
+            albumKey,
+            (albumDownloadGen.get(albumKey) ?? 0) + 1,
+          )
           album.cancelRequested = true
           applyIdleStatus(album)
           album.progressText = 'sync.progress.cancelled'
@@ -290,7 +303,7 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
 
   async function removeAlbum(albumId: LibraryAlbum['id']) {
     const album = findAlbum(categories.value, albumId)
-    if (album?.status !== 'downloaded') return
+    if (!album || album.status !== 'downloaded') return
 
     await deleteAlbumMedia(album)
     applyIdleStatus(album)

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { GlassCard } from '@design-system/index'
+
+import BibleVersionSelect from './BibleVersionSelect.vue'
 import type { BibleVersion } from '../types/bible'
 
 const props = defineProps<{
@@ -12,7 +16,7 @@ const props = defineProps<{
   versionsDisabled?: boolean
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   selectVersion: [versionId: number]
   toggleNav: []
   'update:bibleSearchQuery': [value: string]
@@ -22,11 +26,15 @@ const { t } = useI18n()
 
 /** false = versículos; true = livros e capítulos.
  *  O rótulo indica o destino do próximo clique. */
-const _browseLabel = computed(() =>
-  props.showNavPanel ? t('bible.browseVerses') : t('bible.browseBooksAndChapters'),
+const browseLabel = computed(() =>
+  props.showNavPanel
+    ? t('bible.browseVerses')
+    : t('bible.browseBooksAndChapters'),
 )
 
-const _browseIcon = computed(() => (props.showNavPanel ? 'ti-list-numbers' : 'ti-book-2'))
+const browseIcon = computed(() =>
+  props.showNavPanel ? 'ti-list-numbers' : 'ti-book-2',
+)
 </script>
 
 <template>

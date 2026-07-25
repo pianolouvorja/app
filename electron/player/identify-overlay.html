@@ -131,7 +131,7 @@
       <h1 id="monitorLabel" class="id-number" data-label="">—</h1>
     </div>
     <script>
-      ;(() => {
+      ;(function () {
         const params = new URLSearchParams(window.location.search)
         const raw = params.get('n') || params.get('label') || ''
         const label = String(raw).trim() || '—'
@@ -139,7 +139,7 @@
         if (el) {
           el.textContent = label
           el.setAttribute('data-label', label)
-          el.setAttribute('aria-label', `Monitor ${label}`)
+          el.setAttribute('aria-label', 'Monitor ' + label)
         }
       })()
     </script>

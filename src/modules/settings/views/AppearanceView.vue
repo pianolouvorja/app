@@ -2,6 +2,10 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AccentColorCard from '../components/AccentColorCard.vue'
+import InteractionModeCard from '../components/InteractionModeCard.vue'
+import LyricCustomizationCard from '../components/LyricCustomizationCard.vue'
+import ThemeOrbitalSwitcher from '../components/ThemeOrbitalSwitcher.vue'
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
 const { t } = useI18n()

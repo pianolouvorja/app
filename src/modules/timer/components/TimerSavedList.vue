@@ -9,14 +9,14 @@ const props = defineProps<{
   timeFormat: TimerTimeFormat
 }>()
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
   remove: [index: number]
   clear: []
 }>()
 
 const { t } = useI18n()
 
-function _labelFor(ms: number) {
+function labelFor(ms: number) {
   return formatElapsedMs(ms, props.timeFormat)
 }
 </script>

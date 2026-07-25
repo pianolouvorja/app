@@ -110,14 +110,18 @@ function pushUnique(
 function collectLyricImageUrls(music: CatalogMusicRecord): string[] {
   if (!music.lyric) return []
 
-  const entries = Array.isArray(music.lyric) ? music.lyric : Object.values(music.lyric)
+  const entries = Array.isArray(music.lyric)
+    ? music.lyric
+    : Object.values(music.lyric)
 
   return entries
     .map((entry) => entry.url_image)
     .filter((url): url is string => Boolean(url?.trim()))
 }
 
-async function readMusicRecord(musicId: number): Promise<CatalogMusicRecord | null> {
+async function readMusicRecord(
+  musicId: number,
+): Promise<CatalogMusicRecord | null> {
   const local = await readCatalogRecord<CatalogMusicRecord>(`music_${musicId}`)
   if (local != null) return local
 
@@ -129,7 +133,9 @@ async function readMusicRecord(musicId: number): Promise<CatalogMusicRecord | nu
 }
 
 /** Coleta áudios, slides e capas associados à faixa. */
-export async function collectTrackMediaItems(musicId: number): Promise<TrackMediaItem[]> {
+export async function collectTrackMediaItems(
+  musicId: number,
+): Promise<TrackMediaItem[]> {
   const music = await readMusicRecord(musicId)
   if (!music) return []
 
@@ -185,7 +191,10 @@ export async function isTrackMediaDownloaded(musicId: number): Promise<boolean> 
     }
 
     for (const item of items) {
-      const local = await bridge.media.check(item.type, toRelativeMediaPath(item.url))
+      const local = await bridge.media.check(
+        item.type,
+        toRelativeMediaPath(item.url),
+      )
       if (!local) {
         downloadedCache.set(musicId, false)
         return false
@@ -254,7 +263,9 @@ export async function downloadTrackMedia(
       }
       if (!ok) {
         errors += 1
-        console.warn(`[track-media] falha ao baixar ${item.type}: ${relative}`)
+        console.warn(
+          `[track-media] falha ao baixar ${item.type}: ${relative}`,
+        )
         continue
       }
     }

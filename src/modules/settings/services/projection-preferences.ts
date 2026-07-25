@@ -1,5 +1,8 @@
 import { USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
+import {
+  getUserPreference,
+  setUserPreference,
+} from '@shared/services/user-preferences'
 
 import {
   DEFAULT_PROJECTION_SETTINGS,
@@ -53,7 +56,12 @@ function asAlign(value: unknown): LyricVerticalAlign {
 }
 
 function asFontWeight(value: unknown): LyricFontWeight {
-  if (value === '400' || value === '600' || value === '700' || value === '900') {
+  if (
+    value === '400' ||
+    value === '600' ||
+    value === '700' ||
+    value === '900'
+  ) {
     return value
   }
   return DEFAULT_PROJECTION_SETTINGS.fontWeight
@@ -83,7 +91,10 @@ function normalizeSettings(raw: unknown): ProjectionSettings {
       DEFAULT_PROJECTION_SETTINGS.autoMinimizePlayer,
     ),
     lyricAlign: asAlign(source.lyricAlign),
-    showSongTitle: asBoolean(source.showSongTitle, DEFAULT_PROJECTION_SETTINGS.showSongTitle),
+    showSongTitle: asBoolean(
+      source.showSongTitle,
+      DEFAULT_PROJECTION_SETTINGS.showSongTitle,
+    ),
     customTextFormat: asBoolean(
       source.customTextFormat,
       DEFAULT_PROJECTION_SETTINGS.customTextFormat,
@@ -94,24 +105,37 @@ function normalizeSettings(raw: unknown): ProjectionSettings {
     ),
     fontSizePercent: Math.min(
       200,
-      Math.max(50, asNumber(source.fontSizePercent, DEFAULT_PROJECTION_SETTINGS.fontSizePercent)),
+      Math.max(
+        50,
+        asNumber(source.fontSizePercent, DEFAULT_PROJECTION_SETTINGS.fontSizePercent),
+      ),
     ),
     fontColor: asString(source.fontColor, DEFAULT_PROJECTION_SETTINGS.fontColor),
     fontWeight: asFontWeight(source.fontWeight),
-    backgroundColor: asString(source.backgroundColor, DEFAULT_PROJECTION_SETTINGS.backgroundColor),
-    backgroundImage: typeof source.backgroundImage === 'string' ? source.backgroundImage : null,
+    backgroundColor: asString(
+      source.backgroundColor,
+      DEFAULT_PROJECTION_SETTINGS.backgroundColor,
+    ),
+    backgroundImage:
+      typeof source.backgroundImage === 'string' ? source.backgroundImage : null,
     backgroundOpacity: Math.min(
       100,
       Math.max(
         0,
-        asNumber(source.backgroundOpacity, DEFAULT_PROJECTION_SETTINGS.backgroundOpacity),
+        asNumber(
+          source.backgroundOpacity,
+          DEFAULT_PROJECTION_SETTINGS.backgroundOpacity,
+        ),
       ),
     ),
   }
 }
 
 export function loadProjectionSettings(): ProjectionSettings {
-  const stored = getUserPreference<unknown>(USER_PREFERENCE_KEYS.projectionSettings, null)
+  const stored = getUserPreference<unknown>(
+    USER_PREFERENCE_KEYS.projectionSettings,
+    null,
+  )
   return normalizeSettings(stored)
 }
 
@@ -139,7 +163,9 @@ export function reconcileTargetDisplays(
   }
 
   const nextTargets = [...current].filter((id) => extendedDisplayIds.includes(id))
-  const nextDeclined = settings.declinedDisplayIds.filter((id) => extendedDisplayIds.includes(id))
+  const nextDeclined = settings.declinedDisplayIds.filter((id) =>
+    extendedDisplayIds.includes(id),
+  )
 
   if (
     !changed &&

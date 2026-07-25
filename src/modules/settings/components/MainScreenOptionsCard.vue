@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { GlassCard } from '@design-system/index'
+
 import { useProjectionSettings } from '../composables/useProjectionSettings'
+import SettingsToggle from './SettingsToggle.vue'
 
 const { t } = useI18n()
 const {
@@ -11,7 +14,7 @@ const {
   setAutoMinimizePlayer,
 } = useProjectionSettings()
 
-const _toggles = [
+const toggles = [
   {
     key: 'openFullscreenOnPrimary' as const,
     labelKey: 'settings.projection.mainScreen.openFullscreen',

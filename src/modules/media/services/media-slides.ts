@@ -59,13 +59,21 @@ export function buildMediaSlides(
   return [cover, ...lyricSlides]
 }
 
-export function buildSlideTimesSec(slides: MediaLyricSlide[], mode: MediaPlaybackMode): number[] {
+export function buildSlideTimesSec(
+  slides: MediaLyricSlide[],
+  mode: MediaPlaybackMode,
+): number[] {
   return slides.map((slide) =>
-    parseSlideTimeToSeconds(mode === 'instrumental' ? slide.instrumentalTime : slide.time),
+    parseSlideTimeToSeconds(
+      mode === 'instrumental' ? slide.instrumentalTime : slide.time,
+    ),
   )
 }
 
-export function resolveSlideIndexForTime(timesSec: number[], currentTimeSec: number): number {
+export function resolveSlideIndexForTime(
+  timesSec: number[],
+  currentTimeSec: number,
+): number {
   if (timesSec.length === 0) return 0
 
   let index = 0

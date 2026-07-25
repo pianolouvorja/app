@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useCountdownDisplay } from '../composables/useCountdown'
+
 import type { CountdownDisplayConfig, CountdownRuntimeState } from '../types/countdown'
+import { useCountdownDisplay } from '../composables/useCountdown'
 
 const props = withDefaults(
   defineProps<{
@@ -25,14 +26,14 @@ const { formattedTime, isUrgent, isFinished } = useCountdownDisplay(
   () => props.runtime,
 )
 
-const _digitalFontSize = computed(() => {
+const digitalFontSize = computed(() => {
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   const hasMs = props.config.timeFormat.includes('ms')
   const ratio = hasMs ? 0.28 : 0.36
   return Math.max(v * ratio, 20)
 })
 
-const _surfaceStyle = computed(() => ({
+const surfaceStyle = computed(() => ({
   background: props.preview ? 'transparent' : props.config.bgColor,
   color: props.preview
     ? isFinished.value

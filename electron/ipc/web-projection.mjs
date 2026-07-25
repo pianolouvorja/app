@@ -1,6 +1,6 @@
+import { BrowserWindow, screen, session, WebContentsView } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { BrowserWindow, screen, session, WebContentsView } from 'electron'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
 
@@ -8,13 +8,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
 const MIRROR_HTML = path.join(__dirname, '../player/mirror-player.html')
 const CONTROL_BAR_HTML = path.join(__dirname, '../player/control-bar.html')
-const LOCAL_VIDEO_PLAYER_HTML = path.join(__dirname, '../player/local-video-player.html')
-const LOCAL_IMAGE_PLAYER_HTML = path.join(__dirname, '../player/local-image-player.html')
-const LOCAL_PDF_PLAYER_HTML = path.join(__dirname, '../player/local-pdf-player.html')
-const LOCAL_PPTX_PLAYER_HTML = path.join(__dirname, '../player/local-pptx-player.html')
-const IMAGE_CONTROL_BAR_HTML = path.join(__dirname, '../player/image-control-bar.html')
-const PDF_CONTROL_BAR_HTML = path.join(__dirname, '../player/pdf-control-bar.html')
-const _PPT_CONTROL_BAR_HTML = path.join(__dirname, '../player/ppt-control-bar.html')
+const LOCAL_VIDEO_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-video-player.html',
+)
+const LOCAL_IMAGE_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-image-player.html',
+)
+const LOCAL_PDF_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-pdf-player.html',
+)
+const LOCAL_PPTX_PLAYER_HTML = path.join(
+  __dirname,
+  '../player/local-pptx-player.html',
+)
+const IMAGE_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/image-control-bar.html',
+)
+const PDF_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/pdf-control-bar.html',
+)
+const PPT_CONTROL_BAR_HTML = path.join(
+  __dirname,
+  '../player/ppt-control-bar.html',
+)
 const SITE_CONTROL_BAR_HTML = path.join(__dirname, '../player/site-control-bar.html')
 const SITE_INTERACTION_BLOCKER_HTML = path.join(
   __dirname,
@@ -304,7 +325,10 @@ async function syncSiteProjectionScroll() {
 
   let scroll
   try {
-    scroll = await sourceWindow.webContents.executeJavaScript(SITE_READ_SCROLL_SCRIPT, true)
+    scroll = await sourceWindow.webContents.executeJavaScript(
+      SITE_READ_SCROLL_SCRIPT,
+      true,
+    )
   } catch {
     return
   }
@@ -378,10 +402,14 @@ function toLocalAppUrl(filePath) {
 
   // Windows: C:\foo → /C:/foo ; POSIX já começa com /
   const normalized = trimmed.replace(/\\/g, '/')
-  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`
+  const withLeadingSlash = normalized.startsWith('/')
+    ? normalized
+    : `/${normalized}`
   const encoded = withLeadingSlash
     .split('/')
-    .map((part, index) => (index === 0 && part === '' ? '' : encodeURIComponent(part)))
+    .map((part, index) =>
+      index === 0 && part === '' ? '' : encodeURIComponent(part),
+    )
     .join('/')
   return `local://app${encoded}`
 }
@@ -396,7 +424,9 @@ function resolveLocalVideoPlayerUrl(filePath) {
 
 function resolveLocalImagePlayerUrl(filePaths) {
   if (!Array.isArray(filePaths) || filePaths.length === 0) return null
-  const sources = filePaths.map((entry) => toLocalAppUrl(String(entry))).filter(Boolean)
+  const sources = filePaths
+    .map((entry) => toLocalAppUrl(String(entry)))
+    .filter(Boolean)
   if (sources.length === 0) return null
   const playerUrl = new URL(pathToFileURL(LOCAL_IMAGE_PLAYER_HTML).href)
   playerUrl.searchParams.set('srcs', JSON.stringify(sources))
@@ -429,7 +459,8 @@ function resolveSourceUrl(payload) {
     return resolveLocalImagePlayerUrl(filePaths)
   }
 
-  const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
+  const filePath =
+    typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
   if (filePath) {
     if (mode === 'pdf') {
       return resolveLocalPdfPlayerUrl(filePath)
@@ -470,7 +501,12 @@ function isPdfDocumentMode(mode = currentProjectionMode) {
 }
 
 function isCaptureProjectionMode(mode = currentProjectionMode) {
-  return mode === 'video' || mode === 'image' || mode === 'pdf' || mode === 'presentation'
+  return (
+    mode === 'video' ||
+    mode === 'image' ||
+    mode === 'pdf' ||
+    mode === 'presentation'
+  )
 }
 
 function placeSourceOnPrimary() {
@@ -495,9 +531,11 @@ function placeSiteOnPrimary() {
 
 function hideYoutubeSidebar(win) {
   if (!win || win.isDestroyed()) return
-  void win.webContents.executeJavaScript(HIDE_YOUTUBE_SIDEBAR_SCRIPT, true).catch(() => {
-    // página ainda carregando
-  })
+  void win.webContents
+    .executeJavaScript(HIDE_YOUTUBE_SIDEBAR_SCRIPT, true)
+    .catch(() => {
+      // página ainda carregando
+    })
 }
 
 function detachControlBar() {
@@ -552,7 +590,8 @@ function attachControlBar(win) {
     pathToFileURL(
       currentProjectionMode === 'image'
         ? IMAGE_CONTROL_BAR_HTML
-        : currentProjectionMode === 'pdf' || currentProjectionMode === 'presentation'
+        : currentProjectionMode === 'pdf' ||
+            currentProjectionMode === 'presentation'
           ? PDF_CONTROL_BAR_HTML
           : CONTROL_BAR_HTML,
     ).href,
@@ -1198,7 +1237,9 @@ async function goToImageIndexOnWindow(win, index) {
  */
 async function syncImageMirrorsToIndex(index) {
   if (currentProjectionMode !== 'image' || mirrorWindows.length === 0) return
-  await Promise.all(mirrorWindows.map((win) => goToImageIndexOnWindow(win, index)))
+  await Promise.all(
+    mirrorWindows.map((win) => goToImageIndexOnWindow(win, index)),
+  )
 }
 
 /**
@@ -1206,7 +1247,12 @@ async function syncImageMirrorsToIndex(index) {
  * @param {import('electron').BrowserWindow} win
  */
 async function applyPdfIndexToWindow(win) {
-  if (!sourceWindow || sourceWindow.isDestroyed() || win.isDestroyed() || !isPdfDocumentMode()) {
+  if (
+    !sourceWindow ||
+    sourceWindow.isDestroyed() ||
+    win.isDestroyed() ||
+    !isPdfDocumentMode()
+  ) {
     return
   }
 
@@ -1257,7 +1303,9 @@ async function goToPdfIndexOnWindow(win, index) {
  */
 async function syncPdfMirrorsToIndex(index) {
   if (!isPdfDocumentMode() || mirrorWindows.length === 0) return
-  await Promise.all(mirrorWindows.map((win) => goToPdfIndexOnWindow(win, index)))
+  await Promise.all(
+    mirrorWindows.map((win) => goToPdfIndexOnWindow(win, index)),
+  )
 }
 
 function closeMirrorWindowsOnly() {
@@ -1347,7 +1395,11 @@ export function setSiteTargetMonitorIds(ids) {
 
   broadcastSiteTargetsChanged(lastSiteMonitorIds)
 
-  if (isSiteProjectingToScreens() && sourceWindow && !sourceWindow.isDestroyed()) {
+  if (
+    isSiteProjectingToScreens() &&
+    sourceWindow &&
+    !sourceWindow.isDestroyed()
+  ) {
     const loadUrl = sourceWindow.webContents.getURL()
     if (loadUrl && loadUrl !== 'about:blank') {
       openSiteScreensOnTargets(loadUrl, resolveExtendedTargets(lastSiteMonitorIds))
@@ -1443,7 +1495,8 @@ export async function openWebProjectionWindows(payload) {
   let effective = input
 
   if (input.mode === 'presentation') {
-    const filePath = typeof input.filePath === 'string' ? input.filePath.trim() : ''
+    const filePath =
+      typeof input.filePath === 'string' ? input.filePath.trim() : ''
     if (!filePath) return false
     try {
       const pdfPath = await convertPresentationToPdf(filePath)
@@ -1473,12 +1526,15 @@ export async function openWebProjectionWindows(payload) {
         : effective.mode === 'presentation'
           ? 'presentation'
           : effective.mode === 'image' ||
-              (Array.isArray(effective.filePaths) && effective.filePaths.length > 0)
+              (Array.isArray(effective.filePaths) &&
+                effective.filePaths.length > 0)
             ? 'image'
             : 'video'
   const withScreens = effective.withScreens !== false
   const monitorIds = Array.isArray(effective.monitorIds)
-    ? effective.monitorIds.filter((id) => typeof id === 'number' && Number.isFinite(id))
+    ? effective.monitorIds.filter(
+        (id) => typeof id === 'number' && Number.isFinite(id),
+      )
     : []
 
   // Site com controle já aberto: só projeta nas telas, sem recriar o popup.
@@ -1492,8 +1548,12 @@ export async function openWebProjectionWindows(payload) {
     lastSiteMonitorIds = monitorIds
     if (isSiteProjectingToScreens()) return true
     const currentUrl = sourceWindow.webContents.getURL()
-    const projectUrl = currentUrl && currentUrl !== 'about:blank' ? currentUrl : loadUrl
-    return openSiteScreensOnTargets(projectUrl, resolveExtendedTargets(monitorIds))
+    const projectUrl =
+      currentUrl && currentUrl !== 'about:blank' ? currentUrl : loadUrl
+    return openSiteScreensOnTargets(
+      projectUrl,
+      resolveExtendedTargets(monitorIds),
+    )
   }
 
   closeWebProjectionWindows()
@@ -1528,7 +1588,9 @@ export async function openWebProjectionWindows(payload) {
               : SOURCE_WINDOW_TITLE
 
   sourceWindow =
-    mode === 'site' ? createSiteSourceWindow(loadUrl, title) : createSourceWindow(loadUrl, title)
+    mode === 'site'
+      ? createSiteSourceWindow(loadUrl, title)
+      : createSourceWindow(loadUrl, title)
 
   if (!withScreens) {
     return true
@@ -1540,7 +1602,11 @@ export async function openWebProjectionWindows(payload) {
     if (mode === 'site') {
       mirrorWindows.push(createSiteProjectionWindow(display, loadUrl))
       siteShieldWindows.push(createSiteShieldWindow(display))
-    } else if (mode === 'image' || mode === 'pdf' || mode === 'presentation') {
+    } else if (
+      mode === 'image' ||
+      mode === 'pdf' ||
+      mode === 'presentation'
+    ) {
       mirrorWindows.push(createImageProjectionWindow(display, loadUrl))
     } else {
       mirrorWindows.push(createMirrorWindow(display))
@@ -1562,7 +1628,9 @@ function openVideoScreensOnTargets(targets) {
     currentProjectionMode === 'presentation'
   ) {
     const loadUrl =
-      sourceWindow && !sourceWindow.isDestroyed() ? sourceWindow.webContents.getURL() : ''
+      sourceWindow && !sourceWindow.isDestroyed()
+        ? sourceWindow.webContents.getURL()
+        : ''
     if (!loadUrl || loadUrl === 'about:blank') return false
     for (const display of targets) {
       mirrorWindows.push(createImageProjectionWindow(display, loadUrl))
@@ -1602,7 +1670,11 @@ export function toggleSiteProjectionScreens() {
  * @returns {boolean}
  */
 export function toggleVideoProjectionScreens() {
-  if (!sourceWindow || sourceWindow.isDestroyed() || !isCaptureProjectionMode()) {
+  if (
+    !sourceWindow ||
+    sourceWindow.isDestroyed() ||
+    !isCaptureProjectionMode()
+  ) {
     return false
   }
 
@@ -1616,11 +1688,17 @@ export function toggleVideoProjectionScreens() {
 }
 
 export function isSiteProjectingToScreens() {
-  return currentProjectionMode === 'site' && mirrorWindows.some((win) => !win.isDestroyed())
+  return (
+    currentProjectionMode === 'site' &&
+    mirrorWindows.some((win) => !win.isDestroyed())
+  )
 }
 
 export function isVideoProjectingToScreens() {
-  return isCaptureProjectionMode() && mirrorWindows.some((win) => win && !win.isDestroyed())
+  return (
+    isCaptureProjectionMode() &&
+    mirrorWindows.some((win) => win && !win.isDestroyed())
+  )
 }
 
 /** @param {unknown} _payload */
@@ -1737,7 +1815,10 @@ export async function remotePlaySource() {
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     try {
-      const playing = await sourceWindow.webContents.executeJavaScript(REMOTE_PLAY_SCRIPT, true)
+      const playing = await sourceWindow.webContents.executeJavaScript(
+        REMOTE_PLAY_SCRIPT,
+        true,
+      )
       if (playing) return true
     } catch {
       // ainda carregando
@@ -1754,7 +1835,9 @@ export async function remotePauseSource() {
     return false
   }
   try {
-    return Boolean(await sourceWindow.webContents.executeJavaScript(REMOTE_PAUSE_SCRIPT, true))
+    return Boolean(
+      await sourceWindow.webContents.executeJavaScript(REMOTE_PAUSE_SCRIPT, true),
+    )
   } catch {
     return false
   }
@@ -1796,7 +1879,10 @@ export async function remoteToggleMuteSource() {
     return null
   }
   try {
-    return await sourceWindow.webContents.executeJavaScript(REMOTE_TOGGLE_MUTE_SCRIPT, true)
+    return await sourceWindow.webContents.executeJavaScript(
+      REMOTE_TOGGLE_MUTE_SCRIPT,
+      true,
+    )
   } catch {
     return null
   }
@@ -1855,7 +1941,10 @@ export async function getSourcePlaybackState() {
 
   if (currentProjectionMode !== 'video') return null
   try {
-    const state = await sourceWindow.webContents.executeJavaScript(GET_PLAYBACK_STATE_SCRIPT, true)
+    const state = await sourceWindow.webContents.executeJavaScript(
+      GET_PLAYBACK_STATE_SCRIPT,
+      true,
+    )
     if (!state || typeof state !== 'object') return null
     return {
       ...state,

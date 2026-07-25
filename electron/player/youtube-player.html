@@ -19,8 +19,8 @@
       #player iframe {
         position: fixed;
         inset: 0;
-        width: 100%;
-        height: 100%;
+        width: 100% !important;
+        height: 100% !important;
         border: 0;
         background: #000;
         pointer-events: none;
@@ -30,7 +30,7 @@
   <body>
     <div id="player"></div>
     <script>
-      ;(() => {
+      ;(function () {
         var params = new URLSearchParams(window.location.search)
         var videoId = params.get('v') || ''
         if (!videoId) return
@@ -50,7 +50,7 @@
             var current = 0
             try {
               current = player.getCurrentTime() || 0
-            } catch (_e) {}
+            } catch (e) {}
 
             var targetTime =
               typeof payload.currentTime === 'number' ? payload.currentTime : current
@@ -65,14 +65,14 @@
             }
 
             player.playVideo()
-          } catch (_e) {
+          } catch (e) {
             // ignore
           }
         }
 
         window.__louvorjaApplyPlaybackSync = applySync
 
-        window.onYouTubeIframeAPIReady = () => {
+        window.onYouTubeIframeAPIReady = function () {
           player = new YT.Player('player', {
             width: '100%',
             height: '100%',
@@ -91,13 +91,13 @@
               origin: 'http://localhost',
             },
             events: {
-              onReady: (event) => {
+              onReady: function (event) {
                 playerReady = true
                 try {
                   event.target.mute()
                   event.target.setVolume(0)
                   event.target.pauseVideo()
-                } catch (_e) {}
+                } catch (e) {}
                 applySync(pendingSync)
               },
             },
@@ -106,7 +106,8 @@
 
         function bindIpcSync() {
           if (
-            !window.louvorja?.projection ||
+            !window.louvorja ||
+            !window.louvorja.projection ||
             typeof window.louvorja.projection.onPlaybackSync !== 'function'
           ) {
             return false
@@ -117,13 +118,13 @@
 
         if (!bindIpcSync()) {
           var tries = 0
-          var timer = setInterval(() => {
+          var timer = setInterval(function () {
             tries += 1
             if (bindIpcSync() || tries > 20) clearInterval(timer)
           }, 100)
         }
 
-        window.addEventListener('beforeunload', () => {
+        window.addEventListener('beforeunload', function () {
           if (typeof unsubscribe === 'function') unsubscribe()
         })
 

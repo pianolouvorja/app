@@ -25,20 +25,9 @@ coverage
 *.sln
 *.sw?
 
-# Interno (Cursor / docs de planejamento e prompts)
+# Interno (não publicar por enquanto)
 .cursor/
-
-# docs: publicar só onboarding, arquitetura e checklists públicos
-docs/**
-!docs/DEVELOPER.md
-!docs/context/
-!docs/context/**
-!docs/prd/
-!docs/prd/**
-!docs/checklists/
-!docs/checklists/pr-checklist.md
-!docs/checklists/release-checklist.md
-!docs/checklists/commit-messages.md
+docs/
 
 *.tsbuildinfo
 
@@ -58,9 +47,3 @@ __screenshots__/
 .env
 .env.local
 .env.*.local
-
-# Biome
-/biome-cache
-
-# Husky internals (pre-commit hook sim é versionado)
-# .husky/_ é gerado pelo `husky init`, não versionar

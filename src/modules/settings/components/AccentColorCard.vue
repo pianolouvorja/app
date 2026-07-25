@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import type { AccentKey } from '@design-system/themes'
 import { useI18n } from 'vue-i18n'
+
+import { GlassCard } from '@design-system/index'
+import type { AccentKey } from '@design-system/themes'
 
 import { useAppearanceSettings } from '../composables/useAppearanceSettings'
 
 const { t } = useI18n()
 const { accents, accentKey, setAccentColor } = useAppearanceSettings()
 
-const _accentEntries = Object.entries(accents) as Array<[AccentKey, (typeof accents)[AccentKey]]>
+const accentEntries = Object.entries(accents) as Array<
+  [AccentKey, (typeof accents)[AccentKey]]
+>
 
-function _selectAccent(key: AccentKey) {
+function selectAccent(key: AccentKey) {
   setAccentColor(key)
 }
 </script>

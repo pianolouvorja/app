@@ -90,6 +90,15 @@ export const PROJECTION_BACKGROUND_PRESETS = [
   '#4a148c',
 ] as const
 
-export const LYRIC_ALIGN_OPTIONS: LyricVerticalAlign[] = ['top', 'center', 'bottom']
+export const LYRIC_ALIGN_OPTIONS: LyricVerticalAlign[] = [
+  'top',
+  'center',
+  'bottom',
+]
 
-export const LYRIC_WEIGHT_OPTIONS: LyricFontWeight[] = ['400', '600', '700', '900']
+export const LYRIC_WEIGHT_OPTIONS: LyricFontWeight[] = [
+  '400',
+  '600',
+  '700',
+  '900',
+]

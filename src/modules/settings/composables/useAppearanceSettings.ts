@@ -1,7 +1,8 @@
+import { computed } from 'vue'
+
 import { useBlurSystem, useThemeManager } from '@design-system/composables'
 import type { AccentKey, InteractionKey, ThemeKey } from '@design-system/themes'
 import type { BlurToken } from '@design-system/tokens'
-import { computed } from 'vue'
 
 import type { ThemeMode } from '../types/settings'
 
@@ -44,7 +45,9 @@ export function useAppearanceSettings() {
     setGlassIntensity,
   } = useBlurSystem()
 
-  const themeMode = computed<ThemeMode>(() => themeToMode[themeKey.value] ?? 'dark')
+  const themeMode = computed<ThemeMode>(
+    () => themeToMode[themeKey.value] ?? 'dark',
+  )
 
   const isDark = computed(() => currentTheme.value.mode === 'dark')
 

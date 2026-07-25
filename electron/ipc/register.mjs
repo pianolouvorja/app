@@ -10,17 +10,18 @@ import {
   readWorkspaceRecord,
   writeWorkspaceRecord,
 } from '../workspace.mjs'
-import { registerDialogIpc } from './dialog.mjs'
 import { registerDisplayIpc } from './displays.mjs'
-import { hasPresentationOffice } from './presentation-convert.mjs'
+import { registerDialogIpc } from './dialog.mjs'
+import {
+  hasPresentationOffice,
+} from './presentation-convert.mjs'
 import {
   broadcastPlaybackSync,
   closeWebProjectionWindows,
+  getSourceMediaIdFor,
   getImageSlideState,
   getPdfPageState,
   getPptSlideState,
-  getSiteTargetMonitorIds,
-  getSourceMediaIdFor,
   getSourceNavigationState,
   getSourcePlaybackState,
   getVideoTargetMonitorIds,
@@ -30,18 +31,19 @@ import {
   remoteGoForwardSource,
   remoteImageNext,
   remoteImagePrev,
-  remotePauseSource,
   remotePdfNext,
   remotePdfPrev,
-  remotePlaySource,
   remotePptNext,
   remotePptPrev,
+  remotePauseSource,
+  remotePlaySource,
   remoteReloadSource,
   remoteSeekSource,
   remoteSetVolumeSource,
   remoteToggleMuteSource,
   setSiteControlPanelOpen,
   setSiteTargetMonitorIds,
+  getSiteTargetMonitorIds,
   setVideoTargetMonitorIds,
   toggleSiteProjectionScreens,
   toggleVideoProjectionScreens,

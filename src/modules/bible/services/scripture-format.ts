@@ -33,14 +33,20 @@ export function formatScripturalReference(selection: {
 }): string {
   if (!selection.bookName || !selection.chapter) return ''
 
-  const versePart = selection.verses.length > 0 ? `:${formatVerseIntervals(selection.verses)}` : ''
-  const versionPart = selection.versionAbbreviation ? ` (${selection.versionAbbreviation})` : ''
+  const versePart =
+    selection.verses.length > 0 ? `:${formatVerseIntervals(selection.verses)}` : ''
+  const versionPart = selection.versionAbbreviation
+    ? ` (${selection.versionAbbreviation})`
+    : ''
 
   return `${selection.bookName} ${selection.chapter}${versePart}${versionPart}`
 }
 
 /** Concatena o texto dos versículos selecionados. */
-export function buildProjectionText(verses: BibleChapterVerses, selected: number[]): string {
+export function buildProjectionText(
+  verses: BibleChapterVerses,
+  selected: number[],
+): string {
   return selected
     .map((num) => verses[String(num)])
     .filter((text): text is string => Boolean(text))
@@ -51,7 +57,10 @@ export function buildProjectionText(verses: BibleChapterVerses, selected: number
  * Interpreta busca por números/intervalos (`1`, `1-3`, `1,3-5`).
  * Retorna apenas versículos existentes no capítulo.
  */
-export function parseVerseQuery(query: string, verses: BibleChapterVerses): number[] {
+export function parseVerseQuery(
+  query: string,
+  verses: BibleChapterVerses,
+): number[] {
   const selected = new Set<number>()
   const parts = query.split(',')
 

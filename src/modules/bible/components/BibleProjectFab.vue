@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+
 defineProps<{
   disabled?: boolean
   projecting?: boolean
@@ -13,7 +15,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-function _onClick(projecting: boolean, disabled: boolean) {
+function onClick(projecting: boolean, disabled: boolean) {
   if (disabled) return
   if (projecting) emit('clear')
   else emit('project')

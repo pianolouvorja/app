@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { useThemeManager } from '@design-system/composables'
-import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
+import { RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
+
+import StartingOverlay from '@modules/starting/components/StartingOverlay.vue'
+import { useStartingStore } from '@modules/starting/stores/useStartingStore'
+import { useThemeManager } from '@design-system/composables'
+import AppTitlebar from '@layouts/AppTitlebar.vue'
 
 const vuetifyTheme = useTheme()
 const { currentTheme } = useThemeManager()

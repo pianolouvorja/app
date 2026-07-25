@@ -33,7 +33,10 @@ export async function fetchRemoteCatalogJson<T = unknown>(
     return (await response.json()) as T
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (retries > 0 && (message.includes('Failed to fetch') || message.includes('NetworkError'))) {
+    if (
+      retries > 0 &&
+      (message.includes('Failed to fetch') || message.includes('NetworkError'))
+    ) {
       await delay(delayMs)
       return fetchRemoteCatalogJson(file, retries - 1, delayMs * 1.5)
     }

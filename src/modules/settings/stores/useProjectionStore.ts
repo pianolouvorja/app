@@ -7,7 +7,10 @@ import {
   listExtendedDisplays,
   listSystemDisplays,
 } from '../services/display-service'
-import { pruneArrangement, upsertArrangementSlot } from '../services/monitor-layout'
+import {
+  pruneArrangement,
+  upsertArrangementSlot,
+} from '../services/monitor-layout'
 import {
   loadProjectionSettings,
   readImageAsDataUrl,
@@ -34,7 +37,9 @@ export const useProjectionStore = defineStore('settings-projection', () => {
 
   const extendedDisplays = computed(() => listExtendedDisplays(displays.value))
 
-  const hasCustomArrangement = computed(() => settings.value.monitorArrangement.length > 0)
+  const hasCustomArrangement = computed(
+    () => settings.value.monitorArrangement.length > 0,
+  )
 
   const monitorOptions = computed<ProjectionMonitorOption[]>(() =>
     displays.value.map((display, index) => ({
