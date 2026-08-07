@@ -9,7 +9,7 @@ import type { DockNavItem } from '@design-system/types/navigation'
 import MediaChrome from '@modules/media/components/MediaChrome.vue'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
-import codenamePianoUrl from '@assets/brand/codenamePIANO.svg'
+import CodenameLogo from '@assets/brand/CodenameLogo.vue'
 import { APP_VERSION } from '@shared/constants/app'
 
 const route = useRoute()
@@ -71,13 +71,7 @@ function viewKey(viewRoute: typeof route) {
       </div>
       <div class="app-shell__header-end">
         <div class="app-shell__codename-block">
-          <img
-            class="app-shell__codename"
-            :src="codenamePianoUrl"
-            alt="codename PIANO"
-            width="168"
-            height="25"
-          >
+          <CodenameLogo class="app-shell__codename" />
           <span class="app-shell__version" aria-hidden="true">{{ APP_VERSION }}</span>
         </div>
         <button
@@ -168,26 +162,28 @@ function viewKey(viewRoute: typeof route) {
 
 .app-shell__codename-block {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .app-shell__codename {
   display: block;
-  height: 1.5rem;
+  height: 2.2rem;
   width: auto;
-  object-fit: contain;
   flex-shrink: 0;
+  opacity: 0.4;
+}
+
+:global(html[data-mode='light'] .app-shell__codename) {
+  opacity: 1 !important;
 }
 
 .app-shell__version {
   color: var(--ds-color-on-surface-variant);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: 0.02em;
-  opacity: 0.7;
 }
 
 .app-shell__account {
