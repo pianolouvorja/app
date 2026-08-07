@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { GradientBackground } from '@design-system/index'
 import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
-import codenamePianoUrl from '@assets/brand/codenamePIANO.svg'
+import CodenameLogo from '@assets/brand/CodenameLogo.vue'
 
 const { t } = useI18n()
 const {
@@ -48,13 +48,7 @@ const {
                 <p class="starting-overlay__subtitle">
                   {{ t('starting.subtitle') }}
                 </p>
-                <img
-                  class="starting-overlay__codename"
-                  :src="codenamePianoUrl"
-                  alt="codename PIANO"
-                  width="200"
-                  height="30"
-                >
+                <CodenameLogo class="starting-overlay__codename" />
               </div>
 
               <section class="starting-overlay__progress">
@@ -160,7 +154,6 @@ const {
   width: auto;
   height: 1.75rem;
   margin-top: 1.25rem;
-  object-fit: contain;
 }
 
 .starting-overlay__progress {

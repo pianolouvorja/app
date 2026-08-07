@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import type { AlbumSearchHit } from '../types/albums'
 
@@ -72,11 +71,6 @@ function onDownloadProgress(progress: number | null) {
     </span>
 
     <div class="album-search-hit__actions">
-      <MonitorTargetSelect
-        dense
-        persist
-        :disabled="busy || isDownloading"
-      />
       <MusicTrackActions
         :music-id="hit.musicId"
         :track-name="hit.name"

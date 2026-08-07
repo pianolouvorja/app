@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 
 import ClockConfigDialog from '../components/ClockConfigDialog.vue'
 import ClockPreview from '../components/ClockPreview.vue'
@@ -122,11 +121,6 @@ function onToggleProjection() {
       @project="onToggleProjection"
       @clear="onToggleProjection"
     />
-    <MonitorTargetSelect
-      class="clock-view__monitor-select"
-      dense
-      persist
-    />
   </section>
 </template>
 
@@ -137,13 +131,6 @@ function onToggleProjection() {
   flex-direction: column;
   padding: var(--ds-spacing-page, 1.5rem);
   padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 5rem);
-}
-
-.clock-view__monitor-select {
-  position: fixed;
-  right: 6.75rem;
-  bottom: calc(var(--ds-dock-height, 5.5rem) + 1.875rem);
-  z-index: 36;
 }
 
 .clock-view__header {

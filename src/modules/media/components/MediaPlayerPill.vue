@@ -237,7 +237,7 @@ function selectMode(mode: MediaPlaybackMode) {
       >
         <i
           class="ti"
-          :class="projecting ? 'ti-player-stop' : 'ti-projector'"
+          :class="projecting ? 'ti-player-stop' : 'ti-presentation'"
           aria-hidden="true"
         />
       </button>

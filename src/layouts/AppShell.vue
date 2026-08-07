@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { usePageTransition } from '@design-system/composables'
 import { DockFooter, GradientBackground } from '@design-system/index'
 import type { DockNavItem } from '@design-system/types/navigation'
+import { useBibleStore } from '@modules/bible/stores/useBibleStore'
+import { useClockStore } from '@modules/clock/stores/useClockStore'
+import { useCountdownStore } from '@modules/countdown/stores/useCountdownStore'
+import { useLiturgyStore } from '@modules/liturgy/stores/useLiturgyStore'
 import MediaChrome from '@modules/media/components/MediaChrome.vue'
+import { useMediaPlayer } from '@modules/media/composables/useMediaPlayer'
+import { useRandomStore } from '@modules/random/stores/useRandomStore'
+import { useTimerStore } from '@modules/timer/stores/useTimerStore'
+import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+import { closeProjectionModule, isProjectionModuleOpen } from '@shared/composables/useProjectionWindow'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
-import codenamePianoUrl from '@assets/brand/codenamePIANO.svg'
+import CodenameLogo from '@assets/brand/CodenameLogo.vue'
 import { APP_VERSION } from '@shared/constants/app'
 
 const route = useRoute()
@@ -17,16 +27,228 @@ const router = useRouter()
 const { t } = useI18n()
 const { transitionName } = usePageTransition()
 
+const {
+  hasSession: hasMediaSession,
+  isProjecting: isMediaProjecting,
+  toggleProjection: toggleMediaProjection,
+  clearProjection: clearMediaProjection,
+} = useMediaPlayer()
+
+const bibleStore = useBibleStore()
+const { isProjecting: isBibleProjecting, projection: bibleProjection } =
+  storeToRefs(bibleStore)
+
+const randomStore = useRandomStore()
+const { isProjecting: isRandomProjecting } = storeToRefs(randomStore)
+
+const timerStore = useTimerStore()
+const { isProjecting: isTimerProjecting } = storeToRefs(timerStore)
+
+const countdownStore = useCountdownStore()
+const { isProjecting: isCountdownProjecting } = storeToRefs(countdownStore)
+
+const clockStore = useClockStore()
+const { isProjecting: isClockProjecting } = storeToRefs(clockStore)
+
+const liturgyStore = useLiturgyStore()
+const {
+  siteProjectionItemId,
+  videoProjectionItemId,
+  selectedItemIndex,
+  selectedItem,
+} = storeToRefs(liturgyStore)
+
+/** Tipos da liturgia que o header Projetar consegue abrir nas telas. */
+const LITURGY_PROJECTABLE = new Set([
+  'music',
+  'site',
+  'online_video',
+  'video',
+  'images',
+  'pdf',
+  'presentation',
+])
+
 /** Login Google — reativar quando o fluxo de autenticação existir */
 const showAccountButton = false
+
+const hasBibleContent = computed(
+  () =>
+    bibleProjection.value.verses.length > 0 &&
+    Boolean(bibleProjection.value.text),
+)
+
+const isOnRandomRoute = computed(() => route.name === 'utilities-random')
+const isOnTimerRoute = computed(() => route.name === 'utilities-timer')
+const isOnCountdownRoute = computed(() => route.name === 'utilities-countdown')
+const isOnClockRoute = computed(() => route.name === 'utilities-clock')
+const isOnLiturgyRoute = computed(() => route.meta.navKey === 'liturgy')
+
+const isLiturgyProjecting = computed(
+  () =>
+    siteProjectionItemId.value != null || videoProjectionItemId.value != null,
+)
+
+const hasLiturgyProjectableSelection = computed(() => {
+  const item = selectedItem.value
+  return (
+    item != null &&
+    !item.done &&
+    LITURGY_PROJECTABLE.has(item.type)
+  )
+})
+
+const isProjecting = computed(
+  () =>
+    isMediaProjecting.value ||
+    isBibleProjecting.value ||
+    isRandomProjecting.value ||
+    isTimerProjecting.value ||
+    isCountdownProjecting.value ||
+    isClockProjecting.value ||
+    isLiturgyProjecting.value,
+)
+
+/** Janelas de módulo abertas (não reativo — poll no mount). */
+const hasModuleScreens = ref(false)
+let screensPollTimer: ReturnType<typeof setInterval> | null = null
+
+const hasOpenScreens = computed(
+  () => isProjecting.value || hasModuleScreens.value,
+)
+
+function refreshOpenScreens() {
+  hasModuleScreens.value = isProjectionModuleOpen()
+}
+
+async function onCloseAllScreens() {
+  if (isMediaProjecting.value) clearMediaProjection()
+  if (isBibleProjecting.value) bibleStore.clearProjectionWindow()
+  if (isRandomProjecting.value) randomStore.clearProjection()
+  if (isTimerProjecting.value) timerStore.clearProjection()
+  if (isCountdownProjecting.value) countdownStore.clearProjection()
+  if (isClockProjecting.value) clockStore.clearProjection()
+  if (isLiturgyProjecting.value) await liturgyStore.clearWebProjection()
+  closeProjectionModule()
+  refreshOpenScreens()
+}
+
+onMounted(() => {
+  refreshOpenScreens()
+  screensPollTimer = setInterval(refreshOpenScreens, 400)
+})
+
+onUnmounted(() => {
+  if (screensPollTimer) clearInterval(screensPollTimer)
+})
+
+/** Há conteúdo projetável ou projeção ativa. */
+const canToggleProjection = computed(
+  () =>
+    hasMediaSession.value ||
+    isMediaProjecting.value ||
+    hasBibleContent.value ||
+    isBibleProjecting.value ||
+    isOnRandomRoute.value ||
+    isRandomProjecting.value ||
+    isOnTimerRoute.value ||
+    isTimerProjecting.value ||
+    isOnCountdownRoute.value ||
+    isCountdownProjecting.value ||
+    isOnClockRoute.value ||
+    isClockProjecting.value ||
+    isLiturgyProjecting.value ||
+    (isOnLiturgyRoute.value && hasLiturgyProjectableSelection.value),
+)
+
+const projectAriaLabel = computed(() => {
+  if (isLiturgyProjecting.value) return t('liturgy.actions.stopSiteProjection')
+  if (isClockProjecting.value) return t('clock.clearProjection')
+  if (isCountdownProjecting.value) return t('countdown.clearProjection')
+  if (isTimerProjecting.value) return t('timer.clearProjection')
+  if (isRandomProjecting.value) return t('random.clearProjection')
+  if (isBibleProjecting.value) return t('bible.clearProjection')
+  if (isMediaProjecting.value) return t('media.clearProjection')
+  if (isOnLiturgyRoute.value) return t('liturgy.actions.project')
+  if (isOnClockRoute.value) return t('clock.project')
+  if (isOnCountdownRoute.value) return t('countdown.project')
+  if (isOnTimerRoute.value) return t('timer.project')
+  if (isOnRandomRoute.value) return t('random.project')
+  if (route.meta.navKey === 'bible') return t('bible.project')
+  return t('media.project')
+})
+
+async function onToggleProjection() {
+  if (!canToggleProjection.value) return
+
+  if (isMediaProjecting.value) {
+    await toggleMediaProjection()
+    return
+  }
+  if (isBibleProjecting.value) {
+    await bibleStore.clearProjectionWindow()
+    return
+  }
+  if (isRandomProjecting.value) {
+    await randomStore.clearProjection()
+    return
+  }
+  if (isTimerProjecting.value) {
+    await timerStore.clearProjection()
+    return
+  }
+  if (isCountdownProjecting.value) {
+    await countdownStore.clearProjection()
+    return
+  }
+  if (isClockProjecting.value) {
+    await clockStore.clearProjection()
+    return
+  }
+  if (isLiturgyProjecting.value) {
+    await liturgyStore.clearWebProjection()
+    return
+  }
+
+  // Preferência: módulo atual; senão o que tiver conteúdo.
+  if (isOnLiturgyRoute.value && hasLiturgyProjectableSelection.value) {
+    const index = selectedItemIndex.value
+    if (index != null) await liturgyStore.playItemOnScreens(index)
+    return
+  }
+  if (isOnClockRoute.value) {
+    await clockStore.toggleProjection()
+    return
+  }
+  if (isOnCountdownRoute.value) {
+    await countdownStore.toggleProjection()
+    return
+  }
+  if (isOnTimerRoute.value) {
+    await timerStore.toggleProjection()
+    return
+  }
+  if (isOnRandomRoute.value) {
+    await randomStore.toggleProjection()
+    return
+  }
+  if (route.meta.navKey === 'bible' && hasBibleContent.value) {
+    await bibleStore.toggleProjection()
+    return
+  }
+  if (hasMediaSession.value) {
+    await toggleMediaProjection()
+    return
+  }
+  if (hasBibleContent.value) {
+    await bibleStore.toggleProjection()
+  }
+}
 
 const activeKey = computed(() => {
   const navKey = route.meta.navKey
   return typeof navKey === 'string' ? navKey : 'home'
 })
-
-/** Na liturgia o FAB de mídia fica na própria view (padrão Bíblia). */
-const showMediaChrome = computed(() => activeKey.value !== 'liturgy')
 
 const showHeaderLogo = computed(() => activeKey.value !== 'home')
 
@@ -70,14 +292,43 @@ function viewKey(viewRoute: typeof route) {
         </span>
       </div>
       <div class="app-shell__header-end">
-        <div class="app-shell__codename-block">
-          <img
-            class="app-shell__codename"
-            :src="codenamePianoUrl"
-            alt="codename PIANO"
-            width="168"
-            height="25"
+        <div class="app-shell__projection">
+          <button
+            v-if="hasOpenScreens"
+            type="button"
+            class="app-shell__project-btn"
+            :aria-label="t('popupControls.closeAll')"
+            :title="t('popupControls.closeAll')"
+            @click="onCloseAllScreens"
           >
+            <i
+              class="ti ti-square-x"
+              aria-hidden="true"
+            />
+          </button>
+          <MonitorTargetSelect
+            class="app-shell__screens"
+            show-label
+            persist
+          />
+          <button
+            type="button"
+            class="app-shell__project-btn"
+            :class="{ 'app-shell__project-btn--on': isProjecting }"
+            :disabled="!canToggleProjection"
+            :aria-label="projectAriaLabel"
+            :title="projectAriaLabel"
+            @click="onToggleProjection"
+          >
+            <i
+              class="ti"
+              :class="isProjecting ? 'ti-player-stop' : 'ti-presentation'"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+        <div class="app-shell__codename-block">
+          <CodenameLogo class="app-shell__codename" />
           <span class="app-shell__version" aria-hidden="true">{{ APP_VERSION }}</span>
         </div>
         <button
@@ -102,7 +353,7 @@ function viewKey(viewRoute: typeof route) {
       </RouterView>
     </main>
 
-    <MediaChrome v-if="showMediaChrome" />
+    <MediaChrome />
 
     <DockFooter
       :items="navItems"
@@ -166,28 +417,77 @@ function viewKey(viewRoute: typeof route) {
   margin-left: auto;
 }
 
+.app-shell__projection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.app-shell__screens {
+  flex-shrink: 0;
+}
+
+.app-shell__project-btn {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
+  color: var(--ds-color-primary);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    opacity 160ms ease;
+
+  .ti {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    transform: scale(1.06);
+    background: color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
+  }
+
+  &--on {
+    background: color-mix(in srgb, var(--ds-color-primary) 32%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
 .app-shell__codename-block {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .app-shell__codename {
   display: block;
-  height: 1.5rem;
+  height: 2.2rem;
   width: auto;
-  object-fit: contain;
   flex-shrink: 0;
+  opacity: 0.4;
+}
+
+:global(html[data-mode='light'] .app-shell__codename) {
+  opacity: 1 !important;
 }
 
 .app-shell__version {
   color: var(--ds-color-on-surface-variant);
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: 0.02em;
-  opacity: 0.7;
 }
 
 .app-shell__account {

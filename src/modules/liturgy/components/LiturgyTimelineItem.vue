@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 
 import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
 import type { LiturgyItem } from '../types/liturgy'
@@ -369,12 +368,6 @@ const rowHovered = ref(false)
               aria-hidden="true"
             />
           </button>
-          <MonitorTargetSelect
-            v-if="!isCategory && (isSiteItem || isVideoRemote || isMusicItem)"
-            dense
-            persist
-            :disabled="item.done"
-          />
           <MusicTrackActions
             v-if="isMusicItem && item.musicId != null"
             :music-id="item.musicId"

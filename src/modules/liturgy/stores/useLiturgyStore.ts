@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { Router } from 'vue-router'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import { closeProjectionModule } from '@shared/composables/useProjectionWindow'
 
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 
@@ -32,6 +33,7 @@ import {
   saveLiturgyState,
   todayWeekday,
 } from '../services/liturgy-preferences'
+import { clearLiturgyWebRuntime } from '../services/liturgy-web-runtime'
 import {
   DEFAULT_LITURGY_ITEM_DRAFT,
   DEFAULT_MOMENT_DURATION_MS,
@@ -835,6 +837,17 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey.value = result.messageKey ?? null
   }
 
+  /** Encerra projeção web da liturgia (header global / sync). */
+  async function clearWebProjection() {
+    clearLiturgyWebRuntime()
+    const bridge = getDesktopBridge()
+    await bridge?.projection?.closeUrl?.()
+    closeProjectionModule()
+    siteProjectionItemId.value = null
+    videoProjectionItemId.value = null
+    lastActionMessageKey.value = null
+  }
+
   /**
    * Mantém o botão da liturgia sincronizado com o da janela de controle
    * (ambos refletem state.projecting do processo principal).
@@ -1124,6 +1137,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     selectItem,
     playMusicMode,
     playItemOnScreens,
+    clearWebProjection,
     syncSiteProjectionState,
     openCustomDialog,
     closeCustomDialog,

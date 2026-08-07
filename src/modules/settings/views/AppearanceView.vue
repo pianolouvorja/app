@@ -11,6 +11,9 @@ import { useProjectionSettings } from '../composables/useProjectionSettings'
 const { t } = useI18n()
 const { hydrate } = useProjectionSettings()
 
+/** Oculto por enquanto — reative para voltar a Personalização da Letra. */
+const SHOW_LYRIC_CUSTOMIZATION = false
+
 onMounted(() => {
   void hydrate()
 })
@@ -41,7 +44,10 @@ onMounted(() => {
       </aside>
     </div>
 
-    <section class="appearance-experience__lyrics">
+    <section
+      v-if="SHOW_LYRIC_CUSTOMIZATION"
+      class="appearance-experience__lyrics"
+    >
       <LyricCustomizationCard />
     </section>
   </div>
