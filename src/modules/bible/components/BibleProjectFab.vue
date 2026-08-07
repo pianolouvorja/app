@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
-
 defineProps<{
   disabled?: boolean
   projecting?: boolean
@@ -24,11 +22,6 @@ function onClick(projecting: boolean, disabled: boolean) {
 
 <template>
   <div class="bible-project-fab">
-    <MonitorTargetSelect
-      class="bible-project-fab__monitors"
-      dense
-      persist
-    />
     <button
       type="button"
       class="bible-project-fab__btn"

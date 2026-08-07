@@ -14,12 +14,15 @@ const props = withDefaults(
     disabled?: boolean
     /** Layout compacto para barras de ação. */
     dense?: boolean
+    /** Exibe chip "Telas" ao lado do botão (header global). */
+    showLabel?: boolean
   }>(),
   {
     persist: true,
     extendedOnly: true,
     disabled: false,
     dense: false,
+    showLabel: false,
   },
 )
 
@@ -138,15 +141,22 @@ watch(open, async (isOpen) => {
     class="monitor-target-select"
     :class="{
       'monitor-target-select--dense': dense,
+      'monitor-target-select--header': showLabel,
       'monitor-target-select--open': open,
       'monitor-target-select--disabled': disabled,
     }"
   >
+    <span
+      v-if="showLabel"
+      class="monitor-target-select__chip"
+    >
+      {{ t('popupCount.label') }}
+    </span>
     <button
       type="button"
       class="monitor-target-select__trigger"
       :disabled="disabled"
-      :title="t('monitors.selectScreens')"
+      :title="t('popupCount.tooltip')"
       :aria-label="t('monitors.selectScreens')"
       :aria-expanded="open"
       aria-haspopup="dialog"
@@ -157,7 +167,7 @@ watch(open, async (isOpen) => {
         aria-hidden="true"
       />
       <span
-        v-if="!dense"
+        v-if="!dense && !showLabel"
         class="monitor-target-select__trigger-label"
       >
         {{ triggerLabel }}
@@ -268,7 +278,27 @@ watch(open, async (isOpen) => {
 .monitor-target-select {
   position: relative;
   display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   flex-shrink: 0;
+}
+
+.monitor-target-select__chip {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
+  color: var(--ds-color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  user-select: none;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
 }
 
 .monitor-target-select__trigger {
@@ -286,7 +316,8 @@ watch(open, async (isOpen) => {
   cursor: pointer;
   transition:
     background-color 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    transform 160ms ease;
 
   &:hover:not(:disabled) {
     background: color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
@@ -301,6 +332,25 @@ watch(open, async (isOpen) => {
   i {
     font-size: 1.15rem;
     line-height: 1;
+  }
+}
+
+.monitor-target-select--header .monitor-target-select__trigger {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--ds-radius-md, 0.75rem);
+  background: color-mix(in srgb, var(--ds-color-primary) 18%, transparent);
+  color: var(--ds-color-primary);
+
+  &:hover:not(:disabled) {
+    transform: scale(1.06);
+    background: color-mix(in srgb, var(--ds-color-primary) 28%, transparent);
+    color: var(--ds-color-primary);
+  }
+
+  i {
+    font-size: 1.05rem;
   }
 }
 
@@ -348,6 +398,13 @@ watch(open, async (isOpen) => {
   right: -0.25rem;
   background: var(--ds-color-secondary, #78d6d2);
   color: var(--ds-color-on-secondary, #003736);
+}
+
+.monitor-target-select--header .monitor-target-select__badge {
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary);
+  font-size: 0.6875rem;
+  line-height: 1.15rem;
 }
 
 .monitor-target-select__panel {

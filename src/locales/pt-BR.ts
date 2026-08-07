@@ -16,6 +16,13 @@ export default {
     primary: 'Principal',
     selectedCount: '{count} selecionada(s)',
   },
+  popupCount: {
+    label: 'Telas',
+    tooltip: 'Selecionar telas de projeção',
+  },
+  popupControls: {
+    closeAll: 'Fechar todas as telas',
+  },
   nav: {
     home: 'Início',
     albums: 'Central de Mídia',
