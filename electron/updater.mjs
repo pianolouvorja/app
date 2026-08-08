@@ -1,5 +1,7 @@
 import { ipcMain } from "electron";
-import { autoUpdater } from "electron-updater/out/main.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { autoUpdater } = require("electron-updater");
 
 /**
  * Configura o autoUpdater do electron-updater.
