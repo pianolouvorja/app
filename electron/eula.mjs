@@ -58,7 +58,7 @@ function getEulaDir() {
  */
 export function getEulaText(locale) {
 	const filePath = path.join(getEulaDir(), `${locale}.txt`);
-	return readFileSync(filePath, "utf-8");
+	return readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
 }
 
 /**
