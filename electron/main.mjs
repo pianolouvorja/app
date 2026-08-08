@@ -10,6 +10,7 @@ import {
 } from "./app-icon.mjs";
 import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from "./constants.mjs";
 import { checkEulaAcceptance } from "./eula.mjs";
+import { enablePowerBlocker, disablePowerBlocker } from "./power-blocker.mjs";
 import { registerWorkspaceIpc } from "./ipc/register.mjs";
 import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
@@ -339,6 +340,9 @@ app.whenReady().then(() => {
 		return;
 	}
 
+	// Impede o PC de dormir enquanto o app está aberto (projeção sem interruption)
+	enablePowerBlocker();
+
 	registerWorkspaceIpc();
 	registerWindowIpc(() => mainWindow);
 	registerLocalFileProtocol();
@@ -363,6 +367,7 @@ app.on("window-all-closed", () => {
 	// ainda está carregando. Só saímos se mainWindow já existiu ou se
 	// não há intenção de criar janela (eula recusado, erro fatal, etc).
 	if (process.platform !== "darwin") {
+		disablePowerBlocker();
 		app.quit();
 	}
 });
