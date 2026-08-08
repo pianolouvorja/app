@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { autoUpdater } from "electron-updater";
+import { autoUpdater } from "electron-updater/out/main.js";
 
 /**
  * Configura o autoUpdater do electron-updater.
