@@ -139,9 +139,11 @@ The courts of the Comarca de Sao Paulo / SP are elected to settle any disputes a
 For questions, suggestions, or notifications related to this EULA:
 
 - GitHub: https://github.com/pianolouvorja/app
-- Email: Via issue on the official repository
+- Email: app@pianolouvorja.com.br
 
 
 Legal Disclaimer: This EULA is provided as a reference document and does not replace professional legal advice. For critical matters, consult a lawyer.
 
 Copyright (c) 2026 Piano Louvor JA. Licensed under MIT.
+
+This Software is derived from the LouvorJA project (https://github.com/louvorja/app), under the MIT license. Attribution terms are available in the LICENSE.md file included in this repository.
