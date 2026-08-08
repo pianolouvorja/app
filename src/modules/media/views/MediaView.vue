@@ -87,6 +87,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.documentElement.classList.remove('media-player-open')
+  // Dock / back / qualquer saída da rota: mesmo efeito do botão minimizar
+  if (hasSession.value) {
+    minimize()
+  }
 })
 
 /** Volta para a rota de origem (Liturgia, Álbuns, etc.), sem forçar Álbuns. */

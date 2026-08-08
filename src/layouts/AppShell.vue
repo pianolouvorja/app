@@ -16,6 +16,7 @@ import { useMediaPlayer } from '@modules/media/composables/useMediaPlayer'
 import { useRandomStore } from '@modules/random/stores/useRandomStore'
 import { useTimerStore } from '@modules/timer/stores/useTimerStore'
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
+import UiZoomControls from '@shared/components/UiZoomControls.vue'
 import { closeProjectionModule, isProjectionModuleOpen } from '@shared/composables/useProjectionWindow'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
@@ -292,6 +293,7 @@ function viewKey(viewRoute: typeof route) {
         </span>
       </div>
       <div class="app-shell__header-end">
+        <UiZoomControls />
         <div class="app-shell__projection">
           <button
             v-if="hasOpenScreens"

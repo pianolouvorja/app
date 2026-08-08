@@ -16,6 +16,8 @@ export const USER_PREFERENCE_KEYS = {
   bibleSelectedVersion: 'bible.selectedVersionId',
   projectionSettings: 'projection.settings',
   homeLocation: 'home.location',
+  /** Zoom da UI do operador (fator 0.7–1.5). */
+  uiZoom: 'ui.zoom',
   clockConfig: 'clock.config',
   timerConfig: 'timer.config',
   countdownConfig: 'countdown.config',

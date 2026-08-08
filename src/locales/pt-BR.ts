@@ -23,6 +23,11 @@ export default {
   popupControls: {
     closeAll: 'Fechar todas as telas',
   },
+  uiZoom: {
+    label: 'Zoom da página',
+    zoomIn: 'Aumentar zoom',
+    zoomOut: 'Diminuir zoom',
+  },
   nav: {
     home: 'Início',
     albums: 'Central de Mídia',
