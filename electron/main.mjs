@@ -14,6 +14,7 @@ import { registerWorkspaceIpc } from "./ipc/register.mjs";
 import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
+import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
 
@@ -428,6 +429,13 @@ app.whenReady().then(async () => {
 		return;
 	}
 
+	// Auto-update: check 3s após janela criada (não bloqueia startup)
+	initUpdater(() => mainWindow);
+	setTimeout(() => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send("updater:check-start");
+		}
+	}, 3000);
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) {
 			createWindow();
