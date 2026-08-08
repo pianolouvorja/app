@@ -99,7 +99,7 @@ export function showEulaDialog(locale) {
  * @param {string} locale - Locale do EULA.
  * @returns {boolean} true se voltou e aceitou, false se confirmou recusa.
  */
-function confirmDecline(locale) {
+export function confirmDecline(locale) {
 	const messages = {
 		"pt-BR": {
 			title: "Tem certeza?",
