@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, screen, shell } from "electron";
+import { app, BrowserWindow, dialog, screen, shell } from "electron";
 
 import {
 	APP_DESKTOP_ID,
@@ -55,6 +55,47 @@ if (!gotLock) {
 }
 
 let mainWindow = null;
+let splashWindow = null;
+
+/**
+ * Cria e exibe uma splash window imediatamente no startup.
+ * Dá feedback visual ao usuário enquanto o app carrega.
+ * Funciona em dev (via VITE_DEV_SERVER_URL) e em produção (via loadFile).
+ */
+function createSplash() {
+	splashWindow = new BrowserWindow({
+		width: 360,
+		height: 240,
+		frame: false,
+		resizable: false,
+		center: true,
+		show: true,
+		transparent: false,
+		backgroundColor: "#12121c",
+		skipTaskbar: true,
+		menuBarVisible: false,
+		autoHideMenuBar: true,
+		webPreferences: {
+			contextIsolation: true,
+			nodeIntegration: false,
+			sandbox: true,
+		},
+	});
+
+	const splashPath = path.join(__dirname, "splash.html");
+	void splashWindow.loadFile(splashPath);
+
+	splashWindow.on("closed", () => {
+		splashWindow = null;
+	});
+}
+
+function closeSplash() {
+	if (splashWindow && !splashWindow.isDestroyed()) {
+		splashWindow.close();
+		splashWindow = null;
+	}
+}
 
 function applyWindowIcon(win) {
 	if (!win || win.isDestroyed()) return;
@@ -224,6 +265,8 @@ function createWindow() {
 			mainWindow.maximize();
 		}
 		mainWindow?.show();
+		// Fecha o splash assim que a janela principal estiver visível
+		closeSplash();
 		// Reaplica após show — alguns WMs só pegam o ícone com a janela visível
 		applyWindowIcon(mainWindow);
 		if (isDev && process.env.ELECTRON_OPEN_DEVTOOLS === "1") {
@@ -239,6 +282,40 @@ function createWindow() {
 		void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
 	}
 
+	// Timeout de segurança: se ready-to-show não disparar em 15s, mostra erro
+	const loadTimeout = setTimeout(() => {
+		if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+			console.error("[main] timeout: janela principal não carregou em 15s");
+			closeSplash();
+			dialog.showMessageBoxSync(mainWindow, {
+				type: "error",
+				title: "Erro ao iniciar",
+				message: "O aplicativo demorou muito para iniciar.\n\nIsso pode indicar um problema de carregamento.\nCódigo do erro: TIMEOUT_15S",
+				buttons: ["OK"],
+			});
+			mainWindow.destroy();
+			mainWindow = null;
+		}
+	}, 15_000);
+
+	mainWindow.once("ready-to-show", () => {
+		clearTimeout(loadTimeout);
+	});
+
+	// Fallback: se a janela principal falhar ao carregar, mostra erro e fecha o splash
+	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+		console.error(`[main] falha ao carregar: code=${errorCode} desc=${errorDescription}`);
+		closeSplash();
+		if (!mainWindow || mainWindow.isDestroyed()) return;
+		dialog.showMessageBoxSync(mainWindow, {
+			type: "error",
+			title: "Erro ao iniciar",
+			message: `Não foi possível carregar o aplicativo.\n\nCódigo: ${errorCode}\n${errorDescription || ""}`.trim(),
+			buttons: ["OK"],
+		});
+		mainWindow.destroy();
+	});
+
 	mainWindow.on("closed", () => {
 		mainWindow = null;
 	});
@@ -248,12 +325,16 @@ app.whenReady().then(() => {
 	ensureLinuxTaskbarIntegration();
 	ensureWorkspaceDirectories();
 
+	// Splash screen — feedback visual imediato antes de qualquer coisa
+	createSplash();
+
 	// EULA: se não aceito, pergunta. Se recusar, fecha o app.
 	const sysLocale = app.getLocale();
 	const supported = ["pt-BR", "en", "es"];
 	const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
 
 	if (!checkEulaAcceptance(locale)) {
+		closeSplash();
 		app.quit();
 		return;
 	}
@@ -278,6 +359,9 @@ app.on("second-instance", () => {
 });
 
 app.on("window-all-closed", () => {
+	// window-all-closed pode disparar quando o splash fecha mas a main
+	// ainda está carregando. Só saímos se mainWindow já existiu ou se
+	// não há intenção de criar janela (eula recusado, erro fatal, etc).
 	if (process.platform !== "darwin") {
 		app.quit();
 	}
