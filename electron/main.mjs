@@ -321,7 +321,7 @@ function createWindow() {
 	});
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
 	ensureLinuxTaskbarIntegration();
 	ensureWorkspaceDirectories();
 
@@ -333,7 +333,7 @@ app.whenReady().then(() => {
 	const supported = ["pt-BR", "en", "es"];
 	const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
 
-	if (!checkEulaAcceptance(locale)) {
+	if (!(await checkEulaAcceptance(splashWindow, locale))) {
 		closeSplash();
 		app.quit();
 		return;
@@ -350,6 +350,13 @@ app.whenReady().then(() => {
 			createWindow();
 		}
 	});
+}).catch((error) => {
+	console.error("[main] falha durante a inicialização", error);
+	dialog.showErrorBox(
+		"Erro ao iniciar",
+		"O LouvorJA não conseguiu concluir a inicialização. Consulte o terminal ou os logs para obter mais detalhes.",
+	);
+	app.quit();
 });
 
 app.on("second-instance", () => {
