@@ -1,0 +1,149 @@
+EULA — End User License Agreement
+
+LouvorJA Piano — Software de Projeção de Hinos
+
+Versão: 1.0 | Data: 07 de agosto de 2026
+
+
+1. Aceitação da Licença
+
+Ao instalar, baixar, acessar ou utilizar o software LouvorJA Piano ("Software"), você ("Usuário") concorda integralmente com os termos desta Licença de Uso Final (EULA) e com os termos da Licença MIT sob a qual o Software é distribuído.
+
+Se você não concorda com qualquer termo deste EULA, não instale nem utilize o Software. A utilização implica aceitação irrevogável.
+
+
+2. Definições
+
+- Software: O aplicativo desktop LouvorJA Piano, incluindo código-fonte, binários, assets, catálogo de hinos, documentação e materiais relacionados.
+- Licenciante: A organização Piano Louvor JA, representada por seus mantenedores Ezequias Fonseca e Rafael Zendron.
+- Usuário: Qualquer pessoa física ou jurídica que instale, execute ou utilize o Software.
+- Licença MIT: A licença de software livre sob a qual o código-fonte é distribuído, disponível em https://opensource.org/licenses/MIT
+
+
+3. Concessão de Licença
+
+O Licenciante concede ao Usuário uma licença:
+
+- Gratuita: Sem custos de licenciamento.
+- Não exclusiva: O Licenciante pode conceder a mesma licença a outros.
+- Global: Sem restrição geográfica.
+- Perpétua: Sem prazo de expiração.
+
+O Usuário pode instalar, executar, copiar, modificar, distribuir e criar obras derivadas do Software, conforme os termos da Licença MIT.
+
+
+4. Restrições
+
+O Usuário NÃO pode:
+
+1. Revender o Software, no todo ou em parte, como produto comercial, sem atribuição adequada e em conformidade com a Licença MIT.
+2. Remover ou ocultar avisos de copyright, notas de atribuição ou identificações de produto.
+3. Apresentar o Software como de sua autoria sem creditar os desenvolvedores originais.
+4. Utilizar o Software para finalidades ilícitas ou em violação de leis aplicáveis.
+5. Distribuir versões modificadas sem indicar claramente as alterações realizadas.
+
+
+5. Propriedade Intelectual
+
+O Software é distribuído sob a Licença MIT. O copyright pertence aos mantenedores do projeto Piano Louvor JA. A Licença MIT é mantida integralmente e prevalece sobre este EULA em caso de conflito.
+
+As letras de hinos, partituras, arquivos de áudio e outros conteúdos acessados pelo Software podem ser protegidos por direitos autorais de terceiros. O Software fornece acesso a esses conteúdos, mas não reivindica propriedade sobre eles. Consulte o documento direitos-autorais-musicais.md para detalhes.
+
+
+6. Isenção de Garantias
+
+O Software é fornecido "NO ESTADO EM QUE SE ENCONTRA" (AS IS), sem qualquer tipo de garantia, seja expressa ou implícita, incluindo, sem limitação, garantias de comercialidade, adequação a um fim específico e não violação de direitos de terceiros.
+
+O Licenciante não garante que:
+
+- O Software funcionará sem interrupções ou erros.
+- O Software será compatível com todos os sistemas operacionais ou hardwares.
+- Os conteúdos de hinos e áudio estarão sempre disponíveis.
+- O Software atenderá a expectativas específicas do Usuário.
+
+
+7. Limitação de Responsabilidade
+
+Em nenhuma circunstância o Licenciante será responsável por:
+
+- Danos diretos, indiretos, incidentais, especiais, consequenciais ou punitivos.
+- Perda de dados, lucros cessantes ou interrupção de atividades.
+- Falha do Software durante uso ao vivo (projeção em culto, apresentação pública).
+- Indisponibilidade de serviços terceiros (API LouvorJA, YouTube, fontes de áudio).
+- Conteúdo de hinos (letras, traduções, gravações) que possa conter erros ou violar direitos de terceiros.
+
+O Usuário reconhece que o Software é gratuito e de código aberto, e que o Licenciante não possui obrigação contratual de suporte, manutenção ou disponibilidade contínua.
+
+
+8. Privacidade
+
+O Software NÃO COLETA, ARMAZENA NEM TRANSMITE dados pessoais do Usuário.
+
+Declaração explícita:
+
+- Sem login/conta de usuário: O Software não exige cadastro, email, nome ou identificação.
+- Sem telemetria: O Software não envia dados de uso, estatísticas ou analíticos para servidores.
+- Sem cookies de tracking: O Software não utiliza cookies de rastreamento.
+- Dados locais: Preferências do Usuário (idioma, tema, configurações de projeção) são armazenadas exclusivamente no dispositivo local (browser storage / Electron userData).
+- Cache de catálogo: O Software baixa um catálogo de hinos (JSON) da API LouvorJA e armazena em cache local para funcionamento offline. Este catálogo não contém dados pessoais.
+
+A única comunicação de rede realizada pelo Software é:
+
+1. API LouvorJA: Requisição de catálogo de hinos (JSON público, sem autenticação pessoal).
+2. YouTube embed: Carregamento de vídeos para projeção (responsabilidade do Google/YouTube).
+
+
+9. Serviços Terceiros
+
+O Software depende de serviços de terceiros para algumas funcionalidades:
+
+- API LouvorJA: Catálogo de hinos, letras, metadados. Indisponibilidade interrompe atualização do catálogo.
+- YouTube: Projeção de vídeos de hinos. Vídeos podem ser removidos pelo Google a qualquer momento.
+- Fontes de áudio (sda-hymnal, SacCentral): Playback de músicas. Fontes podem sair do ar sem aviso.
+
+O Licenciante não controla a disponibilidade, qualidade ou continuidade destes serviços. Falhas em serviços terceiros não constituem violação deste EULA.
+
+
+10. Atualizações
+
+O Software pode ser atualizado pelo Licenciante a qualquer momento, sem aviso prévio. Atualizações podem:
+
+- Adicionar, modificar ou remover funcionalidades.
+- Alterar requisitos de sistema.
+- Corrigir bugs ou vulnerabilidades de segurança.
+
+O Usuário não é obrigado a atualizar, mas versões desatualizadas podem não funcionar corretamente.
+
+
+11. Rescisão
+
+O Usuário pode deixar de utilizar o Software a qualquer momento, desinstalando-o do seu dispositivo.
+
+O Licenciante pode revogar a licença de uso em caso de:
+
+1. Violação dos termos deste EULA ou da Licença MIT.
+2. Uso do Software para finalidades ilícitas.
+
+A revogação exige comunicação por escrito (cease and desist). Mediante revogação, o Usuário deve cessar o uso e destruir todas as cópias do Software em seu poder.
+
+
+12. Lei Aplicável e Foro
+
+Este EULA é regido pelas leis da República Federativa do Brasil.
+
+Fica eleito o foro da Comarca de São Paulo / SP para dirimir quaisquer controvérsias decorrentes deste EULA, com renúncia expressa a qualquer outro foro, por mais privilegiado que seja.
+
+
+13. Contato
+
+Para dúvidas, sugestões ou notificações relacionadas a este EULA:
+
+- GitHub: https://github.com/pianolouvorja/app
+- Email: app@pianolouvorja.com.br
+
+
+Aviso Legal: Este EULA é fornecido como documento de referência e não substitui aconselhamento jurídico profissional. Para questões críticas, consulte um advogado inscrito na OAB.
+
+Copyright (c) 2026 Piano Louvor JA. Licenciado sob MIT.
+
+Este Software é derivado do projeto LouvorJA (https://github.com/louvorja/app), sob licença MIT. Os termos de atribuição estão disponíveis no arquivo LICENSE.md incluído neste repositório.
