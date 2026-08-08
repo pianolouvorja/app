@@ -6,8 +6,10 @@ import vuetify from '@plugins/vuetify'
 import i18n from '@plugins/i18n'
 import router from '@/router'
 import { useThemeManager } from '@design-system/composables'
+import { initUiZoom } from '@shared/composables/useUiZoom'
 
 useThemeManager()
+initUiZoom()
 
 const app = createApp(App)
 
