@@ -23,7 +23,6 @@ import { dialog } from "electron";
 import {
   acceptEula,
   checkEulaAcceptance,
-  confirmDecline,
   getEulaText,
   isEulaAccepted,
   showEulaDialog,
@@ -141,33 +140,13 @@ describe("showEulaDialog", () => {
     expect(result).toBe(true);
   });
 
-  it("retorna false quando usuario recusa EULA e confirma recusa no dialog duplo", () => {
-    // 1a chamada: EULA dialog → Recusar (1)
-    // 2a chamada: confirm dialog → Sim, recusar (1)
-    dialog.showMessageBoxSync
-      .mockReturnValueOnce(1) // EULA: Recusar
-      .mockReturnValueOnce(1); // Confirm: Sim, recusar
+  it("retorna false quando usuario recusa EULA (response=1) — sem confirmacao dupla", () => {
+    dialog.showMessageBoxSync.mockReturnValue(1); // 1 = Recusar
 
     const result = showEulaDialog("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalledTimes(2);
+    expect(dialog.showMessageBoxSync).toHaveBeenCalledTimes(1);
     expect(writeWorkspaceRecord).not.toHaveBeenCalled();
     expect(result).toBe(false);
-  });
-
-  it("re-exibe EULA quando usuario clica Voltar no dialog de confirmacao e depois aceita", () => {
-    // 1a: EULA → Recusar (1)
-    // 2a: Confirm → Voltar (0)
-    // 3a: EULA re-exibido → Aceitar (0)
-    writeWorkspaceRecord.mockReturnValue(true);
-    dialog.showMessageBoxSync
-      .mockReturnValueOnce(1) // EULA: Recusar
-      .mockReturnValueOnce(0) // Confirm: Voltar
-      .mockReturnValueOnce(0); // EULA re-exibido: Aceitar
-
-    const result = showEulaDialog("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalledTimes(3);
-    expect(writeWorkspaceRecord).toHaveBeenCalled();
-    expect(result).toBe(true);
   });
 
   it("passa o texto do EULA do locale correto para o dialog", () => {
@@ -177,41 +156,6 @@ describe("showEulaDialog", () => {
     showEulaDialog("en");
     const callArgs = dialog.showMessageBoxSync.mock.calls[0][0];
     expect(callArgs.message).toContain("Louvor");
-  });
-
-  it("dialog de confirmacao usa locale pt-BR", () => {
-    dialog.showMessageBoxSync
-      .mockReturnValueOnce(1) // EULA: Recusar
-      .mockReturnValueOnce(1); // Confirm: Sim, recusar
-
-    showEulaDialog("pt-BR");
-    const confirmArgs = dialog.showMessageBoxSync.mock.calls[1][0];
-    expect(confirmArgs.title).toContain("certeza");
-    expect(confirmArgs.buttons).toContain("Sim, recusar");
-  });
-
-  it("dialog de confirmacao usa locale en", () => {
-    dialog.showMessageBoxSync
-      .mockReturnValueOnce(1) // EULA: Recusar
-      .mockReturnValueOnce(1); // Confirm: Yes, decline
-
-    showEulaDialog("en");
-    const confirmArgs = dialog.showMessageBoxSync.mock.calls[1][0];
-    expect(confirmArgs.title).toContain("sure");
-    expect(confirmArgs.buttons).toContain("Yes, decline");
-  });
-});
-
-describe("confirmDecline", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("retorna false quando usuario confirma recusa", () => {
-    dialog.showMessageBoxSync.mockReturnValue(1); // Confirm: Sim, recusar
-
-    const result = confirmDecline("pt-BR");
-    expect(result).toBe(false);
   });
 });
 
@@ -249,14 +193,12 @@ describe("checkEulaAcceptance", () => {
     expect(result).toBe(true);
   });
 
-  it("mostra dialog e retorna false quando usuario recusa e confirma recusa", () => {
+  it("mostra dialog e retorna false quando usuario recusa", () => {
     readWorkspaceRecord.mockReturnValue(null);
-    dialog.showMessageBoxSync
-      .mockReturnValueOnce(1) // EULA: Recusar
-      .mockReturnValueOnce(1); // Confirm: Sim, recusar
+    dialog.showMessageBoxSync.mockReturnValue(1); // Recusar
 
     const result = checkEulaAcceptance("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalled();
+    expect(dialog.showMessageBoxSync).toHaveBeenCalledTimes(1);
     expect(writeWorkspaceRecord).not.toHaveBeenCalled();
     expect(result).toBe(false);
   });
