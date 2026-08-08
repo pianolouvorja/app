@@ -1,0 +1,40 @@
+# Build Windows NSIS — gera instalador .exe nativo x64
+# Roda manualmente (workflow_dispatch) ou em push de tags v*
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows NSIS x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite + Electron NSIS
+        run: npm run electron:build -- --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LouvorJA-PIANO-Windows-x64-Setup
+          path: dist-electron/*Setup*.exe
+          if-no-files-found: error
+          retention-days: 30
