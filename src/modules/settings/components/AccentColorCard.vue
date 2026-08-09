@@ -53,6 +53,10 @@ function selectAccent(key: AccentKey) {
   padding: 20px;
   animation: appearance-float 6s ease-in-out infinite;
   animation-delay: 0.8s;
+
+  @media (max-width: 1280px) {
+      padding: 1rem;
+    }
 }
 
 .accent-color__header {
@@ -66,6 +70,10 @@ function selectAccent(key: AccentKey) {
   color: var(--ds-color-primary);
   font-size: 22px;
   line-height: 1;
+
+  @media (max-width: 1280px) {
+      font-size: 20px;
+    }
 }
 
 .accent-color__title {

@@ -50,7 +50,11 @@ useBlurSystem()
   &--padded {
     padding: var(--ds-spacing-page, 20px);
     padding: 20px;
-  }
+  
+    @media (max-width: 1280px) {
+          padding: 0.75rem;
+        }
+}
 
   &--elevated {
     background: color-mix(

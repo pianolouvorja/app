@@ -1284,4 +1284,11 @@ const rowHovered = ref(false)
     opacity: 1;
   }
 }
+
+@media (max-width: 1280px) {
+  .liturgy-item__card {
+    gap: 0.5rem;
+    padding: 0.45rem 0.65rem;
+  }
+}
 </style>

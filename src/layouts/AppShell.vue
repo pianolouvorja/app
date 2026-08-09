@@ -392,7 +392,7 @@ function viewKey(viewRoute: typeof route) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 5rem;
+  height: var(--ds-header-height, 5rem);
   padding: 0 var(--ds-spacing-page);
   border-bottom: 1px solid var(--ds-color-outline);
   position: relative;
@@ -537,7 +537,50 @@ function viewKey(viewRoute: typeof route) {
 .app-shell__main {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  min-height: calc(
+    100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) -
+      var(--ds-dock-height)
+  );
   padding-bottom: var(--ds-dock-height);
+}
+
+/* Desktop médio / 1024×768: chrome mais compacto */
+@media (max-width: 1280px) {
+  .app-shell__header {
+    gap: 0.75rem;
+  }
+
+  .app-shell__brand-group {
+    gap: 0.5rem;
+  }
+
+  .app-shell__logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell__brand {
+    font-size: 20px;
+  }
+
+  .app-shell__codename {
+    height: 1.5rem;
+  }
+
+  .app-shell__version {
+    font-size: 12px;
+  }
+
+  .app-shell__account .ti {
+    font-size: 26px;
+  }
+
+  .app-shell__codename-block {
+    gap: 0.35rem;
+  }
+
+  .app-shell__header-end {
+    gap: 0.5rem;
+  }
 }
 </style>

@@ -453,4 +453,104 @@ function onEndTimeChange(event: Event) {
     max-width: none;
   }
 }
+
+@media (max-width: 1280px) {
+  .liturgy-sidebar {
+    max-width: 16rem;
+    gap: 0.75rem;
+  }
+
+  .liturgy-sidebar__panel {
+    gap: 0.7rem;
+  }
+
+  .liturgy-sidebar__heading-row {
+    gap: 0.5rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .liturgy-sidebar__heading {
+    font-size: 1rem;
+  }
+
+  .liturgy-sidebar__play {
+    width: 1.85rem;
+    height: 1.85rem;
+
+    i {
+      font-size: 1.05rem;
+    }
+
+    &--stop i {
+      font-size: 0.95rem;
+    }
+  }
+
+  .liturgy-sidebar__stats {
+    gap: 0.55rem;
+  }
+
+  .liturgy-sidebar__stat {
+    gap: 0.45rem;
+
+    dt {
+      font-size: 0.75rem;
+    }
+  }
+
+  .liturgy-sidebar__time-input {
+    width: 5.75rem;
+    min-height: 1.7rem;
+    font-size: 0.75rem;
+  }
+
+  .liturgy-sidebar__time-btn {
+    width: 1.5rem;
+    min-height: 1.7rem;
+
+    i {
+      font-size: 0.85rem;
+    }
+  }
+
+  .liturgy-sidebar__mono {
+    font-size: 0.85rem;
+
+    &--countdown {
+      font-size: 0.92rem;
+    }
+  }
+
+  .liturgy-sidebar__team-title {
+    font-size: 0.78rem;
+  }
+
+  .liturgy-sidebar__team-empty {
+    font-size: 0.72rem;
+  }
+
+  .liturgy-sidebar__team-btn {
+    min-height: 2.15rem;
+    font-size: 0.78rem;
+  }
+
+  .liturgy-sidebar__note-header {
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+
+    i {
+      font-size: 1rem;
+    }
+
+    h3 {
+      font-size: 0.78rem;
+    }
+  }
+
+  .liturgy-sidebar__note-input {
+    min-height: 3.75rem;
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+}
 </style>

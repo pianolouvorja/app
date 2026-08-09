@@ -212,6 +212,11 @@ function isSelected(verseNumber: number): boolean {
   gap: 0.75rem;
   flex-shrink: 0;
   padding: 1.25rem 1.75rem 0.75rem;
+
+  @media (max-width: 1280px) {
+      padding: 0.75rem 1rem 0.5rem;
+      gap: 0.4rem 0.5rem;
+    }
 }
 
 .bible-reader__title {
@@ -221,6 +226,10 @@ function isSelected(verseNumber: number): boolean {
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ds-color-primary-soft);
+
+  @media (max-width: 1280px) {
+      font-size: 1.1rem;
+    }
 }
 
 .bible-reader__nav {
@@ -421,6 +430,12 @@ function isSelected(verseNumber: number): boolean {
       color: var(--ds-color-on-surface);
     }
   }
+
+  @media (max-width: 1280px) {
+      gap: 0.75rem;
+      padding: 0.4rem 0.35rem;
+      font-size: 0.92rem;
+    }
 }
 
 .bible-reader__verse-num {

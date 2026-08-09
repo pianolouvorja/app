@@ -370,4 +370,42 @@ function preferDark() {
     transform: rotate(360deg);
   }
 }
+
+@media (max-width: 1280px) {
+  .theme-orbital {
+    gap: 1.5rem;
+  }
+
+  .theme-orbital__stage {
+    width: 14rem;
+    height: 14rem;
+
+    @media (min-width: 960px) {
+      width: 14rem;
+      height: 14rem;
+    }
+  }
+
+  .theme-orbital__sphere {
+    width: 10.5rem;
+    height: 10.5rem;
+
+    @media (min-width: 960px) {
+      width: 10.5rem;
+      height: 10.5rem;
+    }
+  }
+
+  .theme-orbital__glyph {
+    font-size: 4rem;
+
+    @media (min-width: 960px) {
+      font-size: 4rem;
+    }
+  }
+
+  .theme-orbital__control {
+    padding: 0.75rem 1rem;
+  }
+}
 </style>

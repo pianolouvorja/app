@@ -454,4 +454,30 @@ function selectMode(mode: MediaPlaybackMode) {
     width: 100%;
   }
 }
+
+@media (max-width: 1280px) {
+  .media-player-pill {
+    gap: 0.55rem 0.75rem;
+    width: min(920px, calc(100vw - 2rem));
+    padding: 0.5rem 0.9rem;
+  }
+
+  .media-player-pill__play {
+    width: 2.3rem;
+    height: 2.3rem;
+
+    .ti {
+      font-size: 1.75rem;
+    }
+  }
+
+  .media-player-pill__icon-btn {
+    width: 1.85rem;
+    height: 1.85rem;
+
+    .ti {
+      font-size: 1.1rem;
+    }
+  }
+}
 </style>

@@ -208,7 +208,7 @@ async function onImportFile(file: File) {
 <style scoped lang="scss">
 .random-view {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 5.5rem));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height, 5.5rem));
   flex-direction: column;
   align-items: center;
   padding: var(--ds-spacing-page, 1.5rem);
@@ -334,6 +334,11 @@ async function onImportFile(file: File) {
   gap: clamp(1.5rem, 3vw, 3rem);
   min-height: 0;
   overflow: visible;
+
+  // Desktop médio / 1024×768: densidade (electron usa flex, não grid).
+  @media (max-width: 1280px) {
+    gap: 0.75rem;
+  }
 }
 
 .random-view__panel {
@@ -360,6 +365,7 @@ async function onImportFile(file: File) {
   overflow: visible;
 }
 
+/* Header wrap pode ocorrer um pouco antes; empilhar conteúdo só em ≤960 (como no web). */
 @media (max-width: 1100px) {
   .random-view__header {
     flex-wrap: wrap;
@@ -372,7 +378,9 @@ async function onImportFile(file: File) {
   .random-view__modes {
     margin-left: 0;
   }
+}
 
+@media (max-width: 960px) {
   .random-view__content {
     flex-direction: column;
     align-items: stretch;
