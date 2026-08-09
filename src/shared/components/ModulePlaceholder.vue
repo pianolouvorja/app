@@ -18,7 +18,7 @@ const { t } = useI18n()
 <style scoped lang="scss">
 .module-placeholder {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -38,5 +38,11 @@ const { t } = useI18n()
     margin: 0;
     font-size: 14px;
   }
+
+  @media (max-width: 1280px) {
+      h1 {
+        font-size: 20px;
+      }
+    }
 }
 </style>

@@ -297,6 +297,10 @@ async function onFileSelected(event: Event) {
 <style scoped lang="scss">
 .lyric-custom {
   padding: 2rem;
+
+  @media (max-width: 1280px) {
+      padding: 1.15rem;
+    }
 }
 
 .lyric-custom__header {
@@ -304,6 +308,11 @@ async function onFileSelected(event: Event) {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 2rem;
+
+  @media (max-width: 1280px) {
+      margin-bottom: 1.15rem;
+      gap: 0.55rem;
+    }
 }
 
 .lyric-custom__icon {
@@ -318,10 +327,19 @@ async function onFileSelected(event: Event) {
   font-size: 20px;
   font-weight: 600;
   line-height: 28px;
+
+  @media (max-width: 1280px) {
+      font-size: 16px;
+      line-height: 22px;
+    }
 }
 
 .lyric-custom__block {
   margin-bottom: 2rem;
+
+  @media (max-width: 1280px) {
+      margin-bottom: 1.15rem;
+    }
 }
 
 .lyric-custom__label {
@@ -390,6 +408,14 @@ async function onFileSelected(event: Event) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 3rem;
   }
+
+  @media (max-width: 1280px) {
+      margin-bottom: 1rem;
+
+      @media (min-width: 960px) {
+        column-gap: 1.5rem;
+      }
+    }
 }
 
 .lyric-custom__toggle-row {
@@ -399,6 +425,11 @@ async function onFileSelected(event: Event) {
   gap: 1rem;
   padding: 1rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+
+  @media (max-width: 1280px) {
+      padding: 0.65rem 0;
+      gap: 0.75rem;
+    }
 }
 
 .lyric-custom__toggle-label {
@@ -426,6 +457,10 @@ async function onFileSelected(event: Event) {
   border: 1px solid var(--ds-color-outline);
   border-radius: var(--ds-radius-lg);
   background: color-mix(in srgb, var(--ds-color-surface) 40%, transparent);
+
+  @media (max-width: 1280px) {
+      padding: 0.85rem;
+    }
 }
 
 .lyric-custom__bg-grid {
@@ -437,6 +472,10 @@ async function onFileSelected(event: Event) {
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  @media (max-width: 1280px) {
+      gap: 1rem;
+    }
 }
 
 .lyric-custom__font-size {
@@ -609,6 +648,10 @@ async function onFileSelected(event: Event) {
   height: 8.75rem;
   border: 1px solid var(--ds-color-outline);
   border-radius: var(--ds-radius-lg);
+
+  @media (max-width: 1280px) {
+      height: 6rem;
+    }
 }
 
 .lyric-custom__preview-img {

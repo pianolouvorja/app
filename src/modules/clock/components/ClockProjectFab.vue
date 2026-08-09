@@ -76,4 +76,18 @@ function onClick(projecting: boolean) {
     transform: scale(0.95);
   }
 }
+
+@media (max-width: 1280px) {
+  .clock-project-fab {
+    right: 1.25rem;
+    bottom: calc(var(--ds-dock-height, 5.5rem) + 0.75rem);
+    width: 3.25rem;
+    height: 3.25rem;
+    border-width: 3px;
+
+    .ti {
+      font-size: 1.65rem;
+    }
+  }
+}
 </style>

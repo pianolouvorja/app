@@ -57,7 +57,7 @@ const { formattedTime } = useHomeClock()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
   padding: var(--ds-spacing-page);
 }
 
@@ -103,5 +103,25 @@ const { formattedTime } = useHomeClock()
   color: var(--ds-color-primary);
   text-shadow: 0 0 8px color-mix(in srgb, var(--ds-color-primary) 50%, transparent);
   font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1280px) {
+  .home-view {
+    padding: 1.25rem;
+  }
+
+  .home-view__logo {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .home-view__logo-wrap {
+    margin-bottom: 1.25rem;
+  }
+
+  .home-view__clock {
+    font-size: 24px;
+    line-height: 30px;
+  }
 }
 </style>

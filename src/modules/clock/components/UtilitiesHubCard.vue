@@ -160,4 +160,28 @@ function onKeydown(event: KeyboardEvent) {
   font-size: 1.5rem;
   line-height: 1;
 }
+
+@media (max-width: 1280px) {
+  .utilities-hub-card {
+    gap: 0.85rem;
+    padding: 0.9rem;
+  }
+
+  .utilities-hub-card__icon-wrap {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .utilities-hub-card__icon {
+    font-size: 1.4rem;
+  }
+
+  .utilities-hub-card__title {
+    font-size: 1.05rem;
+  }
+
+  .utilities-hub-card__chevron {
+    font-size: 1.25rem;
+  }
+}
 </style>

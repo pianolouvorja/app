@@ -82,7 +82,7 @@ function goBack() {
 <style scoped lang="scss">
 .temporizador-view {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 5.5rem));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height, 5.5rem));
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -150,5 +150,21 @@ function goBack() {
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   justify-items: center;
   gap: 1rem;
+}
+
+@media (max-width: 1280px) {
+  .temporizador-view {
+    gap: 1.15rem;
+    padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 1.25rem);
+  }
+
+  .temporizador-view__title {
+    font-size: 1.2rem;
+  }
+
+  .temporizador-view__grid {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: 0.75rem;
+  }
 }
 </style>
