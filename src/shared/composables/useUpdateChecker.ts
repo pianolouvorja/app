@@ -33,10 +33,6 @@ function getElectronUpdaterAPI(): ElectronUpdaterAPI | undefined {
   return w.electronAPI?.updater
 }
 
-/**
- * Estado reativo do update checker.
- * Separado do composable para permitir uso sem lifecycle hooks Vue.
- */
 function createUpdateState() {
   const hasUpdate = ref(false)
   const newVersion = ref<string | null>(null)
@@ -64,6 +60,8 @@ function createUpdateState() {
     isDownloading.value = false
     isDownloaded.value = false
     error.value = null
+    dismissed.value =
+      typeof sessionStorage !== 'undefined' && sessionStorage.getItem('update-dismissed') === 'true'
   }
 
   return {
@@ -81,14 +79,18 @@ function createUpdateState() {
 }
 
 /**
+ * Estado global singleton — compartilhado entre todas as chamadas
+ * do composable. Garante que App.vue (init), UpdateBanner (display)
+ * e UpdateDialog (download/install) operem sobre o mesmo estado.
+ */
+const state = createUpdateState()
+
+/**
  * Composable que gerencia o ciclo de atualização do Electron.
  * Escuta IPC events do main process e expõe estado reativo.
- *
- * Retorna função init() para registrar listeners (chamar dentro de setup() ou onMounted).
+ * Usa estado global para todas as instâncias compartilharem.
  */
 export function useUpdateChecker() {
-  const state = createUpdateState()
-
   function getAPI(): ElectronUpdaterAPI | undefined {
     return getElectronUpdaterAPI()
   }

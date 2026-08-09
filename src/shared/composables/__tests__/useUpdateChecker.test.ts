@@ -19,6 +19,9 @@ describe('useUpdateChecker', () => {
     vi.useFakeTimers()
     sessionStorage.clear()
     ;(window as any).electronAPI = { updater: mockUpdater }
+    // Resetar estado global do singleton entre testes
+    const { reset } = useUpdateChecker()
+    reset()
   })
 
   afterEach(() => {
@@ -40,7 +43,8 @@ describe('useUpdateChecker', () => {
 
     it('começa dismissed se sessionStorage tem flag', () => {
       sessionStorage.setItem('update-dismissed', 'true')
-      const { dismissed } = useUpdateChecker()
+      const { reset, dismissed } = useUpdateChecker()
+      reset() // relê sessionStorage após setar flag
       expect(dismissed.value).toBe(true)
     })
   })
