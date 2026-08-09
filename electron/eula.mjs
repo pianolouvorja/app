@@ -1,9 +1,24 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { app, dialog } from "electron";
+import { fileURLToPath } from "node:url";
+import { app, BrowserWindow, dialog, ipcMain, screen } from "electron";
 import { readWorkspaceRecord, writeWorkspaceRecord } from "./workspace.mjs";
 
 const CURRENT_EULA_VERSION = 1;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** @type {null | ((locale: string) => Promise<0 | 1>)} */
+let eulaPresenterOverride = null;
+
+/**
+ * Hook de testes para substituir a janela visual do EULA.
+ * Em produção permanece null.
+ *
+ * @param {null | ((locale: string) => Promise<0 | 1>)} fn
+ */
+export function __setEulaPresenterForTests(fn) {
+	eulaPresenterOverride = fn;
+}
 
 /**
  * Verifica se o EULA foi aceito pelo usuário.
@@ -57,8 +72,127 @@ function getEulaDir() {
  * @returns {string} Conteúdo do EULA como texto plano.
  */
 export function getEulaText(locale) {
-	const filePath = path.join(getEulaDir(), `${locale}.txt`);
-	return readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+	const candidates = [
+		path.join(getEulaDir(), `${locale}.txt`),
+		path.join(getEulaDir(), "pt-BR.txt"),
+	];
+
+	let lastError = null;
+	for (const filePath of candidates) {
+		try {
+			return readFileSync(filePath, "utf-8").replace(/^\uFEFF/, "");
+		} catch (error) {
+			lastError = error;
+		}
+	}
+
+	const detail =
+		lastError instanceof Error ? lastError.message : String(lastError ?? "arquivo ausente");
+	throw new Error(
+		`Não foi possível carregar o EULA (${locale}). Verifique se docs/LEGAL/eula está no pacote. ${detail}`,
+	);
+}
+
+function getEulaDialogLabels(locale) {
+	const labels = {
+		"pt-BR": {
+			title: "EULA — LouvorJA",
+			subtitle: "EULA — End User License Agreement",
+			accept: "Aceitar",
+			decline: "Recusar",
+		},
+		en: {
+			title: "EULA — LouvorJA",
+			subtitle: "End User License Agreement",
+			accept: "Accept",
+			decline: "Decline",
+		},
+		es: {
+			title: "EULA — LouvorJA",
+			subtitle: "Acuerdo de licencia de usuario final",
+			accept: "Aceptar",
+			decline: "Rechazar",
+		},
+	};
+	return labels[locale] || labels["pt-BR"];
+}
+
+/**
+ * Abre janela rolável com o texto do EULA e botões fixos.
+ * @param {string} locale
+ * @returns {Promise<0 | 1>} 0 = Aceitar, 1 = Recusar
+ */
+export function presentEulaAcceptanceWindow(locale) {
+	if (eulaPresenterOverride) {
+		return eulaPresenterOverride(locale);
+	}
+
+	const eulaText = getEulaText(locale);
+	const labels = getEulaDialogLabels(locale);
+
+	return new Promise((resolve) => {
+		const workArea = screen.getPrimaryDisplay().workAreaSize;
+		const width = Math.min(720, Math.max(420, Math.floor(workArea.width * 0.85)));
+		const height = Math.min(560, Math.max(360, Math.floor(workArea.height * 0.8)));
+
+		const win = new BrowserWindow({
+			width,
+			height,
+			minWidth: 400,
+			minHeight: 320,
+			center: true,
+			show: false,
+			resizable: true,
+			maximizable: true,
+			alwaysOnTop: true,
+			autoHideMenuBar: true,
+			backgroundColor: "#12121c",
+			title: labels.title,
+			webPreferences: {
+				nodeIntegration: true,
+				contextIsolation: false,
+				sandbox: false,
+			},
+		});
+
+		const channel = `eula:decision:${win.id}`;
+		let settled = false;
+
+		const finish = (choice) => {
+			if (settled) return;
+			settled = true;
+			ipcMain.removeListener(channel, onDecision);
+			if (!win.isDestroyed()) {
+				win.close();
+			}
+			resolve(choice);
+		};
+
+		const onDecision = (_event, accepted) => {
+			finish(accepted ? 0 : 1);
+		};
+
+		ipcMain.once(channel, onDecision);
+
+		win.on("closed", () => {
+			// Fechar a janela (X) equivale a recusar — fluxo de confirmação segue.
+			finish(1);
+		});
+
+		win.webContents.on("did-finish-load", () => {
+			win.webContents.send("eula:init", {
+				text: eulaText,
+				labels,
+				channel,
+			});
+			if (!win.isDestroyed()) {
+				win.show();
+				win.focus();
+			}
+		});
+
+		void win.loadFile(path.join(__dirname, "eula-dialog.html"));
+	});
 }
 
 /**
@@ -67,20 +201,10 @@ export function getEulaText(locale) {
  * Se o usuário recusar, exibe um segundo dialog de confirmação.
  *
  * @param {string} locale - Locale do EULA ('pt-BR', 'en', 'es').
- * @returns {boolean} true se aceitou, false se recusou.
+ * @returns {Promise<boolean>} true se aceitou, false se recusou.
  */
-export function showEulaDialog(locale) {
-	const eulaText = getEulaText(locale);
-
-	const choice = dialog.showMessageBoxSync({
-		type: "question",
-		title: "EULA — LouvorJA",
-		message: eulaText,
-		buttons: ["Aceitar", "Recusar"],
-		defaultId: 0,
-		cancelId: 1,
-		noLink: true,
-	});
+export async function showEulaDialog(locale) {
+	const choice = await presentEulaAcceptanceWindow(locale);
 
 	if (choice === 0) {
 		acceptEula();
@@ -97,25 +221,28 @@ export function showEulaDialog(locale) {
  * Se cancelar, re-exibe o dialog do EULA.
  *
  * @param {string} locale - Locale do EULA.
- * @returns {boolean} true se voltou e aceitou, false se confirmou recusa.
+ * @returns {Promise<boolean>} true se voltou e aceitou, false se confirmou recusa.
  */
-export function confirmDecline(locale) {
+export async function confirmDecline(locale) {
 	const messages = {
 		"pt-BR": {
 			title: "Tem certeza?",
-			message: "Se você não aceitar os termos, não poderá utilizar o aplicativo. Deseja realmente recusar?",
+			message:
+				"Se você não aceitar os termos, não poderá utilizar o aplicativo. Deseja realmente recusar?",
 			confirm: "Sim, recusar",
 			cancel: "Voltar",
 		},
 		en: {
 			title: "Are you sure?",
-			message: "If you do not accept the terms, you will not be able to use the application. Do you really want to decline?",
+			message:
+				"If you do not accept the terms, you will not be able to use the application. Do you really want to decline?",
 			confirm: "Yes, decline",
 			cancel: "Go back",
 		},
 		es: {
 			title: "¿Está seguro?",
-			message: "Si no acepta los términos, no podrá utilizar la aplicación. ¿Realmente desea rechazar?",
+			message:
+				"Si no acepta los términos, no podrá utilizar la aplicación. ¿Realmente desea rechazar?",
 			confirm: "Sí, rechazar",
 			cancel: "Volver",
 		},
@@ -148,9 +275,9 @@ export function confirmDecline(locale) {
  * Se não aceito, exibe o dialog e retorna a decisão do usuário.
  *
  * @param {string} locale - Locale do EULA ('pt-BR', 'en', 'es').
- * @returns {boolean} true se EULA está aceito, false caso contrário.
+ * @returns {Promise<boolean>} true se EULA está aceito, false caso contrário.
  */
-export function checkEulaAcceptance(locale) {
+export async function checkEulaAcceptance(locale) {
 	if (isEulaAccepted()) {
 		return true;
 	}

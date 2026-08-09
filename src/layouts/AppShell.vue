@@ -538,8 +538,8 @@ function viewKey(viewRoute: typeof route) {
   position: relative;
   z-index: 1;
   min-height: calc(
-    100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) -
-      var(--ds-dock-height)
+    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
+      var(--ds-header-height, 5rem) - var(--ds-dock-height)
   );
   padding-bottom: var(--ds-dock-height);
 }

@@ -70,8 +70,9 @@ function createSplash() {
 		resizable: false,
 		center: true,
 		show: true,
-		transparent: false,
-		backgroundColor: "#12121c",
+		transparent: true,
+		backgroundColor: "#00000000",
+		hasShadow: true,
 		skipTaskbar: true,
 		menuBarVisible: false,
 		autoHideMenuBar: true,
@@ -390,29 +391,42 @@ function createWindow() {
 	});
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
 	ensureLinuxTaskbarIntegration();
 	ensureWorkspaceDirectories();
 
 	// Splash screen — feedback visual imediato antes de qualquer coisa
 	createSplash();
 
-	// EULA: se não aceito, pergunta. Se recusar, fecha o app.
-	const sysLocale = app.getLocale();
-	const supported = ["pt-BR", "en", "es"];
-	const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
+	try {
+		// EULA: se não aceito, pergunta. Se recusar, fecha o app.
+		const sysLocale = app.getLocale();
+		const supported = ["pt-BR", "en", "es"];
+		const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
 
-	if (!checkEulaAcceptance(locale)) {
+		if (!(await checkEulaAcceptance(locale))) {
+			closeSplash();
+			app.quit();
+			return;
+		}
+
+		registerWorkspaceIpc();
+		registerWindowIpc(() => mainWindow);
+		registerLocalFileProtocol();
+		registerYoutubeEmbedHeaders();
+		createWindow();
+	} catch (error) {
+		console.error("[main] falha no startup", error);
 		closeSplash();
+		const message =
+			error instanceof Error ? error.message : String(error ?? "erro desconhecido");
+		dialog.showErrorBox(
+			"Erro ao iniciar",
+			`Não foi possível iniciar o aplicativo.\n\n${message}`,
+		);
 		app.quit();
 		return;
 	}
-
-	registerWorkspaceIpc();
-	registerWindowIpc(() => mainWindow);
-	registerLocalFileProtocol();
-	registerYoutubeEmbedHeaders();
-	createWindow();
 
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) {

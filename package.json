@@ -81,7 +81,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "public/ico/**/*"
+      "public/ico/**/*",
+      "docs/LEGAL/eula/**/*"
     ],
     "extraResources": [
       {
