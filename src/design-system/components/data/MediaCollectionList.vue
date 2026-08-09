@@ -280,4 +280,26 @@ function clearSearch() {
     display: none;
   }
 }
+
+@media (max-width: 1280px) {
+  .ds-media-collection-list {
+    gap: 1rem;
+  }
+
+  .ds-media-collection-list__search {
+    min-height: 2.75rem;
+  }
+
+  .ds-media-collection-list__header {
+    padding: 0.375rem 1rem;
+  }
+
+  .ds-media-collection-list__items {
+    padding: 0.35rem;
+  }
+
+  .ds-media-collection-list__state {
+    padding: 1rem;
+  }
+}
 </style>

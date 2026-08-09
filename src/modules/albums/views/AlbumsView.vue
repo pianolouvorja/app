@@ -429,8 +429,8 @@ async function runAction(
   flex-direction: column;
   gap: 1.25rem;
   box-sizing: border-box;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
   padding: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   overflow: hidden;
   container-type: inline-size;
@@ -777,6 +777,59 @@ async function runAction(
     &:hover {
       background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 28%, transparent);
     }
+  }
+}
+
+@media (max-width: 1280px) {
+  .albums-view {
+    gap: 0.85rem;
+    padding: 0.5rem 1rem 0.65rem;
+  }
+
+  .albums-view__header {
+    gap: 0.75rem;
+  }
+
+  .albums-view__brand {
+    gap: 0.65rem;
+  }
+
+  .albums-view__icon {
+    width: 2.25rem;
+    height: 2.25rem;
+
+    .ti {
+      font-size: 1.15rem;
+    }
+  }
+
+  .albums-view__title {
+    font-size: 1.15rem;
+  }
+
+  .albums-view__subtitle {
+    font-size: 0.85rem;
+  }
+
+  .albums-view__body {
+    gap: 1.15rem;
+  }
+
+  .albums-view__category-header {
+    margin-bottom: 0.65rem;
+  }
+
+  .albums-view__category-title {
+    font-size: 1.05rem;
+  }
+
+  .albums-view__hymnal-grid {
+    gap: 0.85rem;
+  }
+
+  .albums-view__grid {
+    gap: 0.75rem;
+    padding: 0.75rem;
   }
 }
 </style>

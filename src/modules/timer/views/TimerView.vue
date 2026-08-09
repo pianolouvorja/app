@@ -193,7 +193,7 @@ function onToggleProjection() {
 <style scoped lang="scss">
 .timer-view {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 5.5rem));
+  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height, 5.5rem));
   flex-direction: column;
   padding: var(--ds-spacing-page, 1.5rem);
   padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 5rem);
@@ -398,6 +398,39 @@ function onToggleProjection() {
   .timer-view__content {
     flex-direction: column;
     align-items: center;
+  }
+}
+
+@media (max-width: 1280px) {
+  .timer-view {
+    padding: 1rem;
+    padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 3.5rem);
+  }
+
+  .timer-view__header {
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .timer-view__brand-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+
+    .ti {
+      font-size: 1.15rem;
+    }
+  }
+
+  .timer-view__title {
+    font-size: 1.15rem;
+  }
+
+  .timer-view__widget {
+    max-height: min(100%, 20rem);
+  }
+
+  .timer-view__preview {
+    padding: 1rem 1rem 0.5rem;
   }
 }
 </style>

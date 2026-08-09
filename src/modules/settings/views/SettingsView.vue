@@ -130,4 +130,28 @@ function goBack() {
 .settings-view__content {
   min-height: 12rem;
 }
+
+@media (max-width: 1280px) {
+  .settings-view {
+    padding: 1rem var(--ds-spacing-page) 1.25rem;
+
+    @media (min-width: 960px) {
+      padding: 1rem var(--ds-spacing-page) 1.25rem;
+    }
+  }
+
+  .settings-view__tabs {
+    margin-bottom: 1rem;
+  }
+
+  .settings-view__header {
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+  }
+
+  .settings-view__title {
+    font-size: 20px;
+    line-height: 26px;
+  }
+}
 </style>

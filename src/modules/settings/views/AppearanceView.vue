@@ -133,6 +133,38 @@ onMounted(() => {
   max-width: 64rem;
   margin-top: 3rem;
 }
+
+@media (max-width: 1280px) {
+  .appearance-experience__hero {
+    margin-bottom: 1.25rem;
+  }
+
+  .appearance-experience__title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .appearance-experience__subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .appearance-experience__layout {
+    gap: 1.25rem;
+
+    @media (min-width: 960px) {
+      gap: 1rem;
+    }
+  }
+
+  .appearance-experience__col {
+    gap: 1rem;
+  }
+
+  .appearance-experience__lyrics {
+    margin-top: 1.5rem;
+  }
+}
 </style>
 
 <style lang="scss">

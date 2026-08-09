@@ -61,6 +61,10 @@ const { t } = useI18n()
   height: 100%;
   min-height: 0;
   overflow: hidden;
+
+  @media (max-width: 1280px) {
+      flex: 0 0 11.5rem;
+    }
 }
 
 .bible-chapters__search {
@@ -68,6 +72,10 @@ const { t } = useI18n()
   margin-bottom: 1rem;
   flex-shrink: 0;
   padding: 2px;
+
+  @media (max-width: 1280px) {
+      margin-bottom: 0.55rem;
+    }
 }
 
 .bible-chapters__search-icon {
@@ -99,6 +107,11 @@ const { t } = useI18n()
     border-color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
+
+  @media (max-width: 1280px) {
+      padding: 0.4rem 0.6rem 0.4rem 2.1rem;
+      font-size: 0.8rem;
+    }
 }
 
 
@@ -110,6 +123,11 @@ const { t } = useI18n()
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ds-color-primary-soft);
+
+  @media (max-width: 1280px) {
+      margin-bottom: 0.55rem;
+      font-size: 0.8rem;
+    }
 }
 
 .bible-chapters__grid {
@@ -130,6 +148,10 @@ const { t } = useI18n()
     background: var(--ds-color-outline);
     border-radius: 999px;
   }
+
+  @media (max-width: 1280px) {
+      gap: 0.3rem;
+    }
 }
 
 .bible-chapters__btn {
@@ -157,6 +179,11 @@ const { t } = useI18n()
     color: var(--ds-color-on-tertiary-container, #452200);
     font-weight: 700;
   }
+
+  @media (max-width: 1280px) {
+      font-size: 0.9rem;
+      border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
+    }
 }
 </style>
 

@@ -106,6 +106,10 @@ const { t } = useI18n()
   margin-bottom: 1rem;
   flex-shrink: 0;
   padding: 2px;
+
+  @media (max-width: 1280px) {
+      margin-bottom: 0.55rem;
+    }
 }
 
 .bible-books__search-icon {
@@ -137,6 +141,11 @@ const { t } = useI18n()
     border-color: color-mix(in srgb, var(--ds-color-primary) 70%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-color-primary) 35%, transparent);
   }
+
+  @media (max-width: 1280px) {
+      padding: 0.4rem 0.6rem 0.4rem 2.1rem;
+      font-size: 0.8rem;
+    }
 }
 
 
@@ -147,6 +156,11 @@ const { t } = useI18n()
   gap: 0.75rem;
   margin-bottom: 1rem;
   flex-shrink: 0;
+
+  @media (max-width: 1280px) {
+      margin-bottom: 0.55rem;
+      gap: 0.5rem;
+    }
 }
 
 .bible-books__title {
@@ -156,6 +170,10 @@ const { t } = useI18n()
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ds-color-primary-soft);
+
+  @media (max-width: 1280px) {
+      font-size: 0.8rem;
+    }
 }
 
 .bible-books__tabs {
@@ -181,6 +199,11 @@ const { t } = useI18n()
     color: var(--ds-color-on-primary);
     box-shadow: 0 1px 2px color-mix(in srgb, var(--ds-color-primary) 25%, transparent);
   }
+
+  @media (max-width: 1280px) {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.6rem;
+    }
 }
 
 .bible-books__grid {
@@ -201,6 +224,10 @@ const { t } = useI18n()
     background: var(--ds-color-outline);
     border-radius: 999px;
   }
+
+  @media (max-width: 1280px) {
+      gap: 0.35rem;
+    }
 }
 
 @container bible-books (min-width: 40rem) {
@@ -211,11 +238,19 @@ const { t } = useI18n()
 
   .bible-books__abbr {
     font-size: 0.95rem;
-  }
+  
+    @media (max-width: 1280px) {
+        font-size: 0.85rem;
+      }
+}
 
   .bible-books__name {
     font-size: 9px;
-  }
+  
+    @media (max-width: 1280px) {
+        font-size: 8px;
+      }
+}
 }
 
 .bible-books__tile {
@@ -275,6 +310,11 @@ const { t } = useI18n()
     color: #fef08a;
     font-weight: 700;
   }
+
+  @media (max-width: 1280px) {
+      padding: 0.2rem;
+      gap: 0.05rem;
+    }
 }
 
 .bible-books__abbr {
