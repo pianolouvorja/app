@@ -17,7 +17,13 @@ import { useRandomStore } from '@modules/random/stores/useRandomStore'
 import { useTimerStore } from '@modules/timer/stores/useTimerStore'
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 import UiZoomControls from '@shared/components/UiZoomControls.vue'
-import { closeProjectionModule, isProjectionModuleOpen } from '@shared/composables/useProjectionWindow'
+import {
+  closeProjectionModule,
+  isProjectionModuleOpen,
+  syncProjectionAfterDisplayChange,
+} from '@shared/composables/useProjectionWindow'
+import { subscribeDisplaysChanged } from '@modules/settings/services/display-service'
+import { useProjectionStore } from '@modules/settings/stores/useProjectionStore'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 import CodenameLogo from '@assets/brand/CodenameLogo.vue'
@@ -113,6 +119,7 @@ const isProjecting = computed(
 /** Janelas de módulo abertas (não reativo — poll no mount). */
 const hasModuleScreens = ref(false)
 let screensPollTimer: ReturnType<typeof setInterval> | null = null
+let unsubscribeDisplaysChanged: (() => void) | undefined = undefined
 
 const hasOpenScreens = computed(
   () => isProjecting.value || hasModuleScreens.value,
@@ -137,10 +144,21 @@ async function onCloseAllScreens() {
 onMounted(() => {
   refreshOpenScreens()
   screensPollTimer = setInterval(refreshOpenScreens, 400)
+
+  // Hotplug de monitores (legado onDisplaysChanged)
+  const projectionStore = useProjectionStore()
+  unsubscribeDisplaysChanged = subscribeDisplaysChanged(() => {
+    void (async () => {
+      await projectionStore.refreshDisplays()
+      await syncProjectionAfterDisplayChange()
+      refreshOpenScreens()
+    })()
+  })
 })
 
 onUnmounted(() => {
   if (screensPollTimer) clearInterval(screensPollTimer)
+  unsubscribeDisplaysChanged?.()
 })
 
 /** Há conteúdo projetável ou projeção ativa. */

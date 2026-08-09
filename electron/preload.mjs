@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   displays: {
     list: () => ipcRenderer.invoke('displays:list'),
     identify: () => ipcRenderer.invoke('displays:identify'),
+    onChanged: (callback) => subscribe('displays:changed', callback),
   },
 
   dialog: {

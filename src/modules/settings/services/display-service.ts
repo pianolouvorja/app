@@ -54,6 +54,24 @@ export async function listSystemDisplays(): Promise<SystemDisplay[]> {
   }
 }
 
+/**
+ * Inscreve no hotplug de monitores (main → displays:changed).
+ * Retorna unsubscribe; no-op fora do Electron.
+ */
+export function subscribeDisplaysChanged(
+  callback: (displays: SystemDisplay[]) => void,
+): () => void {
+  if (!isDesktopApp()) return () => {}
+
+  const bridge = getDesktopBridge()
+  if (!bridge?.displays?.onChanged) return () => {}
+
+  return bridge.displays.onChanged((payload) => {
+    const list = Array.isArray(payload) ? payload.map(toSystemDisplay) : []
+    callback(list)
+  })
+}
+
 /** Exibe overlay numerado em cada monitor por alguns segundos. */
 export async function identifySystemDisplays(): Promise<boolean> {
   if (!isDesktopApp()) return false

@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 import { APP_PRODUCT_NAME } from '@shared/constants/app'
 import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
+import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
 
+const route = useRoute()
 const isMaximized = ref(false)
 const isFocused = ref(true)
 const isMac = computed(() => getDesktopBridge()?.platform === 'darwin')
-const visible = computed(() => isDesktopApp())
+/** Titlebar só na janela principal — projeção fica sem chrome (como o legado). */
+const isProjectionWindow = computed(
+  () =>
+    route.meta.projection === true ||
+    route.name === 'projection-popup' ||
+    isProjectionPopupLocation(),
+)
+const visible = computed(() => isDesktopApp() && !isProjectionWindow.value)
 
 let unsubscribeMaximized: (() => void) | null = null
 
@@ -32,9 +42,22 @@ async function close() {
   await getDesktopBridge()?.window?.control('close')
 }
 
+function syncTitlebarHeight(show: boolean) {
+  if (typeof document === 'undefined') return
+  if (show) {
+    document.documentElement.classList.add('electron-shell')
+    document.documentElement.style.setProperty('--app-titlebar-height', '32px')
+    return
+  }
+  document.documentElement.classList.remove('electron-shell')
+  document.documentElement.style.setProperty('--app-titlebar-height', '0px')
+}
+
 onMounted(async () => {
   window.addEventListener('focus', onFocus)
   window.addEventListener('blur', onBlur)
+
+  syncTitlebarHeight(visible.value)
 
   const bridge = getDesktopBridge()
   if (!bridge?.window) return
@@ -44,17 +67,17 @@ onMounted(async () => {
   unsubscribeMaximized = bridge.window.onMaximizedState((state) => {
     isMaximized.value = state
   })
+})
 
-  document.documentElement.classList.add('electron-shell')
-  document.documentElement.style.setProperty('--app-titlebar-height', '32px')
+watch(visible, (show) => {
+  syncTitlebarHeight(show)
 })
 
 onUnmounted(() => {
   window.removeEventListener('focus', onFocus)
   window.removeEventListener('blur', onBlur)
   unsubscribeMaximized?.()
-  document.documentElement.classList.remove('electron-shell')
-  document.documentElement.style.setProperty('--app-titlebar-height', '0px')
+  syncTitlebarHeight(false)
 })
 </script>
 

@@ -16,6 +16,7 @@ import {
   isDesktopApp,
   isElectronShell,
 } from '@shared/services/desktop-bridge'
+import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -115,6 +116,13 @@ export function useAppBootstrap() {
 
   async function startBootstrap() {
     dismissStaticHtmlSplash()
+
+    // Janela de projeção: nunca mostra boot (legado FirstBootLoader).
+    if (isProjectionPopupLocation()) {
+      store.hide()
+      return
+    }
+
     store.revealOverlay()
 
     // Browser puro: splash breve e libera o app.
@@ -122,11 +130,6 @@ export function useAppBootstrap() {
       store.setStatus('starting.status.loading')
       store.setProgress(100)
       await delay(400)
-      store.hide()
-      return
-    }
-
-    if (window.location.href.includes('#/popup') || window.location.pathname.includes('/popup')) {
       store.hide()
       return
     }
@@ -170,6 +173,10 @@ export function useAppBootstrap() {
       await startBootstrap()
     } catch (error) {
       console.error('[starting] erro no bootstrap', error)
+      if (isProjectionPopupLocation()) {
+        store.hide()
+        return
+      }
       store.revealOverlay()
       store.markError(mapBootstrapError(error))
     }
@@ -177,6 +184,10 @@ export function useAppBootstrap() {
 
   onMounted(() => {
     dismissStaticHtmlSplash()
+    if (isProjectionPopupLocation()) {
+      store.hide()
+      return
+    }
     store.revealOverlay()
     void checkAndBootstrap()
   })
