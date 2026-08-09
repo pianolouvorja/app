@@ -42,6 +42,10 @@ export type SystemDisplayInfo = {
 export type DisplaysApi = {
   list: () => Promise<SystemDisplayInfo[]>
   identify: () => Promise<boolean>
+  /** Hotplug: display adicionado/removido/métricas alteradas. */
+  onChanged?: (
+    callback: (displays: SystemDisplayInfo[]) => void,
+  ) => () => void
 }
 
 export type FileDialogFilter = {

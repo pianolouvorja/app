@@ -7,9 +7,16 @@ import i18n from '@plugins/i18n'
 import router from '@/router'
 import { useThemeManager } from '@design-system/composables'
 import { initUiZoom } from '@shared/composables/useUiZoom'
+import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
 
 useThemeManager()
 initUiZoom()
+
+// Remove splash HTML antes do mount na janela de projeção (evita tela de boot).
+if (isProjectionPopupLocation()) {
+  const staticSplash = document.getElementById('boot-splash')
+  if (staticSplash) staticSplash.hidden = true
+}
 
 const app = createApp(App)
 
