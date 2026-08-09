@@ -50,3 +50,4 @@ __screenshots__/
 
 # SDD planning (internal)
 .planning/
+dist-windows/

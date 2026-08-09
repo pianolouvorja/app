@@ -41,6 +41,8 @@ function createUpdateState() {
   const isDownloading = ref(false)
   const isDownloaded = ref(false)
   const error = ref<string | null>(null)
+  const isChecking = ref(false)
+  const hasChecked = ref(false)
   const dismissed = ref(
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem('update-dismissed') === 'true',
   )
@@ -60,6 +62,8 @@ function createUpdateState() {
     isDownloading.value = false
     isDownloaded.value = false
     error.value = null
+    isChecking.value = false
+    hasChecked.value = false
     dismissed.value =
       typeof sessionStorage !== 'undefined' && sessionStorage.getItem('update-dismissed') === 'true'
   }
@@ -72,6 +76,8 @@ function createUpdateState() {
     isDownloading,
     isDownloaded,
     error,
+    isChecking,
+    hasChecked,
     dismissed,
     dismiss,
     reset,
@@ -97,17 +103,27 @@ export function useUpdateChecker() {
 
   async function checkForUpdates() {
     const api = getAPI()
-    if (!api) return
+    if (!api) {
+      state.hasChecked.value = true
+      return
+    }
+
+    state.isChecking.value = true
+    state.error.value = null
 
     try {
       const result = await api.check()
+      state.hasChecked.value = true
       if (result.available) {
         state.hasUpdate.value = true
         state.newVersion.value = result.version ?? null
         state.releaseNotes.value = result.releaseNotes ?? null
       }
     } catch {
-      // Silencioso — offline ou erro, não propaga
+      state.hasChecked.value = true
+      state.error.value = 'Falha ao verificar atualizações'
+    } finally {
+      state.isChecking.value = false
     }
   }
 

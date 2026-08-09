@@ -10,10 +10,24 @@ import {
 } from '@shared/services/browser-storage'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 import { APP_USER_DATA_DIR } from '@shared/constants/app'
+import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
 
 const { t } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
+
+const {
+  checkForUpdates,
+  isChecking,
+  hasUpdate,
+  newVersion,
+  error: updateError,
+  hasChecked,
+} = useUpdateChecker()
+
+async function handleCheckUpdate() {
+  await checkForUpdates()
+}
 
 async function clearAllLocalData() {
   if (!isDesktopApp() || isClearing.value) return
@@ -43,6 +57,48 @@ async function clearAllLocalData() {
 
 <template>
   <section class="general-settings">
+    <div class="general-settings__block">
+      <h3 class="general-settings__heading">
+        {{ t('settings.general.updateTitle') }}
+      </h3>
+      <p class="general-settings__hint">
+        {{ t('settings.general.updateHint') }}
+      </p>
+      <v-btn
+        color="primary"
+        variant="tonal"
+        :loading="isChecking"
+        :disabled="!isDesktopApp() || isChecking"
+        @click="handleCheckUpdate"
+      >
+        {{ isChecking ? t('settings.general.checking') : t('settings.general.checkUpdate') }}
+      </v-btn>
+      <p
+        v-if="hasUpdate"
+        class="general-settings__success"
+      >
+        {{ t('settings.general.updateAvailable', { version: newVersion }) }}
+      </p>
+      <p
+        v-else-if="updateError"
+        class="general-settings__error"
+      >
+        {{ t('settings.general.updateError') }}
+      </p>
+      <p
+        v-else-if="hasChecked && !isChecking"
+        class="general-settings__hint"
+      >
+        {{ t('settings.general.updateNotAvailable') }}
+      </p>
+      <p
+        v-if="!isDesktopApp()"
+        class="general-settings__hint"
+      >
+        {{ t('settings.general.updateDesktopOnly') }}
+      </p>
+    </div>
+
     <div class="general-settings__block">
       <h3 class="general-settings__heading">
         {{ t('settings.general.dataTitle') }}
@@ -107,5 +163,12 @@ async function clearAllLocalData() {
   margin: 0;
   color: rgb(var(--v-theme-error));
   font-size: 0.875rem;
+}
+
+.general-settings__success {
+  margin: 0;
+  color: rgb(var(--v-theme-success));
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 </style>
