@@ -1,6 +1,6 @@
 {
   "name": "louvorja-piano",
-  "version": "1.17.2",
+  "version": "1.17.3",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -81,7 +81,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "public/ico/**/*"
+      "public/ico/**/*",
+      "docs/LEGAL/eula/**/*"
     ],
     "extraResources": [
       {

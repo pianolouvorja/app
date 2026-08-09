@@ -200,6 +200,8 @@ function onEndTimeChange(event: Event) {
   max-width: 20rem;
   flex-direction: column;
   gap: 1.5rem;
+  min-height: 0;
+  height: 100%;
 }
 
 .liturgy-sidebar__panel {
@@ -400,6 +402,10 @@ function onEndTimeChange(event: Event) {
 }
 
 .liturgy-sidebar__note {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border-color: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 30%, transparent) !important;
   background: color-mix(
     in srgb,
@@ -428,6 +434,7 @@ function onEndTimeChange(event: Event) {
 
 .liturgy-sidebar__note-input {
   width: 100%;
+  flex: 1 1 auto;
   min-height: 5.5rem;
   resize: vertical;
   border: 0;
