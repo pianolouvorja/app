@@ -20,7 +20,9 @@ interface ElectronUpdaterAPI {
 }
 
 interface ElectronAPI {
-  updater?: ElectronUpdaterAPI
+  louvorja?: {
+    updater?: ElectronUpdaterAPI
+  }
 }
 
 /**
@@ -29,8 +31,8 @@ interface ElectronAPI {
  */
 function getElectronUpdaterAPI(): ElectronUpdaterAPI | undefined {
   if (typeof window === 'undefined') return undefined
-  const w = window as unknown as { electronAPI?: ElectronAPI }
-  return w.electronAPI?.updater
+  const w = window as unknown as ElectronAPI
+  return w.louvorja?.updater
 }
 
 function createUpdateState() {

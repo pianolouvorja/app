@@ -80,12 +80,12 @@ describe('useUpdateChecker', () => {
       expect(hasUpdate.value).toBe(false)
     })
 
-    it('não propaga erro quando IPC falha (silencioso offline)', async () => {
+    it('define error quando IPC falha (mostra erro para o usuário)', async () => {
       mockUpdater.check.mockRejectedValue(new Error('network'))
       const { hasUpdate, error, checkForUpdates } = useUpdateChecker()
       await checkForUpdates()
       expect(hasUpdate.value).toBe(false)
-      expect(error.value).toBeNull()
+      expect(error.value).not.toBeNull()
     })
 
     it('não chama IPC quando electronAPI não existe', async () => {

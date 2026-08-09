@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { autoUpdater } = require("electron-updater");
@@ -130,9 +130,5 @@ function sendToRenderer(mainWindowGetter, channel, data) {
  * electron-updater só funciona em produção.
  */
 function isPackaged() {
-	try {
-		return process.versions.electron !== undefined && !process.env.VITE_DEV_SERVER_URL;
-	} catch {
-		return false;
-	}
+  return app.isPackaged;
 }
