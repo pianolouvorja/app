@@ -18,7 +18,7 @@ describe('useUpdateChecker', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
-    ;(window as any).electronAPI = { updater: mockUpdater }
+    ;(window as any).louvorja = { updater: mockUpdater }
     // Resetar estado global do singleton entre testes
     const { reset } = useUpdateChecker()
     reset()
@@ -26,7 +26,7 @@ describe('useUpdateChecker', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    delete (window as any).electronAPI
+    delete (window as any).louvorja
   })
 
   describe('estado inicial', () => {
@@ -89,7 +89,7 @@ describe('useUpdateChecker', () => {
     })
 
     it('não chama IPC quando electronAPI não existe', async () => {
-      delete (window as any).electronAPI
+      delete (window as any).louvorja
       const { checkForUpdates } = useUpdateChecker()
       await checkForUpdates()
       expect(mockUpdater.check).not.toHaveBeenCalled()
@@ -143,7 +143,7 @@ describe('useUpdateChecker', () => {
       const { checkForUpdates, downloadUpdate, error, isDownloading } = useUpdateChecker()
       await checkForUpdates()
       await downloadUpdate()
-      expect(error.value).toBe('Falha no download')
+      expect(error.value).toBe('Não foi possível baixar a atualização. Tente novamente mais tarde.')
       expect(isDownloading.value).toBe(false)
     })
 
@@ -157,7 +157,7 @@ describe('useUpdateChecker', () => {
       const { checkForUpdates, downloadUpdate, error } = useUpdateChecker()
       await checkForUpdates()
       await downloadUpdate()
-      expect(error.value).toBe('Falha no download')
+      expect(error.value).toBe('Não foi possível baixar a atualização. Tente novamente mais tarde.')
     })
 
     it('seta error quando download throw exception', async () => {
@@ -170,12 +170,12 @@ describe('useUpdateChecker', () => {
       const { checkForUpdates, downloadUpdate, error, isDownloading } = useUpdateChecker()
       await checkForUpdates()
       await downloadUpdate()
-      expect(error.value).toBe('Falha no download')
+      expect(error.value).toBe('Falha no download. Verifique sua conexão.')
       expect(isDownloading.value).toBe(false)
     })
 
     it('não chama download quando electronAPI não existe', async () => {
-      delete (window as any).electronAPI
+      delete (window as any).louvorja
       const { downloadUpdate } = useUpdateChecker()
       await downloadUpdate()
       expect(mockUpdater.download).not.toHaveBeenCalled()
@@ -197,7 +197,7 @@ describe('useUpdateChecker', () => {
     })
 
     it('não chama install quando electronAPI não existe', () => {
-      delete (window as any).electronAPI
+      delete (window as any).louvorja
       const result = useUpdateChecker()
       result.isDownloaded.value = true
       result.installUpdate()
@@ -216,7 +216,7 @@ describe('useUpdateChecker', () => {
     })
 
     it('não registra listeners quando electronAPI não existe', () => {
-      delete (window as any).electronAPI
+      delete (window as any).louvorja
       const { init } = useUpdateChecker()
       init()
       expect(mockUpdater.onAvailable).not.toHaveBeenCalled()
@@ -250,13 +250,28 @@ describe('useUpdateChecker', () => {
       expect(downloadProgress.value).toBe(100)
     })
 
-    it('onError callback seta error e isDownloading=false', () => {
+    it('onError callback seta error traduzido e isDownloading=false', () => {
       const { init, error, isDownloading } = useUpdateChecker()
       init()
       const cb = mockUpdater.onError.mock.calls[0][0]
       cb(null, { message: 'Erro XPTO' })
-      expect(error.value).toBe('Erro XPTO')
+      expect(error.value).toBe('Falha na atualização. Tente novamente mais tarde.')
       expect(isDownloading.value).toBe(false)
+    })
+
+    it('onError callback com 404 esconde update (release removida)', () => {
+      const { init, hasUpdate, newVersion, error } = useUpdateChecker()
+      init()
+      // Simula update-available primeiro
+      const availCb = mockUpdater.onAvailable.mock.calls[0][0]
+      availCb(null, { version: '9.9.9', releaseNotes: 'test' })
+      expect(hasUpdate.value).toBe(true)
+      // Depois erro 404
+      const errCb = mockUpdater.onError.mock.calls[0][0]
+      errCb(null, { message: 'Cannot download update: 404' })
+      expect(hasUpdate.value).toBe(false)
+      expect(newVersion.value).toBeNull()
+      expect(error.value).toBeNull()
     })
 
     it('init dispara checkForUpdates após 3s (timer)', () => {
