@@ -42,6 +42,15 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => updateChecker.hasUpdate.value,
+  (hasUpdate) => {
+    if (!hasUpdate) {
+      showUpdateDialog.value = false
+    }
+  },
+)
+
 onMounted(() => {
   updateChecker.init()
 })

@@ -141,11 +141,19 @@ export function useUpdateChecker() {
     try {
       const result = await api.download()
       if (!result.success) {
-        state.error.value = result.error ?? 'Falha no download'
+        const msg = result.error || ''
+        if (msg.includes('404')) {
+          state.hasUpdate.value = false
+          state.newVersion.value = null
+          state.releaseNotes.value = null
+          state.dismissed.value = true
+        } else {
+          state.error.value = 'Não foi possível baixar a atualização. Tente novamente mais tarde.'
+        }
         state.isDownloading.value = false
       }
     } catch {
-      state.error.value = 'Falha no download'
+      state.error.value = 'Falha no download. Verifique sua conexão.'
       state.isDownloading.value = false
     }
   }
@@ -177,7 +185,30 @@ export function useUpdateChecker() {
     })
 
     api.onError((_, data) => {
-      state.error.value = data.message
+      const msg = data.message || ''
+
+      // Erro 404 = release não encontrada (foi removida ou ainda não publicada)
+      if (msg.includes('404')) {
+        state.hasUpdate.value = false
+        state.newVersion.value = null
+        state.releaseNotes.value = null
+        state.error.value = null
+        state.isDownloading.value = false
+        state.dismissed.value = true
+        return
+      }
+
+      // Traduz erros comuns do electron-updater
+      if (msg.includes('Cannot download') || msg.includes('net::ERR')) {
+        state.error.value = 'Não foi possível baixar a atualização. Verifique sua conexão com a internet.'
+      } else if (msg.includes('signature') || msg.includes('verification')) {
+        state.error.value = 'A atualização não pôde ser verificada. Tente novamente mais tarde.'
+      } else if (msg.includes('permission') || msg.includes('EACCES')) {
+        state.error.value = 'Permissão negada. Execute o aplicativo como administrador.'
+      } else {
+        state.error.value = 'Falha na atualização. Tente novamente mais tarde.'
+      }
+
       state.isDownloading.value = false
     })
 
