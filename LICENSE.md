@@ -1,6 +1,9 @@
-# MIT License
+MIT License
 
-Copyright (c) 2026 Piano Louvor JA
+Copyright (c) 2022-2026 LouvorJA (github.com/louvorja/app)
+Copyright (c) 2026 Piano Louvor JA (github.com/pianolouvorja)
+
+This software is derived from the LouvorJA project (https://github.com/louvorja/app).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,92 +1,137 @@
-import { app, BrowserWindow, screen, shell } from 'electron'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { app, BrowserWindow, dialog, screen, shell } from "electron";
 
 import {
-  APP_DESKTOP_ID,
-  ensureLinuxTaskbarIntegration,
-  loadAppIconImage,
-  resolveAppIconPath,
-} from './app-icon.mjs'
-import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from './constants.mjs'
-import { registerWorkspaceIpc } from './ipc/register.mjs'
-import { attachWindowStateEvents, registerWindowIpc } from './ipc/window.mjs'
-import { ensureWorkspaceDirectories } from './paths.mjs'
-import { registerLocalFileProtocol, registerLocalScheme } from './protocol.mjs'
-import { loadWindowState, trackWindowState } from './window-state.mjs'
-import { registerYoutubeEmbedHeaders } from './youtube-embed.mjs'
+	APP_DESKTOP_ID,
+	ensureLinuxTaskbarIntegration,
+	loadAppIconImage,
+	resolveAppIconPath,
+} from "./app-icon.mjs";
+import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from "./constants.mjs";
+import { checkEulaAcceptance } from "./eula.mjs";
+import { registerWorkspaceIpc } from "./ipc/register.mjs";
+import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
+import { ensureWorkspaceDirectories } from "./paths.mjs";
+import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
+import { loadWindowState, trackWindowState } from "./window-state.mjs";
+import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
-const isDev = Boolean(VITE_DEV_SERVER_URL)
-const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+const isDev = Boolean(VITE_DEV_SERVER_URL);
+const PRELOAD_PATH = path.join(__dirname, "preload.mjs");
 
-registerLocalScheme()
+registerLocalScheme();
 
 /**
  * Linux: app name = WM_CLASS = StartupWMClass do .desktop (ícone na barra).
  * Título da janela continua sendo APP_PRODUCT_NAME.
  */
-if (process.platform === 'linux') {
-  app.setName(APP_DESKTOP_ID)
-  app.commandLine.appendSwitch('class', APP_DESKTOP_ID)
+if (process.platform === "linux") {
+	app.setName(APP_DESKTOP_ID);
+	app.commandLine.appendSwitch("class", APP_DESKTOP_ID);
 } else {
-  app.setName(APP_PRODUCT_NAME)
+	app.setName(APP_PRODUCT_NAME);
 }
 
-app.setPath('userData', path.join(app.getPath('appData'), APP_USER_DATA_DIR))
+app.setPath("userData", path.join(app.getPath("appData"), APP_USER_DATA_DIR));
 
-if (process.platform === 'win32') {
-  app.setAppUserModelId('com.louvorja.piano')
+if (process.platform === "win32") {
+	app.setAppUserModelId("com.louvorja.piano");
 }
 
 /** Chromium não permite root sem sandbox (dev containers / CI) */
-if (typeof process.getuid === 'function' && process.getuid() === 0) {
-  app.commandLine.appendSwitch('no-sandbox')
+if (typeof process.getuid === "function" && process.getuid() === 0) {
+	app.commandLine.appendSwitch("no-sandbox");
 }
 
 /** Permite autoplay com áudio nas janelas de projeção (YouTube). */
-app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
-const gotLock = app.requestSingleInstanceLock()
+const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
-  app.quit()
+	app.quit();
 }
 
-let mainWindow = null
+let mainWindow = null;
+let splashWindow = null;
+
+/**
+ * Cria e exibe uma splash window imediatamente no startup.
+ * Dá feedback visual ao usuário enquanto o app carrega.
+ * Funciona em dev (via VITE_DEV_SERVER_URL) e em produção (via loadFile).
+ */
+function createSplash() {
+	splashWindow = new BrowserWindow({
+		width: 360,
+		height: 240,
+		frame: false,
+		resizable: false,
+		center: true,
+		show: true,
+		transparent: false,
+		backgroundColor: "#12121c",
+		skipTaskbar: true,
+		menuBarVisible: false,
+		autoHideMenuBar: true,
+		webPreferences: {
+			contextIsolation: true,
+			nodeIntegration: false,
+			sandbox: true,
+		},
+	});
+
+	const splashPath = path.join(__dirname, "splash.html");
+	void splashWindow.loadFile(splashPath);
+
+	splashWindow.on("closed", () => {
+		splashWindow = null;
+	});
+}
+
+function closeSplash() {
+	if (splashWindow && !splashWindow.isDestroyed()) {
+		splashWindow.close();
+		splashWindow = null;
+	}
+}
 
 function applyWindowIcon(win) {
-  if (!win || win.isDestroyed()) return
-  const iconPath = resolveAppIconPath()
-  const iconImage = loadAppIconImage()
-  if (iconImage) {
-    win.setIcon(iconImage)
-  } else if (iconPath) {
-    win.setIcon(iconPath)
-  }
-  if (process.platform === 'win32' && iconPath) {
-    try {
-      win.setAppDetails({
-        appId: 'com.louvorja.piano',
-        appIconPath: iconPath,
-        appIconIndex: 0,
-        relaunchDisplayName: APP_PRODUCT_NAME,
-      })
-    } catch (error) {
-      console.warn('[icon] setAppDetails falhou', error)
-    }
-  }
+	if (!win || win.isDestroyed()) return;
+	const iconPath = resolveAppIconPath();
+	const iconImage = loadAppIconImage();
+	if (iconImage) {
+		win.setIcon(iconImage);
+	} else if (iconPath) {
+		win.setIcon(iconPath);
+	}
+	if (process.platform === "win32" && iconPath) {
+		try {
+			win.setAppDetails({
+				appId: "com.louvorja.piano",
+				appIconPath: iconPath,
+				appIconIndex: 0,
+				relaunchDisplayName: APP_PRODUCT_NAME,
+			});
+		} catch (error) {
+			console.warn("[icon] setAppDetails falhou", error);
+		}
+	}
 }
 
 function isProjectionPopupUrl(url) {
-  try {
-    const parsed = new URL(url)
-    if (parsed.hash.startsWith('#/popup')) return true
-    const path = parsed.pathname.replace(/\/+$/, '')
-    return path === '/popup' || path.endsWith('/popup')
-  } catch {
-    return typeof url === 'string' && (url.includes('#/popup') || url.includes('/popup'))
-  }
+	try {
+		const parsed = new URL(url);
+		if (parsed.hash.startsWith("#/popup")) return true;
+		const path = parsed.pathname.replace(/\/+$/, "");
+		return path === "/popup" || path.endsWith("/popup");
+	} catch {
+		return (
+			typeof url === "string" &&
+			(url.includes("#/popup") || url.includes("/popup"))
+		);
+	}
 }
 
 /**
@@ -249,90 +294,144 @@ function attachProjectionWindowHandlers(parentWindow) {
 }
 
 function createWindow() {
-  const iconPath = resolveAppIconPath()
-  const windowState = loadWindowState()
+	const iconPath = resolveAppIconPath();
+	const windowState = loadWindowState();
 
-  mainWindow = new BrowserWindow({
-    ...(typeof windowState.x === 'number' ? { x: windowState.x } : {}),
-    ...(typeof windowState.y === 'number' ? { y: windowState.y } : {}),
-    width: windowState.width,
-    height: windowState.height,
-    minWidth: 1024,
-    minHeight: 640,
-    backgroundColor: '#12121c',
-    title: APP_PRODUCT_NAME,
-    show: false,
-    frame: false,
-    autoHideMenuBar: true,
-    ...(iconPath ? { icon: iconPath } : {}),
-    webPreferences: {
-      preload: PRELOAD_PATH,
-      contextIsolation: true,
-      nodeIntegration: false,
-      // false: garante preload/IPC no AppImage empacotado (first-boot / splash)
-      sandbox: false,
-      spellcheck: false,
-    },
-  })
+	mainWindow = new BrowserWindow({
+		...(typeof windowState.x === "number" ? { x: windowState.x } : {}),
+		...(typeof windowState.y === "number" ? { y: windowState.y } : {}),
+		width: windowState.width,
+		height: windowState.height,
+		minWidth: 1024,
+		minHeight: 640,
+		backgroundColor: "#12121c",
+		title: APP_PRODUCT_NAME,
+		show: false,
+		frame: false,
+		autoHideMenuBar: true,
+		...(iconPath ? { icon: iconPath } : {}),
+		webPreferences: {
+			preload: PRELOAD_PATH,
+			contextIsolation: true,
+			nodeIntegration: false,
+			// false: garante preload/IPC no AppImage empacotado (first-boot / splash)
+			sandbox: false,
+			spellcheck: false,
+		},
+	});
 
-  applyWindowIcon(mainWindow)
-  attachWindowStateEvents(mainWindow)
-  trackWindowState(mainWindow, { isMaximized: windowState.isMaximized })
+	applyWindowIcon(mainWindow);
+	attachWindowStateEvents(mainWindow);
+	trackWindowState(mainWindow, { isMaximized: windowState.isMaximized });
 
-  mainWindow.on('page-title-updated', (event) => {
-    event.preventDefault()
-  })
+	mainWindow.on("page-title-updated", (event) => {
+		event.preventDefault();
+	});
 
-  mainWindow.once('ready-to-show', () => {
-    applyWindowIcon(mainWindow)
-    if (windowState.isMaximized && mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.maximize()
-    }
-    mainWindow?.show()
-    // Reaplica após show — alguns WMs só pegam o ícone com a janela visível
-    applyWindowIcon(mainWindow)
-    if (isDev && process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
-      mainWindow?.webContents.openDevTools({ mode: 'detach' })
-    }
-  })
+	mainWindow.once("ready-to-show", () => {
+		applyWindowIcon(mainWindow);
+		if (windowState.isMaximized && mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.maximize();
+		}
+		mainWindow?.show();
+		// Fecha o splash assim que a janela principal estiver visível
+		closeSplash();
+		// Reaplica após show — alguns WMs só pegam o ícone com a janela visível
+		applyWindowIcon(mainWindow);
+		if (isDev && process.env.ELECTRON_OPEN_DEVTOOLS === "1") {
+			mainWindow?.webContents.openDevTools({ mode: "detach" });
+		}
+	});
 
-  attachProjectionWindowHandlers(mainWindow)
+	attachProjectionWindowHandlers(mainWindow);
 
-  if (isDev && VITE_DEV_SERVER_URL) {
-    void mainWindow.loadURL(VITE_DEV_SERVER_URL)
-  } else {
-    void mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
-  }
+	if (isDev && VITE_DEV_SERVER_URL) {
+		void mainWindow.loadURL(VITE_DEV_SERVER_URL);
+	} else {
+		void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+	}
 
-  mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+	// Timeout de segurança: se ready-to-show não disparar em 15s, mostra erro
+	const loadTimeout = setTimeout(() => {
+		if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+			console.error("[main] timeout: janela principal não carregou em 15s");
+			closeSplash();
+			dialog.showMessageBoxSync(mainWindow, {
+				type: "error",
+				title: "Erro ao iniciar",
+				message: "O aplicativo demorou muito para iniciar.\n\nIsso pode indicar um problema de carregamento.\nCódigo do erro: TIMEOUT_15S",
+				buttons: ["OK"],
+			});
+			mainWindow.destroy();
+			mainWindow = null;
+		}
+	}, 15_000);
+
+	mainWindow.once("ready-to-show", () => {
+		clearTimeout(loadTimeout);
+	});
+
+	// Fallback: se a janela principal falhar ao carregar, mostra erro e fecha o splash
+	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+		console.error(`[main] falha ao carregar: code=${errorCode} desc=${errorDescription}`);
+		closeSplash();
+		if (!mainWindow || mainWindow.isDestroyed()) return;
+		dialog.showMessageBoxSync(mainWindow, {
+			type: "error",
+			title: "Erro ao iniciar",
+			message: `Não foi possível carregar o aplicativo.\n\nCódigo: ${errorCode}\n${errorDescription || ""}`.trim(),
+			buttons: ["OK"],
+		});
+		mainWindow.destroy();
+	});
+
+	mainWindow.on("closed", () => {
+		mainWindow = null;
+	});
 }
 
 app.whenReady().then(() => {
-  ensureLinuxTaskbarIntegration()
-  ensureWorkspaceDirectories()
-  registerWorkspaceIpc()
-  registerWindowIpc(() => mainWindow)
-  registerLocalFileProtocol()
-  registerYoutubeEmbedHeaders()
-  createWindow()
+	ensureLinuxTaskbarIntegration();
+	ensureWorkspaceDirectories();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
+	// Splash screen — feedback visual imediato antes de qualquer coisa
+	createSplash();
 
-app.on('second-instance', () => {
-  if (!mainWindow) return
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.focus()
-})
+	// EULA: se não aceito, pergunta. Se recusar, fecha o app.
+	const sysLocale = app.getLocale();
+	const supported = ["pt-BR", "en", "es"];
+	const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+	if (!checkEulaAcceptance(locale)) {
+		closeSplash();
+		app.quit();
+		return;
+	}
+
+	registerWorkspaceIpc();
+	registerWindowIpc(() => mainWindow);
+	registerLocalFileProtocol();
+	registerYoutubeEmbedHeaders();
+	createWindow();
+
+	app.on("activate", () => {
+		if (BrowserWindow.getAllWindows().length === 0) {
+			createWindow();
+		}
+	});
+});
+
+app.on("second-instance", () => {
+	if (!mainWindow) return;
+	if (mainWindow.isMinimized()) mainWindow.restore();
+	mainWindow.focus();
+});
+
+app.on("window-all-closed", () => {
+	// window-all-closed pode disparar quando o splash fecha mas a main
+	// ainda está carregando. Só saímos se mainWindow já existiu ou se
+	// não há intenção de criar janela (eula recusado, erro fatal, etc).
+	if (process.platform !== "darwin") {
+		app.quit();
+	}
+});
