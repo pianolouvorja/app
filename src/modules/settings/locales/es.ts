@@ -109,6 +109,16 @@ export default {
       clearData: 'Borrar todos los datos',
       clearError: 'No se pudieron borrar los datos. Intente de nuevo.',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
+      updateTitle: 'Actualizaciones',
+      updateHint:
+        'Comprueba si hay una nueva versión de la aplicación disponible para descargar.',
+      checkUpdate: 'Buscar actualizaciones',
+      checking: 'Buscando...',
+      updateAvailable: '¡Versión {version} disponible!',
+      updateNotAvailable: 'Ya está utilizando la versión más reciente.',
+      updateError: 'No se pudieron comprobar las actualizaciones.',
+      updateDesktopOnly:
+        'Las actualizaciones automáticas solo están disponibles en la aplicación de escritorio.',
     },
   },
 }
