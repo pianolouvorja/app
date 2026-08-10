@@ -73,7 +73,19 @@ export function writeWorkspaceRecord(filename, data) {
 }
 
 export function clearWorkspaceData() {
+  const eulaRecord = readWorkspaceRecord('eula')
   resetWorkspaceDirectories()
+  
+  if (eulaRecord) {
+    try {
+      writeWorkspaceRecord('eula', eulaRecord)
+    } catch (error) {
+      console.error(
+        '[workspace] erro ao restaurar eula pós-limpeza',
+        error,
+      )
+    }
+  }
   return true
 }
 

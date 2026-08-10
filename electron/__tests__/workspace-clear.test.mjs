@@ -35,8 +35,8 @@ vi.mock("basic-ftp", () => ({
 }));
 
 vi.mock("../crypto.mjs", () => ({
-	obfuscateText: vi.fn(),
-	revealText: vi.fn(),
+	obfuscateText: vi.fn(() => "registro-eula-ofuscado"),
+	revealText: vi.fn(() => '{"accepted":true}'),
 }));
 
 vi.mock("../ftp.mjs", () => ({
@@ -59,7 +59,7 @@ import { clearWorkspaceData } from "../workspace.mjs";
 describe("clearWorkspaceData", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mocks.readFileSync.mockReturnValue("registro-eula-ofuscado");
+		mocks.readFileSync.mockReturnValue("fake-encrypted-content");
 	});
 
 	it("preserva eula.bin ao recriar o workspace", () => {

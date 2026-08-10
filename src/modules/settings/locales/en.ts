@@ -109,6 +109,16 @@ export default {
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',
+      updateTitle: 'Updates',
+      updateHint:
+        'Check if there is a new version of the app available for download.',
+      checkUpdate: 'Check for updates',
+      checking: 'Checking...',
+      updateAvailable: 'Version {version} is available!',
+      updateNotAvailable: 'You are already using the latest version.',
+      updateError: 'Could not check for updates.',
+      updateDesktopOnly:
+        'Automatic updates are only available in the desktop app.',
     },
   },
 }
