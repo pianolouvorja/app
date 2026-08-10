@@ -104,3 +104,35 @@ describe('localeToApiPrefix', () => {
     expect(localeToApiPrefix('EN')).toBe('en')
   })
 })
+
+describe('createI18n config (static mutants)', () => {
+  it('legacy mode e false (composition mode)', async () => {
+    const i18n = (await import('@plugins/i18n')).default
+    // Mutante #145: legacy: false -> true muda mode para 'legacy'
+    expect(i18n.mode).toBe('composition')
+  })
+
+  it('messages pt-BR contem chaves de modulos', async () => {
+    const i18n = (await import('@plugins/i18n')).default
+    const messages = i18n.global.messages.value['pt-BR']
+    // Mutante #144/#147: messages pt-BR -> {}
+    expect(messages).toBeDefined()
+    expect(Object.keys(messages).length).toBeGreaterThan(0)
+  })
+
+  it('messages en contem chaves de modulos', async () => {
+    const i18n = (await import('@plugins/i18n')).default
+    const messages = i18n.global.messages.value['en']
+    // Mutante #146/#148: messages en -> {}
+    expect(messages).toBeDefined()
+    expect(Object.keys(messages).length).toBeGreaterThan(0)
+  })
+
+  it('messages es contem chaves de modulos', async () => {
+    const i18n = (await import('@plugins/i18n')).default
+    const messages = i18n.global.messages.value['es']
+    // Mutante #149: messages es -> {}
+    expect(messages).toBeDefined()
+    expect(Object.keys(messages).length).toBeGreaterThan(0)
+  })
+})
