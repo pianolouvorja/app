@@ -154,4 +154,26 @@ contextBridge.exposeInMainWorld('louvorja', {
     onVideoTargetsChanged: (callback) =>
       subscribe('projection:video-targets-changed', callback),
   },
+
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onAvailable: (cb) => {
+      const listener = (_event, data) => cb(_event, data)
+      ipcRenderer.on('updater:available', listener)
+    },
+    onProgress: (cb) => {
+      const listener = (_event, data) => cb(_event, data)
+      ipcRenderer.on('updater:progress', listener)
+    },
+    onDownloaded: (cb) => {
+      const listener = () => cb()
+      ipcRenderer.on('updater:downloaded', listener)
+    },
+    onError: (cb) => {
+      const listener = (_event, data) => cb(_event, data)
+      ipcRenderer.on('updater:error', listener)
+    },
+  },
 })

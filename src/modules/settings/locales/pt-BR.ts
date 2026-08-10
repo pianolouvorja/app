@@ -104,6 +104,16 @@ export default {
       clearData: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
+      updateTitle: 'Atualizações',
+      updateHint:
+        'Verifica se há uma nova versão do aplicativo disponível para download.',
+      checkUpdate: 'Verificar atualizações',
+      checking: 'Verificando...',
+      updateAvailable: 'Versão {version} disponível!',
+      updateNotAvailable: 'Você já está usando a versão mais recente.',
+      updateError: 'Não foi possível verificar atualizações.',
+      updateDesktopOnly:
+        'Atualizações automáticas estão disponíveis apenas no aplicativo desktop.',
     },
   },
 }

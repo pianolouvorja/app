@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, watch, onMounted, ref } from 'vue'
 import { useRoute, RouterView } from 'vue-router'
 import { useTheme } from 'vuetify'
 
@@ -9,6 +9,9 @@ import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import { useThemeManager } from '@design-system/composables'
 import AppTitlebar from '@layouts/AppTitlebar.vue'
 import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
+import UpdateBanner from '@shared/components/UpdateBanner.vue'
+import UpdateDialog from '@shared/components/UpdateDialog.vue'
+import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
 
 const route = useRoute()
 const vuetifyTheme = useTheme()
@@ -28,6 +31,9 @@ if (isProjectionPopupLocation()) {
   startingStore.hide()
 }
 
+const updateChecker = useUpdateChecker()
+const showUpdateDialog = ref(false)
+
 watch(
   () => currentTheme.value.mode,
   (mode) => {
@@ -35,6 +41,23 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  () => updateChecker.hasUpdate.value,
+  (hasUpdate) => {
+    if (!hasUpdate) {
+      showUpdateDialog.value = false
+    }
+  },
+)
+
+onMounted(() => {
+  updateChecker.init()
+})
+
+function handleViewNotes() {
+  showUpdateDialog.value = true
+}
 </script>
 
 <template>
@@ -42,11 +65,13 @@ watch(
     class="app-frame"
     :class="{ 'app-frame--projection': isProjectionWindow }"
   >
+    <UpdateBanner @view-notes="handleViewNotes" />
     <AppTitlebar />
     <div class="app-frame__body">
       <StartingOverlay v-if="!isProjectionWindow" />
       <RouterView v-if="isAppReady || isProjectionWindow" />
     </div>
+    <UpdateDialog v-model="showUpdateDialog" />
   </div>
 </template>
 
