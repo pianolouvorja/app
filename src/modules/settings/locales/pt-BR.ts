@@ -98,6 +98,11 @@ export default {
       },
     },
     general: {
+      languageTitle: 'Idioma',
+      languageHint: 'Escolha o idioma da interface do aplicativo.',
+      languagePortuguese: 'Português (BR)',
+      languageEnglish: 'English',
+      languageSpanish: 'Español',
       dataTitle: 'Dados locais',
       dataHint:
         'Remove o catálogo, mídias baixadas e preferências salvas na pasta {product}. O app reinicia o setup na próxima abertura.',
