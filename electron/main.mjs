@@ -10,6 +10,7 @@ import {
 } from "./app-icon.mjs";
 import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from "./constants.mjs";
 import { checkEulaAcceptance } from "./eula.mjs";
+import { resolveAppLocale } from "./locale.mjs";
 import { registerWorkspaceIpc } from "./ipc/register.mjs";
 import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
@@ -295,7 +296,7 @@ function attachProjectionWindowHandlers(parentWindow) {
   })
 }
 
-function createWindow() {
+function createWindow(locale = 'pt-BR') {
 	const iconPath = resolveAppIconPath();
 	const windowState = loadWindowState();
 
@@ -348,9 +349,10 @@ function createWindow() {
 	attachProjectionWindowHandlers(mainWindow);
 
 	if (isDev && VITE_DEV_SERVER_URL) {
-		void mainWindow.loadURL(VITE_DEV_SERVER_URL);
+		const localeParam = `?lang=${locale}`;
+		void mainWindow.loadURL(VITE_DEV_SERVER_URL + localeParam);
 	} else {
-		void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+		void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"), { query: { lang: locale } });
 	}
 
 	// Timeout de segurança: se ready-to-show não disparar em 15s, mostra erro
@@ -400,10 +402,8 @@ app.whenReady().then(async () => {
 	createSplash();
 
 	try {
-		// EULA: se não aceito, pergunta. Se recusar, fecha o app.
-		const sysLocale = app.getLocale();
-		const supported = ["pt-BR", "en", "es"];
-		const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
+		// EULA: detecta idioma do SO, fallback pt-BR
+		const locale = resolveAppLocale(app.getLocale());
 
 		if (!(await checkEulaAcceptance(locale))) {
 			closeSplash();
@@ -415,7 +415,7 @@ app.whenReady().then(async () => {
 		registerWindowIpc(() => mainWindow);
 		registerLocalFileProtocol();
 		registerYoutubeEmbedHeaders();
-		createWindow();
+		createWindow(locale);
 	} catch (error) {
 		console.error("[main] falha no startup", error);
 		closeSplash();
@@ -438,7 +438,7 @@ app.whenReady().then(async () => {
 	}, 3000);
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) {
-			createWindow();
+			createWindow(locale);
 		}
 	});
 });
