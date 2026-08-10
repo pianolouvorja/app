@@ -37,10 +37,12 @@ body:
         - Bíblia
         - Álbuns / Hinos
         - Mídia / Player
-        - Countdown / Timer / Clock
         - Settings / Aparência
         - Design System
         - Desktop (Electron)
-        - PWA
+        - Updater
+        - Splash/EULA
         - Infra / Deploy
         - Outro
+    validations:
+      required: false

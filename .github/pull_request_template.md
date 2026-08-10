@@ -1,6 +1,3 @@
-# PR Template — PIANO
-# Preencha antes de pedir review
----
 ## Issue Relacionada
 
 Closes #[NUMERO]
@@ -19,15 +16,7 @@ Closes #[NUMERO]
 
 ## Checklist
 
-- [ ] Conventional commits usados (`feat:`, `fix:`, etc)
-- [ ] Biome passou localmente (`npx biome check .`)
-- [ ] Type check passou (`npm run type-check`)
-- [ ] Build passou (`npm run build`)
-- [ ] Testes adicionados/atualizados (se aplicável)
-- [ ] Sem `console.log` no código
-- [ ] Sem `any` no TypeScript
-- [ ] Responsividade testada (se mudou UI)
-
-## Screenshots (se aplicável)
-
-[Anexe prints antes/depois se mudou UI]
+- [ ] Testes adicionados/atualizados
+- [ ] Type-check passa (`npm run type-check`)
+- [ ] Build passa (`npm run build`)
+- [ ] Documentação atualizada (se necessário)
