@@ -9,11 +9,12 @@ import {
   removeBrowserItem,
   removeBrowserItemsByPrefix,
 } from '@shared/services/browser-storage'
-import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
+import { BROWSER_STORAGE_KEYS, USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
 import { APP_USER_DATA_DIR } from '@shared/constants/app'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
+import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
 
@@ -25,6 +26,21 @@ const {
   error: updateError,
   hasChecked,
 } = useUpdateChecker()
+
+const SUPPORTED_LOCALES = [
+  { value: 'pt-BR', labelKey: 'settings.general.languagePortuguese' },
+  { value: 'es', labelKey: 'settings.general.languageSpanish' },
+] as const
+
+const currentLanguage = ref(
+  getUserPreference<string>(USER_PREFERENCE_KEYS.language, 'pt-BR') ?? 'pt-BR',
+)
+
+function changeLanguage(lang: string) {
+  currentLanguage.value = lang
+  locale.value = lang
+  setUserPreference(USER_PREFERENCE_KEYS.language, lang)
+}
 
 async function handleCheckUpdate() {
   await checkForUpdates()
@@ -113,6 +129,37 @@ async function clearAllLocalData() {
       >
         {{ t('settings.general.updateDesktopOnly') }}
       </p>
+    </GlassCard>
+
+    <!-- Idioma -->
+    <GlassCard class="general-settings__card" elevated>
+      <div class="general-settings__accent" aria-hidden="true" />
+
+      <div class="general-settings__header">
+        <div class="general-settings__heading">
+          <i class="ti ti-world general-settings__icon" aria-hidden="true" />
+          <h3 class="general-settings__title">
+            {{ t('settings.general.languageTitle') }}
+          </h3>
+        </div>
+      </div>
+
+      <p class="general-settings__hint">
+        {{ t('settings.general.languageHint') }}
+      </p>
+
+      <div class="general-settings__lang-options">
+        <button
+          v-for="lang in SUPPORTED_LOCALES"
+          :key="lang.value"
+          type="button"
+          class="general-settings__lang-btn"
+          :class="{ 'general-settings__lang-btn--active': currentLanguage === lang.value }"
+          @click="changeLanguage(lang.value)"
+        >
+          {{ t(lang.labelKey) }}
+        </button>
+      </div>
     </GlassCard>
 
     <!-- Dados locais -->
@@ -278,6 +325,38 @@ async function clearAllLocalData() {
   &:hover:not(:disabled) {
     background: color-mix(in srgb, rgb(var(--v-theme-error)) 22%, transparent);
   }
+}
+
+/* Seletor de idioma */
+.general-settings__lang-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.general-settings__lang-btn {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
+  border-radius: var(--ds-radius-full);
+  background: transparent;
+  color: var(--ds-color-on-surface-variant);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+  }
+}
+
+.general-settings__lang-btn--active {
+  border-color: var(--ds-color-primary);
+  background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
+  color: var(--ds-color-primary);
 }
 
 /* Status */

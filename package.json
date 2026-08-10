@@ -39,6 +39,9 @@
     "vuetify": "^4.1.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@tailwindcss/vite": "^4.3.2",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.13.2",
@@ -49,6 +52,7 @@
     "cross-env": "^10.1.0",
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
+    "jsdom": "^25.0.1",
     "npm-run-all2": "^9.0.2",
     "sass": "^1.101.0",
     "tailwindcss": "^4.3.2",

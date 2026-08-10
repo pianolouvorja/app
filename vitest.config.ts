@@ -22,6 +22,7 @@ export default defineConfig({
     },
   },
   test: {
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'lcov'],
@@ -31,7 +32,11 @@ export default defineConfig({
         statements: 100,
         branches: 100,
       },
-      include: ['src/shared/composables/useUpdateChecker.ts', 'src/shared/components/UpdateBanner.vue'],
+      include: [
+        'src/shared/composables/useUpdateChecker.ts',
+        'src/shared/components/UpdateBanner.vue',
+        'src/plugins/i18n.ts',
+      ],
     },
   },
 })
