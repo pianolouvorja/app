@@ -16,7 +16,23 @@ vi.mock("electron", () => ({
   dialog: {
     showMessageBoxSync: vi.fn(),
   },
-  BrowserWindow: vi.fn(),
+  BrowserWindow: vi.fn(function BrowserWindowMock() {
+    return {
+    id: 1,
+    isDestroyed: vi.fn(() => false),
+    destroy: vi.fn(),
+    close: vi.fn(),
+    show: vi.fn(),
+    focus: vi.fn(),
+    once: vi.fn(),
+    on: vi.fn(),
+    loadURL: vi.fn(() => Promise.resolve()),
+    webContents: {
+      on: vi.fn(),
+      setWindowOpenHandler: vi.fn(),
+    },
+    };
+  }),
   ipcMain: {
     once: vi.fn(),
     removeListener: vi.fn(),
@@ -28,15 +44,17 @@ vi.mock("electron", () => ({
   },
 }));
 
-import { dialog } from "electron";
+import { BrowserWindow, dialog } from "electron";
 // Importar após o mock
 import {
+  __setEulaPlatformForTests,
   __setEulaPresenterForTests,
   acceptEula,
   checkEulaAcceptance,
   confirmDecline,
   getEulaText,
   isEulaAccepted,
+  presentEulaAcceptanceWindow,
   showEulaDialog,
 } from "../eula.mjs";
 import { readWorkspaceRecord, writeWorkspaceRecord } from "../workspace.mjs";
@@ -109,12 +127,55 @@ describe("getEulaText", () => {
   });
 });
 
+describe("presentEulaAcceptanceWindow", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    __setEulaPlatformForTests(null);
+    __setEulaPresenterForTests(null);
+  });
+
+  it.each(["win32", "linux"])("mantém o presenter existente em %s", async (platform) => {
+    __setEulaPlatformForTests(platform);
+    __setEulaPresenterForTests(async () => 0);
+
+    expect(await presentEulaAcceptanceWindow("pt-BR")).toBe(0);
+    expect(BrowserWindow).not.toHaveBeenCalled();
+  });
+
+  it("abre a janela segura e rolável exclusivamente no macOS", async () => {
+    __setEulaPlatformForTests("darwin");
+    const decision = presentEulaAcceptanceWindow("pt-BR");
+
+    expect(BrowserWindow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resizable: true,
+        webPreferences: expect.objectContaining({
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true,
+        }),
+      }),
+    );
+    const window = BrowserWindow.mock.results[0].value;
+    expect(window.loadURL).toHaveBeenCalledWith(expect.stringContaining("data:text/html"));
+    expect(window.webContents.setWindowOpenHandler).toHaveBeenCalledWith(expect.any(Function));
+
+    const closeHandler = window.on.mock.calls.find(([event]) => event === "close")[1];
+    closeHandler({ preventDefault: vi.fn() });
+    await expect(decision).resolves.toBe(1);
+  });
+});
+
 describe("showEulaDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    __setEulaPlatformForTests(null);
     __setEulaPresenterForTests(null);
   });
 
@@ -181,6 +242,7 @@ describe("confirmDecline", () => {
   });
 
   afterEach(() => {
+    __setEulaPlatformForTests(null);
     __setEulaPresenterForTests(null);
   });
 
@@ -198,6 +260,7 @@ describe("checkEulaAcceptance", () => {
   });
 
   afterEach(() => {
+    __setEulaPlatformForTests(null);
     __setEulaPresenterForTests(null);
   });
 
