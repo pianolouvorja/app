@@ -31,7 +31,11 @@ export default defineConfig({
         statements: 100,
         branches: 100,
       },
-      include: ['src/shared/composables/useUpdateChecker.ts', 'src/shared/components/UpdateBanner.vue'],
+      include: [
+        'src/shared/composables/useUpdateChecker.ts',
+        'src/shared/components/UpdateBanner.vue',
+        'src/plugins/i18n.ts',
+      ],
     },
   },
 })
