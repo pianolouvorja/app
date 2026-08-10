@@ -59,9 +59,9 @@ export function acceptEula() {
  */
 function getEulaDir() {
 	try {
-		return path.join(app.getAppPath(), "docs", "LEGAL", "eula");
+		return path.join(app.getAppPath(), "electron", "legal", "eula");
 	} catch {
-		return path.resolve(process.cwd(), "docs", "LEGAL", "eula");
+		return path.resolve(process.cwd(), "electron", "legal", "eula");
 	}
 }
 
