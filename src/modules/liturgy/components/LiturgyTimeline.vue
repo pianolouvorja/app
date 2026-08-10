@@ -493,4 +493,47 @@ function isCategorySectionInProgress(categoryId: string): boolean {
   );
   pointer-events: none;
 }
+
+@media (max-width: 1280px) {
+  .liturgy-timeline {
+    gap: 0.65rem;
+  }
+
+  .liturgy-timeline__empty {
+    gap: 0.25rem;
+
+    > i {
+      font-size: 2.15rem;
+      margin-bottom: 0.15rem;
+    }
+  }
+
+  .liturgy-timeline__empty-title {
+    font-size: 0.9rem;
+  }
+
+  .liturgy-timeline__empty-hint {
+    font-size: 0.78rem;
+  }
+
+  .liturgy-timeline__clone-note {
+    margin-top: 0.55rem;
+    font-size: 0.72rem;
+  }
+
+  .liturgy-timeline__clone {
+    margin-top: 0.45rem;
+    min-height: 1.85rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.72rem;
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  .liturgy-timeline__list {
+    gap: 0.5rem;
+  }
+}
 </style>

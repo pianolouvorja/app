@@ -73,24 +73,8 @@ export function writeWorkspaceRecord(filename, data) {
 }
 
 export function clearWorkspaceData() {
-	const { sysdata } = getWorkspacePaths()
-	const legalRecordNames = ['eula.bin', 'eula']
-	const preservedLegalRecords = new Map()
-
-	for (const recordName of legalRecordNames) {
-		const recordPath = path.join(sysdata, recordName)
-		if (existsSync(recordPath)) {
-			preservedLegalRecords.set(recordName, readFileSync(recordPath, 'utf8'))
-		}
-	}
-
-	resetWorkspaceDirectories()
-
-	for (const [recordName, content] of preservedLegalRecords) {
-		writeFileSync(path.join(sysdata, recordName), content, 'utf8')
-	}
-
-	return true
+  resetWorkspaceDirectories()
+  return true
 }
 
 /**

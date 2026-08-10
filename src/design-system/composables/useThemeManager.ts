@@ -93,6 +93,11 @@ function applyCssVars(target: HTMLElement = document.documentElement) {
     target.style.setProperty(key, value)
   })
 
+  // Densidade ≤1280 fica no CSS (base.css); evita inline do tema sobrescrever.
+  target.style.removeProperty('--ds-spacing-page')
+  target.style.removeProperty('--ds-dock-height')
+  target.style.removeProperty('--ds-header-height')
+
   target.style.setProperty('--ds-color-primary', accent.primary)
   target.style.setProperty(
     '--ds-color-primary-soft',

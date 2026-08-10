@@ -171,10 +171,16 @@ function onNextVerse() {
   flex-direction: column;
   gap: 1rem;
   box-sizing: border-box;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
   padding: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   overflow: hidden;
+
+  // Desktop médio / projetor 1024×768: menos gap e padding vertical.
+  @media (max-width: 1280px) {
+    gap: 0.65rem;
+    padding-top: 0.5rem;
+  }
 }
 
 .bible-view__body {
@@ -189,7 +195,13 @@ function onNextVerse() {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  @media (max-width: 1100px) {
+  // Desktop médio (ex.: 1024×768): mantém nav | reader lado a lado, com gap menor.
+  @media (max-width: 1280px) {
+    gap: 0.75rem;
+  }
+
+  // Empilha só em ≤960px — alinhado ao web (antes: 1100px).
+  @media (max-width: 960px) {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 0.95fr) minmax(0, 1.05fr);
   }

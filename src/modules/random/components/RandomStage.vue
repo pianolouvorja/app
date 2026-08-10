@@ -553,4 +553,47 @@ onUnmounted(() => {
     display: none;
   }
 }
+
+@media (max-width: 1280px) {
+  .random-stage {
+    padding: 0.5rem;
+  }
+
+  .random-stage__focal {
+    width: min(14rem, 45vw);
+    height: min(14rem, 45vw);
+  }
+
+  .random-stage__orbit--outer {
+    width: min(18rem, 55vw);
+    height: min(18rem, 55vw);
+  }
+
+  .random-stage__orbit--inner {
+    width: min(15rem, 48vw);
+    height: min(15rem, 48vw);
+  }
+
+  .random-stage__idle-icon {
+    font-size: 2.5rem;
+  }
+
+  .random-stage__draw {
+    margin-top: 1.5rem;
+  }
+
+  .random-stage__draw-circle {
+    width: 4.25rem;
+    height: 4.25rem;
+
+    .ti {
+      font-size: 1.85rem;
+    }
+  }
+
+  .random-stage__draw-label {
+    margin-top: 0.55rem;
+    font-size: 0.75rem;
+  }
+}
 </style>

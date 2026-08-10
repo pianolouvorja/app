@@ -3,6 +3,7 @@ import {
   identifySystemDisplays,
   listExtendedDisplays,
   listSystemDisplays,
+  subscribeDisplaysChanged,
 } from '@modules/settings/services/display-service'
 import {
   loadProjectionSettings,
@@ -59,6 +60,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   let applyingRemote = false
   let syncSeq = 0
   let unsubscribeTargets: (() => void) | undefined
+  let unsubscribeDisplays: (() => void) | undefined
 
   const optionsList = computed<MonitorTargetOption[]>(() => {
     const all = displays.value
@@ -239,18 +241,25 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   onMounted(() => {
-  void refresh().then(() => {
-    // Alinha o main process com as preferências já mostradas no badge.
-    void syncToMain([...selectedIds.value])
+    void refresh().then(() => {
+      // Alinha o main process com as preferências já mostradas no badge.
+      void syncToMain([...selectedIds.value])
+    })
+    const bridge = getDesktopBridge()
+    unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
+      applyRemoteIds(Array.isArray(ids) ? ids : [])
+    })
+    unsubscribeDisplays = subscribeDisplaysChanged(() => {
+      void (async () => {
+        await refresh()
+        void syncToMain([...selectedIds.value])
+      })()
+    })
   })
-  const bridge = getDesktopBridge()
-  unsubscribeTargets = bridge?.projection?.onSiteTargetsChanged?.((ids) => {
-    applyRemoteIds(Array.isArray(ids) ? ids : [])
-  })
-})
 
   onBeforeUnmount(() => {
     unsubscribeTargets?.()
+    unsubscribeDisplays?.()
   })
 
   watch(

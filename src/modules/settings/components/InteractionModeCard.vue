@@ -58,6 +58,10 @@ function selectMode(mode: InteractionKey) {
   padding: 20px;
   animation: appearance-float 6s ease-in-out infinite;
       animation-delay: 0.5s;
+
+      @media (max-width: 1280px) {
+          padding: 1rem;
+        }
 }
 
 .interaction-card__header {
@@ -71,6 +75,10 @@ function selectMode(mode: InteractionKey) {
   color: var(--ds-color-primary);
   font-size: 22px;
   line-height: 1;
+
+  @media (max-width: 1280px) {
+      font-size: 20px;
+    }
 }
 
 .interaction-card__title {

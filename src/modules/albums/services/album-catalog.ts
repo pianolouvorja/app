@@ -3,6 +3,7 @@ import hymnal1996Cover from '@assets/library/hymnal_1996.jpeg'
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { readCatalogRecord } from '@shared/services/workspace-api'
+import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
 
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
 
@@ -63,8 +64,9 @@ async function resolveCoverUrl(urlImage: string | null | undefined): Promise<str
 
 async function buildHymnalCollections(): Promise<AlbumCollection[]> {
   const collections: AlbumCollection[] = []
+  const langPrefix = getCurrentApiPrefix()
 
-  const hymnal = await readOrFetchCatalog<CatalogHymnalEntry[]>('pt_hymnal')
+  const hymnal = await readOrFetchCatalog<CatalogHymnalEntry[]>(`${langPrefix}_hymnal`)
   if (Array.isArray(hymnal) && hymnal.length > 0) {
     collections.push({
       id: 'hymnal',
@@ -73,11 +75,11 @@ async function buildHymnalCollections(): Promise<AlbumCollection[]> {
       subtitle: '',
       coverUrl: hymnalCover,
       trackCount: hymnal.length,
-      catalogKey: 'pt_hymnal',
+      catalogKey: `${langPrefix}_hymnal`,
     })
   }
 
-  const hymnal1996 = await readOrFetchCatalog<CatalogHymnalEntry[]>('pt_hymnal_1996')
+  const hymnal1996 = await readOrFetchCatalog<CatalogHymnalEntry[]>(`${langPrefix}_hymnal_1996`)
   if (Array.isArray(hymnal1996) && hymnal1996.length > 0) {
     collections.push({
       id: 'hymnal_1996',
@@ -86,7 +88,7 @@ async function buildHymnalCollections(): Promise<AlbumCollection[]> {
       subtitle: '',
       coverUrl: hymnal1996Cover,
       trackCount: hymnal1996.length,
-      catalogKey: 'pt_hymnal_1996',
+      catalogKey: `${langPrefix}_hymnal_1996`,
     })
   }
 
@@ -96,6 +98,7 @@ async function buildHymnalCollections(): Promise<AlbumCollection[]> {
 /** Catálogo de hinários e coletâneas para navegação no módulo Álbuns. */
 export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
   const result: AlbumCategory[] = []
+  const langPrefix = getCurrentApiPrefix()
 
   const hymnals = await buildHymnalCollections()
   if (hymnals.length > 0) {
@@ -106,7 +109,7 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
     })
   }
 
-  const categories = await readOrFetchCatalog<CatalogCategory[]>('pt_categories')
+  const categories = await readOrFetchCatalog<CatalogCategory[]>(`${langPrefix}_categories`)
   if (!Array.isArray(categories)) return result
 
   for (const category of categories) {

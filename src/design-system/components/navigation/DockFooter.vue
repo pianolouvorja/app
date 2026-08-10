@@ -65,6 +65,10 @@ function onSelect(key: string) {
     height: calc(var(--ds-dock-height, 72px) - env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  @media (max-width: 1280px) {
+      gap: clamp(0.25rem, calc(100vw / 40), 1.5rem);
+    }
 }
 
 .ds-dock__item {
@@ -106,6 +110,10 @@ function onSelect(key: string) {
 .ds-dock__icon {
   font-size: 24px;
   line-height: 1;
+
+  @media (max-width: 1280px) {
+      font-size: 22px;
+    }
 }
 
 .ds-dock__label {
@@ -124,6 +132,11 @@ function onSelect(key: string) {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  @media (max-width: 1280px) {
+      font-size: 10px;
+      max-width: 6rem;
+    }
 }
 
 .ds-dock__dot {

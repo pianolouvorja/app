@@ -17,7 +17,13 @@ import { useRandomStore } from '@modules/random/stores/useRandomStore'
 import { useTimerStore } from '@modules/timer/stores/useTimerStore'
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 import UiZoomControls from '@shared/components/UiZoomControls.vue'
-import { closeProjectionModule, isProjectionModuleOpen } from '@shared/composables/useProjectionWindow'
+import {
+  closeProjectionModule,
+  isProjectionModuleOpen,
+  syncProjectionAfterDisplayChange,
+} from '@shared/composables/useProjectionWindow'
+import { subscribeDisplaysChanged } from '@modules/settings/services/display-service'
+import { useProjectionStore } from '@modules/settings/stores/useProjectionStore'
 import { mainNavRoutes } from '@shared/constants/navigation'
 import logoUrl from '@assets/brand/logo-louvor-ja.svg'
 import CodenameLogo from '@assets/brand/CodenameLogo.vue'
@@ -113,6 +119,7 @@ const isProjecting = computed(
 /** Janelas de módulo abertas (não reativo — poll no mount). */
 const hasModuleScreens = ref(false)
 let screensPollTimer: ReturnType<typeof setInterval> | null = null
+let unsubscribeDisplaysChanged: (() => void) | undefined = undefined
 
 const hasOpenScreens = computed(
   () => isProjecting.value || hasModuleScreens.value,
@@ -137,10 +144,21 @@ async function onCloseAllScreens() {
 onMounted(() => {
   refreshOpenScreens()
   screensPollTimer = setInterval(refreshOpenScreens, 400)
+
+  // Hotplug de monitores (legado onDisplaysChanged)
+  const projectionStore = useProjectionStore()
+  unsubscribeDisplaysChanged = subscribeDisplaysChanged(() => {
+    void (async () => {
+      await projectionStore.refreshDisplays()
+      await syncProjectionAfterDisplayChange()
+      refreshOpenScreens()
+    })()
+  })
 })
 
 onUnmounted(() => {
   if (screensPollTimer) clearInterval(screensPollTimer)
+  unsubscribeDisplaysChanged?.()
 })
 
 /** Há conteúdo projetável ou projeção ativa. */
@@ -374,7 +392,7 @@ function viewKey(viewRoute: typeof route) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 5rem;
+  height: var(--ds-header-height, 5rem);
   padding: 0 var(--ds-spacing-page);
   border-bottom: 1px solid var(--ds-color-outline);
   position: relative;
@@ -519,7 +537,50 @@ function viewKey(viewRoute: typeof route) {
 .app-shell__main {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height));
+  min-height: calc(
+    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
+      var(--ds-header-height, 5rem) - var(--ds-dock-height)
+  );
   padding-bottom: var(--ds-dock-height);
+}
+
+/* Desktop médio / 1024×768: chrome mais compacto */
+@media (max-width: 1280px) {
+  .app-shell__header {
+    gap: 0.75rem;
+  }
+
+  .app-shell__brand-group {
+    gap: 0.5rem;
+  }
+
+  .app-shell__logo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell__brand {
+    font-size: 20px;
+  }
+
+  .app-shell__codename {
+    height: 1.5rem;
+  }
+
+  .app-shell__version {
+    font-size: 12px;
+  }
+
+  .app-shell__account .ti {
+    font-size: 26px;
+  }
+
+  .app-shell__codename-block {
+    gap: 0.35rem;
+  }
+
+  .app-shell__header-end {
+    gap: 0.5rem;
+  }
 }
 </style>

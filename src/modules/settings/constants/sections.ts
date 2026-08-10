@@ -10,8 +10,6 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     id: 'general',
     routeName: 'settings-general',
     labelKey: 'settings.tabs.general',
-    // Temporariamente fora do menu — não estamos trabalhando nesta seção.
-    hidden: true,
   },
   {
     id: 'media',

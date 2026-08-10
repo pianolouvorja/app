@@ -2,7 +2,11 @@ import {
   listExtendedDisplays,
   listSystemDisplays,
 } from '@modules/settings/services/display-service'
-import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import {
+  loadProjectionSettings,
+  reconcileTargetDisplays,
+  saveProjectionSettings,
+} from '@modules/settings/services/projection-preferences'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
 type ProjectionWindow = Window & { monitorId?: number }
@@ -33,8 +37,20 @@ function closeWebUrlProjection() {
   void getDesktopBridge()?.projection?.closeUrl?.()
 }
 
-function buildPopupUrl(moduleId: string): string {
-  const params = `module=${encodeURIComponent(moduleId)}`
+function buildPopupUrl(
+  moduleId: string,
+  options?: { monitorId?: number | null; fullscreen?: boolean },
+): string {
+  const params = new URLSearchParams()
+  params.set('module', moduleId)
+  if (options?.monitorId != null) {
+    params.set('monitorId', String(options.monitorId))
+  }
+  if (options?.fullscreen) {
+    // Canal confiável para o main process (além do features do window.open)
+    params.set('fs', '1')
+  }
+  const query = params.toString()
   const useHash =
     window.location.protocol === 'file:' ||
     window.location.href.includes('#/') ||
@@ -43,17 +59,19 @@ function buildPopupUrl(moduleId: string): string {
 
   if (useHash) {
     const base = window.location.href.split('#')[0]
-    return `${base}#/popup?${params}`
+    return `${base}#/popup?${query}`
   }
 
-  return `${window.location.origin}/popup?${params}`
+  return `${window.location.origin}/popup?${query}`
 }
 
 async function resolveMonitorTargets(
   preferredIds?: number[] | null,
 ): Promise<MonitorTargets> {
   const displays = await listSystemDisplays()
-  const extendedIds = new Set(listExtendedDisplays(displays).map((display) => display.id))
+  const extended = listExtendedDisplays(displays)
+  const extendedIds = new Set(extended.map((display) => display.id))
+  const primary = displays.find((display) => display.isPrimary) ?? null
 
   // null/undefined = ler settings; array (mesmo vazio) = seleção explícita (como YouTube/site).
   if (preferredIds != null) {
@@ -71,22 +89,33 @@ async function resolveMonitorTargets(
     return { monitorIds: selected, fullscreen: true }
   }
 
-  return {
-    monitorIds: [],
-    fullscreen: settings.openFullscreenOnPrimary !== false,
+  // Sem alvos estendidos: só abre no primário se a setting permitir e
+  // (não há estendidos) OU (disablePrimaryWhenExtended está desligado).
+  const hasExtended = extended.length > 0
+  const openOnPrimary = settings.openFullscreenOnPrimary !== false
+  const primaryBlockedByExtended =
+    hasExtended && settings.disablePrimaryWhenExtended !== false
+
+  if (openOnPrimary && !primaryBlockedByExtended && primary) {
+    return { monitorIds: [primary.id], fullscreen: true }
   }
+
+  return { monitorIds: [], fullscreen: false }
 }
 
 function openOnMonitor(
-  url: string,
   moduleId: string,
   monitorId: number | null,
   fullscreen: boolean,
 ): ProjectionWindow | null {
   projectionWindowSeq += 1
+  const url = buildPopupUrl(moduleId, { monitorId, fullscreen })
+  // frame=no é opção reconhecida pelo Electron; fullscreen/monitor também na URL
   const features = [
     'width=800',
     'height=600',
+    'frame=no',
+    'autoHideMenuBar=yes',
     monitorId != null ? `monitor=${monitorId}` : null,
     fullscreen ? 'fullscreen=yes' : null,
   ]
@@ -169,19 +198,16 @@ export async function openProjectionModule(moduleId: string): Promise<boolean> {
   openWindows = []
   activeModule = null
 
-  const url = buildPopupUrl(moduleId)
   const targets = await resolveMonitorTargets()
   const nextWindows: ProjectionWindow[] = []
 
   if (targets.monitorIds.length > 0) {
     for (const monitorId of targets.monitorIds) {
-      const win = openOnMonitor(url, moduleId, monitorId, true)
+      const win = openOnMonitor(moduleId, monitorId, true)
       if (win) nextWindows.push(win)
     }
-  } else {
-    const win = openOnMonitor(url, moduleId, null, targets.fullscreen)
-    if (win) nextWindows.push(win)
   }
+  // Sem alvos: não abre janela “órfã” (antes caía no 1º estendido no main).
 
   openWindows = nextWindows
   activeModule = nextWindows.length > 0 ? moduleId : null
@@ -209,7 +235,6 @@ export async function reapplyProjectionTargets(
     const targets = await resolveMonitorTargets(preferredIds)
     const desiredIds = targets.monitorIds
     const desiredSet = new Set(desiredIds)
-    const url = buildPopupUrl(moduleId)
 
     // Mantém janelas das telas que continuam selecionadas (como o espelho do YouTube).
     const kept: ProjectionWindow[] = []
@@ -236,7 +261,7 @@ export async function reapplyProjectionTargets(
 
     for (const monitorId of desiredIds) {
       if (alreadyOpen.has(monitorId)) continue
-      const win = openOnMonitor(url, moduleId, monitorId, true)
+      const win = openOnMonitor(moduleId, monitorId, true)
       if (win) kept.push(win)
     }
 
@@ -263,7 +288,7 @@ export async function reapplyProjectionTargets(
         window.setTimeout(resolve, 50)
       })
       for (const monitorId of desiredIds) {
-        const win = openOnMonitor(url, moduleId, monitorId, true)
+        const win = openOnMonitor(moduleId, monitorId, true)
         if (win) openWindows.push(win)
       }
     }
@@ -287,6 +312,37 @@ export async function toggleProjectionModule(moduleId: string): Promise<boolean>
   return openProjectionModule(moduleId)
 }
 
+/**
+ * Reage a hotplug de monitores (legado App.vue onDisplaysChanged):
+ * - 0 telas estendidas → fecha projeção Vue + web
+ * - senão reconcilia settings e reaplica janelas abertas
+ */
+export async function syncProjectionAfterDisplayChange(): Promise<void> {
+  const displays = await listSystemDisplays()
+  const extended = listExtendedDisplays(displays)
+  const extendedIds = extended.map((display) => display.id)
+
+  let settings = loadProjectionSettings()
+  settings = reconcileTargetDisplays(settings, extendedIds)
+  settings = {
+    ...settings,
+    targetDisplayIds: settings.targetDisplayIds.filter((id) =>
+      extendedIds.includes(id),
+    ),
+  }
+  saveProjectionSettings(settings)
+
+  // Legado: se sobrou só a tela principal, encerra popups.
+  if (extendedIds.length === 0) {
+    closeProjectionModule()
+    return
+  }
+
+  if (!isProjectionModuleOpen()) return
+
+  await reapplyProjectionTargets(settings.targetDisplayIds)
+}
+
 export function useProjectionWindow() {
   return {
     open: openProjectionModule,
@@ -294,5 +350,6 @@ export function useProjectionWindow() {
     isOpen: isProjectionModuleOpen,
     toggle: toggleProjectionModule,
     reapplyTargets: reapplyProjectionTargets,
+    syncAfterDisplayChange: syncProjectionAfterDisplayChange,
   }
 }

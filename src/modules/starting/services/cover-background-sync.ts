@@ -5,6 +5,7 @@ import {
   resolveMediaUrl,
   writeCatalogRecord,
 } from '@shared/services/workspace-api'
+import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
 
 type CategoryAlbum = {
   url_image?: string | null
@@ -33,7 +34,8 @@ export async function startCoverBackgroundSync(): Promise<void> {
     )
     if (alreadySynced?.complete) return
 
-    const categories = await readCatalogRecord<CategoryRow[]>('pt_categories')
+    const langPrefix = getCurrentApiPrefix()
+    const categories = await readCatalogRecord<CategoryRow[]>(`${langPrefix}_categories`)
     if (!categories || !Array.isArray(categories)) return
 
     const allImages = new Set<string>()

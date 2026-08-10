@@ -260,4 +260,34 @@ function onKeydown(event: KeyboardEvent) {
   opacity: 1;
   pointer-events: auto;
 }
+
+@media (max-width: 1280px) {
+  .home-location-field--lg {
+    .home-location-field__label,
+    .home-location-field__text {
+      font-size: 26px;
+      line-height: 32px;
+    }
+
+    .home-location-field__input {
+      font-size: 12px;
+    }
+  }
+
+  .home-location-field--md {
+    .home-location-field__label,
+    .home-location-field__text {
+      font-size: 20px;
+      line-height: 26px;
+    }
+
+    .home-location-field__input {
+      font-size: 11px;
+    }
+  }
+
+  .home-location-field__display {
+    padding-inline: 1.25rem;
+  }
+}
 </style>

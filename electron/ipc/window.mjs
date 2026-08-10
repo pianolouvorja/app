@@ -42,4 +42,11 @@ export function attachWindowStateEvents(win) {
   win.on('unmaximize', () => {
     win.webContents.send('window:maximized-state', false)
   })
+
+  // Sincroniza UI de zoom com Ctrl+/Ctrl− (zoom nativo do Chromium)
+  win.webContents.on('zoom-changed', (_event, direction) => {
+    if (win.isDestroyed()) return
+    const factor = win.webContents.getZoomFactor()
+    win.webContents.send('zoom:changed', { factor, direction })
+  })
 }

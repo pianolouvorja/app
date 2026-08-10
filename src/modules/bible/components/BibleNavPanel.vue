@@ -79,6 +79,11 @@ const { t } = useI18n()
   height: 100%;
   padding: 1.25rem;
   overflow: hidden;
+
+  @media (max-width: 1280px) {
+      gap: 0.75rem;
+      padding: 0.75rem;
+    }
 }
 
 .bible-nav-panel__divider {

@@ -83,4 +83,16 @@ function onClick(projecting: boolean, disabled: boolean) {
     cursor: not-allowed;
   }
 }
+
+@media (max-width: 1280px) {
+  .media-project-fab {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-width: 3px;
+
+    .ti {
+      font-size: 1.65rem;
+    }
+  }
+}
 </style>

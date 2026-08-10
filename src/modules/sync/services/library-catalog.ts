@@ -6,6 +6,7 @@ import {
   readCatalogRecord,
   writeCatalogRecord,
 } from '@shared/services/workspace-api'
+import { localeToApiPrefix } from '@plugins/i18n'
 
 import type {
   CatalogCategory,
@@ -24,6 +25,29 @@ const CATEGORY_ORDER: Record<string, number> = {
   'CDs Oficiais/Ano': 2,
   Infantis: 98,
   Doxologia: 99,
+}
+
+/**
+ * Detecta o prefixo de idioma atual com base na preferência do usuário.
+ * Retorna `pt`, `en` ou `es` — usado para montar os nomes dos records da API
+ * (`pt_hymnal`, `en_hymnal`, `es_hymnal`, etc.).
+ *
+ * @param customLocale - Override para testes. Se omitido, usa o locale do i18n.
+ */
+export function getCurrentApiPrefix(customLocale?: string): string {
+  if (customLocale) return localeToApiPrefix(customLocale)
+  try {
+    const stored = localStorage.getItem('user_data')
+    if (stored) {
+      const prefs = JSON.parse(stored)
+      if (typeof prefs.language === 'string') {
+        return localeToApiPrefix(prefs.language)
+      }
+    }
+  } catch {
+    // localStorage indisponível (SSR/test) — fallback pt
+  }
+  return 'pt'
 }
 
 async function resolveCoverUrl(urlImage: string | null | undefined): Promise<string | null> {
@@ -72,10 +96,11 @@ function sortCategories(categories: LibraryCategory[]): LibraryCategory[] {
 
 async function buildHymnalCategory(
   downloadedIds: Array<string | number>,
+  langPrefix: string,
 ): Promise<LibraryCategory | null> {
   const albums: LibraryAlbum[] = []
 
-  const hymnal = await readCatalogRecord<CatalogHymnalEntry[]>('pt_hymnal')
+  const hymnal = await readCatalogRecord<CatalogHymnalEntry[]>(`${langPrefix}_hymnal`)
   if (hymnal && Array.isArray(hymnal) && hymnal.length > 0) {
     albums.push(
       createAlbumBase({
@@ -91,7 +116,7 @@ async function buildHymnalCategory(
     )
   }
 
-  const hymnal1996 = await readCatalogRecord<CatalogHymnalEntry[]>('pt_hymnal_1996')
+  const hymnal1996 = await readCatalogRecord<CatalogHymnalEntry[]>(`${langPrefix}_hymnal_1996`)
   if (hymnal1996 && Array.isArray(hymnal1996) && hymnal1996.length > 0) {
     albums.push(
       createAlbumBase({
@@ -118,9 +143,12 @@ async function buildHymnalCategory(
 
 /**
  * Monta a lista de categorias/coletâneas disponíveis para download offline.
+ * O conteúdo é filtrado pelo idioma selecionado pelo usuário (pt/en/es).
  */
 export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
-  const categories = await readCatalogRecord<CatalogCategory[]>('pt_categories')
+  const langPrefix = getCurrentApiPrefix()
+
+  const categories = await readCatalogRecord<CatalogCategory[]>(`${langPrefix}_categories`)
   const downloaded =
     (await readCatalogRecord<Array<string | number>>(
       WORKSPACE_RECORD_KEYS.downloadedAlbums,
@@ -128,7 +156,7 @@ export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
 
   const result: LibraryCategory[] = []
 
-  const hymnals = await buildHymnalCategory(downloaded)
+  const hymnals = await buildHymnalCategory(downloaded, langPrefix)
   if (hymnals) result.push(hymnals)
 
   if (!categories || !Array.isArray(categories)) {
