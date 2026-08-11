@@ -286,7 +286,6 @@ export function presentEulaAcceptanceWindow(locale) {
 /**
  * Exibe o dialog modal do EULA para o usuário.
  * Botão 0 = "Aceitar", Botão 1 = "Recusar".
- * Se o usuário recusar, exibe um segundo dialog de confirmação.
  *
  * @param {string} locale - Locale do EULA ('pt-BR', 'en', 'es').
  * @returns {Promise<boolean>} true se aceitou, false se recusou.
@@ -299,61 +298,6 @@ export async function showEulaDialog(locale) {
 		return true;
 	}
 
-	// Confirmacao dupla ao recusar
-	return confirmDecline(locale);
-}
-
-/**
- * Exibe um dialog de confirmação quando o usuário recusa o EULA.
- * Se confirmar a recusa, retorna false (app fecha).
- * Se cancelar, re-exibe o dialog do EULA.
- *
- * @param {string} locale - Locale do EULA.
- * @returns {Promise<boolean>} true se voltou e aceitou, false se confirmou recusa.
- */
-export async function confirmDecline(locale) {
-	const messages = {
-		"pt-BR": {
-			title: "Tem certeza?",
-			message:
-				"Se você não aceitar os termos, não poderá utilizar o aplicativo. Deseja realmente recusar?",
-			confirm: "Sim, recusar",
-			cancel: "Voltar",
-		},
-		en: {
-			title: "Are you sure?",
-			message:
-				"If you do not accept the terms, you will not be able to use the application. Do you really want to decline?",
-			confirm: "Yes, decline",
-			cancel: "Go back",
-		},
-		es: {
-			title: "¿Está seguro?",
-			message:
-				"Si no acepta los términos, no podrá utilizar la aplicación. ¿Realmente desea rechazar?",
-			confirm: "Sí, rechazar",
-			cancel: "Volver",
-		},
-	};
-
-	const msg = messages[locale] || messages["pt-BR"];
-
-	const confirmChoice = dialog.showMessageBoxSync({
-		type: "warning",
-		title: msg.title,
-		message: msg.message,
-		buttons: [msg.cancel, msg.confirm],
-		defaultId: 0,
-		cancelId: 0,
-		noLink: true,
-	});
-
-	// 0 = Voltar — re-exibe o EULA
-	if (confirmChoice === 0) {
-		return showEulaDialog(locale);
-	}
-
-	// 1 = Confirmar recusa
 	return false;
 }
 
