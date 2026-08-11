@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EULA — LouvorJA</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #12121c;
+    --panel: #1a1a28;
+    --text: #f2f2f5;
+    --muted: #a8a8b8;
+    --accent: #fcce02;
+    --border: #2c2c3a;
+    --danger: #c45c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  header {
+    flex: 0 0 auto;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  header p {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 20px 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .content pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--text);
+  }
+  footer {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+  }
+  button {
+    min-width: 110px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  #decline {
+    background: transparent;
+    color: var(--muted);
+  }
+  #decline:hover {
+    color: var(--text);
+    border-color: var(--danger);
+  }
+  #accept {
+    background: var(--accent);
+    color: #1a1a12;
+    border-color: var(--accent);
+  }
+  #accept:hover {
+    filter: brightness(1.05);
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1 id="title">EULA — LouvorJA</h1>
+      <p id="subtitle">End User License Agreement</p>
+    </header>
+    <div class="content" id="scroll">
+      <pre id="text"></pre>
+    </div>
+    <footer>
+      <button type="button" id="decline">Recusar</button>
+      <button type="button" id="accept">Aceitar</button>
+    </footer>
+  </div>
+  <script>
+    const { ipcRenderer } = require("electron");
+
+    let decisionChannel = "eula:decision";
+    let settled = false;
+
+    function decide(accepted) {
+      if (settled) return;
+      settled = true;
+      ipcRenderer.send(decisionChannel, accepted);
+    }
+
+    ipcRenderer.on("eula:init", (_event, payload) => {
+      const labels = payload?.labels || {};
+      decisionChannel = payload?.channel || decisionChannel;
+      document.getElementById("title").textContent = labels.title || "EULA — LouvorJA";
+      document.getElementById("subtitle").textContent = labels.subtitle || "";
+      document.getElementById("accept").textContent = labels.accept || "Aceitar";
+      document.getElementById("decline").textContent = labels.decline || "Recusar";
+      document.getElementById("text").textContent = payload?.text || "";
+      document.getElementById("scroll").scrollTop = 0;
+      document.getElementById("accept").focus();
+    });
+
+    document.getElementById("accept").addEventListener("click", () => decide(true));
+    document.getElementById("decline").addEventListener("click", () => decide(false));
+  </script>
+</body>
+</html>

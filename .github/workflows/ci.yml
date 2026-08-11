@@ -1,12 +1,12 @@
 # CI Pipeline - PIANO
-# Roda em todo PR e push pra main
+# Roda em todo PR e push pra staging/main
 name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [staging, main]
   push:
-    branches: [main]
+    branches: [staging, main]
 
 permissions:
   contents: read

@@ -42,6 +42,10 @@ export type SystemDisplayInfo = {
 export type DisplaysApi = {
   list: () => Promise<SystemDisplayInfo[]>
   identify: () => Promise<boolean>
+  /** Hotplug: display adicionado/removido/métricas alteradas. */
+  onChanged?: (
+    callback: (displays: SystemDisplayInfo[]) => void,
+  ) => () => void
 }
 
 export type FileDialogFilter = {
@@ -161,10 +165,24 @@ export type WindowApi = {
   onMaximizedState: (callback: (isMaximized: boolean) => void) => () => void
 }
 
+export type ZoomChangedPayload = {
+  factor: number
+  direction?: 'in' | 'out'
+}
+
+export type ZoomApi = {
+  getFactor: () => number
+  setFactor: (factor: number) => number
+  zoomIn: () => number
+  zoomOut: () => number
+  onChanged: (callback: (payload: ZoomChangedPayload) => void) => () => void
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
   window?: WindowApi
+  zoom?: ZoomApi
   workspace: WorkspaceApi
   catalog: CatalogApi
   media: MediaApi

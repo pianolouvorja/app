@@ -314,8 +314,19 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 4.5rem));
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - 5rem - var(--ds-dock-height, 4.5rem));
+  /* Compensa CSS zoom (<100%) para preencher até o dock — mesmo padrão do web */
+  height: calc(
+    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
+      var(--ds-header-height, 5rem) - var(--ds-dock-height)
+  );
+  max-height: calc(
+    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
+      var(--ds-header-height, 5rem) - var(--ds-dock-height)
+  );
+  min-height: calc(
+    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
+      var(--ds-header-height, 5rem) - var(--ds-dock-height)
+  );
   padding: 2rem;
   padding-bottom: 1.5rem;
   overflow: hidden;
@@ -554,7 +565,10 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 
 .liturgy-view__body :deep(.liturgy-sidebar) {
   flex-shrink: 0;
-  max-height: 100%;
+  align-self: stretch;
+  min-height: 0;
+  height: auto;
+  max-height: none;
   overflow-y: auto;
 }
 
@@ -581,6 +595,85 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 
   .liturgy-view__meta-text {
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 1280px) {
+  .liturgy-view {
+    gap: 0.75rem;
+    padding: 0.85rem 1rem 0.75rem;
+  }
+
+  .liturgy-view__header {
+    gap: 0.75rem;
+  }
+
+  .liturgy-view__brand {
+    gap: 0.55rem;
+  }
+
+  .liturgy-view__brand-icon {
+    font-size: 1.35rem;
+  }
+
+  .liturgy-view__title {
+    font-size: 1.05rem;
+  }
+
+  .liturgy-view__meta {
+    gap: 0.65rem;
+  }
+
+  .liturgy-view__worship {
+    font-size: 0.78rem;
+  }
+
+  .liturgy-view__datetime {
+    font-size: 0.68rem;
+  }
+
+  .liturgy-view__body {
+    gap: 0.85rem;
+  }
+
+  .liturgy-view__main {
+    gap: 0.55rem;
+  }
+
+  .liturgy-view__toolbar {
+    gap: 0.45rem;
+  }
+
+  .liturgy-view__toolbar-actions {
+    gap: 0.35rem;
+  }
+
+  .liturgy-view__lock {
+    width: 1.75rem;
+    height: 1.75rem;
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  .liturgy-view__clear,
+  .liturgy-view__add {
+    min-height: 1.75rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.68rem;
+
+    i {
+      font-size: 0.85rem;
+    }
+  }
+
+  .liturgy-view__body :deep(.liturgy-sidebar) {
+    max-width: 16rem;
+  }
+
+  .liturgy-view__body :deep(.ds-glass-card--padded) {
+    padding: 0.75rem;
   }
 }
 </style>

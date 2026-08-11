@@ -70,8 +70,9 @@ function createSplash() {
 		resizable: false,
 		center: true,
 		show: true,
-		transparent: false,
-		backgroundColor: "#12121c",
+		transparent: true,
+		backgroundColor: "#00000000",
+		hasShadow: true,
 		skipTaskbar: true,
 		menuBarVisible: false,
 		autoHideMenuBar: true,
@@ -134,94 +135,163 @@ function isProjectionPopupUrl(url) {
 	}
 }
 
-function buildPopupWindowOptions(features = "") {
-	const isFullscreen = features.includes("fullscreen=yes");
+/**
+ * Extrai dicas de projeção do features (window.open) e da URL (mais confiável).
+ * @param {string} url
+ * @param {string} [features]
+ */
+function parseProjectionLaunchHints(url, features = '') {
+  const featureText = typeof features === 'string' ? features : ''
+  let fullscreen = featureText.includes('fullscreen=yes')
+  let monitorId = null
 
-	/** @type {import('electron').BrowserWindowConstructorOptions} */
-	const windowConfig = {
-		width: 800,
-		height: 600,
-		backgroundColor: "#000000",
-		autoHideMenuBar: true,
-		show: false,
-		webPreferences: {
-			preload: PRELOAD_PATH,
-			contextIsolation: true,
-			nodeIntegration: false,
-			sandbox: false,
-			spellcheck: false,
-		},
-	};
+  const monitorFromFeatures = featureText.match(/(?:^|,)\s*monitor=(\d+)/i)
+  if (monitorFromFeatures) {
+    monitorId = Number.parseInt(monitorFromFeatures[1], 10)
+  }
 
-	if (!isFullscreen) return windowConfig;
+  try {
+    const parsed = new URL(url)
+    const queryText = parsed.hash.includes('?')
+      ? parsed.hash.slice(parsed.hash.indexOf('?') + 1)
+      : parsed.search.startsWith('?')
+        ? parsed.search.slice(1)
+        : parsed.search
+    const params = new URLSearchParams(queryText)
+    if (params.get('fs') === '1' || params.get('fullscreen') === '1') {
+      fullscreen = true
+    }
+    const monitorParam = params.get('monitorId') ?? params.get('monitor')
+    if (monitorParam != null && monitorParam !== '') {
+      const parsedId = Number.parseInt(monitorParam, 10)
+      if (Number.isFinite(parsedId)) monitorId = parsedId
+    }
+  } catch {
+    // ignore URL parse errors
+  }
 
-	const displays = screen.getAllDisplays();
-	const monitorMatch = features.match(/monitor=(\d+)/);
-	const targetMonitorId = monitorMatch
-		? Number.parseInt(monitorMatch[1], 10)
-		: null;
+  return { fullscreen, monitorId }
+}
 
-	let targetDisplay = null;
-	if (targetMonitorId != null && Number.isFinite(targetMonitorId)) {
-		targetDisplay =
-			displays.find((display) => display.id === targetMonitorId) ?? null;
-	}
+/**
+ * Opções sem chrome do SO (sem barra / minimizar / fechar), alinhado ao legado.
+ * @param {string} url
+ * @param {string} [features]
+ */
+function buildPopupWindowOptions(url, features = '') {
+  const { fullscreen, monitorId } = parseProjectionLaunchHints(url, features)
 
-	if (!targetDisplay && displays.length > 1) {
-		const primary = screen.getPrimaryDisplay();
-		targetDisplay =
-			displays.find((display) => display.id !== primary.id) ?? null;
-	}
+  /** @type {import('electron').BrowserWindowConstructorOptions} */
+  const windowConfig = {
+    width: 800,
+    height: 600,
+    backgroundColor: '#000000',
+    autoHideMenuBar: true,
+    show: false,
+    // Sempre sem frame nas telas de projeção — evita barra e botões do SO
+    frame: false,
+    thickFrame: false,
+    hasShadow: false,
+    fullscreenable: true,
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false,
+    },
+  }
 
-	if (!targetDisplay) {
-		targetDisplay = screen.getPrimaryDisplay();
-	}
+  if (!fullscreen) {
+    windowConfig.skipTaskbar = true
+    return windowConfig
+  }
 
-	windowConfig.x = targetDisplay.bounds.x;
-	windowConfig.y = targetDisplay.bounds.y;
-	windowConfig.width = targetDisplay.bounds.width;
-	windowConfig.height = targetDisplay.bounds.height;
-	windowConfig.resizable = false;
-	windowConfig.frame = false;
-	windowConfig.thickFrame = false;
-	windowConfig.hasShadow = false;
-	windowConfig.skipTaskbar = true;
+  const displays = screen.getAllDisplays()
+  let targetDisplay = null
+  if (monitorId != null && Number.isFinite(monitorId)) {
+    targetDisplay = displays.find((display) => display.id === monitorId) ?? null
+  }
 
-	return windowConfig;
+  // Sem monitor explícito: primário (openFullscreenOnPrimary). Não assumir 1º estendido.
+  if (!targetDisplay) {
+    targetDisplay = screen.getPrimaryDisplay()
+  }
+
+  windowConfig.x = targetDisplay.bounds.x
+  windowConfig.y = targetDisplay.bounds.y
+  windowConfig.width = targetDisplay.bounds.width
+  windowConfig.height = targetDisplay.bounds.height
+  windowConfig.resizable = false
+  windowConfig.skipTaskbar = true
+
+  return windowConfig
+}
+
+/**
+ * Aplica fullscreen / bounds sem chrome após criar a janela (legado win32/linux/mac).
+ * @param {import('electron').BrowserWindow} childWindow
+ * @param {boolean} fullscreen
+ */
+function applyProjectionDisplayMode(childWindow, fullscreen) {
+  if (!fullscreen || childWindow.isDestroyed()) return
+
+  if (process.platform === 'win32') {
+    const bounds = childWindow.getBounds()
+    const display = screen.getDisplayMatching(bounds)
+    childWindow.setFullScreen(false)
+    childWindow.setBounds(display.bounds)
+    childWindow.setAlwaysOnTop(true, 'screen-saver')
+    return
+  }
+
+  childWindow.setFullScreen(true)
+  if (process.platform === 'darwin') {
+    childWindow.setSimpleFullScreen(true)
+  }
+  childWindow.setAlwaysOnTop(true, 'screen-saver')
 }
 
 function attachProjectionWindowHandlers(parentWindow) {
-	parentWindow.webContents.setWindowOpenHandler(({ url, features }) => {
-		if (isProjectionPopupUrl(url)) {
-			return {
-				action: "allow",
-				overrideBrowserWindowOptions: buildPopupWindowOptions(features),
-			};
-		}
+  /** @type {WeakMap<import('electron').BrowserWindow, boolean>} */
+  const fullscreenByWindow = new WeakMap()
 
-		void shell.openExternal(url);
-		return { action: "deny" };
-	});
+  parentWindow.webContents.setWindowOpenHandler(({ url, features }) => {
+    if (isProjectionPopupUrl(url)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: buildPopupWindowOptions(url, features),
+      }
+    }
 
-	parentWindow.webContents.on("did-create-window", (childWindow) => {
-		childWindow.webContents.setAudioMuted(false);
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
 
-		childWindow.once("ready-to-show", () => {
-			childWindow.webContents.setAudioMuted(false);
-			if (!childWindow.isResizable()) {
-				if (process.platform === "win32") {
-					const bounds = childWindow.getBounds();
-					const display = screen.getDisplayMatching(bounds);
-					childWindow.setFullScreen(false);
-					childWindow.setBounds(display.bounds);
-					childWindow.setAlwaysOnTop(true, "screen-saver");
-				} else {
-					childWindow.setFullScreen(true);
-				}
-			}
-			childWindow.show();
-		});
-	});
+  parentWindow.webContents.on('did-create-window', (childWindow, details) => {
+    childWindow.webContents.setAudioMuted(false)
+    applyWindowIcon(childWindow)
+
+    const childUrl = details?.url ?? ''
+    const isProjection = isProjectionPopupUrl(childUrl)
+    const { fullscreen } = isProjection
+      ? parseProjectionLaunchHints(childUrl, details?.features ?? '')
+      : { fullscreen: !childWindow.isResizable() }
+
+    if (isProjection) {
+      // Reforça sem chrome mesmo se o Chromium tiver mesclado opções
+      childWindow.setMenuBarVisibility(false)
+      fullscreenByWindow.set(childWindow, fullscreen)
+    }
+
+    childWindow.once('ready-to-show', () => {
+      if (childWindow.isDestroyed()) return
+      childWindow.webContents.setAudioMuted(false)
+      const shouldFullscreen = fullscreenByWindow.get(childWindow) ?? fullscreen
+      applyProjectionDisplayMode(childWindow, shouldFullscreen)
+      childWindow.show()
+    })
+  })
 }
 
 function createWindow() {
@@ -321,29 +391,42 @@ function createWindow() {
 	});
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
 	ensureLinuxTaskbarIntegration();
 	ensureWorkspaceDirectories();
 
 	// Splash screen — feedback visual imediato antes de qualquer coisa
 	createSplash();
 
-	// EULA: se não aceito, pergunta. Se recusar, fecha o app.
-	const sysLocale = app.getLocale();
-	const supported = ["pt-BR", "en", "es"];
-	const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
+	try {
+		// EULA: se não aceito, pergunta. Se recusar, fecha o app.
+		const sysLocale = app.getLocale();
+		const supported = ["pt-BR", "en", "es"];
+		const locale = supported.includes(sysLocale) ? sysLocale : "pt-BR";
 
-	if (!checkEulaAcceptance(locale)) {
+		if (!(await checkEulaAcceptance(locale))) {
+			closeSplash();
+			app.quit();
+			return;
+		}
+
+		registerWorkspaceIpc();
+		registerWindowIpc(() => mainWindow);
+		registerLocalFileProtocol();
+		registerYoutubeEmbedHeaders();
+		createWindow();
+	} catch (error) {
+		console.error("[main] falha no startup", error);
 		closeSplash();
+		const message =
+			error instanceof Error ? error.message : String(error ?? "erro desconhecido");
+		dialog.showErrorBox(
+			"Erro ao iniciar",
+			`Não foi possível iniciar o aplicativo.\n\n${message}`,
+		);
 		app.quit();
 		return;
 	}
-
-	registerWorkspaceIpc();
-	registerWindowIpc(() => mainWindow);
-	registerLocalFileProtocol();
-	registerYoutubeEmbedHeaders();
-	createWindow();
 
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) {

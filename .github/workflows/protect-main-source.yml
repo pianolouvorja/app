@@ -1,0 +1,25 @@
+# Bloqueia PRs para main que não venham de staging.
+# O job "Validate PR source branch" deve ser status check obrigatório no ruleset da main.
+name: Protect main source branch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+jobs:
+  validate-source:
+    name: Validate PR source branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        run: |
+          echo "Source branch: ${{ github.head_ref }}"
+          echo "Target branch: ${{ github.base_ref }}"
+
+          if [ "${{ github.head_ref }}" != "staging" ]; then
+            echo "::error::PRs para main só podem vir da branch staging. Origem recebida: ${{ github.head_ref }}"
+            exit 1
+          fi
+
+          echo "✅ Origem do PR permitida (staging → main)."

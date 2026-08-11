@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
 
 /**
  * @template T
@@ -12,6 +12,50 @@ function subscribe(channel, callback) {
   return () => ipcRenderer.removeListener(channel, listener)
 }
 
+/** Zoom nativo Chromium (mesmo motor do Ctrl+/Ctrl−). */
+const ZOOM_FACTOR_MIN = 0.7
+const ZOOM_FACTOR_MAX = 1.5
+const ZOOM_LEVEL_STEP = 0.5
+
+function clampZoomFactor(factor) {
+  const value = Number(factor)
+  if (!Number.isFinite(value)) return 1
+  const clamped = Math.min(ZOOM_FACTOR_MAX, Math.max(ZOOM_FACTOR_MIN, value))
+  // 99–101% → 100% (Chromium pode reportar ~101% no nível neutro)
+  const percent = Math.round(clamped * 100)
+  if (percent >= 99 && percent <= 101) return 1
+  return clamped
+}
+
+function readZoomFactor() {
+  try {
+    return webFrame.getZoomFactor()
+  } catch {
+    return 1
+  }
+}
+
+function applyZoomFactor(factor) {
+  const next = clampZoomFactor(factor)
+  try {
+    webFrame.setZoomFactor(next)
+  } catch {
+    // ignore
+  }
+  return readZoomFactor()
+}
+
+function stepZoomLevel(delta) {
+  try {
+    const current = webFrame.getZoomLevel()
+    webFrame.setZoomLevel(current + delta)
+    // Reaplica clamp via factor (nível pode passar do range)
+    return applyZoomFactor(webFrame.getZoomFactor())
+  } catch {
+    return readZoomFactor()
+  }
+}
+
 contextBridge.exposeInMainWorld('louvorja', {
   platform: process.platform,
   isElectron: true,
@@ -19,6 +63,14 @@ contextBridge.exposeInMainWorld('louvorja', {
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),
+  },
+
+  zoom: {
+    getFactor: () => readZoomFactor(),
+    setFactor: (factor) => applyZoomFactor(factor),
+    zoomIn: () => stepZoomLevel(ZOOM_LEVEL_STEP),
+    zoomOut: () => stepZoomLevel(-ZOOM_LEVEL_STEP),
+    onChanged: (callback) => subscribe('zoom:changed', callback),
   },
 
   workspace: {
@@ -44,6 +96,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   displays: {
     list: () => ipcRenderer.invoke('displays:list'),
     identify: () => ipcRenderer.invoke('displays:identify'),
+    onChanged: (callback) => subscribe('displays:changed', callback),
   },
 
   dialog: {

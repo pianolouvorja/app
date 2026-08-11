@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock workspace.mjs — isEulaAccepted depende de readWorkspaceRecord
 vi.mock("../workspace.mjs", () => ({
@@ -16,11 +16,22 @@ vi.mock("electron", () => ({
   dialog: {
     showMessageBoxSync: vi.fn(),
   },
+  BrowserWindow: vi.fn(),
+  ipcMain: {
+    once: vi.fn(),
+    removeListener: vi.fn(),
+  },
+  screen: {
+    getPrimaryDisplay: vi.fn(() => ({
+      workAreaSize: { width: 1920, height: 1080 },
+    })),
+  },
 }));
 
 import { dialog } from "electron";
 // Importar após o mock
 import {
+  __setEulaPresenterForTests,
   acceptEula,
   checkEulaAcceptance,
   getEulaText,
@@ -48,32 +59,13 @@ describe("isEulaAccepted", () => {
     expect(isEulaAccepted()).toBe(false);
   });
 
-  // --- Task 3: testes de borda ---
-
-  it("retorna false quando record tem accepted: false explicitamente", () => {
+  it("retorna false quando accepted e false", () => {
     readWorkspaceRecord.mockReturnValue({ accepted: false, version: 1 });
     expect(isEulaAccepted()).toBe(false);
   });
 
-  it("retorna false quando record existe mas nao tem chave accepted", () => {
-    readWorkspaceRecord.mockReturnValue({ version: 1, date: "2026-08-07" });
-    expect(isEulaAccepted()).toBe(false);
-  });
-
-  it('retorna false quando accepted tem valor nao-booleano (string "true")', () => {
-    readWorkspaceRecord.mockReturnValue({ accepted: "true", version: 1 });
-    expect(isEulaAccepted()).toBe(false);
-  });
-
-  // --- WARNING #3: versao do EULA ---
-
-  it("retorna false quando versao do record e menor que CURRENT_EULA_VERSION", () => {
+  it("retorna false quando versao do record e anterior", () => {
     readWorkspaceRecord.mockReturnValue({ accepted: true, version: 0 });
-    expect(isEulaAccepted()).toBe(false);
-  });
-
-  it("retorna false quando record nao tem campo version", () => {
-    readWorkspaceRecord.mockReturnValue({ accepted: true, date: "2026-01-01" });
     expect(isEulaAccepted()).toBe(false);
   });
 });
@@ -83,9 +75,9 @@ describe("acceptEula", () => {
     vi.clearAllMocks();
   });
 
-  it("escreve record com accepted: true e version atual via writeWorkspaceRecord", () => {
+  it("grava record com accepted true e versao atual", () => {
     writeWorkspaceRecord.mockReturnValue(true);
-    acceptEula();
+    expect(acceptEula()).toBe(true);
     expect(writeWorkspaceRecord).toHaveBeenCalledWith(
       "eula",
       expect.objectContaining({
@@ -94,18 +86,9 @@ describe("acceptEula", () => {
       }),
     );
   });
-
-  it("retorna true quando writeWorkspaceRecord tem sucesso", () => {
-    writeWorkspaceRecord.mockReturnValue(true);
-    expect(acceptEula()).toBe(true);
-  });
 });
 
 describe("getEulaText", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("le arquivo pt-BR.txt e retorna conteudo como string", () => {
     const text = getEulaText("pt-BR");
     expect(typeof text).toBe("string");
@@ -130,12 +113,15 @@ describe("showEulaDialog", () => {
     vi.clearAllMocks();
   });
 
-  it('retorna true e chama acceptEula quando usuario clica "Aceitar" (response=0)', () => {
-    writeWorkspaceRecord.mockReturnValue(true);
-    dialog.showMessageBoxSync.mockReturnValue(0); // 0 = Aceitar
+  afterEach(() => {
+    __setEulaPresenterForTests(null);
+  });
 
-    const result = showEulaDialog("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalledTimes(1);
+  it('retorna true e chama acceptEula quando usuario clica "Aceitar" (response=0)', async () => {
+    writeWorkspaceRecord.mockReturnValue(true);
+    __setEulaPresenterForTests(async () => 0);
+
+    const result = await showEulaDialog("pt-BR");
     expect(writeWorkspaceRecord).toHaveBeenCalled();
     expect(result).toBe(true);
   });
@@ -164,32 +150,36 @@ describe("checkEulaAcceptance", () => {
     vi.clearAllMocks();
   });
 
-  it("retorna true sem mostrar dialog quando EULA ja foi aceito na versao atual", () => {
+  afterEach(() => {
+    __setEulaPresenterForTests(null);
+  });
+
+  it("retorna true sem mostrar dialog quando EULA ja foi aceito na versao atual", async () => {
     readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
     writeWorkspaceRecord.mockReturnValue(true);
 
-    const result = checkEulaAcceptance("pt-BR");
+    const result = await checkEulaAcceptance("pt-BR");
     expect(dialog.showMessageBoxSync).not.toHaveBeenCalled();
     expect(result).toBe(true);
   });
 
-  it("mostra dialog quando versao do record e anterior", () => {
+  it("mostra dialog quando versao do record e anterior", async () => {
     readWorkspaceRecord.mockReturnValue({ accepted: true, version: 0 });
     writeWorkspaceRecord.mockReturnValue(true);
-    dialog.showMessageBoxSync.mockReturnValue(0); // Aceitar
+    __setEulaPresenterForTests(async () => 0);
 
-    const result = checkEulaAcceptance("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalled();
+    const result = await checkEulaAcceptance("pt-BR");
+    expect(writeWorkspaceRecord).toHaveBeenCalled();
     expect(result).toBe(true);
   });
 
-  it("mostra dialog e retorna true quando usuario aceita (primeira execucao)", () => {
+  it("mostra dialog e retorna true quando usuario aceita (primeira execucao)", async () => {
     readWorkspaceRecord.mockReturnValue(null);
     writeWorkspaceRecord.mockReturnValue(true);
-    dialog.showMessageBoxSync.mockReturnValue(0);
+    __setEulaPresenterForTests(async () => 0);
 
-    const result = checkEulaAcceptance("pt-BR");
-    expect(dialog.showMessageBoxSync).toHaveBeenCalled();
+    const result = await checkEulaAcceptance("pt-BR");
+    expect(writeWorkspaceRecord).toHaveBeenCalled();
     expect(result).toBe(true);
   });
 

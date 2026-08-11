@@ -85,4 +85,30 @@ export function registerDisplayIpc() {
       return false
     }
   })
+
+  attachDisplayTopologyWatchers()
+}
+
+/**
+ * Hotplug de monitores (legado lifecycle): notifica todas as janelas.
+ * Payload = lista atual de displays.
+ */
+function attachDisplayTopologyWatchers() {
+  const notify = () => {
+    let displays = []
+    try {
+      displays = listSystemDisplays()
+    } catch (error) {
+      console.error('[ipc] displays:changed list', error)
+    }
+
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (win.isDestroyed()) continue
+      win.webContents.send('displays:changed', displays)
+    }
+  }
+
+  screen.on('display-added', notify)
+  screen.on('display-removed', notify)
+  screen.on('display-metrics-changed', notify)
 }

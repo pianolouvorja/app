@@ -105,6 +105,11 @@ const browseIcon = computed(() =>
   gap: 1rem;
   padding: 1rem 1.25rem !important;
   overflow: visible;
+
+  @media (max-width: 1280px) {
+      gap: 0.65rem;
+      padding: 0.65rem 0.85rem !important;
+    }
 }
 
 .bible-toolbar__meta {

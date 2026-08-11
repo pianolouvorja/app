@@ -1,4 +1,4 @@
-import { blur, colors, radius, spacing } from '@design-system/tokens'
+import { blur, colors, radius } from '@design-system/tokens'
 
 export const luminousClarity = {
   id: 'luminous-clarity',
@@ -29,7 +29,6 @@ export const luminousClarity = {
     '--ds-radius-lg': radius.lg,
     '--ds-radius-full': radius.full,
     '--ds-blur-default': blur.default,
-    '--ds-spacing-page': spacing.marginPage,
-    '--ds-dock-height': spacing.bottomNavHeight,
+    // spacing-page / dock-height: só em base.css (+ densify ≤1280)
   },
 } as const
