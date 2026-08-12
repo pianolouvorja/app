@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { GlassCard } from '@design-system/index'
@@ -7,47 +6,18 @@ import { GlassCard } from '@design-system/index'
 import { useAppearanceSettings } from '../composables/useAppearanceSettings'
 
 const { t } = useI18n()
-const { isDark, themeMode, setThemeMode } = useAppearanceSettings()
-
-const sliderValue = ref(themeMode.value === 'dark' ? 100 : 0)
-
-watch(themeMode, (mode) => {
-  const inLightHalf = sliderValue.value < 50
-  if ((mode === 'light' && inLightHalf) || (mode === 'dark' && !inLightHalf)) {
-    return
-  }
-  sliderValue.value = mode === 'dark' ? 100 : 0
-})
-
-const sliderStyle = computed(() => ({
-  '--slider-fill': `${sliderValue.value}%`,
-}))
-
-const sphereRotation = computed(() => `${sliderValue.value * 3.6}deg`)
-
-function applyFromSlider(value: number) {
-  sliderValue.value = value
-  const next = value >= 50 ? 'dark' : 'light'
-  if (themeMode.value !== next) {
-    setThemeMode(next)
-  }
-}
-
-function onThemeInput(event: Event) {
-  const input = event.target as HTMLInputElement
-  applyFromSlider(Number(input.value))
-}
-
-function onThemeCommit() {
-  sliderValue.value = themeMode.value === 'dark' ? 100 : 0
-}
+const { isDark, setThemeMode } = useAppearanceSettings()
 
 function preferLight() {
-  applyFromSlider(0)
+  setThemeMode('light')
 }
 
 function preferDark() {
-  applyFromSlider(100)
+  setThemeMode('dark')
+}
+
+function toggleTheme() {
+  setThemeMode(isDark.value ? 'light' : 'dark')
 }
 </script>
 
@@ -62,63 +32,73 @@ function preferDark() {
       <div class="theme-orbital__ring theme-orbital__ring--inner" />
       <div
         class="theme-orbital__sphere"
-        :style="{ transform: `rotate(${sphereRotation})` }"
+        :class="{ 'theme-orbital__sphere--dark': isDark }"
       >
         <i
-          class="ti theme-orbital__glyph"
-          :class="
-            isDark
-              ? 'ti-moon theme-orbital__glyph--moon'
-              : 'ti-sun theme-orbital__glyph--sun'
-          "
+          class="ti ti-sun theme-orbital__glyph theme-orbital__glyph--sun"
+          :class="{ 'theme-orbital__glyph--hidden': isDark }"
+          aria-hidden="true"
+        />
+        <i
+          class="ti ti-moon theme-orbital__glyph theme-orbital__glyph--moon"
+          :class="{ 'theme-orbital__glyph--hidden': !isDark }"
+          aria-hidden="true"
         />
         <div class="theme-orbital__sheen" />
       </div>
     </div>
 
-    <GlassCard class="theme-orbital__control" :padding="false">
-      <div class="theme-orbital__slider-row">
-        <button
-          type="button"
-          class="theme-orbital__mode-btn"
-          :class="{ 'theme-orbital__mode-btn--active': !isDark }"
-          :aria-label="t('settings.appearance.lightMode')"
-          @click="preferLight"
-        >
-          <i class="ti ti-sun" aria-hidden="true" />
-        </button>
+    <div class="theme-orbital__control-wrap">
+      <GlassCard class="theme-orbital__control" :padding="false">
+        <div class="theme-orbital__toggle-row">
+          <button
+            type="button"
+            class="theme-orbital__mode-btn"
+            :class="{ 'theme-orbital__mode-btn--active': !isDark }"
+            :aria-label="t('settings.appearance.lightMode')"
+            @click="preferLight"
+          >
+            <i class="ti ti-sun" aria-hidden="true" />
+          </button>
 
-        <label class="theme-orbital__slider-wrap">
-          <span class="sr-only">{{ t('settings.appearance.systemTheme') }}</span>
-          <input
-            class="theme-orbital__range"
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            :value="sliderValue"
-            :style="sliderStyle"
-            :aria-valuetext="
-              isDark
-                ? t('settings.appearance.darkMode')
-                : t('settings.appearance.lightMode')
-            "
-            @input="onThemeInput"
-            @change="onThemeCommit"
-          />
-        </label>
+          <button
+            type="button"
+            class="theme-orbital__switch"
+            role="switch"
+            :aria-checked="isDark"
+            :aria-label="t('settings.appearance.changeTheme')"
+            @click="toggleTheme"
+          >
+            <span
+              class="theme-orbital__switch-track"
+              :class="{ 'theme-orbital__switch-track--on': isDark }"
+              aria-hidden="true"
+            >
+              <span class="theme-orbital__switch-thumb">
+                <i
+                  v-if="!isDark"
+                  class="ti ti-sun theme-orbital__switch-thumb-icon"
+                />
+              </span>
+            </span>
+          </button>
 
-        <button
-          type="button"
-          class="theme-orbital__mode-btn"
-          :class="{ 'theme-orbital__mode-btn--active': isDark }"
-          :aria-label="t('settings.appearance.darkMode')"
-          @click="preferDark"
-        >
-          <i class="ti ti-moon" aria-hidden="true" />
-        </button>
-      </div>
-    </GlassCard>
+          <button
+            type="button"
+            class="theme-orbital__mode-btn"
+            :class="{ 'theme-orbital__mode-btn--active': isDark }"
+            :aria-label="t('settings.appearance.darkMode')"
+            @click="preferDark"
+          >
+            <i class="ti ti-moon" aria-hidden="true" />
+          </button>
+        </div>
+      </GlassCard>
+
+      <p class="theme-orbital__label">
+        {{ t('settings.appearance.changeTheme') }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -199,6 +179,10 @@ function preferDark() {
     0 25px 50px -12px rgb(0 0 0 / 0.45);
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  &--dark {
+    transform: rotate(12deg);
+  }
+
   @media (min-width: 768px) {
     width: 14rem;
     height: 14rem;
@@ -206,12 +190,13 @@ function preferDark() {
 }
 
 .theme-orbital__glyph {
-  position: relative;
+  position: absolute;
   z-index: 1;
   font-size: 4.5rem;
   line-height: 1;
   transition:
     color var(--ds-motion-duration, 700ms) ease,
+    opacity var(--ds-motion-duration, 700ms) ease,
     transform var(--ds-motion-duration, 700ms) ease;
 
   @media (min-width: 768px) {
@@ -224,6 +209,12 @@ function preferDark() {
 
   &--moon {
     color: #c7d2fe;
+  }
+
+  &--hidden {
+    opacity: 0;
+    transform: scale(0.5) rotate(45deg);
+    pointer-events: none;
   }
 }
 
@@ -238,17 +229,26 @@ function preferDark() {
   pointer-events: none;
 }
 
-.theme-orbital__control {
+.theme-orbital__control-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   width: 100%;
   max-width: 20rem;
-  padding: 1rem 1.5rem;
+}
+
+.theme-orbital__control {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
   border-radius: var(--ds-radius-full);
 }
 
-.theme-orbital__slider-row {
+.theme-orbital__toggle-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  gap: 1.5rem;
 }
 
 .theme-orbital__mode-btn {
@@ -262,8 +262,11 @@ function preferDark() {
   border-radius: var(--ds-radius-full);
   background: transparent;
   color: var(--ds-color-on-surface-variant);
+  opacity: 0.6;
   cursor: pointer;
-  transition: color var(--ds-motion-duration, 200ms) ease;
+  transition:
+    color var(--ds-motion-duration, 200ms) ease,
+    opacity var(--ds-motion-duration, 200ms) ease;
 
   .ti {
     font-size: 22px;
@@ -273,6 +276,7 @@ function preferDark() {
   &--active,
   &:hover {
     color: var(--ds-color-primary);
+    opacity: 1;
   }
 
   &:focus-visible {
@@ -281,85 +285,70 @@ function preferDark() {
   }
 }
 
-.theme-orbital__slider-wrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.theme-orbital__range {
-  display: block;
-  width: 100%;
-  height: 24px;
-  margin: 0;
-  appearance: none;
+.theme-orbital__switch {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
   background: transparent;
   cursor: pointer;
+}
 
-  &:focus {
-    outline: none;
-  }
+.theme-orbital__switch-track {
+  position: relative;
+  width: 3.5rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: var(--ds-radius-full);
+  background: var(--ds-color-surface-variant, #353534);
+  transition: background-color 200ms ease;
 
-  &:focus-visible {
-    outline: 2px solid var(--ds-color-primary);
-    outline-offset: 4px;
-    border-radius: var(--ds-radius-sm);
-  }
-
-  &::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 2px;
-    background: linear-gradient(
-      to right,
-      var(--ds-color-primary) 0%,
-      var(--ds-color-primary) var(--slider-fill, 100%),
-      color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent)
-        var(--slider-fill, 100%),
-      color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent) 100%
-    );
-  }
-
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 22px;
-    height: 22px;
-    margin-top: -9px;
-    border-radius: var(--ds-radius-full);
-    background: var(--ds-color-primary-soft);
-    box-shadow: 0 0 12px
-      color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
-  }
-
-  &::-moz-range-track {
-    height: 4px;
-    border-radius: 2px;
-    background: color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
-  }
-
-  &::-moz-range-progress {
-    height: 4px;
-    border-radius: 2px;
+  &--on {
     background: var(--ds-color-primary);
-  }
-
-  &::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
-    border: 0;
-    border-radius: var(--ds-radius-full);
-    background: var(--ds-color-primary-soft);
   }
 }
 
-.sr-only {
+.theme-orbital__switch-thumb {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  top: 0.25rem;
+  left: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--ds-radius-full);
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.25);
+  transition: transform 300ms ease;
+
+  .theme-orbital__switch-track--on & {
+    transform: translateX(1.5rem);
+  }
+}
+
+.theme-orbital__switch-thumb-icon {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ds-color-primary);
+}
+
+.theme-orbital__switch:focus-visible .theme-orbital__switch-track {
+  outline: 2px solid var(--ds-color-primary);
+  outline-offset: 3px;
+}
+
+.theme-orbital__label {
+  margin: 0;
+  color: var(--ds-color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  line-height: 14px;
+  text-transform: uppercase;
+  opacity: 0.6;
 }
 
 @keyframes orbital-spin {
@@ -379,33 +368,23 @@ function preferDark() {
   .theme-orbital__stage {
     width: 14rem;
     height: 14rem;
-
-    @media (min-width: 960px) {
-      width: 14rem;
-      height: 14rem;
-    }
   }
 
   .theme-orbital__sphere {
     width: 10.5rem;
     height: 10.5rem;
-
-    @media (min-width: 960px) {
-      width: 10.5rem;
-      height: 10.5rem;
-    }
   }
 
   .theme-orbital__glyph {
     font-size: 4rem;
-
-    @media (min-width: 960px) {
-      font-size: 4rem;
-    }
   }
 
   .theme-orbital__control {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .theme-orbital__toggle-row {
+    gap: 1.25rem;
   }
 }
 </style>
