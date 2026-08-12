@@ -47,3 +47,9 @@ __screenshots__/
 .env
 .env.local
 .env.*.local
+
+# SDD planning (internal)
+.planning/
+dist-windows/
+reports/mutation/
+.stryker-tmp/

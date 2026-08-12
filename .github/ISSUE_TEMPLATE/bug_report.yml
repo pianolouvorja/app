@@ -1,5 +1,5 @@
 name: Bug Report
-description: Reporta um bug no PIANO
+description: Reporta um bug no PIANO (Desktop)
 labels: ["bug", "triage"]
 body:
   - type: textarea
@@ -24,23 +24,35 @@ body:
     attributes:
       label: Prioridade
       options:
-        - P0 — Crítico (app não funciona)
+        - P0 — Crítico (não funciona)
         - P1 — Alto (funciona mas quebra UX)
         - P2 — Médio (workaround existe)
         - P3 — Baixo (cosmético)
     validations:
       required: true
   - type: textarea
-    id: dispositivo
+    id: ambiente
     attributes:
-      label: Dispositivo/Navegador
-      placeholder: iPhone 12 / Safari, Desktop / Chrome 120, etc
+      label: Ambiente
+      placeholder: Sistema operacional, navegador, versão, etc
     validations:
       required: true
-  - type: input
-    id: versao
+  - type: dropdown
+    id: modulo
     attributes:
-      label: Versão do app
-      placeholder: "1.14.8"
+      label: Módulo afetado
+      options:
+        - Router / Navegação
+        - Liturgia
+        - Bíblia
+        - Álbuns / Hinos
+        - Mídia / Player
+        - Settings / Aparência
+        - Design System
+        - Desktop (Electron)
+        - Updater
+        - Splash/EULA
+        - Infra / Deploy
+        - Outro
     validations:
-      required: true
+      required: false

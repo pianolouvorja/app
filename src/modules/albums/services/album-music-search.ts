@@ -1,5 +1,6 @@
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { readCatalogRecord } from '@shared/services/workspace-api'
+import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
 
 import type { AlbumSearchHit } from '../types/albums'
 import { formatCatalogDuration } from './album-tracks'
@@ -151,9 +152,10 @@ function mergeHits(a: AlbumSearchHit, b: AlbumSearchHit): AlbumSearchHit {
   }
 }
 
-/** Carrega o índice global de músicas (`pt_musics`). */
+/** Carrega o índice global de músicas (prefixado por idioma). */
 export async function loadAlbumMusicIndex(): Promise<AlbumSearchHit[]> {
-  const rows = await readOrFetchCatalog<CatalogMusicIndexRow[]>('pt_musics')
+  const langPrefix = getCurrentApiPrefix()
+  const rows = await readOrFetchCatalog<CatalogMusicIndexRow[]>(`${langPrefix}_musics`)
   if (!Array.isArray(rows) || rows.length === 0) return []
 
   const byId = new Map<number, AlbumSearchHit>()

@@ -1,3 +1,4 @@
+import { getCurrentApiPrefix } from './library-catalog'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 
@@ -46,7 +47,8 @@ async function collectMediaForAlbum(
   let songRefs: Array<{ id_music: number | string }> = []
 
   if (album.isHymnal) {
-    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(`pt_${album.id}`)
+    const langPrefix = getCurrentApiPrefix()
+    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(`${langPrefix}_${album.id}`)
     if (!hymnalData || !Array.isArray(hymnalData)) {
       return { items: [], found: false }
     }
@@ -96,8 +98,9 @@ export async function listAlbumMusicIds(
   let songRefs: Array<{ id_music: number | string }> = []
 
   if (album.isHymnal) {
+    const langPrefix = getCurrentApiPrefix()
     const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(
-      `pt_${album.id}`,
+      `${langPrefix}_${album.id}`,
     )
     if (!hymnalData || !Array.isArray(hymnalData)) return []
     songRefs = hymnalData
