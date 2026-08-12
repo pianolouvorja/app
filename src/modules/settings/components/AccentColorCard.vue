@@ -38,12 +38,18 @@ function selectAccent(key: AccentKey) {
         type="button"
         class="accent-color__swatch"
         :class="{ 'accent-color__swatch--active': accentKey === key }"
-        :style="{ '--swatch': accent.soft }"
+        :style="{ '--swatch': accent.primary }"
         role="radio"
         :aria-checked="accentKey === key"
         :aria-label="accent.label"
         @click="selectAccent(key)"
-      />
+      >
+        <i
+          v-if="accentKey === key"
+          class="ti ti-check accent-color__swatch-check"
+          aria-hidden="true"
+        />
+      </button>
     </div>
   </GlassCard>
 </template>
@@ -87,15 +93,20 @@ function selectAccent(key: AccentKey) {
 
 .accent-color__swatches {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.65rem 0.55rem;
   justify-items: center;
 }
 
 .accent-color__swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
+  padding: 0;
   border: 2px solid transparent;
   border-radius: var(--ds-radius-full);
   background: var(--swatch);
@@ -115,9 +126,20 @@ function selectAccent(key: AccentKey) {
   }
 
   &--active {
+    transform: scale(1.12);
     border-color: #ffffff;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--swatch) 40%, transparent);
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, #ffffff 88%, transparent),
+      0 0 14px color-mix(in srgb, var(--swatch) 55%, transparent);
   }
+}
+
+.accent-color__swatch-check {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
 }
 
 @keyframes appearance-float {

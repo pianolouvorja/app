@@ -40,19 +40,23 @@ export const accentsLegacy = {
   },
 } as const
 
-/** Paleta atual — tons mais suaves e convencionais de sistema. */
+/**
+ * Paleta atual — 4 realces.
+ * Ordem: âmbar → laranja (padrão) → verde-água → verde (verdes juntos).
+ * Azure e demais tons foram removidos da UI.
+ */
 export const accents = {
-  azure: {
-    id: 'azure',
-    label: 'Azul',
-    primary: '#5B9BD5',
-    soft: '#B4D4F0',
+  apricot: {
+    id: 'apricot',
+    label: 'Âmbar',
+    primary: '#E0A84A',
+    soft: '#F0D9A8',
   },
-  sky: {
-    id: 'sky',
-    label: 'Céu',
-    primary: '#5BA4C9',
-    soft: '#B5D8E8',
+  orange: {
+    id: 'orange',
+    label: 'Laranja',
+    primary: '#E0895A',
+    soft: '#F0C4A8',
   },
   teal: {
     id: 'teal',
@@ -66,45 +70,10 @@ export const accents = {
     primary: '#6BAA7A',
     soft: '#B8D9C0',
   },
-  apricot: {
-    id: 'apricot',
-    label: 'Âmbar',
-    primary: '#E0A84A',
-    soft: '#F0D9A8',
-  },
-  orange: {
-    id: 'orange',
-    label: 'Laranja',
-    primary: '#E0895A',
-    soft: '#F0C4A8',
-  },
-  coral: {
-    id: 'coral',
-    label: 'Coral',
-    primary: '#D4847A',
-    soft: '#F0C0B8',
-  },
-  rose: {
-    id: 'rose',
-    label: 'Rosa',
-    primary: '#C97B8F',
-    soft: '#E8C4CE',
-  },
-  violet: {
-    id: 'violet',
-    label: 'Violeta',
-    primary: '#8B7BB8',
-    soft: '#CDC4E0',
-  },
-  slate: {
-    id: 'slate',
-    label: 'Ardósia',
-    primary: '#7A8FA3',
-    soft: '#C5D0DA',
-  },
 } as const
 
 export type AccentKey = keyof typeof accents
 export type AccentDefinition = (typeof accents)[AccentKey]
 
+/** Padrão do sistema — não alterar sem decisão de produto. */
 export const defaultAccent: AccentKey = 'orange'

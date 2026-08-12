@@ -17,6 +17,7 @@ export default {
       experienceTitle: 'Experiência Visual',
       experienceSubtitle: 'Sinta a atmosfera do Louvor JA se transformar',
       systemTheme: 'Tema do Sistema',
+      changeTheme: 'Alterar tema',
       lightMode: 'Modo Claro',
       darkMode: 'Modo Escuro',
       glassIntensity: 'Intensidade do Vidro',
