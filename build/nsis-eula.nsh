@@ -4,6 +4,8 @@
 ; de idioma seja PortugueseBR.nlf. O LCID do português brasileiro é 1046.
 
 !define LANG_PORTUGUESE_BR 1046
+!define LANG_ENGLISH_US 1033
+!define LANG_SPANISH_ES 3082
 ; O compilador NSIS roda a partir do diretório de templates do electron-builder,
 ; não da raiz do projeto. PROJECT_DIR é injetado pelo electron-builder e mantém
 ; estes caminhos válidos tanto no Windows do CI quanto no build local.
@@ -12,5 +14,5 @@
 !define LICENSE_ES "${PROJECT_DIR}\electron\legal\eula\es.txt"
 
 LicenseLangString LicenseFile ${LANG_PORTUGUESE_BR} "${LICENSE_PTBR}"
-LicenseLangString LicenseFile ${LANG_ENGLISH} "${LICENSE_EN}"
-LicenseLangString LicenseFile ${LANG_SPANISH} "${LICENSE_ES}"
+LicenseLangString LicenseFile ${LANG_ENGLISH_US} "${LICENSE_EN}"
+LicenseLangString LicenseFile ${LANG_SPANISH_ES} "${LICENSE_ES}"
