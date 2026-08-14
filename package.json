@@ -79,6 +79,7 @@
     "appId": "com.louvorja.piano",
     "productName": "LouvorJA - PIANO",
     "executableName": "louvorja-piano",
+    "artifactName": "LouvorJA-PIANO-${version}-${arch}.${ext}",
     "npmRebuild": false,
     "directories": {
       "output": "dist-electron",
