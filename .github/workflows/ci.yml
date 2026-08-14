@@ -82,7 +82,7 @@ jobs:
         run: npm install --no-save --ignore-scripts electron@${{ matrix.version }}
       - name: Package without publishing
         run: |
-          rm -rf dist-electron
+          node -e "require('node:fs').rmSync('dist-electron', { recursive: true, force: true })"
           npm run electron:build -- ${{ matrix.target }} --publish never
       - name: Validate updater artifacts and metadata
         run: node scripts/validate-release-artifacts.mjs ${{ matrix.platform }} "$(node -p "require('./package.json').version")"
