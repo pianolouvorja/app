@@ -10,13 +10,87 @@ import {
   removeBrowserItemsByPrefix,
 } from '@shared/services/browser-storage'
 import { BROWSER_STORAGE_KEYS, USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import { APP_USER_DATA_DIR } from '@shared/constants/app'
+import { APP_USER_DATA_DIR, APP_VERSION } from '@shared/constants/app'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
 import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
+import {
+  exportLouvorjaFile,
+  importLouvorjaFile,
+} from '@modules/sync/services/louvorja-file'
+import {
+  exportLouvorjaFromBrowser,
+  importLouvorjaIntoBrowser,
+} from '@modules/sync/services/louvorja-adapter'
+import {
+  decodeLouvorjaPackage,
+  encodeLouvorjaPackage,
+  isValidLouvorjaContent,
+} from '@modules/sync/services/louvorja-package'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
+
+type SyncStatus =
+  | { kind: 'idle' }
+  | { kind: 'success'; messageKey: string; params?: Record<string, unknown> }
+  | { kind: 'error'; messageKey: string }
+
+const syncStatus = ref<SyncStatus>({ kind: 'idle' })
+const isSyncBusy = ref(false)
+
+async function handleSyncExport() {
+  if (isSyncBusy.value) return
+  isSyncBusy.value = true
+  syncStatus.value = { kind: 'idle' }
+  try {
+    const pkg = exportLouvorjaFromBrowser(APP_VERSION, isDesktopApp() ? 'desktop' : 'web')
+    const ok = await exportLouvorjaFile(encodeLouvorjaPackage(pkg))
+    syncStatus.value = ok
+      ? { kind: 'success', messageKey: 'settings.general.syncExported' }
+      : { kind: 'error', messageKey: 'settings.general.syncCancelled' }
+  } catch (error) {
+    console.error('[settings] falha ao exportar pacote', error)
+    syncStatus.value = { kind: 'error', messageKey: 'settings.general.syncInvalid' }
+  } finally {
+    isSyncBusy.value = false
+  }
+}
+
+async function handleSyncImport() {
+  if (isSyncBusy.value) return
+  isSyncBusy.value = true
+  syncStatus.value = { kind: 'idle' }
+  try {
+    const raw = await importLouvorjaFile()
+    if (raw == null) {
+      syncStatus.value = { kind: 'error', messageKey: 'settings.general.syncCancelled' }
+      return
+    }
+    if (!isValidLouvorjaContent(raw)) {
+      syncStatus.value = { kind: 'error', messageKey: 'settings.general.syncInvalid' }
+      return
+    }
+    const result = importLouvorjaIntoBrowser(decodeLouvorjaPackage(raw))
+    if (result.applied.length > 0) {
+      syncStatus.value = {
+        kind: 'success',
+        messageKey: 'settings.general.syncImported',
+        params: { applied: result.applied.join(', ') },
+      }
+    } else {
+      syncStatus.value = {
+        kind: 'success',
+        messageKey: 'settings.general.syncNothingToApply',
+      }
+    }
+  } catch (error) {
+    console.error('[settings] falha ao importar pacote', error)
+    syncStatus.value = { kind: 'error', messageKey: 'settings.general.syncInvalid' }
+  } finally {
+    isSyncBusy.value = false
+  }
+}
 
 const {
   checkForUpdates,
@@ -160,6 +234,61 @@ async function clearAllLocalData() {
           {{ t(lang.labelKey) }}
         </button>
       </div>
+    </GlassCard>
+
+    <!-- Sincronização (.louvorja) -->
+    <GlassCard class="general-settings__card" elevated>
+      <div class="general-settings__accent" aria-hidden="true" />
+
+      <div class="general-settings__header">
+        <div class="general-settings__heading">
+          <i class="ti ti-arrows-exchange general-settings__icon" aria-hidden="true" />
+          <h3 class="general-settings__title">
+            {{ t('settings.general.syncTitle') }}
+          </h3>
+        </div>
+      </div>
+
+      <p class="general-settings__hint">
+        {{ t('settings.general.syncHint') }}
+      </p>
+
+      <div class="general-settings__sync-actions">
+        <button
+          type="button"
+          class="general-settings__btn general-settings__btn--primary"
+          :disabled="isSyncBusy"
+          @click="handleSyncExport"
+        >
+          <i class="ti ti-file-export" aria-hidden="true" />
+          {{ t('settings.general.syncExport') }}
+        </button>
+
+        <button
+          type="button"
+          class="general-settings__btn"
+          :disabled="isSyncBusy"
+          @click="handleSyncImport"
+        >
+          <i class="ti ti-file-import" aria-hidden="true" />
+          {{ t('settings.general.syncImport') }}
+        </button>
+      </div>
+
+      <p
+        v-if="syncStatus.kind === 'success'"
+        class="general-settings__status general-settings__status--success"
+      >
+        <i class="ti ti-circle-check" aria-hidden="true" />
+        {{ t(syncStatus.messageKey, syncStatus.params ?? {}) }}
+      </p>
+      <p
+        v-else-if="syncStatus.kind === 'error'"
+        class="general-settings__status general-settings__status--error"
+      >
+        <i class="ti ti-alert-circle" aria-hidden="true" />
+        {{ t(syncStatus.messageKey) }}
+      </p>
     </GlassCard>
 
     <!-- Dados locais -->
@@ -329,6 +458,12 @@ async function clearAllLocalData() {
 
 /* Seletor de idioma */
 .general-settings__lang-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.general-settings__sync-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

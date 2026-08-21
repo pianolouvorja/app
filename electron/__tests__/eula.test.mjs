@@ -196,7 +196,7 @@ describe("showEulaDialog", () => {
     expect(result).toBe(false);
   });
 
-  it("passa o texto do EULA do locale correto para o dialog", () => {
+  it("passa o texto do EULA do locale correto para o dialog", async () => {
     dialog.showMessageBoxSync.mockReturnValue(0);
     writeWorkspaceRecord.mockReturnValue(true);
 
