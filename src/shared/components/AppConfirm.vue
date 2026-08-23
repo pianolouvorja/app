@@ -76,7 +76,7 @@ const emit = defineEmits<{
 .app-confirm__panel {
   position: relative;
   z-index: 1;
-  width: min(24rem, calc(100% - 2rem));
+  width: min(32rem, calc(100% - 2rem));
   padding: 1.25rem 1.25rem 1rem;
   border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 1rem 0 1rem 0;
@@ -100,6 +100,7 @@ const emit = defineEmits<{
 
 .app-confirm__actions {
   display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
   justify-content: flex-end;
 }
@@ -110,6 +111,7 @@ const emit = defineEmits<{
   padding: 0.45rem 1.1rem;
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
   color: #1a1a1a;
   background: color-mix(in srgb, #a0a0a0 55%, #2a2a2a);
   cursor: pointer;
