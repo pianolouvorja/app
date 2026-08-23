@@ -6,12 +6,14 @@ export default {
       general: 'General Settings',
       media: 'Media & Player',
       projection: 'Projection & Screens',
+      remote: 'Remote Control',
     },
     tabs: {
       appearance: 'Appearance',
       general: 'General',
       media: 'Media & Player',
       projection: 'Projection & Screens',
+      remote: 'Remote Control',
     },
     appearance: {
       experienceTitle: 'Visual Experience',
@@ -109,6 +111,15 @@ export default {
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',
+    },
+
+    remote: {
+      title: 'Remote Control',
+      pairingDescription: 'Scan the QR code in the Piano LouvorJA mobile app (Settings → Remote Control) or type the address and token.',
+      unavailable: 'Remote control server unavailable in this session.',
+      address: 'Address',
+      token: 'Token',
+      copyLink: 'Copy link',
     },
   },
 }

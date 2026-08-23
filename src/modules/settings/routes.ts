@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import AppearanceView from './views/AppearanceView.vue'
 import GeneralView from './views/GeneralView.vue'
 import ProjectionView from './views/ProjectionView.vue'
+import RemotePairingView from '@modules/remote/views/RemotePairingView.vue'
 import SettingsView from './views/SettingsView.vue'
 
 export const settingsRoutes: RouteRecordRaw[] = [

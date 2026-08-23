@@ -6,12 +6,14 @@ export default {
       general: 'Configurações Gerais',
       media: 'Mídia & Player',
       projection: 'Projeção & Telas',
+      remote: 'Controle Remoto',
     },
     tabs: {
       appearance: 'Aparência',
       general: 'Geral',
       media: 'Mídia & Player',
       projection: 'Projeção & Telas',
+      remote: 'Controle Remoto',
     },
     appearance: {
       experienceTitle: 'Experiência Visual',
@@ -120,6 +122,15 @@ export default {
       updateError: 'Não foi possível verificar atualizações.',
       updateDesktopOnly:
         'Atualizações automáticas estão disponíveis apenas no aplicativo desktop.',
+    },
+
+    remote: {
+      title: 'Controle Remoto',
+      pairingDescription: 'Escaneie o QR no app Piano LouvorJA do celular (Configurações → Controle Remoto) ou digite o endereço e o token.',
+      unavailable: 'Servidor de controle remoto indisponível nesta sessão.',
+      address: 'Endereço',
+      token: 'Token',
+      copyLink: 'Copiar link',
     },
   },
 }

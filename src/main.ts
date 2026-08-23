@@ -8,6 +8,7 @@ import router from '@/router'
 import { useThemeManager } from '@design-system/composables'
 import { initUiZoom } from '@shared/composables/useUiZoom'
 import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
+import { installRemoteLiturgyBridge } from '@modules/remote/renderer/liturgy-bridge'
 
 useThemeManager()
 initUiZoom()
@@ -24,5 +25,10 @@ app.use(createPinia())
 app.use(router)
 app.use(vuetify)
 app.use(i18n)
+
+// Controle remoto (APK → desktop): só na janela principal.
+if (!isProjectionPopupLocation()) {
+  installRemoteLiturgyBridge({ router })
+}
 
 app.mount('#app')

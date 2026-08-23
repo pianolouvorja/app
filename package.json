@@ -33,10 +33,12 @@
     "basic-ftp": "^6.0.1",
     "electron-updater": "^6.8.9",
     "pinia": "^3.0.4",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.38",
     "vue-i18n": "^11.4.6",
     "vue-router": "^4.6.4",
-    "vuetify": "^4.1.4"
+    "vuetify": "^4.1.4",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -151,7 +153,11 @@
       "allowToChangeInstallationDirectory": true,
       "license": "electron/legal/eula/pt-BR.txt",
       "include": "build/nsis-eula.nsh",
-      "installerLanguages": ["pt_BR", "en_US", "es_ES"]
+      "installerLanguages": [
+        "pt_BR",
+        "en_US",
+        "es_ES"
+      ]
     },
     "publish": {
       "provider": "github",

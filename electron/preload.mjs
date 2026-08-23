@@ -60,6 +60,16 @@ contextBridge.exposeInMainWorld('louvorja', {
   platform: process.platform,
   isElectron: true,
 
+  // Controle remoto (APK via WS :7071): comandos chegam do main.
+  remote: {
+    onCommand: (callback) => subscribe('remote:command', callback),
+    onStateRequest: (callback) => subscribe('remote:request-state', callback),
+    sendAck: (ack) => ipcRenderer.send('remote:ack', ack),
+    sendState: (state) => ipcRenderer.send('remote:state', state),
+    pairingInfo: () => ipcRenderer.invoke('remote:pairing-info'),
+    onClients: (callback) => subscribe('remote:clients', callback),
+  },
+
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),
