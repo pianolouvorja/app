@@ -58,6 +58,18 @@ function parseSectionItem(
   const name = f.get('item') ?? ''
   const subitem = f.get('subitem') ?? ''
   const checked = f.get('checked') ?? ''
+  // Semântica Delphi: checked guarda a DATA (dd/mm/aaaa) do dia em que foi
+  // marcado; item só está done se a data == HOJE (reset automático na virada
+  // do dia — fmMenu.pas: checkbox.Checked := checked == FormatDateTime('dd/mm/yyyy', Now)).
+  const isDoneToday = () => {
+    const v = checked.trim()
+    if (!v) return false
+    const now = new Date()
+    const dd = String(now.getDate()).padStart(2, '0')
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const yyyy = String(now.getFullYear())
+    return v === `${dd}/${mm}/${yyyy}`
+  }
   const cor = f.get('cor') ?? ''
   const musicId = Number.parseInt(f.get('musica') ?? '', 10)
 
@@ -75,7 +87,7 @@ function parseSectionItem(
     type,
     name: name || subitem,
     subtitle: subitem,
-    done: checked.trim().length > 0,
+    done: isDoneToday(),
     durationMs: 0,
     accentColor: delphiColor(cor),
     musicId: type === 'music' && Number.isFinite(musicId) ? musicId : null,

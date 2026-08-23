@@ -120,9 +120,13 @@
           "Name": "LouvorJA - PIANO",
           "Comment": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
           "Categories": "AudioVideo;",
-          "StartupWMClass": "louvorja-piano"
+          "StartupWMClass": "louvorja-piano",
+          "MimeType": "application/x-louvorja-liturgy;"
         }
-      }
+      },
+      "mimeTypes": [
+        "application/x-louvorja-liturgy"
+      ]
     },
     "win": {
       "target": [
@@ -163,7 +167,15 @@
       "provider": "github",
       "owner": "pianolouvorja",
       "repo": "app"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "ja",
+        "name": "LouvorJA Liturgia",
+        "description": "Liturgia exportada pelo LouvorJA Delphi",
+        "role": "Editor"
+      }
+    ]
   },
   "description": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
   "author": "Ezequias Fonseca"

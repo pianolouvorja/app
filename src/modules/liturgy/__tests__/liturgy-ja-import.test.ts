@@ -50,7 +50,7 @@ describe('parseJaLiturgy', () => {
     const [music, file, annotation] = map.saturday!
     expect(music.type).toBe('music')
     expect(music.musicId).toBe(1660)
-    expect(music.done).toBe(true)
+    expect(music.done).toBe(false) // checked=22/08/2026 != hoje
     expect(music.accentColor).toBe('#00004F')
     expect(file.type).toBe('video')
     expect(file.filePath).toContain('video.mp4')
