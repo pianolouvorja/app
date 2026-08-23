@@ -12,6 +12,8 @@ import { watch } from 'vue'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
+import { resolveMediaTarget } from './media-target'
+
 import { useLiturgyStore } from '../../liturgy/stores/useLiturgyStore'
 import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
 
@@ -42,6 +44,7 @@ export function installRemoteLiturgyBridge({ router }) {
   const liturgy = useLiturgyStore()
   const player = useMediaPlayer()
   const remoteApi = getDesktopBridge()?.remote
+  const projection = getDesktopBridge()?.projection
   if (!remoteApi) return () => {}
 
   const send = (channel, payload) => {
@@ -53,8 +56,31 @@ export function installRemoteLiturgyBridge({ router }) {
     }
   }
 
-  const buildState = () => {
+  const buildState = async () => {
     const items = liturgy.currentItems ?? []
+
+    // Vídeo/images/pdf ativos na projeção? Estado de mídia vem de lá.
+    const target = await resolveMediaTarget({ projection, player })
+    let media
+    if (target === 'projection' && projection?.getPlaybackState) {
+      const pb = await projection.getPlaybackState()
+      media = {
+        playing: pb ? !pb.paused : false,
+        title: items[liturgy.selectedItemIndex ?? -1]?.name ?? null,
+        volume: Math.round((pb?.volume ?? 1) * 100),
+        positionMs: Math.round((pb?.currentTime ?? 0) * 1000),
+        durationMs: Math.round((pb?.duration ?? 0) * 1000),
+      }
+    } else {
+      media = {
+        playing: player.isPlaying.value,
+        title: player.session.value?.title ?? null,
+        volume: Math.round((player.volume.value ?? 0) * 100),
+        positionMs: Math.round((player.currentTimeSec.value ?? 0) * 1000),
+        durationMs: Math.round((player.durationSec.value ?? 0) * 1000),
+      }
+    }
+
     return {
       liturgy: {
         total: items.length,
@@ -67,11 +93,7 @@ export function installRemoteLiturgyBridge({ router }) {
         })),
       },
       player: {
-        playing: player.isPlaying.value,
-        title: player.session.value?.title ?? null,
-        volume: Math.round((player.volume.value ?? 0) * 100),
-        positionMs: Math.round((player.currentTimeSec.value ?? 0) * 1000),
-        durationMs: Math.round((player.durationSec.value ?? 0) * 1000),
+        ...media,
         canPrevious: (liturgy.selectedItemIndex ?? 0) > 0,
         canNext:
           (liturgy.selectedItemIndex ?? -1) + 1 <
@@ -81,7 +103,7 @@ export function installRemoteLiturgyBridge({ router }) {
   }
 
   // Estado COMPLETO (spec v1): player + liturgia espelhada no APK.
-  const pushState = () => send('remote:state', buildState())
+  const pushState = async () => send('remote:state', await buildState())
 
   async function execute(msg) {
     const { action, value } = msg
@@ -124,8 +146,44 @@ export function installRemoteLiturgyBridge({ router }) {
       }
     }
 
-    // 2) Player
+    // 2) Player — vídeo ativo na projeção? Comandos vão pra projeção.
     if (PLAYER_ACTIONS.has(action)) {
+      const target = await resolveMediaTarget({ projection, player })
+      if (target === 'projection') {
+        switch (action) {
+          case 'player.play':
+            return (await projection?.remotePlay?.()) ?? false
+          case 'player.pause':
+            return (await projection?.remotePause?.()) ?? false
+          case 'player.toggle': {
+            const pb = await projection?.getPlaybackState?.()
+            if (!pb) return false
+            return pb.paused
+              ? ((await projection?.remotePlay?.()) ?? false)
+              : ((await projection?.remotePause?.()) ?? false)
+          }
+          case 'player.stop':
+            // Desliga telas espelhadas e fecha o popup de vídeo.
+            await projection?.toggleVideoScreens?.()
+            await projection?.closeUrl?.()
+            return true
+          case 'player.setVolume':
+            if (typeof value !== 'number') return false
+            return (
+              (await projection?.remoteSetVolume?.(
+                Math.min(100, Math.max(0, value)) / 100,
+              )) ?? false
+            )
+          case 'player.seek':
+            if (typeof msg.positionMs !== 'number') return false
+            return (
+              (await projection?.remoteSeek?.(msg.positionMs / 1000)) ?? false
+            )
+          default:
+            // next/previous/setMode/open caem no fallback de liturgia/player.
+            break
+        }
+      }
       switch (action) {
         case 'player.play':
           await player.play()
@@ -182,9 +240,19 @@ export function installRemoteLiturgyBridge({ router }) {
 
   const onStateRequest = () => pushState()
 
-  const onUn = {
+  const onUn: Record<string, (() => void) | undefined> = {
     command: remoteApi.onCommand(onCommand),
     state: remoteApi.onStateRequest(onStateRequest),
+    // Posição do vídeo avança continuamente — sincroniza o APK (throttle 1s).
+    sync: projection?.onPlaybackSync
+      ? projection.onPlaybackSync(() => {
+          const now = Date.now()
+          if (now - lastSyncPush > 1000) {
+            lastSyncPush = now
+            pushState()
+          }
+        })
+      : undefined,
   }
 
   // Push de estado quando seleção da liturgia muda (local ou remoto).
@@ -199,6 +267,7 @@ export function installRemoteLiturgyBridge({ router }) {
     { deep: false },
   )
 
+  let lastSyncPush = 0
   pushState()
 
   return () => {
