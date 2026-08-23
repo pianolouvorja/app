@@ -33,7 +33,14 @@ export function registerReadTextFileIpc() {
     'dialog:read-text-file',
     async (_event, path) => {
       try {
-        return await readFile(String(path), 'utf8')
+        const buffer = await readFile(String(path))
+        const bytes = new Uint8Array(buffer)
+        // .ja do Delphi vem em ANSI (cp1252); tenta UTF-8 estrito primeiro.
+        try {
+          return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+        } catch {
+          return new TextDecoder('windows-1252').decode(bytes)
+        }
       } catch (error) {
         console.error('[ipc] dialog:read-text-file', error)
         return null

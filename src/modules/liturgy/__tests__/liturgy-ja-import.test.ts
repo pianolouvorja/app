@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseJaLiturgy } from '../services/liturgy-ja-import'
+import { decodeJaBytes, parseJaLiturgy } from '../services/liturgy-ja-import'
 
 const sample = [
   '[item_20260704084840569]',
@@ -29,6 +29,19 @@ const sample = [
   '7=item_20260704084840569;item_20260704085317501;item_20260704085517828;',
   '6=item_20260704084840569_d6_i0;',
 ].join('\r\n')
+
+describe('decodeJaBytes', () => {
+  it('UTF-8 válido decodifica direto', () => {
+    const bytes = new TextEncoder().encode('Música')
+    expect(decodeJaBytes(bytes)).toBe('Música')
+  })
+
+  it('ANSI (cp1252) decodifica com acentos', () => {
+    // 'Música' em cp1252: M \xFA s i c a
+    const bytes = Uint8Array.from([0x4d, 0xfa, 0x73, 0x69, 0x63, 0x61])
+    expect(decodeJaBytes(bytes)).toBe('Música')
+  })
+})
 
 describe('parseJaLiturgy', () => {
   it('parse completo: dias, tipos, campos', () => {

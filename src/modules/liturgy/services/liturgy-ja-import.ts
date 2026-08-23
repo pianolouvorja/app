@@ -134,3 +134,15 @@ export function parseJaLiturgy(raw: string): JaLiturgy {
   }
   return result
 }
+
+/**
+ * Decodifica bytes do .ja: Delphi exporta ANSI (Windows-1252); versões
+ * novas/convertidas vêm em UTF-8. Tenta UTF-8 estrito, cai pro Latin-1.
+ */
+export function decodeJaBytes(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes)
+  }
+}
