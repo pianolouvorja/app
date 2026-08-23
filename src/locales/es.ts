@@ -35,6 +35,5 @@ export default {
     bible: 'Biblia',
     utilities: 'Utilidades',
     settings: 'Configuración',
-    remote: 'Remote',
   },
 }

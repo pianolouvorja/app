@@ -4,6 +4,7 @@ import AppearanceView from './views/AppearanceView.vue'
 import GeneralView from './views/GeneralView.vue'
 import ProjectionView from './views/ProjectionView.vue'
 import RemotePairingView from '@modules/remote/views/RemotePairingView.vue'
+import { isElectronShell } from '@shared/services/desktop-bridge'
 import SettingsView from './views/SettingsView.vue'
 
 export const settingsRoutes: RouteRecordRaw[] = [
@@ -46,11 +47,14 @@ export const settingsRoutes: RouteRecordRaw[] = [
           navKey: 'settings',
         },
       },
-      // Controle remoto — emparelhamento com o APK (WS :7071).
+      // Controle remoto — desktop: WS :7071 (RemotePairingView);
+      // web: P2P WebRTC 2-QR (P2pPairingView), sem servidor.
       {
         path: 'remote',
         name: 'settings-remote',
-        component: RemotePairingView,
+        component: isElectronShell()
+          ? RemotePairingView
+          : () => import('@modules/remote/views/P2pPairingView.vue'),
         meta: {
           navKey: 'settings',
         },
