@@ -188,7 +188,7 @@ export function useLiturgy() {
       window.alert(t('liturgy.importJaInvalid'))
       return
     }
-    const { added, skipped, days } = store.importJaDays(parsed)
+    const { added, skipped, days } = await store.importJaDays(parsed)
     lastActionMessageKey.value = null
     window.alert(
       t('liturgy.importJaDone', { added, skipped, days: days.length }),

@@ -351,11 +351,12 @@ export const useLiturgyStore = defineStore('liturgy', () => {
    * Itens duplicados (mesmo tipo+nome+musicaId/filePath) são pulados.
    * Retorna { added, skipped, days }.
    */
-  function importJaDays(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
+  async function importJaDays(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
     let added = 0
     let skipped = 0
     const days: string[] = []
-    for (const [day, items] of Object.entries(parsed)) {
+    const enriched = await enrichJaDurations(parsed)
+    for (const [day, items] of Object.entries(enriched)) {
       const weekday = day as LiturgyWeekday
       const existing = weekdays.value[weekday] ?? []
       const next = [...existing]
@@ -379,6 +380,47 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     }
     persist()
     return { added, skipped, days }
+  }
+
+  /**
+   * Duração automática: música → catálogo (musicList); vídeo/áudio →
+   * ffprobe do arquivo quando o caminho existe localmente (imports do
+   * Delphi trazem caminhos Windows — ficam 0).
+   */
+  async function enrichJaDurations(
+    parsed: import('../services/liturgy-ja-import').JaLiturgy,
+  ): Promise<import('../services/liturgy-ja-import').JaLiturgy> {
+    const byId = new Map(musicList.value.map((m) => [m.id, m]))
+    const probeCache = new Map<string, number>()
+    const result: import('../services/liturgy-ja-import').JaLiturgy = {}
+    for (const [day, items] of Object.entries(parsed)) {
+      result[day as LiturgyWeekday] = await Promise.all(
+        (items ?? []).map(async (item) => {
+          if (item.type === 'music' && item.musicId != null) {
+            const opt = byId.get(item.musicId)
+            if (opt?.durationMs) return { ...item, durationMs: opt.durationMs }
+            return item
+          }
+          if (
+            item.durationMs === 0 &&
+            item.filePath &&
+            (item.type === 'video' || item.type === 'other_files')
+          ) {
+            let probed = probeCache.get(item.filePath)
+            if (probed === undefined) {
+              const { probeMediaDurationMs } = await import(
+                '../services/media-probe'
+              )
+              probed = await probeMediaDurationMs(item.filePath)
+              probeCache.set(item.filePath, probed)
+            }
+            if (probed > 0) return { ...item, durationMs: probed }
+          }
+          return item
+        }),
+      )
+    }
+    return result
   }
 
   function persist() {
