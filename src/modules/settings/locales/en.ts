@@ -116,7 +116,7 @@ export default {
     remote: {
       p2pTitle: 'P2P control (QR)',
       p2pHint1: '1. Tap start and scan the QR with the APK — it will show a response QR.',
-      p2pHint2: '2. Point the webcam to the phone's QR (or paste the answer text below).',
+      p2pHint2: "2. Point the webcam to the phone's QR (or paste the answer text below).",
       p2pStart: 'Start pairing',
       p2pOfferReady: 'QR ready — scan with the APK',
       p2pNoCamera: 'No webcam — paste the answer manually',
