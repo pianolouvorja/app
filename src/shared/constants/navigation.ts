@@ -4,5 +4,6 @@ export const mainNavRoutes = [
   { key: 'liturgy', labelKey: 'nav.liturgy', icon: 'ti-clipboard-text', to: '/liturgy' },
   { key: 'bible', labelKey: 'nav.bible', icon: 'ti-book-2', to: '/bible' },
   { key: 'utilities', labelKey: 'nav.utilities', icon: 'ti-tool', to: '/utilities' },
+  { key: 'remote', labelKey: 'nav.remote', icon: 'ti-device-mobile', to: '/remote' },
   { key: 'settings', labelKey: 'nav.settings', icon: 'ti-settings', to: '/settings/appearance' },
 ] as const

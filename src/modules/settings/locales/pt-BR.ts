@@ -7,6 +7,7 @@ export default {
       media: 'Mídia & Player',
       projection: 'Projeção & Telas',
       remote: 'Controle Remoto',
+      remoteP2p: 'Controle P2P',
     },
     tabs: {
       appearance: 'Aparência',

@@ -7,6 +7,7 @@ export default {
       media: 'Medios & Reproductor',
       projection: 'Proyección & Pantallas',
       remote: 'Control Remoto',
+      remoteP2p: 'Control P2P',
     },
     tabs: {
       appearance: 'Apariencia',
@@ -16,6 +17,7 @@ export default {
       remote: 'Control Remoto',
     },
     appearance: {
+      changeTheme: 'Cambiar tema',
       experienceTitle: 'Experiencia Visual',
       experienceSubtitle: 'Sienta la atmósfera de Louvor JA transformarse',
       systemTheme: 'Tema del Sistema',
@@ -110,6 +112,16 @@ export default {
         'Elimina el catálogo, los medios descargados y las preferencias guardadas en la carpeta {product}. La aplicación reiniciará la configuración en el próximo inicio.',
       clearData: 'Borrar todos los datos',
       clearError: 'No se pudieron borrar los datos. Intente de nuevo.',
+      updateTitle: 'Actualizaciones',
+      updateHint:
+        'Busca nuevas versiones de la app de escritorio.',
+      updateAvailable: '¡Versión {version} disponible!',
+      updateNotAvailable: 'Ya estás usando la última versión.',
+      updateError: 'No se pudieron buscar actualizaciones.',
+      updateDesktopOnly:
+        'Las actualizaciones solo aplican a la app de escritorio.',
+      checkUpdate: 'Buscar actualizaciones',
+      checking: 'Buscando...',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
     },
 

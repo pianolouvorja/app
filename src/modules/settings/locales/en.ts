@@ -7,6 +7,7 @@ export default {
       media: 'Media & Player',
       projection: 'Projection & Screens',
       remote: 'Remote Control',
+      remoteP2p: 'P2P Control',
     },
     tabs: {
       appearance: 'Appearance',
@@ -16,6 +17,7 @@ export default {
       remote: 'Remote Control',
     },
     appearance: {
+      changeTheme: 'Change theme',
       experienceTitle: 'Visual Experience',
       experienceSubtitle: 'Feel the Louvor JA atmosphere transform',
       systemTheme: 'System Theme',
@@ -110,6 +112,16 @@ export default {
         'Removes the catalog, downloaded media and saved preferences in the {product} folder. The app will restart setup on next launch.',
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
+      updateTitle: 'Updates',
+      updateHint:
+        'Check for new versions of the desktop app.',
+      updateAvailable: 'Version {version} available!',
+      updateNotAvailable: 'You are already using the latest version.',
+      updateError: 'Could not check for updates.',
+      updateDesktopOnly:
+        'Updates only apply to the desktop app.',
+      checkUpdate: 'Check for updates',
+      checking: 'Checking...',
       desktopOnly: 'Only available in the desktop app.',
     },
 

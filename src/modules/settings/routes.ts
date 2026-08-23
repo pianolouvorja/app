@@ -55,15 +55,6 @@ export const settingsRoutes: RouteRecordRaw[] = [
           navKey: 'settings',
         },
       },
-      // Controle remoto P2P (WebRTC 2-QR) — web sem servidor.
-      {
-        path: 'remote-p2p',
-        name: 'settings-remote-p2p',
-        component: () => import('@modules/remote/views/P2pPairingView.vue'),
-        meta: {
-          navKey: 'settings',
-        },
-      },
     ],
   },
 ]
