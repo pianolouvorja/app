@@ -191,6 +191,13 @@ export function useLiturgy() {
 
     const cats = await readXmlFile()
     if (!cats) return
+    // Arquivos irmãos do Delphi ainda não portados — reconhece e avisa.
+    const notPorted = ['coletaneasusuario', 'favoritos', 'videosonusuario', 'configpt']
+    const firstName = cats.name.toLowerCase()
+    if (notPorted.some((n) => firstName.includes(n))) {
+      window.alert(t('liturgy.scheduled.notPorted', { name: cats.name }))
+      return
+    }
     const items = await readXmlFile()
     const n = scheduled.importFromDelphi(cats.text, items?.text ?? null)
     lastActionMessageKey.value = null

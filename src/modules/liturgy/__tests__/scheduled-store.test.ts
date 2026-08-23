@@ -65,4 +65,25 @@ describe('useScheduledStore', () => {
     const state = saved!['scheduled.state']!
     expect(state.items).toHaveLength(2)
   })
+  it('datas TDateTime float (serial Delphi) também parseiam', () => {
+    const store = useScheduledStore()
+    const changed = store.importFromDelphi('', '<DATAPACKET><ROWDATA>' +
+      '<ROW ID="f1" CATEGORIA="" DATA="46023" NOME="float date"/>' +
+      '</ROWDATA></DATAPACKET>')
+    expect(changed).toBe(1)
+    expect(store.items[0]!.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('volume: 5000 itens sem quebrar', () => {
+    const store = useScheduledStore()
+    const rows = Array.from({ length: 5000 }, (_, i) =>
+      '<ROW ID="v' + i + '" CATEGORIA="c1" DATA="12/10/2026" NOME="Item ' + i + '"/>',
+    ).join('')
+    const changed = store.importFromDelphi(
+      '<DATAPACKET><ROWDATA><ROW ID="c1" NOME="Volume"/></ROWDATA></DATAPACKET>',
+      '<DATAPACKET><ROWDATA>' + rows + '</ROWDATA></DATAPACKET>',
+    )
+    expect(changed).toBe(5000)
+    expect(store.itemsOn('2026-10-12')).toHaveLength(5000)
+  })
 })

@@ -14,6 +14,7 @@ export default {
     importJaOverwriteAsk: '{count} item(ns) do arquivo já existem na liturgia. Sobrescrever os dias afetados com o conteúdo do arquivo? (Cancelar = manter existentes e adicionar só os novos)',
     importJaOverwritten: 'Liturgia sobrescrita: {added} itens em {days} dia(s).',
     scheduled: {
+    notPorted: 'Arquivo do LouvorJA Delphi reconhecido ({name}), mas este recurso ainda não foi portado — será suportado numa próxima versão.',
       import: 'Importar itens agendados',
       imported: 'Importados {count} itens agendados',
     },

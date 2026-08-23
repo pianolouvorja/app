@@ -14,6 +14,7 @@ export default {
     importJaOverwriteAsk: '{count} item(s) from the file already exist. Overwrite the affected days with the file contents? (Cancel = keep existing and add only new ones)',
     importJaOverwritten: 'Liturgy overwritten: {added} items across {days} day(s).',
     scheduled: {
+    notPorted: 'LouvorJA Delphi file recognized ({name}), but this feature is not ported yet — coming in a future version.',
       import: 'Import scheduled items',
       imported: 'Imported {count} scheduled items',
     },

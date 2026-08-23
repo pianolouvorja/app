@@ -49,6 +49,13 @@ function parseDelphiDate(v: string): string | null {
   if (br) return `${br[3]}-${br[2]}-${br[1]}`
   const iso = /^(\d{4}-\d{2}-\d{2})/.exec(v)
   if (iso) return iso[1]!
+  // TDateTime float: dias desde 30/12/1899 (serialização do ClientDataset)
+  const days = Number.parseFloat(v)
+  if (Number.isFinite(days) && days > 0 && days < 3_000_000) {
+    const ms = Math.round(days * 86400000)
+    const d = new Date(Date.UTC(1899, 11, 30) + ms)
+    return d.toISOString().slice(0, 10)
+  }
   return null
 }
 
