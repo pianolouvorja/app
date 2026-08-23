@@ -135,6 +135,7 @@ export default {
       p2pManualPlaceholder: 'Paste the QR text shown on the APK',
       p2pManualApply: 'Apply answer',
       p2pBadAnswer: 'Invalid answer',
+      p2pAnswerOk: 'Answer accepted — waiting for connection…',
       p2pConnected: 'Connected!',
       p2pTestPing: 'Send test',
       title: 'Remote Control',

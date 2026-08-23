@@ -38,6 +38,7 @@ async function startOffer() {
       errorCorrectionLevel: 'L', // payload SDP é grande — level baixo
     })
     pushLog(t('settings.remote.p2pOfferReady'))
+    await startScan()
   } catch (e) {
     step.value = 'error'
     errorMsg.value = String(e)
@@ -89,7 +90,7 @@ async function applyAnswer(answer: string) {
     host.onMessage = (data) => {
       pushLog(`← ${JSON.stringify(data).slice(0, 80)}`)
     }
-    pushLog(t('remote.p2p.answerAccepted'))
+    pushLog(t('settings.remote.p2pAnswerOk'))
   } else {
     errorMsg.value = t('settings.remote.p2pBadAnswer')
   }
