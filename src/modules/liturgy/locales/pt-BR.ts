@@ -6,6 +6,7 @@ export default {
     addItem: 'Adicionar Categoria/Separador',
     addItemToLiturgy: 'Adicionar categoria/separador à liturgia',
     importJa: 'Importar .ja',
+    ok: 'OK',
     importJaDesktopOnly: 'Importação de arquivo .ja disponível apenas no aplicativo desktop.',
     importJaReadError: 'Não foi possível ler o arquivo.',
     importJaInvalid: 'Arquivo .ja inválido.',

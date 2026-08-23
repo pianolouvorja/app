@@ -6,6 +6,7 @@ export default {
     addItem: 'Add Category/Divider',
     addItemToLiturgy: 'Add category/divider to liturgy',
     importJa: 'Import .ja',
+    ok: 'OK',
     importJaDesktopOnly: 'Importing .ja files is desktop-only.',
     importJaReadError: 'Could not read the file.',
     importJaInvalid: 'Invalid .ja file.',

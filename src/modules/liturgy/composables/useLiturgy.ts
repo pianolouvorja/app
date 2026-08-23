@@ -11,6 +11,7 @@ import { decodeJaBytes, parseJaLiturgy } from '../services/liturgy-ja-import'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
 import { useScheduledStore } from '../stores/useScheduledStore'
+import { appConfirm } from '@shared/composables/useAppConfirm'
 import type { LiturgyDayKey } from '../types/liturgy'
 import { useLiturgyClock } from './useLiturgyClock'
 
@@ -195,13 +196,21 @@ export function useLiturgy() {
     const notPorted = ['coletaneasusuario', 'favoritos', 'videosonusuario', 'configpt']
     const firstName = cats.name.toLowerCase()
     if (notPorted.some((n) => firstName.includes(n))) {
-      window.alert(t('liturgy.scheduled.notPorted', { name: cats.name }))
+      await appConfirm({
+        title: t('liturgy.scheduled.import'),
+        message: t('liturgy.scheduled.notPorted', { name: cats.name }),
+        confirmLabel: t('liturgy.ok'),
+      })
       return
     }
     const items = await readXmlFile()
     const n = scheduled.importFromDelphi(cats.text, items?.text ?? null)
     lastActionMessageKey.value = null
-    window.alert(t('liturgy.scheduled.imported', { count: n }))
+    await appConfirm({
+      title: t('liturgy.scheduled.import'),
+      message: t('liturgy.scheduled.imported', { count: n }),
+      confirmLabel: t('liturgy.ok'),
+    })
   }
 
   /** Importa liturgia .ja do LouvorJA Delphi (merge por dia). */
@@ -231,31 +240,48 @@ export function useLiturgy() {
       bytes = await pickJaFileWeb()
     }
     if (!bytes) {
-      window.alert(t('liturgy.importJaReadError'))
+      await appConfirm({
+        title: t('liturgy.importJa'),
+        message: t('liturgy.importJaReadError'),
+        confirmLabel: t('liturgy.ok'),
+      })
       return
     }
     let parsed
     try {
       parsed = parseJaLiturgy(decodeJaBytes(bytes))
     } catch {
-      window.alert(t('liturgy.importJaInvalid'))
+      await appConfirm({
+        title: t('liturgy.importJa'),
+        message: t('liturgy.importJaInvalid'),
+        confirmLabel: t('liturgy.ok'),
+      })
       return
     }
     // Duplicados detectados? Pergunta sobrescrever dias vs merge (pular dups).
     const duplicates = store.countJaDuplicates(parsed)
     let mode: 'merge' | 'overwrite' = 'merge'
     if (duplicates > 0) {
-      mode = window.confirm(t('liturgy.importJaOverwriteAsk', { count: duplicates }))
+      mode = await appConfirm({
+        title: t('liturgy.importJaOverwriteTitle'),
+        message: t('liturgy.importJaOverwriteAsk', { count: duplicates }),
+        confirmLabel: t('liturgy.importJaOverwrite'),
+        cancelLabel: t('liturgy.importJaKeep'),
+        danger: true,
+      })
         ? 'overwrite'
         : 'merge'
     }
     const { added, skipped, days } = await store.importJaDays(parsed, mode)
     lastActionMessageKey.value = null
-    window.alert(
-      mode === 'overwrite'
-        ? t('liturgy.importJaOverwritten', { added, days: days.length })
-        : t('liturgy.importJaDone', { added, skipped, days: days.length }),
-    )
+    await appConfirm({
+      title: t('liturgy.importJa'),
+      message:
+        mode === 'overwrite'
+          ? t('liturgy.importJaOverwritten', { added, days: days.length })
+          : t('liturgy.importJaDone', { added, skipped, days: days.length }),
+      confirmLabel: t('liturgy.ok'),
+    })
   }
 
   /** Abre seletor de arquivo .ja no browser e retorna os bytes. */
