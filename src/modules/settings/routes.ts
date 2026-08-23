@@ -54,7 +54,7 @@ export const settingsRoutes: RouteRecordRaw[] = [
         name: 'settings-remote',
         component: isElectronShell()
           ? RemotePairingView
-          : () => import('@modules/remote/views/P2pPairingView.vue'),
+          : () => import('@modules/remote/views/WsPairingView.vue'),
         meta: {
           navKey: 'settings',
         },
