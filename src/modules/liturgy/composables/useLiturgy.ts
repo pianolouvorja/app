@@ -188,10 +188,20 @@ export function useLiturgy() {
       window.alert(t('liturgy.importJaInvalid'))
       return
     }
-    const { added, skipped, days } = await store.importJaDays(parsed)
+    // Duplicados detectados? Pergunta sobrescrever dias vs merge (pular dups).
+    const duplicates = store.countJaDuplicates(parsed)
+    let mode: 'merge' | 'overwrite' = 'merge'
+    if (duplicates > 0) {
+      mode = window.confirm(t('liturgy.importJaOverwriteAsk', { count: duplicates }))
+        ? 'overwrite'
+        : 'merge'
+    }
+    const { added, skipped, days } = await store.importJaDays(parsed, mode)
     lastActionMessageKey.value = null
     window.alert(
-      t('liturgy.importJaDone', { added, skipped, days: days.length }),
+      mode === 'overwrite'
+        ? t('liturgy.importJaOverwritten', { added, days: days.length })
+        : t('liturgy.importJaDone', { added, skipped, days: days.length }),
     )
   }
 

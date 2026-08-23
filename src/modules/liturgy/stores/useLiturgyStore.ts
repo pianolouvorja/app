@@ -347,18 +347,29 @@ export const useLiturgyStore = defineStore('liturgy', () => {
   })
 
   /**
-   * Importa liturgia .ja (LouvorJA Delphi) fazendo merge por dia.
-   * Itens duplicados (mesmo tipo+nome+musicaId/filePath) são pulados.
-   * Retorna { added, skipped, days }.
+   * Importa liturgia .ja (LouvorJA Delphi) por dia.
+   * mode='merge' (padrão): itens duplicados são pulados.
+   * mode='overwrite': o dia importado SUBSTITUI o existente inteiro.
+   * Retorna { added, skipped, days, hasDuplicates }.
    */
-  async function importJaDays(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
+  async function importJaDays(
+    parsed: import('../services/liturgy-ja-import').JaLiturgy,
+    mode: 'merge' | 'overwrite' = 'merge',
+  ) {
     let added = 0
     let skipped = 0
+    let hasDuplicates = false
     const days: string[] = []
     const enriched = await enrichJaDurations(parsed)
     for (const [day, items] of Object.entries(enriched)) {
       const weekday = day as LiturgyWeekday
       const existing = weekdays.value[weekday] ?? []
+      if (mode === 'overwrite') {
+        weekdays.value = { ...weekdays.value, [weekday]: [...(items ?? [])] }
+        added += items?.length ?? 0
+        days.push(day)
+        continue
+      }
       const next = [...existing]
       for (const item of items ?? []) {
         const dup = existing.some(
@@ -370,6 +381,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
         )
         if (dup) {
           skipped++
+          hasDuplicates = true
           continue
         }
         next.push(item)
@@ -379,7 +391,32 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       days.push(day)
     }
     persist()
-    return { added, skipped, days }
+    return { added, skipped, days, hasDuplicates }
+  }
+
+  /**
+   * Pré-checa quantos itens do .ja já existem (sem alterar nada) —
+   * usado pra decidir entre merge (pular) ou overwrite (substituir).
+   */
+  function countJaDuplicates(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
+    let duplicates = 0
+    for (const [day, items] of Object.entries(parsed)) {
+      const existing = weekdays.value[day as LiturgyWeekday] ?? []
+      for (const item of items ?? []) {
+        if (
+          existing.some(
+            (e) =>
+              e.type === item.type &&
+              e.name === item.name &&
+              e.musicId === item.musicId &&
+              e.filePath === item.filePath,
+          )
+        ) {
+          duplicates++
+        }
+      }
+    }
+    return duplicates
   }
 
   /**
@@ -1193,6 +1230,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     hydrate,
     selectDay,
     importJaDays,
+    countJaDuplicates,
     selectCustomLiturgy,
     setSessionStartFromInput,
     clearSessionStart,
