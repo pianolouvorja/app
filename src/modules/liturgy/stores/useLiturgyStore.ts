@@ -391,7 +391,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       days.push(day)
     }
     persist()
-    return { added, skipped, days, hasDuplicates }
+    return {
+    setItemDurationMs, added, skipped, days, hasDuplicates }
   }
 
   /**
@@ -857,6 +858,14 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
+  }
+
+  /** Atualiza a duração de um item (ex.: vídeo local lido do arquivo no web). */
+  function setItemDurationMs(itemId: string, durationMs: number): void {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return
+    currentItems.value = currentItems.value.map((item) =>
+      item.id === itemId ? { ...item, durationMs } : item,
+    )
   }
 
   /**

@@ -93,6 +93,7 @@ const {
   onManageTeam,
   onMusicPick,
   clearMusicPick,
+  onVideoFileSelected,
   onMusicSung,
   onMusicInstrumental,
   onMusicSlides,
@@ -274,6 +275,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           :music-instrumental-by-id="musicInstrumentalById"
           :busy-music-id="busyMusicId"
           @select="selectItem"
+          @video-file-selected="onVideoFileSelected"
           @play-screens="playItemOnScreens"
           @edit="openEditDialog"
           @add-sub-item="openAddSubItemDialog"

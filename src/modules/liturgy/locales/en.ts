@@ -249,6 +249,7 @@ export default {
       itemAdded: 'Item added successfully.',
       liturgySaved: 'Liturgy saved successfully.',
       mediaDesktopOnly: 'Provide the media file path.',
+      videoSelectFile: 'Select file',
       catalogEmpty: 'No songs found in the local catalog.',
       customRequired:
         'Create or select a custom liturgy before adding items.',

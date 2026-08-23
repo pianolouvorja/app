@@ -447,6 +447,9 @@ export function useLiturgy() {
     onManageTeam,
     onMusicPick: store.onMusicPick,
     clearMusicPick: store.clearMusicPick,
+    onVideoFileSelected(itemId: string, durationSec: number) {
+      store.setItemDurationMs(itemId, Math.round(durationSec * 1000))
+    },
     onMusicSung,
     onMusicInstrumental,
     onMusicSlides,

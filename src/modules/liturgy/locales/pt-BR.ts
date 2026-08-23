@@ -249,6 +249,7 @@ export default {
       itemAdded: 'Item adicionado com sucesso.',
       liturgySaved: 'Liturgia salva com sucesso.',
       mediaDesktopOnly: 'Informe o caminho do arquivo de mídia.',
+      videoSelectFile: 'Selecionar arquivo',
       catalogEmpty: 'Nenhuma música encontrada no catálogo local.',
       customRequired:
         'Crie ou selecione uma liturgia personalizada antes de adicionar itens.',
