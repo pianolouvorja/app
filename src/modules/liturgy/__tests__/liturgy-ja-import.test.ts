@@ -46,8 +46,8 @@ describe('decodeJaBytes', () => {
 describe('parseJaLiturgy', () => {
   it('parse completo: dias, tipos, campos', () => {
     const map = parseJaLiturgy(sample)
-    expect(map.sunday).toHaveLength(3)
-    const [music, file, annotation] = map.sunday!
+    expect(map.saturday).toHaveLength(3)
+    const [music, file, annotation] = map.saturday!
     expect(music.type).toBe('music')
     expect(music.musicId).toBe(1660)
     expect(music.done).toBe(true)
@@ -60,13 +60,13 @@ describe('parseJaLiturgy', () => {
 
   it('dedup: _d6_i0 resolve pro mesmo item', () => {
     const map = parseJaLiturgy(sample)
-    expect(map.saturday).toHaveLength(1)
-    expect(map.saturday![0]!.id).toBe(map.sunday![0]!.id)
+    expect(map.friday).toHaveLength(1)
+    expect(map.friday![0]!.id).toBe(map.saturday![0]!.id)
   })
 
   it('BOM não quebra o parse', () => {
     const map = parseJaLiturgy('﻿' + sample)
-    expect(map.sunday).toHaveLength(3)
+    expect(map.saturday).toHaveLength(3)
   })
 
   it('sem [Geral] lança', () => {
@@ -76,7 +76,7 @@ describe('parseJaLiturgy', () => {
   it('extensão decide tipo', () => {
     expect(
       parseJaLiturgy(sample.replaceAll('video.mp4', 'slides.pptx'))
-        .sunday![1]!.type,
+        .saturday![1]!.type,
     ).toBe('presentation')
   })
 })

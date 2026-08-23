@@ -10,14 +10,16 @@ import type { LiturgyItem, LiturgyItemType, LiturgyWeekday } from '../types/litu
 
 export type JaLiturgy = Partial<Record<LiturgyWeekday, LiturgyItem[]>>
 
+/** Dia do .ja do Delphi: 1=domingo .. 7=sábado (NOMES_DIAS em
+ * fmCopiaLiturgiaDia.pas; chave 7 = Escola Sabatina de sábado). */
 const JA_DAYS: Record<number, LiturgyWeekday> = {
-  1: 'monday',
-  2: 'tuesday',
-  3: 'wednesday',
-  4: 'thursday',
-  5: 'friday',
-  6: 'saturday',
-  7: 'sunday',
+  1: 'sunday',
+  2: 'monday',
+  3: 'tuesday',
+  4: 'wednesday',
+  5: 'thursday',
+  6: 'friday',
+  7: 'saturday',
 }
 
 const SECTION_RE = /^\[(.+)\]$/
