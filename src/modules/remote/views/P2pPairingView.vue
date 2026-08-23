@@ -126,7 +126,7 @@ onUnmounted(() => {
 
       <!-- Passo 1: gerar QR -->
       <div
-        v-if="step === 'idle' || step === 'offer'"
+        v-if="step !== 'error'"
         class="p2p-pairing__step"
       >
         <p class="p2p-pairing__hint">
