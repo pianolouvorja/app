@@ -34,6 +34,7 @@ import {
   todayWeekday,
 } from '../services/liturgy-preferences'
 import { clearLiturgyWebRuntime } from '../services/liturgy-web-runtime'
+import { parseJaLiturgy } from '../services/liturgy-ja-import'
 import {
   DEFAULT_LITURGY_ITEM_DRAFT,
   DEFAULT_MOMENT_DURATION_MS,
@@ -344,6 +345,41 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     if (!book) return []
     return Array.from({ length: book.chapters }, (_, index) => index + 1)
   })
+
+  /**
+   * Importa liturgia .ja (LouvorJA Delphi) fazendo merge por dia.
+   * Itens duplicados (mesmo tipo+nome+musicaId/filePath) são pulados.
+   * Retorna { added, skipped, days }.
+   */
+  function importJaDays(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
+    let added = 0
+    let skipped = 0
+    const days: string[] = []
+    for (const [day, items] of Object.entries(parsed)) {
+      const weekday = day as LiturgyWeekday
+      const existing = weekdays.value[weekday] ?? []
+      const next = [...existing]
+      for (const item of items ?? []) {
+        const dup = existing.some(
+          (e) =>
+            e.type === item.type &&
+            e.name === item.name &&
+            e.musicId === item.musicId &&
+            e.filePath === item.filePath,
+        )
+        if (dup) {
+          skipped++
+          continue
+        }
+        next.push(item)
+        added++
+      }
+      weekdays.value = { ...weekdays.value, [weekday]: next }
+      days.push(day)
+    }
+    persist()
+    return { added, skipped, days }
+  }
 
   function persist() {
     saveLiturgyState({
@@ -1114,6 +1150,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     verseChapterOptions,
     hydrate,
     selectDay,
+    importJaDays,
     selectCustomLiturgy,
     setSessionStartFromInput,
     clearSessionStart,

@@ -77,6 +77,7 @@ const {
   reorderItems,
   selectItem,
   playItemOnScreens,
+  importJa,
   toggleItemDone,
   openCustomDialog,
   closeCustomDialog,
@@ -170,6 +171,19 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           />
 
           <div class="liturgy-view__toolbar-actions">
+            <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.importJa')"
+              @click="importJa"
+            >
+              <i
+                class="ti ti-file-import"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.importJa') }}</span>
+            </button>
+
             <button
               v-if="currentItems.length > 0"
               type="button"

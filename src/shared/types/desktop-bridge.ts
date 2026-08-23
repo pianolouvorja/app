@@ -6,6 +6,8 @@ export type ProgressPayload = {
 }
 
 export type WorkspaceApi = {
+  /** Lê um arquivo de texto arbitrário (UTF-8) escolhido via openFile. */
+  readTextFile?: (path: string) => Promise<string | null>
   getRecord: <T = unknown>(filename: string) => Promise<T | null>
   saveRecord: (filename: string, data: unknown) => Promise<boolean>
   clear: () => Promise<boolean>

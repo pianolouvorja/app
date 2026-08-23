@@ -7,6 +7,8 @@ import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import { formatMomentDuration } from '../services/liturgy-item-helpers'
+import { parseJaLiturgy } from '../services/liturgy-ja-import'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
 import type { LiturgyDayKey } from '../types/liturgy'
 import { useLiturgyClock } from './useLiturgyClock'
@@ -149,6 +151,47 @@ export function useLiturgy() {
     store.selectDay(day)
   }
 
+  /** Importa liturgia .ja do LouvorJA Delphi (merge por dia). */
+  async function onImportJa() {
+    const bridge = getDesktopBridge()
+    if (!bridge?.dialog?.openFile) {
+      window.alert(t('liturgy.importJaDesktopOnly'))
+      return
+    }
+    const file = await bridge.dialog.openFile({
+      title: t('liturgy.importJa'),
+      filters: [{ name: 'LouvorJA (.ja)', extensions: ['ja'] }],
+    })
+    const path = Array.isArray(file) ? file[0] : file
+    if (!path) return
+    let raw: string
+    try {
+      raw = await bridge.workspace.readTextFile?.(path).then(
+        (r) => r,
+        () => null as unknown as string,
+      )
+      if (raw == null) {
+        window.alert(t('liturgy.importJaReadError'))
+        return
+      }
+    } catch {
+      window.alert(t('liturgy.importJaReadError'))
+      return
+    }
+    let parsed
+    try {
+      parsed = parseJaLiturgy(raw)
+    } catch {
+      window.alert(t('liturgy.importJaInvalid'))
+      return
+    }
+    const { added, skipped, days } = store.importJaDays(parsed)
+    lastActionMessageKey.value = null
+    window.alert(
+      t('liturgy.importJaDone', { added, skipped, days: days.length }),
+    )
+  }
+
   function onManageTeam() {
     window.alert(t('liturgy.team.comingSoon'))
   }
@@ -255,6 +298,7 @@ export function useLiturgy() {
     deletionLocked,
     videoProjectionItemId,
     selectDay: onSelectDay,
+    importJa: onImportJa,
     selectCustomLiturgy: store.selectCustomLiturgy,
     setSessionStartFromInput: store.setSessionStartFromInput,
     clearSessionStart: store.clearSessionStart,

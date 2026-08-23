@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 
 /**
@@ -24,4 +26,18 @@ export function registerDialogIpc() {
       return null
     }
   })
+}
+
+export function registerReadTextFileIpc() {
+  ipcMain.handle(
+    'dialog:read-text-file',
+    async (_event, path) => {
+      try {
+        return await readFile(String(path), 'utf8')
+      } catch (error) {
+        console.error('[ipc] dialog:read-text-file', error)
+        return null
+      }
+    },
+  )
 }
