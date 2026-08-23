@@ -12,6 +12,7 @@ import {
 } from '../workspace.mjs'
 import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
+import { probeMediaDurationMsMain } from './media-probe.mjs'
 import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
@@ -396,5 +397,14 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('media:delete', (_event, mediaType, filename) => {
     return deleteMediaFile(mediaType, filename)
+  })
+
+  ipcMain.handle('media:probe-duration', async (_event, path) => {
+    try {
+      return await probeMediaDurationMsMain(String(path ?? ''))
+    } catch (error) {
+      console.error('[ipc] media:probe-duration', error)
+      return 0
+    }
   })
 }

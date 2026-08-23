@@ -166,7 +166,11 @@ contextBridge.exposeInMainWorld('louvorja', {
       subscribe('projection:video-targets-changed', callback),
   },
 
-  updater: {
+    media: {
+    probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
+  },
+
+updater: {
     check: () => ipcRenderer.invoke('updater:check'),
     download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
