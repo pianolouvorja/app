@@ -84,7 +84,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   workspace: {
-    readTextFile: (path) => ipcRenderer.invoke('dialog:read-text-file', path),
+    readBinaryFile: (path) => ipcRenderer.invoke('dialog:read-binary-file', path),
     getRecord: (filename) => ipcRenderer.invoke('workspace:get-record', filename),
     saveRecord: (filename, data) => ipcRenderer.invoke('workspace:save-record', filename, data),
     clear: () => ipcRenderer.invoke('workspace:clear'),

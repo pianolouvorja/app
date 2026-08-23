@@ -11,7 +11,7 @@ import {
   writeWorkspaceRecord,
 } from '../workspace.mjs'
 import { registerDisplayIpc } from './displays.mjs'
-import { registerDialogIpc, registerReadTextFileIpc } from './dialog.mjs'
+import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
@@ -52,7 +52,7 @@ import {
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
   registerDialogIpc()
-  registerReadTextFileIpc()
+  registerReadBinaryFileIpc()
   registerProjectionCapturePermissions()
 
   ipcMain.handle('projection:open-url', async (_event, payload) => {

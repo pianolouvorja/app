@@ -7,7 +7,7 @@ import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import { formatMomentDuration } from '../services/liturgy-item-helpers'
-import { parseJaLiturgy } from '../services/liturgy-ja-import'
+import { decodeJaBytes, parseJaLiturgy } from '../services/liturgy-ja-import'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
 import type { LiturgyDayKey } from '../types/liturgy'
@@ -152,35 +152,38 @@ export function useLiturgy() {
   }
 
   /** Importa liturgia .ja do LouvorJA Delphi (merge por dia). */
+  /**
+   * Importa liturgia .ja do LouvorJA Delphi (merge por dia).
+   * Desktop: file dialog nativo via IPC. Web: <input type="file">.
+   */
   async function onImportJa() {
+    let bytes: Uint8Array | null = null
     const bridge = getDesktopBridge()
-    if (!bridge?.dialog?.openFile) {
-      window.alert(t('liturgy.importJaDesktopOnly'))
-      return
-    }
-    const file = await bridge.dialog.openFile({
-      title: t('liturgy.importJa'),
-      filters: [{ name: 'LouvorJA (.ja)', extensions: ['ja'] }],
-    })
-    const path = Array.isArray(file) ? file[0] : file
-    if (!path) return
-    let raw: string
-    try {
-      raw = await bridge.workspace.readTextFile?.(path).then(
-        (r) => r,
-        () => null as unknown as string,
-      )
-      if (raw == null) {
-        window.alert(t('liturgy.importJaReadError'))
-        return
+    if (bridge?.dialog?.openFile && bridge.workspace.readBinaryFile) {
+      // Desktop (Electron): diálogo nativo + leitura via IPC (decodifica
+      // UTF-8/ANSI no main).
+      const file = await bridge.dialog.openFile({
+        title: t('liturgy.importJa'),
+        filters: [{ name: 'LouvorJA (.ja)', extensions: ['ja'] }],
+      })
+      const path = Array.isArray(file) ? file[0] : file
+      if (!path) return
+      try {
+        bytes = await bridge.workspace.readBinaryFile(path)
+      } catch {
+        bytes = null
       }
-    } catch {
+    } else {
+      // Web: input file com FileReader (decodifica no renderer).
+      bytes = await pickJaFileWeb()
+    }
+    if (!bytes) {
       window.alert(t('liturgy.importJaReadError'))
       return
     }
     let parsed
     try {
-      parsed = parseJaLiturgy(raw)
+      parsed = parseJaLiturgy(decodeJaBytes(bytes))
     } catch {
       window.alert(t('liturgy.importJaInvalid'))
       return
@@ -190,6 +193,27 @@ export function useLiturgy() {
     window.alert(
       t('liturgy.importJaDone', { added, skipped, days: days.length }),
     )
+  }
+
+  /** Abre seletor de arquivo .ja no browser e retorna os bytes. */
+  function pickJaFileWeb(): Promise<Uint8Array | null> {
+    return new Promise((resolve) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.ja,text/plain'
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) {
+          resolve(null)
+          return
+        }
+        file.arrayBuffer().then(
+          (buf) => resolve(new Uint8Array(buf)),
+          () => resolve(null),
+        )
+      }
+      input.click()
+    })
   }
 
   function onManageTeam() {

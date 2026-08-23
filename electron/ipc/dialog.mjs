@@ -28,23 +28,15 @@ export function registerDialogIpc() {
   })
 }
 
-export function registerReadTextFileIpc() {
-  ipcMain.handle(
-    'dialog:read-text-file',
-    async (_event, path) => {
-      try {
-        const buffer = await readFile(String(path))
-        const bytes = new Uint8Array(buffer)
-        // .ja do Delphi vem em ANSI (cp1252); tenta UTF-8 estrito primeiro.
-        try {
-          return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-        } catch {
-          return new TextDecoder('windows-1252').decode(bytes)
-        }
-      } catch (error) {
-        console.error('[ipc] dialog:read-text-file', error)
-        return null
-      }
-    },
-  )
+/** Lê bytes de arquivo escolhido (o decode UTF-8/ANSI fica no renderer). */
+export function registerReadBinaryFileIpc() {
+  ipcMain.handle('dialog:read-binary-file', async (_event, path) => {
+    try {
+      const buffer = await readFile(String(path))
+      return new Uint8Array(buffer)
+    } catch (error) {
+      console.error('[ipc] dialog:read-binary-file', error)
+      return null
+    }
+  })
 }
