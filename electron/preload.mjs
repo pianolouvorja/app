@@ -140,6 +140,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteReload: () => ipcRenderer.invoke('projection:remote-reload'),
     toggleSiteScreens: () => ipcRenderer.invoke('projection:toggle-site-screens'),
     toggleVideoScreens: () => ipcRenderer.invoke('projection:toggle-video-screens'),
+    // Player HTML (local-video/youtube) avisa que o vídeo acabou → autoclose.
+    notifyVideoEnded: () => ipcRenderer.send('projection:video-ended'),
     remoteImageNext: () => ipcRenderer.invoke('projection:remote-image-next'),
     remoteImagePrev: () => ipcRenderer.invoke('projection:remote-image-prev'),
     getImageSlideState: () =>

@@ -72,6 +72,16 @@
           video.style.display = 'none'
         })
 
+        // Autoclose: vídeo acabou → fecha janelas de projeção sozinho
+        // (mesmo comportamento do player de áudio do renderer).
+        video.addEventListener('ended', () => {
+          try {
+            window.louvorja?.projection?.notifyVideoEnded?.()
+          } catch (e) {
+            // sem preload: janela fecha só na mão
+          }
+        })
+
         const play = () => {
           void video.play().catch(() => {})
         }

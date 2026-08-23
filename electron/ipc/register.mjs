@@ -74,6 +74,15 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
+  ipcMain.on('projection:video-ended', () => {
+    try {
+      closeWebProjectionWindows()
+    } catch (error) {
+      console.error('[ipc] projection:video-ended', error)
+    }
+  })
+
   ipcMain.handle('projection:close-url', () => {
     try {
       closeWebProjectionWindows()
