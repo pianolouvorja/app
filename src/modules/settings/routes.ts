@@ -46,6 +46,15 @@ export const settingsRoutes: RouteRecordRaw[] = [
           navKey: 'settings',
         },
       },
+      // Controle remoto — emparelhamento com o APK (WS :7071).
+      {
+        path: 'remote',
+        name: 'settings-remote',
+        component: RemotePairingView,
+        meta: {
+          navKey: 'settings',
+        },
+      },
     ],
   },
 ]
