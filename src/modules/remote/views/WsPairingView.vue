@@ -13,6 +13,7 @@ const step = ref<Step>('idle')
 const errorMsg = ref('')
 const log = ref<string[]>([])
 const wsUrl = ref('')
+const manualUrl = ref('')
 
 let video: HTMLVideoElement | null = null
 let stream: MediaStream | null = null
@@ -93,6 +94,14 @@ function connectWs(url: string) {
   }
 }
 
+function submitManual() {
+  const url = manualUrl.value.trim()
+  if (!url) return
+  const full = url.startsWith('ws://') ? url : `ws://${url}`
+  stopScan()
+  connectWs(full)
+}
+
 function stopScan() {
   if (scanTimer) { clearInterval(scanTimer); scanTimer = null }
   stream?.getTracks().forEach((track) => track.stop())
@@ -106,6 +115,7 @@ function reset() {
   step.value = 'idle'
   log.value = []
   wsUrl.value = ''
+  manualUrl.value = ''
   errorMsg.value = ''
 }
 
@@ -135,6 +145,23 @@ onUnmounted(() => {
           @click="startScan"
         >
           {{ t('settings.remote.wsStart') }}
+        </button>
+        <p class="ws-pairing__hint ws-pairing__hint--small">
+          {{ t('settings.remote.wsManualHint') }}
+        </p>
+        <input
+          v-model="manualUrl"
+          type="text"
+          class="ws-pairing__input mono"
+          :placeholder="t('settings.remote.wsManualPlaceholder')"
+          @keyup.enter="submitManual"
+        >
+        <button
+          type="button"
+          class="ws-pairing__btn ws-pairing__btn--ghost"
+          @click="submitManual"
+        >
+          {{ t('settings.remote.wsManualApply') }}
         </button>
       </template>
 
@@ -253,6 +280,20 @@ onUnmounted(() => {
   background: transparent;
   border: 1px solid rgb(var(--v-theme-outline));
   color: inherit;
+}
+
+.ws-pairing__input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgb(var(--v-theme-outline));
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.ws-pairing__hint--small {
+  font-size: 0.8rem;
+  opacity: 0.6;
 }
 
 .ws-pairing__url {
