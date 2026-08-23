@@ -66,7 +66,7 @@ function copyUrl() {
       <span class="status-dot" />
       {{ clientCount > 0
         ? t('settings.remote.clientConnected', {
-            device: `Piano LouvorJA${clientAddress ? ` • ${clientAddress}` : ''}`,
+            device: clientAddress ?? 'Piano LouvorJA',
           })
         : t('settings.remote.waitingClient') }}
     </div>

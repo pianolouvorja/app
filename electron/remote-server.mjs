@@ -56,8 +56,11 @@ export async function startRemoteServer(wss, contents) {
 
   const clientIdentity = () => {
     const first = clients.keys().next().value
-    const address = first?._socket?.remoteAddress ?? null
-    return address?.replace(/^::ffff:/, '') ?? null
+    if (!first) return null
+    const entry = clients.get(first)
+    const address = first._socket?.remoteAddress?.replace(/^::ffff:/, '') ?? null
+    if (entry?.device && address) return `${entry.device} • ${address}`
+    return entry?.device ?? address ?? null
   }
 
   const notifyClients = () => {
@@ -93,6 +96,7 @@ export async function startRemoteServer(wss, contents) {
     const entry = {
       aliveAt: Date.now(),
       authed: false,
+      device: null,
       timer: setInterval(() => {
         if (Date.now() - entry.aliveAt > HEARTBEAT_TIMEOUT_MS + HEARTBEAT_MS) {
           ws.terminate()
@@ -115,6 +119,17 @@ export async function startRemoteServer(wss, contents) {
       if (msg?.v !== 1) return
 
       switch (msg.type) {
+        case 'hello': {
+          // APK identifica o aparelho logo após conectar.
+          const device = typeof msg.device === 'string' ? msg.device : null
+          const appVersion =
+            typeof msg.appVersion === 'string' ? msg.appVersion : null
+          if (device) {
+            entry.device = appVersion ? `${device} (${appVersion})` : device
+            notifyClients()
+          }
+          return
+        }
         case 'ping':
           send(ws, { v: 1, type: 'pong' })
           return

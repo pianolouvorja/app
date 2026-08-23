@@ -120,6 +120,8 @@ export default {
       address: 'Dirección',
       token: 'Token',
       copyLink: 'Copiar enlace',
+      waitingClient: 'Esperando control remoto…',
+      clientConnected: '{device} conectado',
     },
   },
 }

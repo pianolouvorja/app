@@ -131,6 +131,8 @@ export default {
       address: 'Endereço',
       token: 'Token',
       copyLink: 'Copiar link',
+      waitingClient: 'Aguardando controle remoto…',
+      clientConnected: '{device} conectado',
     },
   },
 }
