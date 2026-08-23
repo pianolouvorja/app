@@ -10,15 +10,15 @@ export const LITURGY_WEEKDAYS = [
 
 export type LiturgyWeekday = (typeof LITURGY_WEEKDAYS)[number]
 
-/** Ordem das chips no Stitch: seg→sáb, depois domingo. */
+/** Ordem das chips no Stitch: dom→sáb (semana litúrgica). */
 export const LITURGY_DAY_TAB_ORDER: LiturgyWeekday[] = [
+  'sunday',
   'monday',
   'tuesday',
   'wednesday',
   'thursday',
   'friday',
   'saturday',
-  'sunday',
 ]
 
 export type LiturgyDayKey = LiturgyWeekday | 'custom'
