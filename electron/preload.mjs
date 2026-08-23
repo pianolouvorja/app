@@ -102,6 +102,7 @@ contextBridge.exposeInMainWorld('louvorja', {
       ipcRenderer.invoke('media:download', url, mediaType, filename),
     check: (mediaType, filename) => ipcRenderer.invoke('media:check', mediaType, filename),
     delete: (mediaType, filename) => ipcRenderer.invoke('media:delete', mediaType, filename),
+    probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },
 
   displays: {
@@ -166,11 +167,7 @@ contextBridge.exposeInMainWorld('louvorja', {
       subscribe('projection:video-targets-changed', callback),
   },
 
-    media: {
-    probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
-  },
-
-updater: {
+  updater: {
     check: () => ipcRenderer.invoke('updater:check'),
     download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
