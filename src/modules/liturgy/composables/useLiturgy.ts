@@ -10,6 +10,7 @@ import { formatMomentDuration } from '../services/liturgy-item-helpers'
 import { decodeJaBytes, parseJaLiturgy } from '../services/liturgy-ja-import'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
+import { useScheduledStore } from '../stores/useScheduledStore'
 import type { LiturgyDayKey } from '../types/liturgy'
 import { useLiturgyClock } from './useLiturgyClock'
 
@@ -149,6 +150,51 @@ export function useLiturgy() {
 
   function onSelectDay(day: LiturgyDayKey) {
     store.selectDay(day)
+  }
+
+  /** Importa itens agendados (DATAPACKET XML) do Delphi: 2 arquivos. */
+  async function onImportScheduled() {
+    const scheduled = useScheduledStore()
+    const bridge = getDesktopBridge()
+    async function readXmlFile(): Promise<{ name: string; text: string } | null> {
+      if (bridge?.dialog?.openFile && bridge.workspace.readBinaryFile) {
+        const file = await bridge.dialog.openFile({
+          title: t('liturgy.scheduled.import'),
+          filters: [{ name: 'XML (Delphi)', extensions: ['xml'] }],
+        })
+        const path = Array.isArray(file) ? file[0] : file
+        if (!path) return null
+        try {
+          const bytes = await bridge.workspace.readBinaryFile(path)
+          if (!bytes) return null
+          return { name: path, text: new TextDecoder().decode(bytes) }
+        } catch {
+          return null
+        }
+      }
+      // Web: input file
+      return await new Promise((resolve) => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.xml'
+        input.onchange = () => {
+          const f = input.files?.[0]
+          if (!f) { resolve(null); return }
+          const reader = new FileReader()
+          reader.onload = () => resolve({ name: f.name, text: String(reader.result) })
+          reader.onerror = () => resolve(null)
+          reader.readAsText(f)
+        }
+        input.click()
+      })
+    }
+
+    const cats = await readXmlFile()
+    if (!cats) return
+    const items = await readXmlFile()
+    const n = scheduled.importFromDelphi(cats.text, items?.text ?? null)
+    lastActionMessageKey.value = null
+    window.alert(t('liturgy.scheduled.imported', { count: n }))
   }
 
   /** Importa liturgia .ja do LouvorJA Delphi (merge por dia). */
@@ -333,6 +379,7 @@ export function useLiturgy() {
     videoProjectionItemId,
     selectDay: onSelectDay,
     importJa: onImportJa,
+    importScheduled: onImportScheduled,
     selectCustomLiturgy: store.selectCustomLiturgy,
     setSessionStartFromInput: store.setSessionStartFromInput,
     clearSessionStart: store.clearSessionStart,

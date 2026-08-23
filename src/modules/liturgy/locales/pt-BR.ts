@@ -13,6 +13,10 @@ export default {
     importJaOverwriteTitle: 'Itens duplicados detectados',
     importJaOverwriteAsk: '{count} item(ns) do arquivo já existem na liturgia. Sobrescrever os dias afetados com o conteúdo do arquivo? (Cancelar = manter existentes e adicionar só os novos)',
     importJaOverwritten: 'Liturgia sobrescrita: {added} itens em {days} dia(s).',
+    scheduled: {
+      import: 'Importar itens agendados',
+      imported: 'Importados {count} itens agendados',
+    },
     clearLiturgy: 'Apagar liturgia',
     lockDeletions: 'Bloquear edição e exclusões',
     unlockDeletions: 'Desbloquear edição e exclusões',

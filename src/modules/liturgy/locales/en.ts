@@ -13,6 +13,10 @@ export default {
     importJaOverwriteTitle: 'Duplicate items detected',
     importJaOverwriteAsk: '{count} item(s) from the file already exist. Overwrite the affected days with the file contents? (Cancel = keep existing and add only new ones)',
     importJaOverwritten: 'Liturgy overwritten: {added} items across {days} day(s).',
+    scheduled: {
+      import: 'Import scheduled items',
+      imported: 'Imported {count} scheduled items',
+    },
     clearLiturgy: 'Clear liturgy',
     lockDeletions: 'Lock editing and deletions',
     unlockDeletions: 'Unlock editing and deletions',

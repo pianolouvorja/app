@@ -24,6 +24,7 @@ export const USER_PREFERENCE_KEYS = {
   randomConfig: 'random.config',
   randomSession: 'random.session',
   liturgyState: 'liturgy.state',
+  scheduledState: 'scheduled.state',
   language: 'language',
 } as const
 

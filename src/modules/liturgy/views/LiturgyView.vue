@@ -78,6 +78,7 @@ const {
   selectItem,
   playItemOnScreens,
   importJa,
+  importScheduled,
   toggleItemDone,
   openCustomDialog,
   closeCustomDialog,
@@ -182,6 +183,19 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
                 aria-hidden="true"
               />
               <span>{{ t('liturgy.importJa') }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.scheduled.import')"
+              @click="importScheduled"
+            >
+              <i
+                class="ti ti-calendar-down"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.scheduled.import') }}</span>
             </button>
 
             <button
