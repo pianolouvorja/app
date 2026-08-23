@@ -125,6 +125,17 @@ export default {
     },
 
     remote: {
+      p2pTitle: 'Controle via P2P (QR)',
+      p2pHint1: '1. Toque em iniciar e escaneie o QR com o APK — o APK vai mostrar um QR de resposta.',
+      p2pHint2: '2. Aponte a webcam da tela pro QR do celular (ou cole o texto da resposta abaixo).',
+      p2pStart: 'Iniciar pareamento',
+      p2pOfferReady: 'QR pronto — escaneie com o APK',
+      p2pNoCamera: 'Sem webcam — cole a resposta manualmente',
+      p2pManualPlaceholder: 'Cole aqui o texto do QR exibido no APK',
+      p2pManualApply: 'Aplicar resposta',
+      p2pBadAnswer: 'Resposta inválida',
+      p2pConnected: 'Conectado!',
+      p2pTestPing: 'Enviar teste',
       title: 'Controle Remoto',
       pairingDescription: 'Escaneie o QR no app Piano LouvorJA do celular (Configurações → Controle Remoto) ou digite o endereço e o token.',
       unavailable: 'Servidor de controle remoto indisponível nesta sessão.',
