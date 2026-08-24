@@ -73,11 +73,18 @@ export function installRemoteLiturgyBridge({ router }) {
   // distintos — media.open com id da API dá trackMissing).
   let musicIndex: Awaited<ReturnType<typeof loadAlbumMusicIndex>> | null = null
   const searchMusic = async (query: string) => {
-    if (!musicIndex || musicIndex.length === 0) {
-      musicIndex = await loadAlbumMusicIndex().catch(() => [])
+    try {
+      if (!musicIndex || musicIndex.length === 0) {
+        musicIndex = await loadAlbumMusicIndex()
+      }
+      if (query.length === 0) return []
+      return filterAlbumMusicIndex(musicIndex, query)
+    } catch (error) {
+      // Índice indisponível (sem cache local + API fora) NÃO pode derrubar
+      // o bridge — loga e devolve vazio (UI mostra 'sem resultados').
+      console.warn('[remote] media.search falhou:', error)
+      return []
     }
-    if (query.length === 0) return []
-    return filterAlbumMusicIndex(musicIndex, query)
   }
 
   const modules = createModuleHandlers({

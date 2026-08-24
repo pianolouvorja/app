@@ -172,7 +172,12 @@ async function executeBible(
     case 'bible.open': {
       const bookId = msg.bookId
       if (!isNum(bookId)) return false
-      const book = bible.books.value.find((b) => b.id === bookId)
+      // readField: pinia setup-store desembrulha refs (books.value não existe).
+      const books = readField<Array<{ id: number; chapters: number }>>(
+        bible,
+        'books',
+      ) ?? []
+      const book = books.find((b) => b.id === bookId)
       if (!book) return false
       const chapter = isNum(msg.chapter) ? msg.chapter : 1
       if (chapter < 1 || chapter > book.chapters) return false
