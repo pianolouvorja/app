@@ -154,6 +154,9 @@ export async function startRemoteServer(wss, contents) {
               typeof msg.positionMs === 'number' ? msg.positionMs : undefined,
             mode: typeof msg.mode === 'string' ? msg.mode : undefined,
             hymnId: typeof msg.hymnId === 'number' ? msg.hymnId : undefined,
+            musicId: typeof msg.musicId === 'number' ? msg.musicId : undefined,
+            albumId:
+              typeof msg.albumId === 'number' ? msg.albumId : undefined,
             versionId:
               typeof msg.versionId === 'number' ? msg.versionId : undefined,
             bookId: typeof msg.bookId === 'number' ? msg.bookId : undefined,
@@ -163,6 +166,12 @@ export async function startRemoteServer(wss, contents) {
             index: typeof msg.index === 'number' ? msg.index : undefined,
             durationMs:
               typeof msg.durationMs === 'number' ? msg.durationMs : undefined,
+            name: typeof msg.name === 'string' ? msg.name : undefined,
+            style: typeof msg.style === 'string' ? msg.style : undefined,
+            showSeconds:
+              typeof msg.showSeconds === 'boolean' ? msg.showSeconds : undefined,
+            format24h:
+              typeof msg.format24h === 'boolean' ? msg.format24h : undefined,
           })
           return
         }

@@ -90,7 +90,20 @@ interface RandomStoreLike {
 
 const RANDOM_MODES = new Set(['names', 'numbers'])
 
+const MEDIA_MODES = new Set(['audio', 'instrumental', 'no_audio'])
+
+type OpenMusicPlayer = (params: {
+  musicId: number
+  mode: string
+  albumId: number | null
+}) => Promise<{ ok: boolean; messageKey?: string } | { ok: boolean } | object>
+
+interface MediaStoreLike {
+  openMusicPlayer: OpenMusicPlayer
+}
+
 export interface ModuleHandlerDeps {
+  media?: MediaStoreLike
   bible?: BibleStoreLike
   timer?: TimerStoreLike
   countdown?: CountdownStoreLike
@@ -233,6 +246,33 @@ function snapshotCountdown(
   }
 }
 
+async function executeMedia(
+  media: MediaStoreLike,
+  action: string,
+  msg: Record<string, unknown>,
+): Promise<boolean> {
+  switch (action) {
+    case 'media.open': {
+      const musicId = msg.musicId
+      if (!isNum(musicId) || musicId <= 0) return false
+      const mode = msg.mode
+      if (mode !== undefined && (typeof mode !== 'string' || !MEDIA_MODES.has(mode))) {
+        return false
+      }
+      const albumId = msg.albumId
+      if (albumId !== undefined && !isNum(albumId)) return false
+      const result = (await media.openMusicPlayer({
+        musicId,
+        mode: mode ?? 'audio',
+        albumId: isNum(albumId) ? albumId : null,
+      })) as { ok?: boolean } | object
+      return (result as { ok?: boolean }).ok === true
+    }
+    default:
+      return false
+  }
+}
+
 async function executeClock(
   clock: ClockStoreLike,
   action: string,
@@ -338,6 +378,9 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
   return {
     async execute(namespace, action, msg) {
       try {
+        if (namespace === 'media' && deps.media) {
+          return executeMedia(deps.media, action, msg)
+        }
         if (namespace === 'bible' && deps.bible) {
           return executeBible(deps.bible, action, msg)
         }

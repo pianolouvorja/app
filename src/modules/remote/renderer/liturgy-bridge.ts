@@ -14,6 +14,7 @@ import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
 import { resolveMediaTarget } from './media-target'
 import { createModuleHandlers } from './module-handlers'
+import { openMusicPlayer } from '../../media/services/open-music-player'
 
 import { useLiturgyStore } from '../../liturgy/stores/useLiturgyStore'
 import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
@@ -47,7 +48,7 @@ const LITURGY_ACTIONS = new Set([
 ])
 
 /** Namespaces v2 (controle remoto total — spec Obsidian v2). */
-const V2_NAMESPACES = new Set(['bible', 'timer', 'countdown', 'clock', 'random'])
+const V2_NAMESPACES = new Set(['media', 'bible', 'timer', 'countdown', 'clock', 'random'])
 
 export function installRemoteLiturgyBridge({ router }) {
   const liturgy = useLiturgyStore()
@@ -60,6 +61,7 @@ export function installRemoteLiturgyBridge({ router }) {
   // Cast: pinia expõe UnwrapRef que não é atribuível aos tipos estruturais
   // (RefLike) sem cast — a superfície usada é exatamente a declarada.
   const modules = createModuleHandlers({
+    media: { openMusicPlayer: openMusicPlayer as never },
     bible: useBibleStore() as never,
     timer: useTimerStore() as never,
     countdown: useCountdownStore() as never,
@@ -253,8 +255,15 @@ export function installRemoteLiturgyBridge({ router }) {
           if (typeof msg.mode !== 'string') return false
           await player.switchMode(msg.mode)
           return true
-        case 'player.open':
-          return false // abrir hino por id: fora do escopo do bridge v1
+        case 'player.open': {
+          // v2: abrir hino/faixa por id (compat v1 — hymnId → musicId).
+          const musicId = msg.hymnId
+          if (typeof musicId !== 'number') return false
+          return modules.execute('media', 'media.open', {
+            musicId,
+            mode: msg.mode,
+          })
+        }
         default:
           return false
       }

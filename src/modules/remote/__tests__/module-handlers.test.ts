@@ -319,6 +319,55 @@ describe('createModuleHandlers — random', () => {
   })
 })
 
+describe('createModuleHandlers — media (fase 3)', () => {
+  it('media.open chama openMusicPlayer com musicId+modo+projecao', async () => {
+    const openMusicPlayer = vi.fn().mockResolvedValue({ ok: true })
+    const h = createModuleHandlers({ media: { openMusicPlayer } })
+    const ok = await h.execute('media', 'media.open', {
+      musicId: 378,
+      mode: 'instrumental',
+    })
+    expect(ok).toBe(true)
+    expect(openMusicPlayer).toHaveBeenCalledWith({
+      musicId: 378,
+      mode: 'instrumental',
+      albumId: null,
+    })
+  })
+
+  it('media.open com musicId invalido retorna false', async () => {
+    const openMusicPlayer = vi.fn().mockResolvedValue({ ok: true })
+    const h = createModuleHandlers({ media: { openMusicPlayer } })
+    expect(await h.execute('media', 'media.open', {})).toBe(false)
+    expect(await h.execute('media', 'media.open', { musicId: 0 })).toBe(false)
+    expect(openMusicPlayer).not.toHaveBeenCalled()
+  })
+
+  it('media.open com resultado !ok retorna false', async () => {
+    const openMusicPlayer = vi
+      .fn()
+      .mockResolvedValue({ ok: false, messageKey: 'x' })
+    const h = createModuleHandlers({ media: { openMusicPlayer } })
+    expect(
+      await h.execute('media', 'media.open', { musicId: 5, mode: 'audio' }),
+    ).toBe(false)
+  })
+
+  it('media.open com modo invalido retorna false', async () => {
+    const h = createModuleHandlers({
+      media: { openMusicPlayer: vi.fn() },
+    })
+    expect(
+      await h.execute('media', 'media.open', { musicId: 5, mode: 'x' }),
+    ).toBe(false)
+  })
+
+  it('snapshot media retorna null (estado vive no player do bridge)', () => {
+    const h = createModuleHandlers({ media: { openMusicPlayer: vi.fn() } })
+    expect(h.snapshot('media')).toBeNull()
+  })
+})
+
 describe('createModuleHandlers — namespace desconhecido', () => {
   it('execute/snapshot retornam false/null para namespace inexistente', async () => {
     const h = createModuleHandlers({ bible: makeBibleStore() })
