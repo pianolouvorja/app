@@ -100,8 +100,16 @@ type OpenMusicPlayer = (params: {
   albumId: number | null
 }) => Promise<{ ok: boolean; messageKey?: string } | { ok: boolean } | object>
 
+interface AlbumSearchHitLike {
+  musicId: number
+  name: string
+  track: number | null
+}
+
 interface MediaStoreLike {
   openMusicPlayer: OpenMusicPlayer
+  /** Busca no índice local (ids CORRETOS do desktop, não da API pública). */
+  searchMusic?: (query: string) => Promise<AlbumSearchHitLike[]>
 }
 
 export interface ModuleHandlerDeps {
@@ -226,6 +234,9 @@ async function executeTimer(
     case 'timer.clearMarks':
       timer.clearSavedMarks()
       return true
+    case 'timer.toggleProjection':
+      timer.toggleProjection?.()
+      return true
     default:
       return false
   }
@@ -268,6 +279,9 @@ async function executeCountdown(
       countdown.setDurationMs(durationMs)
       return true
     }
+    case 'countdown.toggleProjection':
+      countdown.toggleProjection?.()
+      return true
     default:
       return false
   }
@@ -287,12 +301,25 @@ function snapshotCountdown(
   }
 }
 
+/** Cache da última busca — o ack só carrega ok; o state expõe o resultado. */
+let lastSearchResults: AlbumSearchHitLike[] = []
+
 async function executeMedia(
   media: MediaStoreLike,
   action: string,
   msg: Record<string, unknown>,
 ): Promise<boolean> {
   switch (action) {
+    case 'media.search': {
+      const query = msg.query
+      const search = media.searchMusic
+      if (typeof query !== 'string' || !search) return false
+      // Resultado via ack extras — handler devolve lista no campo `results`
+      // do ack. Como o protocolo só tem ok:boolean, o bridge lê o cache.
+      const hits = await search(query.trim())
+      lastSearchResults = hits.slice(0, 30)
+      return true
+    }
     case 'media.open': {
       const musicId = msg.musicId
       if (!isNum(musicId) || musicId <= 0) return false
@@ -450,6 +477,9 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
       if (namespace === 'timer' && deps.timer) return snapshotTimer(deps.timer)
       if (namespace === 'countdown' && deps.countdown) {
         return snapshotCountdown(deps.countdown)
+      }
+      if (namespace === 'media' && deps.media?.searchMusic) {
+        return { searchResults: lastSearchResults }
       }
       if (namespace === 'clock' && deps.clock) return snapshotClock(deps.clock)
       if (namespace === 'random' && deps.random) {

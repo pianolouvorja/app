@@ -15,6 +15,10 @@ import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { resolveMediaTarget } from './media-target'
 import { createModuleHandlers } from './module-handlers'
 import { openMusicPlayer } from '../../media/services/open-music-player'
+import {
+  loadAlbumMusicIndex,
+  filterAlbumMusicIndex,
+} from '../../albums/services/album-music-search'
 
 import { useLiturgyStore } from '../../liturgy/stores/useLiturgyStore'
 import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
@@ -60,9 +64,28 @@ export function installRemoteLiturgyBridge({ router }) {
   // Módulos v2: bible/timer/countdown com stores reais do desktop.
   // Cast: pinia expõe UnwrapRef que não é atribuível aos tipos estruturais
   // (RefLike) sem cast — a superfície usada é exatamente a declarada.
+  // bible.open valida contra o catálogo de livros — sem bootstrap o
+  // comando falha (ok:false) até alguém abrir o módulo Bíblia no desktop.
+  const bibleStore = useBibleStore()
+  void bibleStore.bootstrap?.().catch(() => {})
+
+  // Busca de hinos com os ids LOCAIS do desktop (a API pública tem ids
+  // distintos — media.open com id da API dá trackMissing).
+  let musicIndex: Awaited<ReturnType<typeof loadAlbumMusicIndex>> | null = null
+  const searchMusic = async (query: string) => {
+    if (!musicIndex || musicIndex.length === 0) {
+      musicIndex = await loadAlbumMusicIndex().catch(() => [])
+    }
+    if (query.length === 0) return []
+    return filterAlbumMusicIndex(musicIndex, query)
+  }
+
   const modules = createModuleHandlers({
-    media: { openMusicPlayer: openMusicPlayer as never },
-    bible: useBibleStore() as never,
+    media: {
+      openMusicPlayer: openMusicPlayer as never,
+      searchMusic,
+    },
+    bible: bibleStore as never,
     timer: useTimerStore() as never,
     countdown: useCountdownStore() as never,
     clock: useClockStore() as never,
@@ -130,6 +153,7 @@ export function installRemoteLiturgyBridge({ router }) {
       countdown: modules.snapshot('countdown') ?? undefined,
       clock: modules.snapshot('clock') ?? undefined,
       random: modules.snapshot('random') ?? undefined,
+      media: modules.snapshot('media') ?? undefined,
     }
   }
 
