@@ -19,6 +19,7 @@ function makeBibleStore() {
     versions: { value: [{ id: 1, abbreviation: 'ARA' }] },
     books: { value: [{ id: 1, name: 'Gênesis', chapters: 50 }] },
     projection: { value: {} },
+    verses: { value: { '3': 'texto do versículo 3' } },
     selectVersion: vi.fn(),
     selectBook: vi.fn(),
     selectChapter: vi.fn(),

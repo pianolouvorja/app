@@ -182,10 +182,14 @@ async function executeBible(
       const chapter = isNum(msg.chapter) ? msg.chapter : 1
       if (chapter < 1 || chapter > book.chapters) return false
       if (isNum(msg.versionId)) bible.selectVersion?.(msg.versionId)
-      bible.selectBook(bookId)
-      bible.selectChapter(chapter)
-      // Versículo inicial opcional — destaca e projeta.
+      await bible.selectBook(bookId)
+      await bible.selectChapter(chapter)
+      // Versículo inicial opcional — destaca e projeta. refreshChapter é
+      // async: selecionar ANTES de o capítulo carregar deixa a seleção
+      // vazia e openProjection falha silenciosamente (verses ainda {}).
       if (isNum(msg.verse) && msg.verse >= 1) {
+        // espera o carregamento do capítulo (refreshChapter interno)
+        await waitForVerse(bible, msg.verse)
         bible.selectVerse(msg.verse)
       }
       return bible.openProjection()
@@ -226,6 +230,21 @@ function snapshotBible(bible: BibleStoreLike): Record<string, unknown> {
       number: b.bookNumber,
     })),
     versions: versions.map((v) => ({ id: v.id, abbreviation: v.abbreviation })),
+  }
+}
+
+/**
+ * Espera até o versículo existir no capítulo carregado (refreshChapter
+ * async) — máx 5s, polling 100ms.
+ */
+async function waitForVerse(
+  bible: BibleStoreLike,
+  verse: number,
+): Promise<void> {
+  for (let i = 0; i < 50; i++) {
+    const verses = readField<Record<string, unknown>>(bible, 'verses')
+    if (verses && verses[String(verse)] != null) return
+    await new Promise((r) => setTimeout(r, 100))
   }
 }
 
