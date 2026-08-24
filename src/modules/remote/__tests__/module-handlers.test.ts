@@ -214,7 +214,7 @@ function makeRandomStore() {
     addName: vi.fn(),
     removeAvailable: vi.fn(),
     clearAvailable: vi.fn(),
-    generateNumberRange: vi.fn(),
+    generateNumberRange: vi.fn(() => true),
     startDraw: vi.fn(),
     cancelDrawAnimation: vi.fn(),
     clearHistory: vi.fn(),
