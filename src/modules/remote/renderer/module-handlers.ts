@@ -155,11 +155,12 @@ async function executeBible(
 }
 
 function snapshotBible(bible: BibleStoreLike): Record<string, unknown> {
+  // Defensivo: store pode não estar hidratado no boot (refs ainda null).
   return {
-    bookId: bible.selectedBookId.value,
-    chapter: bible.selectedChapter.value,
-    selectedVerses: [...bible.selectedVerses.value],
-    isProjecting: bible.isProjecting.value,
+    bookId: bible.selectedBookId?.value ?? null,
+    chapter: bible.selectedChapter?.value ?? null,
+    selectedVerses: [...(bible.selectedVerses?.value ?? [])],
+    isProjecting: bible.isProjecting?.value === true,
   }
 }
 
@@ -196,11 +197,12 @@ async function executeTimer(
 }
 
 function snapshotTimer(timer: TimerStoreLike): Record<string, unknown> {
+  const rt = timer.runtime?.value
   return {
-    status: timer.runtime.value.status,
-    accumulatedMs: timer.runtime.value.accumulatedMs,
-    savedTimesMs: [...(timer.runtime.value.savedTimesMs ?? [])],
-    isProjecting: timer.isProjecting.value,
+    status: rt?.status ?? 'idle',
+    accumulatedMs: rt?.accumulatedMs ?? 0,
+    savedTimesMs: [...(rt?.savedTimesMs ?? [])],
+    isProjecting: timer.isProjecting?.value === true,
   }
 }
 
@@ -236,13 +238,14 @@ async function executeCountdown(
 function snapshotCountdown(
   countdown: CountdownStoreLike,
 ): Record<string, unknown> {
+  const rt = countdown.runtime?.value
   return {
-    status: countdown.runtime.value.status,
-    durationMs: countdown.runtime.value.durationMs,
-    accumulatedMs: countdown.runtime.value.accumulatedMs,
-    finished: countdown.runtime.value.finished,
-    savedTimesMs: [...(countdown.runtime.value.savedTimesMs ?? [])],
-    isProjecting: countdown.isProjecting.value,
+    status: rt?.status ?? 'idle',
+    durationMs: rt?.durationMs ?? 0,
+    accumulatedMs: rt?.accumulatedMs ?? 0,
+    finished: rt?.finished === true,
+    savedTimesMs: [...(rt?.savedTimesMs ?? [])],
+    isProjecting: countdown.isProjecting?.value === true,
   }
 }
 
@@ -308,11 +311,12 @@ async function executeClock(
 }
 
 function snapshotClock(clock: ClockStoreLike): Record<string, unknown> {
+  const cfg = clock.config?.value
   return {
-    style: clock.config.value.style,
-    showSeconds: clock.config.value.showSeconds,
-    format24h: clock.config.value.format24h,
-    isProjecting: clock.isProjecting.value,
+    style: cfg?.style ?? 'digital',
+    showSeconds: cfg?.showSeconds === true,
+    format24h: cfg?.format24h === true,
+    isProjecting: clock.isProjecting?.value === true,
   }
 }
 
@@ -365,12 +369,12 @@ async function executeRandom(
 
 function snapshotRandom(random: RandomStoreLike): Record<string, unknown> {
   return {
-    mode: random.session.value.mode,
-    drawnCount: random.drawn.value.length,
-    availableCount: random.available.value.length,
-    isDrawing: random.runtime.value.isDrawing,
-    currentDisplay: random.runtime.value.currentDisplay,
-    isProjecting: random.isProjecting.value,
+    mode: random.session?.value?.mode ?? 'names',
+    drawnCount: random.drawn?.value?.length ?? 0,
+    availableCount: random.available?.value?.length ?? 0,
+    isDrawing: random.runtime?.value?.isDrawing === true,
+    currentDisplay: random.runtime?.value?.currentDisplay ?? null,
+    isProjecting: random.isProjecting?.value === true,
   }
 }
 
