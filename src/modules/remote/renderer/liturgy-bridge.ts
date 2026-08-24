@@ -312,9 +312,22 @@ export function installRemoteLiturgyBridge({ router }) {
   )
 
   let lastSyncPush = 0
+
+  // v2: progressão de timer/countdown — enquanto algum estiver rodando,
+  // empurra estado a cada 1s (o APK mostra o tempo avançando). Sem isso o
+  // operador vê o tempo congelado no instante do último comando.
+  const progressTicker = setInterval(() => {
+    const timerRunning = modules.snapshot('timer')?.status === 'running'
+    const countdownRunning =
+      modules.snapshot('countdown')?.status === 'running' ||
+      modules.snapshot('countdown')?.finished === true
+    if (timerRunning || countdownRunning) pushState()
+  }, 1000)
+
   pushState()
 
   return () => {
+    clearInterval(progressTicker)
     onUn.command?.()
     onUn.state?.()
     unwatch()
