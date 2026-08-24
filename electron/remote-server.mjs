@@ -145,6 +145,7 @@ export async function startRemoteServer(wss, contents) {
           }
           entry.authed = true
           // Encaminha ao renderer; o ack volta via 'remote:ack'.
+          // Campos v2 (bible/timer/countdown) além dos do v1.
           contents.send('remote:command', {
             id,
             action,
@@ -153,6 +154,15 @@ export async function startRemoteServer(wss, contents) {
               typeof msg.positionMs === 'number' ? msg.positionMs : undefined,
             mode: typeof msg.mode === 'string' ? msg.mode : undefined,
             hymnId: typeof msg.hymnId === 'number' ? msg.hymnId : undefined,
+            versionId:
+              typeof msg.versionId === 'number' ? msg.versionId : undefined,
+            bookId: typeof msg.bookId === 'number' ? msg.bookId : undefined,
+            chapter:
+              typeof msg.chapter === 'number' ? msg.chapter : undefined,
+            verse: typeof msg.verse === 'number' ? msg.verse : undefined,
+            index: typeof msg.index === 'number' ? msg.index : undefined,
+            durationMs:
+              typeof msg.durationMs === 'number' ? msg.durationMs : undefined,
           })
           return
         }

@@ -13,9 +13,13 @@ import { watch } from 'vue'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 
 import { resolveMediaTarget } from './media-target'
+import { createModuleHandlers } from './module-handlers'
 
 import { useLiturgyStore } from '../../liturgy/stores/useLiturgyStore'
 import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
+import { useBibleStore } from '../../bible/stores/useBibleStore'
+import { useTimerStore } from '../../timer/stores/useTimerStore'
+import { useCountdownStore } from '../../countdown/stores/useCountdownStore'
 
 /** Ações conhecidas (espelham RemoteAction do APK). */
 const PLAYER_ACTIONS = new Set([
@@ -40,12 +44,22 @@ const LITURGY_ACTIONS = new Set([
   'liturgy.state',
 ])
 
+/** Namespaces v2 (controle remoto total — spec Obsidian v2). */
+const V2_NAMESPACES = new Set(['bible', 'timer', 'countdown'])
+
 export function installRemoteLiturgyBridge({ router }) {
   const liturgy = useLiturgyStore()
   const player = useMediaPlayer()
   const remoteApi = getDesktopBridge()?.remote
   const projection = getDesktopBridge()?.projection
   if (!remoteApi) return () => {}
+
+  // Módulos v2: bible/timer/countdown com stores reais do desktop.
+  const modules = createModuleHandlers({
+    bible: useBibleStore(),
+    timer: useTimerStore(),
+    countdown: useCountdownStore(),
+  })
 
   const send = (channel, payload) => {
     try {
@@ -102,6 +116,10 @@ export function installRemoteLiturgyBridge({ router }) {
           (liturgy.selectedItemIndex ?? -1) + 1 <
           (liturgy.currentItems?.length ?? 0),
       },
+      // Snapshots v2 — ausentes para peers v1, que ignoram o extra.
+      bible: modules.snapshot('bible') ?? undefined,
+      timer: modules.snapshot('timer') ?? undefined,
+      countdown: modules.snapshot('countdown') ?? undefined,
     }
   }
 
@@ -112,6 +130,12 @@ export function installRemoteLiturgyBridge({ router }) {
     const { action, value } = msg
     const items = liturgy.currentItems ?? []
     const current = liturgy.selectedItemIndex ?? -1
+
+    // 0) Namespaces v2 (bible/timer/countdown) — spec controle remoto total.
+    const namespace = action.split('.')[0]
+    if (V2_NAMESPACES.has(namespace)) {
+      return modules.execute(namespace, action, msg)
+    }
 
     // 1) Liturgia — prioridade (múltiplos monitores + projetor)
     if (LITURGY_ACTIONS.has(action)) {
