@@ -14,12 +14,16 @@ export interface ModuleHandlers {
   snapshot(namespace: string): Record<string, unknown> | null
 }
 
+interface RefLike<T> {
+  value: T
+}
+
 interface BibleStoreLike {
-  selectedBookId: { value: number | null }
-  selectedChapter: { value: number }
-  selectedVerses: { value: number[] }
-  isProjecting: { value: boolean }
-  books: { value: Array<{ id: number; chapters: number }> }
+  selectedBookId: RefLike<number | null>
+  selectedChapter: RefLike<number>
+  selectedVerses: RefLike<number[]>
+  isProjecting: RefLike<boolean>
+  books: RefLike<Array<{ id: number; chapters: number }>>
   selectVersion?(versionId: number): unknown
   selectBook(bookId: number): unknown
   selectChapter(chapter: number): unknown
@@ -30,10 +34,8 @@ interface BibleStoreLike {
 }
 
 interface TimerStoreLike {
-  isProjecting: { value: boolean }
-  runtime: {
-    value: { status: string; accumulatedMs: number; savedTimesMs?: number[] }
-  }
+  isProjecting: RefLike<boolean>
+  runtime: RefLike<{ status: string; accumulatedMs: number; savedTimesMs?: number[] }>
   start(): unknown
   pause(): unknown
   reset(): unknown
@@ -43,16 +45,14 @@ interface TimerStoreLike {
 }
 
 interface CountdownStoreLike {
-  isProjecting: { value: boolean }
-  runtime: {
-    value: {
-      status: string
-      durationMs: number
-      accumulatedMs: number
-      savedTimesMs?: number[]
-      finished: boolean
-    }
-  }
+  isProjecting: RefLike<boolean>
+  runtime: RefLike<{
+    status: string
+    durationMs: number
+    accumulatedMs: number
+    savedTimesMs?: number[]
+    finished: boolean
+  }>
   start(): unknown
   pause(): unknown
   reset(): unknown
@@ -60,10 +60,42 @@ interface CountdownStoreLike {
   setDurationMs(durationMs: number): unknown
 }
 
+interface ClockStoreLike {
+  config: RefLike<{ style: string; showSeconds: boolean; format24h: boolean }>
+  isProjecting: RefLike<boolean>
+  setStyle(style: string): unknown
+  setShowSeconds(showSeconds: boolean): unknown
+  setFormat24h(format24h: boolean): unknown
+  toggleProjection(): unknown
+}
+
+const CLOCK_STYLES = new Set(['digital', 'analog'])
+
+interface RandomStoreLike {
+  session: RefLike<{ mode: string }>
+  runtime: RefLike<{ isDrawing: boolean; currentDisplay: string | null }>
+  isProjecting: RefLike<boolean>
+  available: RefLike<string[]>
+  drawn: RefLike<string[]>
+  setMode(mode: string): unknown
+  addName(raw?: string): unknown
+  removeAvailable(index: number): unknown
+  clearAvailable(): unknown
+  generateNumberRange(): boolean
+  startDraw(): unknown
+  cancelDrawAnimation(): unknown
+  clearHistory(): unknown
+  resetAll(): unknown
+}
+
+const RANDOM_MODES = new Set(['names', 'numbers'])
+
 export interface ModuleHandlerDeps {
   bible?: BibleStoreLike
   timer?: TimerStoreLike
   countdown?: CountdownStoreLike
+  clock?: ClockStoreLike
+  random?: RandomStoreLike
 }
 
 function isNum(v: unknown): v is number {
@@ -201,6 +233,107 @@ function snapshotCountdown(
   }
 }
 
+async function executeClock(
+  clock: ClockStoreLike,
+  action: string,
+  msg: Record<string, unknown>,
+): Promise<boolean> {
+  switch (action) {
+    case 'clock.setConfig': {
+      const { style, showSeconds, format24h } = msg
+      let applied = false
+      if (style !== undefined) {
+        if (typeof style !== 'string' || !CLOCK_STYLES.has(style)) return false
+        clock.setStyle(style)
+        applied = true
+      }
+      if (showSeconds !== undefined) {
+        if (typeof showSeconds !== 'boolean') return false
+        clock.setShowSeconds(showSeconds)
+        applied = true
+      }
+      if (format24h !== undefined) {
+        if (typeof format24h !== 'boolean') return false
+        clock.setFormat24h(format24h)
+        applied = true
+      }
+      return applied
+    }
+    case 'clock.toggleProjection':
+      clock.toggleProjection()
+      return true
+    default:
+      return false
+  }
+}
+
+function snapshotClock(clock: ClockStoreLike): Record<string, unknown> {
+  return {
+    style: clock.config.value.style,
+    showSeconds: clock.config.value.showSeconds,
+    format24h: clock.config.value.format24h,
+    isProjecting: clock.isProjecting.value,
+  }
+}
+
+async function executeRandom(
+  random: RandomStoreLike,
+  action: string,
+  msg: Record<string, unknown>,
+): Promise<boolean> {
+  switch (action) {
+    case 'random.setMode': {
+      const mode = msg.mode
+      if (typeof mode !== 'string' || !RANDOM_MODES.has(mode)) return false
+      random.setMode(mode)
+      return true
+    }
+    case 'random.addName': {
+      const name = msg.name
+      if (typeof name !== 'string' || name.trim().length === 0) return false
+      random.addName(name.trim())
+      return true
+    }
+    case 'random.removeAvailable': {
+      const index = msg.index
+      if (!isNum(index) || index < 0) return false
+      random.removeAvailable(index)
+      return true
+    }
+    case 'random.clearAvailable':
+      random.clearAvailable()
+      return true
+    case 'random.generateNumberRange':
+      random.generateNumberRange()
+      return true
+    case 'random.startDraw':
+      random.startDraw()
+      return true
+    case 'random.cancelDraw':
+      random.cancelDrawAnimation()
+      return true
+    case 'random.clearHistory':
+      random.clearHistory()
+      return true
+    case 'random.resetAll':
+      random.resetAll()
+      return true
+    default:
+      return false
+  }
+}
+
+function snapshotRandom(random: RandomStoreLike): Record<string, unknown> {
+  return {
+    mode: random.session.value.mode,
+    drawnCount: random.drawn.value.length,
+    availableCount: random.available.value.length,
+    isDrawing: random.runtime.value.isDrawing,
+    currentDisplay: random.runtime.value.currentDisplay,
+    isProjecting: random.isProjecting.value,
+  }
+}
+
 export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
   return {
     async execute(namespace, action, msg) {
@@ -214,6 +347,12 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
         if (namespace === 'countdown' && deps.countdown) {
           return executeCountdown(deps.countdown, action, msg)
         }
+        if (namespace === 'clock' && deps.clock) {
+          return executeClock(deps.clock, action, msg)
+        }
+        if (namespace === 'random' && deps.random) {
+          return executeRandom(deps.random, action, msg)
+        }
         return false
       } catch {
         return false
@@ -224,6 +363,10 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
       if (namespace === 'timer' && deps.timer) return snapshotTimer(deps.timer)
       if (namespace === 'countdown' && deps.countdown) {
         return snapshotCountdown(deps.countdown)
+      }
+      if (namespace === 'clock' && deps.clock) return snapshotClock(deps.clock)
+      if (namespace === 'random' && deps.random) {
+        return snapshotRandom(deps.random)
       }
       return null
     },

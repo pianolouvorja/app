@@ -20,6 +20,8 @@ import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
 import { useBibleStore } from '../../bible/stores/useBibleStore'
 import { useTimerStore } from '../../timer/stores/useTimerStore'
 import { useCountdownStore } from '../../countdown/stores/useCountdownStore'
+import { useClockStore } from '../../clock/stores/useClockStore'
+import { useRandomStore } from '../../random/stores/useRandomStore'
 
 /** Ações conhecidas (espelham RemoteAction do APK). */
 const PLAYER_ACTIONS = new Set([
@@ -45,7 +47,7 @@ const LITURGY_ACTIONS = new Set([
 ])
 
 /** Namespaces v2 (controle remoto total — spec Obsidian v2). */
-const V2_NAMESPACES = new Set(['bible', 'timer', 'countdown'])
+const V2_NAMESPACES = new Set(['bible', 'timer', 'countdown', 'clock', 'random'])
 
 export function installRemoteLiturgyBridge({ router }) {
   const liturgy = useLiturgyStore()
@@ -55,10 +57,14 @@ export function installRemoteLiturgyBridge({ router }) {
   if (!remoteApi) return () => {}
 
   // Módulos v2: bible/timer/countdown com stores reais do desktop.
+  // Cast: pinia expõe UnwrapRef que não é atribuível aos tipos estruturais
+  // (RefLike) sem cast — a superfície usada é exatamente a declarada.
   const modules = createModuleHandlers({
-    bible: useBibleStore(),
-    timer: useTimerStore(),
-    countdown: useCountdownStore(),
+    bible: useBibleStore() as never,
+    timer: useTimerStore() as never,
+    countdown: useCountdownStore() as never,
+    clock: useClockStore() as never,
+    random: useRandomStore() as never,
   })
 
   const send = (channel, payload) => {
@@ -120,6 +126,8 @@ export function installRemoteLiturgyBridge({ router }) {
       bible: modules.snapshot('bible') ?? undefined,
       timer: modules.snapshot('timer') ?? undefined,
       countdown: modules.snapshot('countdown') ?? undefined,
+      clock: modules.snapshot('clock') ?? undefined,
+      random: modules.snapshot('random') ?? undefined,
     }
   }
 

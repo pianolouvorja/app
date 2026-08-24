@@ -192,6 +192,133 @@ describe('createModuleHandlers — countdown', () => {
   })
 })
 
+function makeClockStore() {
+  return {
+    config: { value: { style: 'digital', showSeconds: true, format24h: true } },
+    isProjecting: { value: false },
+    setStyle: vi.fn(),
+    setShowSeconds: vi.fn(),
+    setFormat24h: vi.fn(),
+    toggleProjection: vi.fn(),
+  }
+}
+
+function makeRandomStore() {
+  return {
+    session: { value: { mode: 'names' } },
+    runtime: { value: { isDrawing: false, currentDisplay: null } },
+    isProjecting: { value: false },
+    available: { value: ['Ana', 'Beto'] },
+    drawn: { value: ['Carol'] },
+    setMode: vi.fn(),
+    addName: vi.fn(),
+    removeAvailable: vi.fn(),
+    clearAvailable: vi.fn(),
+    generateNumberRange: vi.fn(),
+    startDraw: vi.fn(),
+    cancelDrawAnimation: vi.fn(),
+    clearHistory: vi.fn(),
+    resetAll: vi.fn(),
+  }
+}
+
+describe('createModuleHandlers — clock', () => {
+  it('clock.setConfig aplica style/showSeconds/format24h', async () => {
+    const clock = makeClockStore()
+    const h = createModuleHandlers({ clock })
+    const ok = await h.execute('clock', 'clock.setConfig', {
+      style: 'analog',
+      showSeconds: false,
+    })
+    expect(ok).toBe(true)
+    expect(clock.setStyle).toHaveBeenCalledWith('analog')
+    expect(clock.setShowSeconds).toHaveBeenCalledWith(false)
+    expect(clock.setFormat24h).not.toHaveBeenCalled()
+  })
+
+  it('clock.setConfig com style inválido retorna false', async () => {
+    const clock = makeClockStore()
+    const h = createModuleHandlers({ clock })
+    expect(
+      await h.execute('clock', 'clock.setConfig', { style: 'bizarro' }),
+    ).toBe(false)
+    expect(clock.setStyle).not.toHaveBeenCalled()
+  })
+
+  it('clock.toggleProjection delega', async () => {
+    const clock = makeClockStore()
+    const h = createModuleHandlers({ clock })
+    expect(await h.execute('clock', 'clock.toggleProjection')).toBe(true)
+    expect(clock.toggleProjection).toHaveBeenCalled()
+  })
+
+  it('snapshot clock traz config e projeção', () => {
+    const clock = makeClockStore()
+    const h = createModuleHandlers({ clock })
+    expect(h.snapshot('clock')).toMatchObject({
+      style: 'digital',
+      showSeconds: true,
+      format24h: true,
+      isProjecting: false,
+    })
+  })
+})
+
+describe('createModuleHandlers — random', () => {
+  it('random.setMode valida modo', async () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(await h.execute('random', 'random.setMode', { mode: 'numbers' })).toBe(true)
+    expect(random.setMode).toHaveBeenCalledWith('numbers')
+    expect(await h.execute('random', 'random.setMode', { mode: 'x' })).toBe(false)
+  })
+
+  it('random.startDraw/cancel/clearHistory/resetAll delegam', async () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(await h.execute('random', 'random.startDraw')).toBe(true)
+    expect(await h.execute('random', 'random.cancelDraw')).toBe(true)
+    expect(await h.execute('random', 'random.clearHistory')).toBe(true)
+    expect(await h.execute('random', 'random.resetAll')).toBe(true)
+    expect(random.startDraw).toHaveBeenCalled()
+    expect(random.cancelDrawAnimation).toHaveBeenCalled()
+  })
+
+  it('random.addName valida string não vazia', async () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(await h.execute('random', 'random.addName', { name: ' Ana ' })).toBe(true)
+    expect(random.addName).toHaveBeenCalledWith('Ana')
+    expect(await h.execute('random', 'random.addName', { name: '  ' })).toBe(false)
+    expect(await h.execute('random', 'random.addName', {})).toBe(false)
+  })
+
+  it('random.removeAvailable valida index', async () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(await h.execute('random', 'random.removeAvailable', { index: 1 })).toBe(true)
+    expect(await h.execute('random', 'random.removeAvailable', { index: -1 })).toBe(false)
+  })
+
+  it('random.generateNumberRange delega', async () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(await h.execute('random', 'random.generateNumberRange')).toBe(true)
+    expect(random.generateNumberRange).toHaveBeenCalled()
+  })
+
+  it('snapshot random traz modo/drawn/isDrawing', () => {
+    const random = makeRandomStore()
+    const h = createModuleHandlers({ random })
+    expect(h.snapshot('random')).toMatchObject({
+      mode: 'names',
+      drawnCount: 1,
+      availableCount: 2,
+      isDrawing: false,
+    })
+  })
+})
+
 describe('createModuleHandlers — namespace desconhecido', () => {
   it('execute/snapshot retornam false/null para namespace inexistente', async () => {
     const h = createModuleHandlers({ bible: makeBibleStore() })
