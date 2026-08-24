@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
 import jsQR from 'jsqr'
 import { GlassCard } from '@design-system/index'
-import { useLiturgyStore } from '../../liturgy/stores/useLiturgyStore'
-import { useMediaPlayer } from '../../media/composables/useMediaPlayer'
-import { WebRemoteBridge } from '../services/web-remote-bridge'
 
 const { t } = useI18n()
-const router = useRouter()
-const liturgy = useLiturgyStore()
-const player = useMediaPlayer()
 
 type Step = 'idle' | 'scanning' | 'connecting' | 'connected' | 'error'
 
@@ -25,8 +18,7 @@ const manualUrl = ref('')
 let video: HTMLVideoElement | null = null
 let stream: MediaStream | null = null
 let scanTimer: number | null = null
-let bridge: WebRemoteBridge | null = null
-let unwatchState: (() => void) | null = null
+let ws: WebSocket | null = null
 
 function pushLog(msg: string) {
   log.value = [...log.value.slice(-6), msg]
@@ -71,83 +63,31 @@ function connectWs(url: string) {
   step.value = 'connecting'
   wsUrl.value = url
   try {
-    bridge?.stop()
-    bridge = new WebRemoteBridge(url, {
-      snapshot: () => ({
-        player: {
-          playing: player.isPlaying.value,
-          title: player.session.value?.title ?? null,
-          positionMs: Math.round((player.currentTimeSec.value ?? 0) * 1000),
-          durationMs: Math.round((player.durationSec.value ?? 0) * 1000),
-          slideIndex: 0,
-          slideCount: 0,
-          volume: Math.round((player.volume.value ?? 0) * 100),
-          canPrevious: (liturgy.selectedItemIndex ?? 0) > 0,
-          canNext: (liturgy.selectedItemIndex ?? -1) + 1 < liturgy.currentItems.length,
-        },
-        liturgy: {
-          selectedIndex: liturgy.selectedItemIndex,
-          items: liturgy.currentItems.map((item, index) => ({
-            index,
-            type: item.type,
-            title: item.name || item.subtitle || null,
-            subtitle: item.subtitle || null,
-            isCategory: item.type === 'category',
-            accentColor: item.accentColor || null,
-            done: item.done === true,
-          })),
-        },
-      }),
-      execute: async (command) => {
-        const index = typeof command.value === 'number' ? command.value : liturgy.selectedItemIndex ?? -1
-        switch (command.action) {
-          case 'liturgy.select':
-            if (index < 0 || index >= liturgy.currentItems.length) return false
-            await liturgy.playItemOnScreens(index)
-            return true
-          case 'liturgy.next':
-            if (index + 1 >= liturgy.currentItems.length) return false
-            await liturgy.selectItem(index + 1, router)
-            return true
-          case 'liturgy.previous':
-            if (index <= 0) return false
-            await liturgy.selectItem(index - 1, router)
-            return true
-          case 'liturgy.toggleDone':
-            if (index < 0 || index >= liturgy.currentItems.length) return false
-            liturgy.toggleItemDone(index)
-            return true
-          case 'player.play':
-            await player.play()
-            return true
-          case 'player.pause':
-            await player.pause()
-            return true
-          case 'player.setVolume':
-            if (typeof command.value !== 'number') return false
-            player.setVolume(Math.min(100, Math.max(0, command.value)) / 100)
-            return true
-          case 'player.seek':
-            if (typeof command.positionMs !== 'number') return false
-            player.seekTo(command.positionMs / 1000)
-            return true
-          default:
-            return false
-        }
-      },
-      onClose: () => {
+    ws = new WebSocket(url)
+    ws.onopen = () => {
+      step.value = 'connected'
+      pushLog(t('settings.remote.wsConnected'))
+      // handshake: identifica o cliente web
+      ws?.send(JSON.stringify({ action: 'remote.hello', device: 'web' }))
+    }
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(String(ev.data)) as { action?: string }
+        pushLog(`← ${data.action ?? ev.data.slice(0, 60)}`)
+      } catch {
+        pushLog(`← ${String(ev.data).slice(0, 60)}`)
+      }
+    }
+    ws.onerror = () => {
+      step.value = 'error'
+      errorMsg.value = t('settings.remote.wsError')
+    }
+    ws.onclose = () => {
+      if (step.value === 'connected') {
         step.value = 'error'
         errorMsg.value = t('settings.remote.wsClosed')
-      },
-    })
-    unwatchState?.()
-    unwatchState = watch(
-      () => [liturgy.selectedItemIndex, JSON.stringify(liturgy.currentItems.map((item) => [item.name, item.subtitle, item.done]))],
-      () => bridge?.reportState(),
-    )
-    bridge.start()
-    step.value = 'connected'
-    pushLog(t('settings.remote.wsConnected'))
+      }
+    }
   } catch {
     step.value = 'error'
     errorMsg.value = t('settings.remote.wsError')
@@ -170,10 +110,8 @@ function stopScan() {
 
 function reset() {
   stopScan()
-  unwatchState?.()
-  unwatchState = null
-  bridge?.stop()
-  bridge = null
+  ws?.close()
+  ws = null
   step.value = 'idle'
   log.value = []
   wsUrl.value = ''
@@ -183,8 +121,7 @@ function reset() {
 
 onUnmounted(() => {
   stopScan()
-  unwatchState?.()
-  bridge?.stop()
+  ws?.close()
 })
 </script>
 
