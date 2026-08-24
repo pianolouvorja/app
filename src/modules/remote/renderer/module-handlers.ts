@@ -34,6 +34,7 @@ interface BibleStoreLike {
 }
 
 interface TimerStoreLike {
+  toggleProjection?: () => unknown
   isProjecting: RefLike<boolean>
   runtime: RefLike<{ status: string; accumulatedMs: number; savedTimesMs?: number[] }>
   start(): unknown
@@ -45,6 +46,7 @@ interface TimerStoreLike {
 }
 
 interface CountdownStoreLike {
+  toggleProjection?: () => unknown
   isProjecting: RefLike<boolean>
   runtime: RefLike<{
     status: string
@@ -115,6 +117,33 @@ function isNum(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
+/**
+ * Lê valor de campo de store pinia que PODE ser exposto como Ref ({value})
+ * ou já desembrulhado (setup-store via instância: store.runtime é o objeto
+ * plano). Usar `.value` direto quebra no segundo caso (undefined).
+ */
+function readField<T>(source: unknown, key: string): T | undefined {
+  if (source == null || typeof source !== 'object') return undefined
+  const holder = source as Record<string, unknown>
+  const raw = holder[key]
+  if (raw != null && typeof raw === 'object' && 'value' in (raw as object)) {
+    return (raw as { value: T }).value
+  }
+  return raw as T | undefined
+}
+
+/** Lê campo aninhado: readPath(store, 'runtime', 'status') — tolerante a Ref. */
+function readPath(source: unknown, outer: string, inner: string): unknown {
+  const mid = readField<unknown>(source, outer)
+  if (mid == null || typeof mid !== 'object') return undefined
+  const holder = mid as Record<string, unknown>
+  const raw = holder[inner]
+  if (raw != null && typeof raw === 'object' && 'value' in (raw as object)) {
+    return (raw as { value: unknown }).value
+  }
+  return raw
+}
+
 async function executeBible(
   bible: BibleStoreLike,
   action: string,
@@ -155,13 +184,17 @@ async function executeBible(
 }
 
 function snapshotBible(bible: BibleStoreLike): Record<string, unknown> {
-  // Defensivo: store pode não estar hidratado no boot (refs ainda null).
+  // readField tolera Ref e valor desembrulhado (pinia setup-store).
   return {
-    bookId: bible.selectedBookId?.value ?? null,
-    chapter: bible.selectedChapter?.value ?? null,
-    selectedVerses: [...(bible.selectedVerses?.value ?? [])],
-    isProjecting: bible.isProjecting?.value === true,
+    bookId: readField<number>(bible, 'selectedBookId') ?? null,
+    chapter: readField<number>(bible, 'selectedChapter') ?? null,
+    selectedVerses: [...(readField<number[]>(bible, 'selectedVerses') ?? [])],
+    isProjecting: readField<boolean>(bible, 'isProjecting') === true,
   }
+}
+
+function isProjectingNow(store: unknown): boolean {
+  return readField<boolean>(store, 'isProjecting') === true
 }
 
 async function executeTimer(
@@ -172,6 +205,8 @@ async function executeTimer(
   switch (action) {
     case 'timer.start':
       timer.start()
+      // Comando remoto precisa ser VISÍVEL: projeta o timer se não projetado.
+      if (!isProjectingNow(timer) && timer.toggleProjection) timer.toggleProjection()
       return true
     case 'timer.pause':
       timer.pause()
@@ -197,12 +232,12 @@ async function executeTimer(
 }
 
 function snapshotTimer(timer: TimerStoreLike): Record<string, unknown> {
-  const rt = timer.runtime?.value
+  const rt = readField<Record<string, unknown>>(timer, 'runtime')
   return {
-    status: rt?.status ?? 'idle',
-    accumulatedMs: rt?.accumulatedMs ?? 0,
-    savedTimesMs: [...(rt?.savedTimesMs ?? [])],
-    isProjecting: timer.isProjecting?.value === true,
+    status: (rt?.status as string) ?? 'idle',
+    accumulatedMs: (rt?.accumulatedMs as number) ?? 0,
+    savedTimesMs: [...((rt?.savedTimesMs as number[]) ?? [])],
+    isProjecting: readField<boolean>(timer, 'isProjecting') === true,
   }
 }
 
@@ -214,6 +249,9 @@ async function executeCountdown(
   switch (action) {
     case 'countdown.start':
       countdown.start()
+      if (!isProjectingNow(countdown) && countdown.toggleProjection) {
+        countdown.toggleProjection()
+      }
       return true
     case 'countdown.pause':
       countdown.pause()
@@ -238,14 +276,14 @@ async function executeCountdown(
 function snapshotCountdown(
   countdown: CountdownStoreLike,
 ): Record<string, unknown> {
-  const rt = countdown.runtime?.value
+  const rt = readField<Record<string, unknown>>(countdown, 'runtime')
   return {
-    status: rt?.status ?? 'idle',
-    durationMs: rt?.durationMs ?? 0,
-    accumulatedMs: rt?.accumulatedMs ?? 0,
+    status: (rt?.status as string) ?? 'idle',
+    durationMs: (rt?.durationMs as number) ?? 0,
+    accumulatedMs: (rt?.accumulatedMs as number) ?? 0,
     finished: rt?.finished === true,
-    savedTimesMs: [...(rt?.savedTimesMs ?? [])],
-    isProjecting: countdown.isProjecting?.value === true,
+    savedTimesMs: [...((rt?.savedTimesMs as number[]) ?? [])],
+    isProjecting: readField<boolean>(countdown, 'isProjecting') === true,
   }
 }
 
@@ -311,12 +349,12 @@ async function executeClock(
 }
 
 function snapshotClock(clock: ClockStoreLike): Record<string, unknown> {
-  const cfg = clock.config?.value
+  const cfg = readField<Record<string, unknown>>(clock, 'config')
   return {
-    style: cfg?.style ?? 'digital',
+    style: (cfg?.style as string) ?? 'digital',
     showSeconds: cfg?.showSeconds === true,
     format24h: cfg?.format24h === true,
-    isProjecting: clock.isProjecting?.value === true,
+    isProjecting: readField<boolean>(clock, 'isProjecting') === true,
   }
 }
 
@@ -368,13 +406,15 @@ async function executeRandom(
 }
 
 function snapshotRandom(random: RandomStoreLike): Record<string, unknown> {
+  const session = readField<Record<string, unknown>>(random, 'session')
+  const runtime = readField<Record<string, unknown>>(random, 'runtime')
   return {
-    mode: random.session?.value?.mode ?? 'names',
-    drawnCount: random.drawn?.value?.length ?? 0,
-    availableCount: random.available?.value?.length ?? 0,
-    isDrawing: random.runtime?.value?.isDrawing === true,
-    currentDisplay: random.runtime?.value?.currentDisplay ?? null,
-    isProjecting: random.isProjecting?.value === true,
+    mode: (session?.mode as string) ?? 'names',
+    drawnCount: readField<unknown[]>(random, 'drawn')?.length ?? 0,
+    availableCount: readField<unknown[]>(random, 'available')?.length ?? 0,
+    isDrawing: runtime?.isDrawing === true,
+    currentDisplay: (runtime?.currentDisplay as string) ?? null,
+    isProjecting: readField<boolean>(random, 'isProjecting') === true,
   }
 }
 
