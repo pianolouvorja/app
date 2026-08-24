@@ -23,8 +23,18 @@ interface BibleStoreLike {
   selectedChapter: RefLike<number>
   selectedVerses: RefLike<number[]>
   isProjecting: RefLike<boolean>
-  books: RefLike<Array<{ id: number; chapters: number }>>
-  selectVersion?(versionId: number): unknown
+  versions: RefLike<Array<{ id: number; abbreviation: string }>>
+  books: RefLike<
+    Array<{
+      id: number
+      name: string
+      abbreviation: string
+      chapters: number
+      bookNumber: number
+    }>
+  >
+  selectedVersionId: RefLike<number | null>
+  selectVersion(versionId: number): unknown
   selectBook(bookId: number): unknown
   selectChapter(chapter: number): unknown
   selectVerse(verseNumber: number, event?: unknown): unknown
@@ -74,6 +84,7 @@ interface ClockStoreLike {
 const CLOCK_STYLES = new Set(['digital', 'analog'])
 
 interface RandomStoreLike {
+  toggleProjection?: () => unknown
   session: RefLike<{ mode: string }>
   runtime: RefLike<{ isDrawing: boolean; currentDisplay: string | null }>
   isProjecting: RefLike<boolean>
@@ -193,11 +204,23 @@ async function executeBible(
 
 function snapshotBible(bible: BibleStoreLike): Record<string, unknown> {
   // readField tolera Ref e valor desembrulhado (pinia setup-store).
+  const books = readField<BibleStoreLike['books'] extends RefLike<infer T> ? T : never>(bible, 'books') ?? []
+  const versions =
+    readField<BibleStoreLike['versions'] extends RefLike<infer T> ? T : never>(bible, 'versions') ?? []
   return {
     bookId: readField<number>(bible, 'selectedBookId') ?? null,
     chapter: readField<number>(bible, 'selectedChapter') ?? null,
     selectedVerses: [...(readField<number[]>(bible, 'selectedVerses') ?? [])],
     isProjecting: readField<boolean>(bible, 'isProjecting') === true,
+    versionId: readField<number>(bible, 'selectedVersionId') ?? null,
+    // Catálogo p/ o operador escolher por NOME (select) — não por id cego.
+    books: books.map((b) => ({
+      id: b.id,
+      name: b.name,
+      chapters: b.chapters,
+      number: b.bookNumber,
+    })),
+    versions: versions.map((v) => ({ id: v.id, abbreviation: v.abbreviation })),
   }
 }
 
@@ -413,10 +436,17 @@ async function executeRandom(
       random.clearAvailable()
       return true
     case 'random.generateNumberRange':
-      random.generateNumberRange()
-      return true
+      random.setMode('numbers')
+      return random.generateNumberRange() === true
     case 'random.startDraw':
+      // Visível no palco: abre projeção antes de sortear.
+      if (!isProjectingNow(random) && random.toggleProjection) {
+        random.toggleProjection()
+      }
       random.startDraw()
+      return true
+    case 'random.toggleProjection':
+      random.toggleProjection?.()
       return true
     case 'random.cancelDraw':
       random.cancelDrawAnimation()

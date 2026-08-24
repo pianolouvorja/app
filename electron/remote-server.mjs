@@ -156,6 +156,7 @@ export async function startRemoteServer(wss, contents) {
             mode: typeof msg.mode === 'string' ? msg.mode : undefined,
             hymnId: typeof msg.hymnId === 'number' ? msg.hymnId : undefined,
             musicId: typeof msg.musicId === 'number' ? msg.musicId : undefined,
+            query: typeof msg.query === 'string' ? msg.query : undefined,
             albumId:
               typeof msg.albumId === 'number' ? msg.albumId : undefined,
             versionId:
