@@ -137,7 +137,9 @@ export async function startRemoteServer(wss, contents) {
           return
         case 'command': {
           const { id, action, token: tok } = msg
-          console.info(`[remote] command ${action} id=${id}`)
+          console.info(
+            `[remote] RAW command ${action} id=${id} payload=${JSON.stringify(msg).slice(0, 300)}`,
+          )
           if (typeof id !== 'string' || typeof action !== 'string') return
           if (tok !== token) {
             send(ws, { v: 1, type: 'error', id, code: 'bad_token' })
@@ -174,6 +176,12 @@ export async function startRemoteServer(wss, contents) {
               typeof msg.showSeconds === 'boolean' ? msg.showSeconds : undefined,
             format24h:
               typeof msg.format24h === 'boolean' ? msg.format24h : undefined,
+            numberMin:
+              typeof msg.numberMin === 'number' ? msg.numberMin : undefined,
+            numberMax:
+              typeof msg.numberMax === 'number' ? msg.numberMax : undefined,
+            namesText:
+              typeof msg.namesText === 'string' ? msg.namesText : undefined,
           })
           return
         }

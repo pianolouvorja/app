@@ -85,11 +85,15 @@ const CLOCK_STYLES = new Set(['digital', 'analog'])
 
 interface RandomStoreLike {
   toggleProjection?: () => unknown
-  session: RefLike<{ mode: string }>
+  session: RefLike<{ mode: string; numberMin: number; numberMax: number }>
   runtime: RefLike<{ isDrawing: boolean; currentDisplay: string | null }>
   isProjecting: RefLike<boolean>
-  available: RefLike<string[]>
-  drawn: RefLike<string[]>
+  available: RefLike<Array<string | number>>
+  drawn: RefLike<Array<string | number>>
+  importNamesFromText?(text: string): number
+  removeDrawn?(index: number): unknown
+  setNumberMin?(value: number): unknown
+  setNumberMax?(value: number): unknown
   setMode(mode: string): unknown
   addName(raw?: string): unknown
   removeAvailable(index: number): unknown
@@ -170,6 +174,9 @@ async function executeBible(
 ): Promise<boolean> {
   switch (action) {
     case 'bible.open': {
+      console.info(
+        `[remote] bible.open RECEBIDO book=${msg.bookId} (${typeof msg.bookId}) cap=${msg.chapter} verse=${msg.verse} version=${msg.versionId}`,
+      )
       const bookId = msg.bookId
       if (!isNum(bookId)) return false
       // readField: pinia setup-store desembrulha refs (books.value não existe).
@@ -189,7 +196,11 @@ async function executeBible(
       const verse = isNum(msg.verse) && msg.verse >= 1 ? msg.verse : 1
       // refreshChapter é async: esperar o capítulo carregar antes de
       // selecionar, senão a seleção fica vazia.
-      await waitForVerse(bible, verse)
+      const got = await waitForVerse(bible, verse)
+      console.info(
+        `[remote] bible.open book=${bookId} cap=${chapter} verse=${verse} version=${msg.versionId ?? '-'} verseLoaded=${got}`,
+      )
+      if (!got) return false
       bible.selectVerse(verse)
       return bible.openProjection()
     }
@@ -239,12 +250,13 @@ function snapshotBible(bible: BibleStoreLike): Record<string, unknown> {
 async function waitForVerse(
   bible: BibleStoreLike,
   verse: number,
-): Promise<void> {
+): Promise<boolean> {
   for (let i = 0; i < 50; i++) {
     const verses = readField<Record<string, unknown>>(bible, 'verses')
-    if (verses && verses[String(verse)] != null) return
+    if (verses && verses[String(verse)] != null) return true
     await new Promise((r) => setTimeout(r, 100))
   }
+  return false
 }
 
 function isProjectingNow(store: unknown): boolean {
@@ -358,6 +370,7 @@ async function executeMedia(
 ): Promise<boolean> {
   switch (action) {
     case 'media.search': {
+      console.info(`[remote] media.search RECEBIDA query=${msg.query}`)
       const query = msg.query
       const search = media.searchMusic
       if (typeof query !== 'string' || !search) return false
@@ -439,6 +452,26 @@ async function executeRandom(
   msg: Record<string, unknown>,
 ): Promise<boolean> {
   switch (action) {
+    case 'random.setNumberRange': {
+      const min = msg.numberMin
+      const max = msg.numberMax
+      if (!isNum(min) || !isNum(max)) return false
+      random.setNumberMin?.(min)
+      random.setNumberMax?.(max)
+      return random.generateNumberRange() === true
+    }
+    case 'random.importNames': {
+      const text = msg.namesText
+      if (typeof text !== 'string' || text.trim().length === 0) return false
+      const added = random.importNamesFromText?.(text)
+      return (added ?? 0) > 0
+    }
+    case 'random.removeDrawn': {
+      const idx = msg.index
+      if (!isNum(idx)) return false
+      random.removeDrawn?.(idx)
+      return true
+    }
     case 'random.setMode': {
       const mode = msg.mode
       if (typeof mode !== 'string' || !RANDOM_MODES.has(mode)) return false
