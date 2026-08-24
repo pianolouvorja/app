@@ -72,6 +72,12 @@ export function installRemoteLiturgyBridge({ router }) {
   // Busca de hinos com os ids LOCAIS do desktop (a API pública tem ids
   // distintos — media.open com id da API dá trackMissing).
   let musicIndex: Awaited<ReturnType<typeof loadAlbumMusicIndex>> | null = null
+  // media.open via controle remoto SEMPRE projeta — o operador clica
+  // esperando ver na tela; openMusicPlayer puro só projeta em no_audio.
+  const openMusicPlayerRemote: typeof openMusicPlayer = async (params) => {
+    return openMusicPlayer({ ...params, project: true })
+  }
+
   const searchMusic = async (query: string) => {
     try {
       if (!musicIndex || musicIndex.length === 0) {
@@ -89,7 +95,7 @@ export function installRemoteLiturgyBridge({ router }) {
 
   const modules = createModuleHandlers({
     media: {
-      openMusicPlayer: openMusicPlayer as never,
+      openMusicPlayer: openMusicPlayerRemote as never,
       searchMusic,
     },
     bible: bibleStore as never,

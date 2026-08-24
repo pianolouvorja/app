@@ -184,14 +184,13 @@ async function executeBible(
       if (isNum(msg.versionId)) bible.selectVersion?.(msg.versionId)
       await bible.selectBook(bookId)
       await bible.selectChapter(chapter)
-      // Versículo inicial opcional — destaca e projeta. refreshChapter é
-      // async: selecionar ANTES de o capítulo carregar deixa a seleção
-      // vazia e openProjection falha silenciosamente (verses ainda {}).
-      if (isNum(msg.verse) && msg.verse >= 1) {
-        // espera o carregamento do capítulo (refreshChapter interno)
-        await waitForVerse(bible, msg.verse)
-        bible.selectVerse(msg.verse)
-      }
+      // Versículo: explícito ou 1 (openProjection exige selectedVerses não
+      // vazio — sem seleção a projeção aborta silenciosamente).
+      const verse = isNum(msg.verse) && msg.verse >= 1 ? msg.verse : 1
+      // refreshChapter é async: esperar o capítulo carregar antes de
+      // selecionar, senão a seleção fica vazia.
+      await waitForVerse(bible, verse)
+      bible.selectVerse(verse)
       return bible.openProjection()
     }
     case 'bible.selectVerse': {
@@ -350,6 +349,7 @@ function snapshotCountdown(
 
 /** Cache da última busca — o ack só carrega ok; o state expõe o resultado. */
 let lastSearchResults: AlbumSearchHitLike[] = []
+let lastSearchQuery = ''
 
 async function executeMedia(
   media: MediaStoreLike,
@@ -365,6 +365,7 @@ async function executeMedia(
       // do ack. Como o protocolo só tem ok:boolean, o bridge lê o cache.
       const hits = await search(query.trim())
       lastSearchResults = hits.slice(0, 30)
+      lastSearchQuery = query.trim()
       return true
     }
     case 'media.open': {
@@ -533,7 +534,10 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
         return snapshotCountdown(deps.countdown)
       }
       if (namespace === 'media' && deps.media?.searchMusic) {
-        return { searchResults: lastSearchResults }
+        return {
+          query: lastSearchQuery,
+          searchResults: lastSearchResults,
+        }
       }
       if (namespace === 'clock' && deps.clock) return snapshotClock(deps.clock)
       if (namespace === 'random' && deps.random) {
