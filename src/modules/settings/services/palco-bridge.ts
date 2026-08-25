@@ -263,13 +263,15 @@ function syncAudio() {
   if (!audioUrl) return
 
   if (media.isPlaying) {
+    // Sync periódico: SEEK (não play+url — receiver não pode recarregar).
+    // Só corrige desvio >2s; micro-sync a cada 3s causava loop/stutter na TV.
     const now = Date.now()
     if (now - lastPosSyncMs > 3000) {
       lastPosSyncMs = now
       void palcoSession.audio({
         url: audioUrl,
         positionMs: Math.round((media.currentTimeSec ?? 0) * 1000),
-        action: 'play',
+        action: 'seek',
       })
     }
   } else if (media.isPaused) {
