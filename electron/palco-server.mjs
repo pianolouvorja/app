@@ -31,6 +31,9 @@ const WS_PORT = 7081
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// dist do renderer — backgrounds oficiais ficam em dist/assets/bg-XX-<hash>.png
+const DIST_DIR = path.resolve(__dirname, '../dist')
+
 /** @typedef {import('node:http').IncomingMessage} Req */
 /** @typedef {import('node:http').ServerResponse} Res */
 
@@ -122,6 +125,68 @@ export function attachPalcoServer(getContents) {
         return
       }
       res.end(entry.bytes)
+      return
+    }
+
+    // Background oficial do stage: /bg/bg-01.png → dist/assets/bg-01-<hash>.png
+    if (p.startsWith('/bg/')) {
+      const id = p.slice('/bg/'.length).replace(/[^a-z0-9._-]/gi, '')
+      if (id) {
+        try {
+          const { readdir } = await import('node:fs/promises')
+          const files = await readdir(path.join(DIST_DIR, 'assets'))
+          const hit = files.find(
+            (f) => f.startsWith(id.replace(/\.png$/, '')) && f.endsWith('.png'),
+          )
+          if (hit) {
+            const buf = await readFile(path.join(DIST_DIR, 'assets', hit))
+            res.setHeader('Content-Type', 'image/png')
+            res.setHeader('Cache-Control', 'public, max-age=86400')
+            res.end(buf)
+            return
+          }
+        } catch {
+          // cai no 404
+        }
+      }
+      res.statusCode = 404
+      res.end()
+      return
+    }
+
+    // Proxy CORS p/ o receiver (o receiver roda em file:// — http direto
+    // pra LAN/API é bloqueado em algumas plataformas; tudo passa por aqui).
+    if (p === '/proxy') {
+      const target = url.searchParams.get('url')
+      if (!target || !/^https?:\/\//i.test(target)) {
+        res.statusCode = 400
+        res.end('bad url')
+        return
+      }
+      try {
+        const controller = new AbortController()
+        const t = setTimeout(() => controller.abort(), 15000)
+        const upstream = await fetch(target, {
+          signal: controller.signal,
+          headers: { 'user-agent': 'LouvorJA-Palco/1.0' },
+        })
+        clearTimeout(t)
+        res.statusCode = upstream.status
+        const ctype = upstream.headers.get('content-type')
+        if (ctype) res.setHeader('Content-Type', ctype)
+        const clen = upstream.headers.get('content-length')
+        if (clen) res.setHeader('Content-Length', clen)
+        res.setHeader('Accept-Ranges', 'none')
+        if (req.method === 'HEAD') {
+          res.end()
+          return
+        }
+        const buf = Buffer.from(await upstream.arrayBuffer())
+        res.end(buf)
+      } catch (e) {
+        res.statusCode = 502
+        res.end(`proxy error: ${e.message}`)
+      }
       return
     }
 

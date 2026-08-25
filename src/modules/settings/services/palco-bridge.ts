@@ -3,6 +3,8 @@
  *
  * Escuta os mesmos canais que a MediaProjectionView (BroadcastChannel +
  * storage) e envia `projection` v2 com o StageSettings do escopo 'hymns'.
+ * Áudio: quando o media store tem sessão com audioUrl, envia `audio` v2
+ * (url + play/pause + sincronização de posição throttled).
  * Ativado/desativado pelo PalcoCard (sender ON/OFF).
  */
 
@@ -14,12 +16,18 @@ import {
 } from '../../media/services/media-runtime'
 import type { MediaProjectionRuntime } from '../../media/types/media'
 import { DEFAULT_MEDIA_PROJECTION } from '../../media/types/media'
+import { useMediaStore } from '../../media/stores/useMediaStore'
+import { watch } from 'vue'
 
 let started = false
 let channel: BroadcastChannel | null = null
 let lastRuntime: MediaProjectionRuntime = { ...DEFAULT_MEDIA_PROJECTION }
 
-function projectToTv() {
+/** Controle de áudio — evita reenviar URL/ação sem mudança. */
+let lastAudioKey = ''
+let lastPosSyncMs = 0
+
+async function projectToTv() {
   const r = lastRuntime
   const text = r.lyric || r.title || ''
   if (!text) {
@@ -27,10 +35,56 @@ function projectToTv() {
     return
   }
   const html = text.split('\n').join('<br>')
-  palcoSession.project('hymns', {
+  await palcoSession.project('hymns', {
     text: html,
     footerRef: r.isCover ? '' : r.title,
+    background: r.imageUrl ?? undefined,
   })
+}
+
+function syncAudio() {
+  const media = useMediaStore()
+  const session = media.session
+  const audioUrl = session?.audioUrl ?? null
+  const key = audioUrl ?? 'none'
+
+  // URL mudou → manda áudio completo com position e play se tocando
+  if (key !== lastAudioKey) {
+    lastAudioKey = key
+    lastPosSyncMs = 0
+    if (audioUrl && media.isPlaying) {
+      void palcoSession.audio({
+        url: audioUrl,
+        title: session?.title ?? undefined,
+        subtitle: session?.subtitle ?? undefined,
+        cover: session?.coverUrl ?? undefined,
+        positionMs: Math.round((media.currentTimeSec ?? 0) * 1000),
+        action: 'play',
+      })
+    }
+    return
+  }
+
+  if (!audioUrl) return
+
+  // Mesma URL — sincroniza play/pause e posição (throttle 3s)
+  if (media.isPlaying) {
+    const now = Date.now()
+    if (now - lastPosSyncMs > 3000) {
+      lastPosSyncMs = now
+      void palcoSession.audio({
+        url: audioUrl,
+        positionMs: Math.round((media.currentTimeSec ?? 0) * 1000),
+        action: 'play',
+      })
+    }
+  } else if (media.isPaused) {
+    void palcoSession.audio({ action: 'pause' })
+  }
+}
+
+function onTick() {
+  void projectToTv().then(syncAudio)
 }
 
 function onStorage(event: StorageEvent) {
@@ -38,16 +92,18 @@ function onStorage(event: StorageEvent) {
   try {
     const raw = event.newValue ? JSON.parse(event.newValue) : null
     lastRuntime = normalizeMediaRuntime(raw)
-    projectToTv()
   } catch {
     // ignore
   }
+  onTick()
 }
 
 function onChannelMessage(event: MessageEvent<unknown>) {
   lastRuntime = normalizeMediaRuntime(event.data)
-  projectToTv()
+  onTick()
 }
+
+let audioWatchers: Array<() => void> = []
 
 export function startPalcoBridge() {
   if (started) return
@@ -65,7 +121,17 @@ export function startPalcoBridge() {
   } catch {
     channel = null
   }
-  projectToTv()
+
+  // posição do áudio avança continuamente — sincroniza a TV periodicamente
+  const media = useMediaStore()
+  audioWatchers = [
+    watch(
+      () => [media.isPlaying, media.session?.audioUrl] as const,
+      () => syncAudio(),
+    ),
+  ]
+  window.setInterval(syncAudio, 3000)
+  onTick()
 }
 
 export function stopPalcoBridge() {
@@ -75,4 +141,7 @@ export function stopPalcoBridge() {
   channel?.removeEventListener('message', onChannelMessage)
   channel?.close()
   channel = null
+  for (const un of audioWatchers) un()
+  audioWatchers = []
+  lastAudioKey = ''
 }
