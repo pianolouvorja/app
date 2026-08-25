@@ -5,6 +5,9 @@ import { ProjectionBackground } from '@design-system/index'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 
 import RandomPreview from '../components/RandomPreview.vue'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 import {
   RANDOM_CONFIG_CHANNEL,
   loadRandomDisplayConfig,
@@ -25,6 +28,10 @@ import {
 
 const config = ref<RandomDisplayConfig>({ ...DEFAULT_RANDOM_DISPLAY_CONFIG })
 const runtime = ref<RandomRuntimeState>({ ...DEFAULT_RANDOM_RUNTIME })
+
+// Personalização do Palco (escopo random)
+const stage = ref<StageSettings>(readEffectiveStageSettings('random'))
+let unsubStage: (() => void) | null = null
 
 let configChannel: BroadcastChannel | null = null
 let runtimeChannel: BroadcastChannel | null = null
@@ -60,6 +67,10 @@ onMounted(() => {
   refreshRuntime()
   window.addEventListener('storage', onStorage)
 
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('random')
+  })
+
   try {
     configChannel = new BroadcastChannel(RANDOM_CONFIG_CHANNEL)
     configChannel.addEventListener('message', onConfigMessage)
@@ -77,6 +88,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+  unsubStage?.()
   configChannel?.removeEventListener('message', onConfigMessage)
   configChannel?.close()
   configChannel = null
@@ -85,16 +97,39 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
-  background: config.value.bgColor,
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
+
+const stageAlign = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
 }))
 </script>
 
 <template>
-  <ProjectionBackground class="random-projection">
+  <ProjectionBackground
+    class="random-projection"
+    :style="stageStyle"
+  >
     <div
       class="random-projection__stage"
-      :style="surfaceStyle"
+      :style="stageAlign"
     >
       <RandomPreview
         :config="config"
@@ -109,6 +144,8 @@ const surfaceStyle = computed(() => ({
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  /* container p/ unidades cqw do stage-settings */
+  container-type: size;
 }
 
 .random-projection__stage {

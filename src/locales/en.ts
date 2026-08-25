@@ -9,6 +9,7 @@ export default {
   },
   common: {
     comingSoon: 'Coming soon',
+    cancel: 'Cancel',
   },
   monitors: {
     selectScreens: 'Select screens',
