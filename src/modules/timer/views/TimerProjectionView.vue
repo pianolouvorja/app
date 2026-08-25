@@ -4,6 +4,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ProjectionBackground } from '@design-system/index'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 
+import type { StageSettings } from '../../settings/types/stage-settings'
+import {
+  readEffectiveStageSettings,
+  subscribeStageSettings,
+} from '../../settings/services/stage-settings-runtime'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+
 import TimerPreview from '../components/TimerPreview.vue'
 import {
   TIMER_CONFIG_CHANNEL,
@@ -27,6 +34,10 @@ const runtime = ref<TimerRuntimeState>({
   ...DEFAULT_TIMER_RUNTIME,
   savedTimesMs: [],
 })
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('timer'))
+
+let unsubStage: (() => void) | null = null
 
 let configChannel: BroadcastChannel | null = null
 let runtimeChannel: BroadcastChannel | null = null
@@ -62,6 +73,10 @@ onMounted(() => {
   refreshRuntime()
   window.addEventListener('storage', onStorage)
 
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('timer')
+  })
+
   try {
     configChannel = new BroadcastChannel(TIMER_CONFIG_CHANNEL)
     configChannel.addEventListener('message', onConfigMessage)
@@ -79,6 +94,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+  unsubStage?.()
+  unsubStage = null
   configChannel?.removeEventListener('message', onConfigMessage)
   configChannel?.close()
   configChannel = null
@@ -87,16 +104,39 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
-  background: config.value.bgColor,
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
+
+const stageAlign = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
 }))
 </script>
 
 <template>
-  <ProjectionBackground class="timer-projection">
+  <ProjectionBackground
+    class="timer-projection"
+    :style="stageStyle"
+  >
     <div
       class="timer-projection__stage"
-      :style="surfaceStyle"
+      :style="stageAlign"
     >
       <TimerPreview
         :config="config"
