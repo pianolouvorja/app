@@ -142,7 +142,13 @@ class PalcoSlot {
   /** Manda mensagem prós receivers deste slot. */
   send(msg) {
     if (!this.#running) return false
-    this.broadcast(msg)
+    // normaliza: string JSON → objeto (spread de string vira {0:'{',1:'"'...})
+    let m = msg
+    if (typeof m === 'string') {
+      try { m = JSON.parse(m) } catch { return false }
+    }
+    if (!m || typeof m !== 'object' || !m.type) return false
+    this.broadcast(m)
     return true
   }
 

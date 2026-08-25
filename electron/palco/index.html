@@ -481,29 +481,36 @@ function handle(m){
     case 'audio':{
       const a=$('audio');
       if(m.url){
-        a.src=proxyUrl(m.url);
-        // F3.3g: sincroniza com o player local — seek ANTES do play
-        // (metadata pode não estar carregada: aplicar no loadedmetadata).
-        if(typeof m.positionMs==='number'&&m.positionMs>0){
-          const apply=()=>{try{a.currentTime=m.positionMs/1000}catch(e){}};
-          if(a.readyState>=1)apply();else a.addEventListener('loadedmetadata',apply,{once:true});
-        }
-        // ao terminar a música, volta pro palco em espera
-        a.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};
-        // now playing (só se audio for o conteúdo principal)
-        if(m.title){
-          showNp(m.title, m.subtitle||'', m.cover||'');
-          // F3.3j: áudio sem imagem de fundo → BG padrão do palco
-          $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
+        // F3.3-sync: só recarrega o src se a URL MUDOU — reenvio da mesma
+        // faixa com action:play não pode reiniciar o áudio (loop 3s).
+        const next=proxyUrl(m.url);
+        if(a.src!==next){
+          a.src=next;
+          if(typeof m.positionMs==='number'&&m.positionMs>0){
+            const apply=()=>{try{a.currentTime=m.positionMs/1000}catch(e){}};
+            if(a.readyState>=1)apply();else a.addEventListener('loadedmetadata',apply,{once:true});
+          }
+          a.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};
+          if(m.title){
+            showNp(m.title, m.subtitle||'', m.cover||'');
+            $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
+          }
         }
       }
       if(m.action==='play'){
-        dlog('PLAY tentativa src='+(a.src||'').slice(0,60));
-        playWithFallback();
+        if(a.paused){dlog('PLAY src='+(a.src||'').slice(0,60));playWithFallback()}
+        else dlog('PLAY ignorado — já tocando');
       }
-      if(m.action==='pause')a.pause();
+      if(m.action==='pause'&&!a.paused)a.pause();
       if(m.action==='stop'){a.pause();a.currentTime=0;showIdle('Aguardando conteúdo…')}
-      if(m.action==='seek')a.currentTime=m.position||0;
+      if(m.action==='seek'){
+        const target=(m.position||m.positionMs/1000||0);
+        // só corrige se o desvio for perceptível — micro-sync causa stutter
+        if(Math.abs(a.currentTime-target)>0.3){try{a.currentTime=target}catch(e){}}
+        // sender mandou seek enquanto deveria tocar (play inicial pode ter
+        // falhado por autoplay) → retoma; playWithFallback cuida do unlock
+        if(a.paused&&target>0.2)playWithFallback();
+      }
       break}
     case 'video':{
       const v=$('video');
