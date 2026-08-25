@@ -8,6 +8,7 @@ import { readEffectiveStageSettings, subscribeStageSettings } from '../../settin
 import { resolveBackgroundImage, type StageSettings } from '../../settings/types/stage-settings'
 
 
+import StageCustomizationDialog from '../../settings/components/StageCustomizationDialog.vue'
 import TimerConfigDialog from '../components/TimerConfigDialog.vue'
 import TimerPreview from '../components/TimerPreview.vue'
 import TimerProjectFab from '../components/TimerProjectFab.vue'
@@ -197,14 +198,10 @@ const stageBg = computed(() => ({
       />
     </div>
 
-    <TimerConfigDialog
+    <StageCustomizationDialog
       :open="configOpen"
-      :config="config"
+      scope="timer"
       @close="closeConfig"
-      @update:time-format="setTimeFormat"
-      @update:bg-color="setBgColor"
-      @update:text-color="setTextColor"
-      @reset="resetDisplayToDefault"
     />
 
     <TimerProjectFab

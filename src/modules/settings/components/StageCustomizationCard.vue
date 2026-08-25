@@ -23,6 +23,12 @@ import SettingsToggle from './SettingsToggle.vue'
 import StagePreview from './StagePreview.vue'
 
 const { t } = useI18n()
+
+const props = defineProps<{
+  /** Escopo inicial selecionado (atalho contextual: paleta do módulo abre na sua tab). */
+  initialScope?: string
+}>()
+
 const {
   settings,
   activeScope,
@@ -32,6 +38,12 @@ const {
   setBackgroundImage,
   resetScope,
 } = useStageSettings()
+
+// Atalho contextual: ao montar com escopo definido, seleciona a tab daquele módulo.
+if (props.initialScope) {
+  const valid = ['global', ...STAGE_MODULE_SCOPES].includes(props.initialScope)
+  if (valid) setActiveScope(props.initialScope as Parameters<typeof setActiveScope>[0])
+}
 
 const fileInput = ref<HTMLInputElement | null>(null)
 

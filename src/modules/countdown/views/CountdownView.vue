@@ -8,6 +8,7 @@ import { readEffectiveStageSettings, subscribeStageSettings } from '../../settin
 import { resolveBackgroundImage, type StageSettings } from '../../settings/types/stage-settings'
 
 
+import StageCustomizationDialog from '../../settings/components/StageCustomizationDialog.vue'
 import CountdownConfigDialog from '../components/CountdownConfigDialog.vue'
 import CountdownDurationInput from '../components/CountdownDurationInput.vue'
 import CountdownPreview from '../components/CountdownPreview.vue'
@@ -209,14 +210,10 @@ const stageBg = computed(() => ({
       />
     </div>
 
-    <CountdownConfigDialog
+    <StageCustomizationDialog
       :open="configOpen"
-      :config="config"
+      scope="countdown"
       @close="closeConfig"
-      @update:time-format="setTimeFormat"
-      @update:bg-color="setBgColor"
-      @update:text-color="setTextColor"
-      @reset="resetDisplayToDefault"
     />
 
     <CountdownProjectFab
