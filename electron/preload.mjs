@@ -78,6 +78,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     send: (msg) => ipcRenderer.invoke('palco:send', msg),
     serveMedia: (name, mime, base64) =>
       ipcRenderer.invoke('palco:serve-media', { name, mime, base64 }),
+    servePath: (filePath) =>
+      ipcRenderer.invoke('palco:serve-path', { path: filePath }),
     clearMedia: () => ipcRenderer.invoke('palco:clear-media'),
     onEvent: (callback) => subscribe('palco:event', callback),
     onReceiverConnected: (callback) => subscribe('palco:receiver-connected', callback),

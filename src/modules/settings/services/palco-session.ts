@@ -34,6 +34,7 @@ function palcoApi(): {
   stop(): Promise<void>
   send(m: unknown): Promise<boolean>
   serveMedia(n: string, m: string, b: string): Promise<string | null>
+  servePath(p: string): Promise<string | null>
   onEvent(cb: (m: unknown) => void): void
   onReceiverConnected(cb: (i: unknown) => void): void
   onReceiverDisconnected(cb: (i: unknown) => void): void
@@ -171,12 +172,33 @@ class PalcoSession {
   }): Promise<void> {
     if (!this.isElectron) return
     const bg = await this.resolveBgUrl(input.background)
+    // Áudio/cover locais (file://) não existem na TV — o sender serve em
+    // /media/ (paridade serveMedia do APK). http(s) segue direto.
+    let url = input.url
+    if (url && !/^https?:\/\//i.test(url)) {
+      url = (await this.serveLocal(url)) ?? undefined
+    }
+    let cover = input.cover
+    if (cover && !/^https?:\/\//i.test(cover)) {
+      cover = (await this.serveLocal(cover)) ?? undefined
+    }
     await palcoApi().send({
       v: 2,
       type: 'audio',
       ...input,
+      url,
+      cover,
       background: bg,
     })
+  }
+
+  /** Publica arquivo local no /media/ do sender e devolve URL absoluta. */
+  private async serveLocal(target: string): Promise<string | null> {
+    try {
+      return await palcoApi().servePath(target)
+    } catch {
+      return null
+    }
   }
 
   /** Volta ao idle (aguardando conteúdo). */

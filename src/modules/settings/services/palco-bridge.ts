@@ -129,6 +129,25 @@ export function startPalcoBridge() {
       () => [media.isPlaying, media.session?.audioUrl] as const,
       () => syncAudio(),
     ),
+    // player fechou → para o áudio na TV
+    watch(
+      () => media.hasSession,
+      (has) => {
+        if (!has) {
+          lastAudioKey = ''
+          void palcoSession.audio({ action: 'stop' })
+        }
+      },
+    ),
+    // seek manual do operador → reposiciona a TV
+    watch(
+      () => media.currentTimeSec,
+      (now, before) => {
+        if (Math.abs(now - before) > 2 && media.hasSession) {
+          void palcoSession.audio({ action: 'seek', position: now })
+        }
+      },
+    ),
   ]
   window.setInterval(syncAudio, 3000)
   onTick()
