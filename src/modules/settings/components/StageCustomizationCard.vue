@@ -609,13 +609,29 @@ const confirmReset = ref(false)
             :aria-checked="(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).animationSpeed === opt.value"
             class="stage-custom__segment-btn"
             :class="{ 'stage-custom__segment-btn--active': (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).animationSpeed === opt.value }"
-            @click="patchRandom({ animationSpeed: opt.value })"
-          >
-            {{ opt.label }}
-          </button>
-        </div>
-      </div>
-    </template>
+              @click="patchRandom({ animationSpeed: opt.value })"
+            >
+              {{ opt.label }}
+            </button>
+            </div>
+            </div>
+            </template>
+
+            <template v-else-if="activeScope === 'hymns'">
+            <div class="stage-custom__section stage-custom__section--module">
+            <p class="stage-custom__label">{{ t('settings.stage.musicBg') }}</p>
+            <button
+            type="button"
+            role="switch"
+            :aria-checked="settings.hymns?.overrideBg === true"
+            class="stage-custom__switch"
+            :class="{ 'stage-custom__switch--on': settings.hymns?.overrideBg === true }"
+            :aria-label="t('settings.stage.musicBgOverride')"
+            @click="patch({ hymns: { overrideBg: settings.hymns?.overrideBg !== true } })"
+            />
+            <p class="stage-custom__hint">{{ t('settings.stage.musicBgHint') }}</p>
+            </div>
+            </template>
 
     <!-- Sombra e caixinha (F3.3m) -->
     <div class="stage-custom__section">

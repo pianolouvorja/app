@@ -55,6 +55,7 @@ export default {
         extended: 'Extended',
         empty: 'No monitors detected.',
         hint: 'Drag the monitors to rearrange their physical position.',
+
         resetLayout: 'Reset arrangement',
       },
       slides: {
@@ -132,6 +133,10 @@ export default {
       connected: '{count} TV connected',
       waiting: 'Waiting for TV to connect…',
       hint: 'On the TV, open the Palco app (or a browser at http://YOUR-IP:7080) — it finds this app automatically.',
+      audioRoute: 'Where audio plays',
+      audioPc: 'Computer',
+      audioTv: 'TV (Stage)',
+      audioBoth: 'Both',
       desktopOnly: 'Only available in the desktop app.',
       tv: 'TV',
       tvs: 'Stage TVs',
@@ -199,6 +204,9 @@ export default {
       reset: 'Reset',
       resetConfirm: 'Reset this module to default?',
       moduleFeatures: 'Module features',
+      musicBg: 'Music background',
+      musicBgOverride: 'Override music background',
+      musicBgHint: 'On: the background set here replaces the song cover/slide. Off: each song uses its own asset.',
       clockStyle: 'Clock style',
       clockShowSeconds: 'Show seconds',
       clockFormat24h: '24h format',

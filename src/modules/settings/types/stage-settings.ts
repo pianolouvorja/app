@@ -76,6 +76,13 @@ export type StageSettings = {
   timer?: { timeFormat: 'hh:mm:ss.ms' | 'hh:mm:ss' | 'mm:ss.ms' | 'mm:ss' }
   countdown?: { timeFormat: 'hh:mm:ss' | 'mm:ss' }
   random?: { fontSizePc: number; textTransform: 'none' | 'uppercase' | 'lowercase'; animationSpeed: 'slow' | 'normal' | 'fast' }
+  /**
+   * Hinos: por padrão o bg da projeção é o ASSET da música (capa/slide).
+   * override=true → o backgroundImage configurado aqui vence o asset
+   * (usuário pode definir um fundo próprio pra todas as músicas —
+   * preferência do ESCOPO hymns, nunca global).
+   */
+  hymns?: { overrideBg: boolean }
 }
 
 export const DEFAULT_CLOCK_MODULE_SETTINGS: NonNullable<StageSettings['clock']> = {
@@ -312,6 +319,13 @@ export function parseStageSettings(raw: unknown): StageSettings {
           } satisfies StageSettings['random'],
         }
       : {}),
+    ...(s['hymns'] && typeof s['hymns'] === 'object'
+      ? {
+          hymns: {
+            overrideBg: (s['hymns'] as Record<string, unknown>)['overrideBg'] === true,
+          } satisfies StageSettings['hymns'],
+        }
+      : {}),
   }
 }
 
@@ -342,5 +356,6 @@ export function serializeStageSettings(s: StageSettings): Record<string, unknown
     ...(s.timer ? { timer: s.timer } : {}),
     ...(s.countdown ? { countdown: s.countdown } : {}),
     ...(s.random ? { random: s.random } : {}),
+    ...(s.hymns ? { hymns: s.hymns } : {}),
   }
 }

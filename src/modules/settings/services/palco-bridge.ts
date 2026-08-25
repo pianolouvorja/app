@@ -214,6 +214,7 @@ function release(o: Exclude<Owner, null>) {
 
 let lastAudioKey = ''
 let lastPosSyncMs = 0
+let lastAudioRoute: 'pc' | 'tv' | 'both' | null = null
 
 function syncAudio() {
   const media = useMediaStoreSafe()
@@ -221,10 +222,22 @@ function syncAudio() {
   const session = media.session
   const audioUrl = session?.audioUrl ?? null
   const key = audioUrl ?? 'none'
+  const route = media.audioRoute
+
+  // PC somente: projeção visual continua normal; áudio não vai ao Palco.
+  // Stop só na transição, para não martelar receivers a cada poll.
+  if (route === 'pc') {
+    if (lastAudioRoute !== 'pc') void palcoSession.audio({ action: 'stop' })
+    lastAudioRoute = 'pc'
+    lastAudioKey = key
+    return
+  }
+  const routeChanged = lastAudioRoute !== route
+  lastAudioRoute = route
 
   // Rota TV: local pausado — a TV é a caixa. Envia a faixa (1x por URL)
   // e reenvia quando o operador der play/pause/seek NA UI (que comanda a TV).
-  if (media.audioOnTv) {
+  if (route === 'tv') {
     if (key !== lastAudioKey) {
       lastAudioKey = key
       if (audioUrl) {
@@ -243,11 +256,12 @@ function syncAudio() {
     return
   }
 
-  // Rota local (espelho): TV toca junto, sincronizada.
-  if (key !== lastAudioKey) {
-    lastAudioKey = key
+  // Rota Ambos: PC e TV tocam juntos, sincronizados.
+  // Entrando em Ambos vindo de TV precisa reenviar play mesmo na mesma faixa.
+  if (key !== lastAudioKey || routeChanged) {
     lastPosSyncMs = 0
     if (audioUrl && media.isPlaying) {
+      lastAudioKey = key
       void palcoSession.audio({
         url: audioUrl,
         title: session?.title ?? undefined,
@@ -256,7 +270,11 @@ function syncAudio() {
         positionMs: Math.round((media.currentTimeSec ?? 0) * 1000),
         action: 'play',
       })
+    } else if (!audioUrl) {
+      lastAudioKey = key
     }
+    // Ao sair de TV, play() local ainda pode estar pendente; o watcher de
+    // isPlaying chama syncAudio novamente e então envia o play ao Palco.
     return
   }
 

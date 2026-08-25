@@ -55,6 +55,7 @@ export default {
         extended: 'Extendido',
         empty: 'Ningún monitor detectado.',
         hint: 'Arrastre los monitores para reorganizar su posición física.',
+
         resetLayout: 'Restablecer disposición',
       },
       slides: {
@@ -132,6 +133,10 @@ export default {
       connected: '{count} TV conectada',
       waiting: 'Esperando la TV…',
       hint: 'En la TV, abra la app Palco (o un navegador en http://SU-IP:7080) — la encuentra automáticamente.',
+      audioRoute: 'Dónde suena el audio',
+      audioPc: 'Computadora',
+      audioTv: 'TV (Palco)',
+      audioBoth: 'Ambos',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
       tv: 'TV',
       tvs: 'TVs del Palco',
@@ -199,6 +204,9 @@ export default {
       reset: 'Restablecer',
       resetConfirm: '¿Restablecer este módulo al predeterminado?',
       moduleFeatures: 'Características de este módulo',
+      musicBg: 'Fondo de las canciones',
+      musicBgOverride: 'Sobrescribir fondo de las canciones',
+      musicBgHint: 'Activo: el fondo configurado aquí reemplaza la portada/diapositiva de la canción. Inactivo: cada canción usa su propio asset.',
       clockStyle: 'Estilo del reloj',
       clockShowSeconds: 'Mostrar segundos',
       clockFormat24h: 'Formato 24h',
