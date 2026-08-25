@@ -173,18 +173,9 @@ class PalcoSlot {
     // Receiver embutido (mesma página do palco-receiver)
     if (p === '/' || p === '/receiver.html' || p === '/index.html') {
       try {
-        let page = await readFile(path.join(__dirname, 'palco', 'receiver.html'), 'utf8')
-        // injeta ?v= com a versão do app — o receiver mostra dinamicamente
-        try {
-          const pkg = JSON.parse(await readFile(path.join(__dirname, '../package.json'), 'utf8'))
-          page = page.replace(
-            /(src="splash-palco\.jpg")/,
-            `$1 data-appv="${pkg.version}"`,
-          ).replace(
-            '<head>',
-            `<head><script>window.__PALCO_APPV__=${JSON.stringify(pkg.version)};</script>`,
-          )
-        } catch { /* sem package — segue sem versão */ }
+        const page = await readFile(path.join(__dirname, 'palco', 'receiver.html'))
+        // Versão do RECEIVER (appinfo.json embutido, mesmo do .ipk webOS) —
+        // o HTML resolve via fetch. NÃO usar a versão do app desktop aqui.
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         res.end(page)
       } catch {
