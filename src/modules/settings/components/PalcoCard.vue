@@ -6,6 +6,8 @@ import { GlassCard } from '@design-system/index'
 
 import { palcoSession } from '../services/palco-session'
 import { startPalcoBridge, stopPalcoBridge } from '../services/palco-bridge'
+import { useMediaStore } from '../../media/stores/useMediaStore'
+import { storeToRefs } from 'pinia'
 
 /**
  * Card do Palco (cast para TV): liga/desliga o sender WS (:7081) do desktop.
@@ -20,6 +22,13 @@ const receivers = ref(0)
 const url = ref<string | null>(null)
 const busy = ref(false)
 const available = palcoSession.isElectron
+
+// Rota de áudio (PC/TV/Ambos) — persistida, escolhida previamente aqui.
+const mediaStore = useMediaStore()
+const { audioRoute } = storeToRefs(mediaStore)
+function onRouteChange(value: string) {
+  void mediaStore.setAudioRoute(value as 'pc' | 'tv' | 'both')
+}
 
 let connectedHandler: ((info: { count: number }) => void) | null = null
 let disconnectedHandler: ((info: { count: number }) => void) | null = null
@@ -139,6 +148,24 @@ onUnmounted(() => {
       <p class="palco-card__hint">
         {{ t('settings.palco.hint') }}
       </p>
+
+      <!-- Rota de áudio: escolha PRÉVIA do operador (PC / TV / Ambos).
+           Não interfere na projeção via cabo — só no Palco (cast). -->
+      <label class="palco-card__route">
+        <i
+          class="ti ti-speakerphone"
+          aria-hidden="true"
+        />
+        <span>{{ t('settings.palco.audioRoute') }}</span>
+        <select
+          :value="audioRoute"
+          @change="onRouteChange(($event.target as HTMLSelectElement).value)"
+        >
+          <option value="pc">{{ t('settings.palco.audioPc') }}</option>
+          <option value="tv">{{ t('settings.palco.audioTv') }}</option>
+          <option value="both">{{ t('settings.palco.audioBoth') }}</option>
+        </select>
+      </label>
     </div>
 
     <p
@@ -271,5 +298,27 @@ onUnmounted(() => {
   margin: 0.6rem 0 0;
   color: var(--ds-color-on-surface-variant);
   font-size: 0.72rem;
+}
+
+.palco-card__route {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.8rem 0 0;
+  color: var(--ds-color-on-surface-variant);
+  font-size: 0.74rem;
+}
+
+.palco-card__route .ti {
+  color: var(--ds-color-primary);
+}
+
+.palco-card__route select {
+  padding: 0.3rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 18%, transparent);
+  border-radius: 0.4rem 0 0.4rem 0;
+  background: var(--ds-color-surface);
+  color: var(--ds-color-on-surface);
+  font-size: 0.74rem;
 }
 </style>

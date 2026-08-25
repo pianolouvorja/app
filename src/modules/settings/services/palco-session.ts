@@ -130,8 +130,13 @@ class PalcoSession {
   async project(scope: string, input: ProjectionInput): Promise<void> {
     if (!this.isElectron) return
     const s = readEffectiveStageSettings(scope)
+    // Hinos com overrideBg: o bg configurado no escopo vence o asset da
+    // música (capa/slide) — fundo próprio pra todas as músicas.
+    const overrideHymnBg = scope === 'hymns' && s.hymns?.overrideBg === true
     const bg = await this.resolveBgUrl(
-      input.background ?? resolveBackgroundImage(s.backgroundImage),
+      overrideHymnBg
+        ? resolveBackgroundImage(s.backgroundImage)
+        : input.background ?? resolveBackgroundImage(s.backgroundImage),
     )
     await palcoApi().send({
       v: 2,
