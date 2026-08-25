@@ -27,6 +27,8 @@ const { t } = useI18n()
 const props = defineProps<{
   /** Escopo inicial selecionado (atalho contextual: paleta do módulo abre na sua tab). */
   initialScope?: string
+  /** Quando definido, mostra APENAS este escopo (paleta do módulo personaliza só ele). */
+  onlyScope?: string
 }>()
 
 const {
@@ -44,6 +46,10 @@ if (props.initialScope) {
   const valid = ['global', ...STAGE_MODULE_SCOPES].includes(props.initialScope)
   if (valid) setActiveScope(props.initialScope as Parameters<typeof setActiveScope>[0])
 }
+if (props.onlyScope) {
+  const valid = ['global', ...STAGE_MODULE_SCOPES].includes(props.onlyScope)
+  if (valid) setActiveScope(props.onlyScope as Parameters<typeof setActiveScope>[0])
+}
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -54,6 +60,11 @@ const scopeTabs = [
     labelKey: `settings.stage.scope.${id}`,
   })),
 ]
+
+// No modo onlyScope as tabs somem (só o módulo sendo personalizado).
+const visibleScopeTabs = props.onlyScope
+  ? scopeTabs.filter((tab) => tab.id === props.onlyScope)
+  : scopeTabs
 
 const weightOptions: { value: StageFontWeight; label: string }[] = [
   { value: 400, label: t('settings.stage.weightNormal') },
@@ -104,7 +115,7 @@ const confirmReset = ref(false)
     <!-- Escopos: global (padrão herdado) + um por módulo -->
     <div class="stage-custom__scopes" role="tablist">
       <button
-        v-for="tab in scopeTabs"
+        v-for="tab in visibleScopeTabs"
         :key="tab.id"
         type="button"
         role="tab"

@@ -73,7 +73,7 @@ function onKeydown(event: KeyboardEvent) {
           </header>
 
           <div class="stage-shortcut__body">
-            <StageCustomizationCard :initial-scope="scope" />
+            <StageCustomizationCard :only-scope="scope" />
           </div>
         </GlassCard>
       </div>
