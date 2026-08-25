@@ -8,6 +8,7 @@
 
 import { readEffectiveStageSettings } from '../../settings/services/stage-settings-runtime'
 import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { getPalcoRoute, type PalcoModule } from './palco-routing'
 
 type PalcoStatus = {
   running: boolean
@@ -29,12 +30,12 @@ type ProjectionInput = {
 
 /** Acesso tipado ao palco exposto pelo preload (contextBridge). */
 function palcoApi(): {
-  status(): Promise<PalcoStatus>
-  start(): Promise<boolean>
-  stop(): Promise<void>
-  send(m: unknown): Promise<boolean>
-  serveMedia(n: string, m: string, b: string): Promise<string | null>
-  servePath(p: string): Promise<string | null>
+  status(slotId?: string): Promise<PalcoStatus>
+  start(slotId?: string): Promise<boolean>
+  stop(slotId?: string): Promise<void>
+  send(m: unknown, slotId?: string): Promise<boolean>
+  serveMedia(n: string, m: string, b: string, slotId?: string): Promise<string | null>
+  servePath(p: string, slotId?: string): Promise<string | null>
   onEvent(cb: (m: unknown) => void): void
   onReceiverConnected(cb: (i: unknown) => void): void
   onReceiverDisconnected(cb: (i: unknown) => void): void
@@ -44,6 +45,21 @@ function palcoApi(): {
 
 class PalcoSession {
   private baseUrl: string | null = null
+  private activeSlotId = '0'
+
+  get slotId(): string {
+    return this.activeSlotId
+  }
+
+  setSlot(slotId: string): void {
+    this.activeSlotId = slotId
+    this.baseUrl = null
+  }
+
+  async slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>> {
+    if (!this.isElectron) return []
+    return (window as never as { louvorja: { palco: { slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>> } } }).louvorja.palco.slots()
+  }
 
   get isElectron(): boolean {
     return (
@@ -54,13 +70,13 @@ class PalcoSession {
 
   async status(): Promise<PalcoStatus | null> {
     if (!this.isElectron) return null
-    return palcoApi().status()
+    return palcoApi().status(this.activeSlotId)
   }
 
   async turnOn(): Promise<boolean> {
     if (!this.isElectron) return false
     this.baseUrl = null // recarrega no próximo project
-    const ok = await palcoApi().start()
+    const ok = await palcoApi().start(this.activeSlotId)
     if (ok) {
       // liga o palco: bg permanente + idle
       this.sendBgPalco()
@@ -72,7 +88,7 @@ class PalcoSession {
   async turnOff(): Promise<void> {
     if (!this.isElectron) return
     this.baseUrl = null
-    await palcoApi().stop()
+    await palcoApi().stop(this.activeSlotId)
   }
 
   /** BaseUrl do sender (http://ip:7080) — cacheado após 1º status. */
@@ -125,7 +141,22 @@ class PalcoSession {
       footerColor: s.footerRefColor,
       footerWeight: s.footerRefWeight,
       footerVersion: input.footerVersion,
-    })
+    }, this.activeSlotId)
+  }
+
+  /** Projeta numa TV específica sem deixar slot ativo global alterado. */
+  async projectTo(slotId: string, scope: string, input: ProjectionInput): Promise<void> {
+    const previous = this.activeSlotId
+    this.setSlot(slotId)
+    try { await this.project(scope, input) } finally { this.setSlot(previous) }
+  }
+
+  /** Espelha módulo em todos slots ligados, ou usa rota individual. */
+  async projectRouted(module: PalcoModule, scope: string, input: ProjectionInput): Promise<void> {
+    const route = getPalcoRoute(module)
+    if (route !== 'mirror') return this.projectTo(route, scope, input)
+    const slots = await this.slots()
+    await Promise.all(slots.filter((s) => s.running).map((s) => this.projectTo(s.id, scope, input)))
   }
 
   /** BG permanente do palco (idle) — bg global do stage. */
@@ -137,7 +168,7 @@ class PalcoSession {
       v: 2,
       type: 'bgPalco',
       url: bg ?? '',
-    })
+    }, this.activeSlotId)
   }
 
   /** Timer na TV (countdown/chrono). */
@@ -147,7 +178,17 @@ class PalcoSession {
       v: 2,
       type: 'timer',
       ...opts,
-    })
+    }, this.activeSlotId)
+  }
+
+  async timerRouted(module: PalcoModule, opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string }): Promise<void> {
+    const route = getPalcoRoute(module)
+    const slots = route === 'mirror' ? (await this.slots()).filter((s) => s.running).map((s) => s.id) : [route]
+    await Promise.all(slots.map(async (id) => {
+      const previous = this.activeSlotId
+      this.setSlot(id)
+      try { this.timer(opts) } finally { this.setSlot(previous) }
+    }))
   }
 
   timerStop(): void {
@@ -156,7 +197,7 @@ class PalcoSession {
       v: 2,
       type: 'timer',
       action: 'stop',
-    })
+    }, this.activeSlotId)
   }
 
   /** Áudio na TV — o receiver sincroniza positionMs antes do play. */
@@ -189,13 +230,13 @@ class PalcoSession {
       url,
       cover,
       background: bg,
-    })
+    }, this.activeSlotId)
   }
 
   /** Publica arquivo local no /media/ do sender e devolve URL absoluta. */
   private async serveLocal(target: string): Promise<string | null> {
     try {
-      return await palcoApi().servePath(target)
+      return await palcoApi().servePath(target, this.activeSlotId)
     } catch {
       return null
     }
@@ -208,7 +249,7 @@ class PalcoSession {
       v: 2,
       type: 'idle',
       msg,
-    })
+    }, this.activeSlotId)
   }
 
   /** Serve mídia local e retorna a URL para a TV. */

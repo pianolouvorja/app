@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
 import RandomConfigDialog from '../components/RandomConfigDialog.vue'
 import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
@@ -93,6 +94,7 @@ const effectiveConfig = computed(() => {
 <template>
   <section class="random-view">
     <header class="random-view__header">
+      <PalcoRouteSelect module="random" />
       <button
         type="button"
         class="random-view__back"

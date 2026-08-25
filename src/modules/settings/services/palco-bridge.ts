@@ -113,7 +113,7 @@ async function projectMedia() {
     palcoSession.idle()
     return
   }
-  await palcoSession.project('hymns', {
+  await palcoSession.projectRouted('hymns', 'hymns', {
     text: text.split('\n').join('<br>'),
     footerRef: r.isCover ? '' : r.title,
     background: r.imageUrl ?? undefined,
@@ -126,7 +126,7 @@ async function projectBible() {
     palcoSession.idle()
     return
   }
-  await palcoSession.project('bible', {
+  await palcoSession.projectRouted('bible', 'bible', {
     text: r.text.split('\n').join('<br>'),
     footerRef: r.reference,
   })
@@ -138,7 +138,7 @@ async function projectRandom() {
     palcoSession.idle()
     return
   }
-  await palcoSession.project('random', {
+  await palcoSession.projectRouted('random', 'random', {
     text: r.currentDisplay,
   })
 }
@@ -149,7 +149,7 @@ function projectTimer() {
     palcoSession.idle()
     return
   }
-  palcoSession.timer({
+  palcoSession.timerRouted('timer', {
     mode: 'chrono',
     label: '',
     duration: Math.floor(elapsedMs(r) / 1000),
@@ -163,7 +163,7 @@ function projectCountdown() {
     return
   }
   const remaining = Math.max(0, r.durationMs - elapsedMs(r))
-  palcoSession.timer({
+  palcoSession.timerRouted('countdown', {
     mode: 'countdown',
     label: '',
     duration: Math.ceil(remaining / 1000),
@@ -177,7 +177,7 @@ function projectClock() {
     const now = new Date()
     const hh = String(now.getHours()).padStart(2, '0')
     const mm = String(now.getMinutes()).padStart(2, '0')
-    void palcoSession.project('clock', {
+    void palcoSession.projectRouted('clock', 'clock', {
       text: `${hh}:${mm}`,
     })
   }
