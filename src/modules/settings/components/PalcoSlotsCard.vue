@@ -80,7 +80,7 @@ onMounted(() => void refresh())
         <button type="button" class="palco-slot__select" @click="selectSlot(slot.id)">
           <span class="palco-slot__dot" :class="{ 'palco-slot__dot--on': slot.running && slot.clients > 0 }" />
           <span>
-            <strong>{{ slot.label }}</strong>
+            <strong>{{ slot.id === '0' ? t('settings.palco.mainTv') : slot.label }}</strong>
             <small>
               :{{ slot.httpPort }} ·
               {{ slot.clients ? t('settings.palco.connected', { count: slot.clients }) : t('settings.palco.waiting') }}

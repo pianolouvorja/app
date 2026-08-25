@@ -125,6 +125,7 @@ export default {
       desktopOnly: 'Only available in the desktop app.',
       tv: 'TV',
       tvs: 'Stage TVs',
+      mainTv: 'Main TV',
       tvsHint: 'Register TVs and choose where each module projects.',
       addTv: 'Add TV',
       selected: 'selected',

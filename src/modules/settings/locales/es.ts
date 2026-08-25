@@ -125,6 +125,7 @@ export default {
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
       tv: 'TV',
       tvs: 'TVs del Palco',
+      mainTv: 'TV principal',
       tvsHint: 'Registre TVs y elija dónde proyecta cada módulo.',
       addTv: 'Añadir TV',
       selected: 'seleccionada',

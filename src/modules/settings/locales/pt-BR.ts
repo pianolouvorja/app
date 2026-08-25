@@ -115,6 +115,7 @@ export default {
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
       tv: 'TV',
       tvs: 'TVs do Palco',
+      mainTv: 'TV principal',
       tvsHint: 'Cadastre TVs e escolha onde cada módulo projeta.',
       addTv: 'Adicionar TV',
       selected: 'selecionada',
