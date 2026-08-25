@@ -11,11 +11,17 @@ import { useTimerStore } from '../../timer/stores/useTimerStore'
 // electron bridge mock (getDesktopBridge etc.)
 vi.mock('@shared/services/desktop-bridge', () => ({
   getDesktopBridge: () => null,
+  isDesktopApp: () => false,
 }))
 vi.mock('@shared/services/projection-modules', () => ({
   openProjectionModule: vi.fn().mockResolvedValue(true),
   closeProjectionModule: vi.fn(),
   isProjectionModuleOpen: vi.fn(() => false),
+}))
+// Ambiente node (sem localStorage): syncProjection não deve abrir janela.
+vi.mock('@shared/composables/useProjectionWindow', () => ({
+  openProjectionModule: vi.fn().mockResolvedValue(true),
+  closeProjectionModule: vi.fn().mockResolvedValue(true),
 }))
 
 describe('timer handler → store real', () => {

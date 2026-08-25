@@ -9,8 +9,11 @@
  */
 
 import { watch } from 'vue'
+import type { Router } from 'vue-router'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import type { RemoteBridgeMessage } from '@shared/types/desktop-bridge'
+import type { MediaPlaybackMode } from '../../media/types/media'
 
 import { resolveMediaTarget } from './media-target'
 import { createModuleHandlers } from './module-handlers'
@@ -54,7 +57,7 @@ const LITURGY_ACTIONS = new Set([
 /** Namespaces v2 (controle remoto total — spec Obsidian v2). */
 const V2_NAMESPACES = new Set(['media', 'bible', 'timer', 'countdown', 'clock', 'random'])
 
-export function installRemoteLiturgyBridge({ router }) {
+export function installRemoteLiturgyBridge({ router }: { router: Router }) {
   const liturgy = useLiturgyStore()
   const player = useMediaPlayer()
   const remoteApi = getDesktopBridge()?.remote
@@ -105,10 +108,11 @@ export function installRemoteLiturgyBridge({ router }) {
     random: useRandomStore() as never,
   })
 
-  const send = (channel, payload) => {
+  const send = (channel: string, payload: Record<string, unknown>) => {
     try {
       if (channel === 'remote:state') remoteApi.sendState(payload)
-      else if (channel === 'remote:ack') remoteApi.sendAck(payload)
+      else if (channel === 'remote:ack')
+        remoteApi.sendAck(payload as { id?: string | number; ok: boolean })
     } catch {
       // ignore
     }
@@ -173,7 +177,7 @@ export function installRemoteLiturgyBridge({ router }) {
   // Estado COMPLETO (spec v1): player + liturgia espelhada no APK.
   const pushState = async () => send('remote:state', await buildState())
 
-  async function execute(msg) {
+  async function execute(msg: RemoteBridgeMessage) {
     const { action, value } = msg
     const items = liturgy.currentItems ?? []
     const current = liturgy.selectedItemIndex ?? -1
@@ -246,7 +250,7 @@ export function installRemoteLiturgyBridge({ router }) {
             return (
               (await projection?.remoteSetVolume?.(
                 Math.min(100, Math.max(0, value)) / 100,
-              )) ?? false
+              )) !== null
             )
           case 'player.seek':
             if (typeof msg.positionMs !== 'number') return false
@@ -289,8 +293,12 @@ export function installRemoteLiturgyBridge({ router }) {
           player.seekTo(msg.positionMs / 1000)
           return true
         case 'player.setMode':
-          if (typeof msg.mode !== 'string') return false
-          await player.switchMode(msg.mode)
+          if (
+            typeof msg.mode !== 'string' ||
+            !['audio', 'instrumental', 'no_audio'].includes(msg.mode)
+          )
+            return false
+          await player.switchMode(msg.mode as MediaPlaybackMode)
           return true
         case 'player.open': {
           // v2: abrir hino/faixa por id (compat v1 — hymnId → musicId).
@@ -308,7 +316,7 @@ export function installRemoteLiturgyBridge({ router }) {
     return false
   }
 
-  const onCommand = async (msg) => {
+  const onCommand = async (msg: RemoteBridgeMessage) => {
     let ok = false
     try {
       ok = await execute(msg)

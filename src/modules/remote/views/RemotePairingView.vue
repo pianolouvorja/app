@@ -4,19 +4,11 @@ import { useI18n } from 'vue-i18n'
 
 import { GlassCard } from '@design-system/index'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import type { RemotePairingInfo } from '@shared/types/desktop-bridge'
 
 const { t } = useI18n()
 
-interface PairingInfo {
-  host: string
-  port: number
-  token: string
-  connectUrl: string
-  qrDataUrl: string
-  clientCount: number
-}
-
-const info = ref<PairingInfo | null>(null)
+const info = ref<RemotePairingInfo | null>(null)
 const failed = ref(false)
 const clientCount = ref(0)
 const clientAddress = ref<string | null>(null)
@@ -31,10 +23,10 @@ onMounted(async () => {
   try {
     info.value = await remote.pairingInfo()
     clientCount.value = info.value.clientCount
-    clientAddress.value = info.value.clientAddress
+    clientAddress.value = info.value.clientAddress ?? null
     offClients = remote.onClients?.(({ count, address }) => {
       clientCount.value = count
-      clientAddress.value = address
+      clientAddress.value = address ?? null
     })
   } catch {
     failed.value = true

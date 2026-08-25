@@ -1278,5 +1278,6 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     clearActionMessage,
     setActionMessage,
     setNotes,
+    setItemDurationMs,
   }
 })

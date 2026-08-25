@@ -24,6 +24,37 @@ export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
   delete: (mediaType: MediaFolderType, filename: string) => Promise<boolean>
+  /** Duração de mídia local em ms via ffprobe (main process). */
+  probeDuration?: (path: string) => Promise<number>
+}
+
+/** Mensagem de comando vinda do controle remoto (APK via WS). */
+export type RemoteBridgeMessage = {
+  id?: string | number
+  action: string
+  value?: unknown
+  [key: string]: unknown
+}
+
+export type RemotePairingInfo = {
+  host: string
+  port: number
+  token: string
+  connectUrl: string
+  qrDataUrl: string
+  clientCount: number
+  clientAddress?: string | null
+}
+
+export type RemoteApi = {
+  onCommand: (callback: (msg: RemoteBridgeMessage) => void) => () => void
+  onStateRequest: (callback: () => void) => () => void
+  sendAck: (ack: { id?: string | number; ok: boolean }) => void
+  sendState: (state: Record<string, unknown>) => void
+  pairingInfo: () => Promise<RemotePairingInfo>
+  onClients?: (
+    callback: (payload: { count: number; address?: string | null }) => void,
+  ) => () => void
 }
 
 export type DisplayBounds = {
@@ -192,4 +223,5 @@ export type LouvorJaBridge = {
   dialog: DialogApi
   presentation?: PresentationApi
   projection: ProjectionApi
+  remote?: RemoteApi
 }
