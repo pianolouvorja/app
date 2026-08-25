@@ -180,7 +180,11 @@ const confirmReset = ref(false)
     </div>
 
     <!-- Escopos: global (padrão herdado) + um por módulo -->
-    <div class="stage-custom__scopes" role="tablist">
+    <div
+      v-if="visibleScopeTabs.length > 1"
+      class="stage-custom__scopes"
+      role="tablist"
+    >
       <button
         v-for="tab in visibleScopeTabs"
         :key="tab.id"

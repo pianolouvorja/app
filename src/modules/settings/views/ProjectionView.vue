@@ -33,7 +33,7 @@ onMounted(() => {
       <MainScreenOptionsCard />
     </div>
 
-    <StageCustomizationCard />
+    <StageCustomizationCard only-scope="global" />
   </div>
 </template>
 
