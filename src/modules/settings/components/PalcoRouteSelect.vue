@@ -1,28 +1,41 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getPalcoRoute, setPalcoRoute, type PalcoModule } from '../services/palco-routing'
 
 type Slot = { id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }
+type PalcoStatusLike = { running: boolean }
 const props = defineProps<{ module: PalcoModule; compact?: boolean }>()
 const { t } = useI18n()
 const slots = ref<Slot[]>([])
 const route = ref(getPalcoRoute(props.module))
+const senderOn = ref(false)
 const hasElectron = computed(() => Boolean((window as never as { louvorja?: { palco?: unknown } }).louvorja?.palco))
 
 async function refresh() {
   if (!hasElectron.value) return
-  slots.value = await (window as never as { louvorja: { palco: { slots(): Promise<Slot[]> } } }).louvorja.palco.slots()
+  const api = (window as never as { louvorja: { palco: { slots(): Promise<Slot[]>; status(): Promise<PalcoStatusLike | null> } } }).louvorja.palco
+  // Visível apenas com o Palco ativo — desligado, o seletor não faz sentido.
+  const st = await api.status().catch(() => null)
+  senderOn.value = Boolean(st?.running)
+  if (!senderOn.value) return
+  slots.value = await api.slots().catch(() => [])
 }
 function update(value: string) {
   route.value = value
   setPalcoRoute(props.module, value)
 }
-onMounted(() => void refresh())
+let timer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  void refresh()
+  // re-check leve: status muda quando o toggle liga/desliga em outra tela
+  timer = setInterval(() => void refresh(), 4000)
+})
+onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 
 <template>
-  <label v-if="hasElectron" class="palco-route" :class="{ 'palco-route--compact': compact }">
+  <label v-if="hasElectron && senderOn" class="palco-route" :class="{ 'palco-route--compact': compact }">
     <i class="ti ti-device-tv" aria-hidden="true" />
     <span>{{ t('settings.palco.route') }}</span>
     <select :value="route" @change="update(($event.target as HTMLSelectElement).value)">
