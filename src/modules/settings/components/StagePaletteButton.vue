@@ -44,7 +44,9 @@ const open = ref(false)
 <style scoped lang="scss">
 .stage-palette-fab {
   position: fixed;
-  top: calc(var(--app-titlebar-height, 0px) + var(--ds-header-height, 5rem) + 0.75rem);
+  /* Acima do dock, canto inferior direito — não compete com headers,
+   * toolbars nem com o seletor de destino do palco de cada módulo. */
+  bottom: calc(var(--ds-dock-height, 4.5rem) + 1rem);
   right: 1.25rem;
   z-index: 40;
   display: inline-flex;

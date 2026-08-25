@@ -123,6 +123,16 @@ export default {
       checkUpdate: 'Check for updates',
       checking: 'Checking...',
       desktopOnly: 'Only available in the desktop app.',
+
+
+    },
+    palco: {
+      title: 'Stage (TV)',
+      subtitle: 'Cast to the TV via LouvorJA receiver — same network',
+      connected: '{count} TV connected',
+      waiting: 'Waiting for TV to connect…',
+      hint: 'On the TV, open the Palco app (or a browser at http://YOUR-IP:7080) — it finds this app automatically.',
+      desktopOnly: 'Only available in the desktop app.',
       tv: 'TV',
       tvs: 'Stage TVs',
       mainTv: 'Main TV',
@@ -136,16 +146,6 @@ export default {
       route: 'Stage destination',
       mirror: 'Mirror all',
       connectedShort: 'TV online',
-
-
-    },
-    palco: {
-      title: 'Stage (TV)',
-      subtitle: 'Cast to the TV via LouvorJA receiver — same network',
-      connected: '{count} TV connected',
-      waiting: 'Waiting for TV to connect…',
-      hint: 'On the TV, open the Palco app (or a browser at http://YOUR-IP:7080) — it finds this app automatically.',
-      desktopOnly: 'Only available in the desktop app.',
     },
     stage: {
       title: 'Customize Stage',
