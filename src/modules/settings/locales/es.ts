@@ -175,6 +175,11 @@ export default {
       alignBottom: 'Abajo',
       reset: 'Restablecer',
       resetConfirm: '¿Restablecer este módulo al predeterminado?',
+      moduleFeatures: 'Características de este módulo',
+      clockStyle: 'Estilo del reloj',
+      clockShowSeconds: 'Mostrar segundos',
+      clockFormat24h: 'Formato 24h',
+      timeFormat: 'Formato del tiempo',
     },
 
     remote: {

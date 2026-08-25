@@ -68,7 +68,40 @@ export type StageSettings = {
   bibleTextColor: string
   /** Data URL da imagem de fundo do escopo (1 ativa por escopo). */
   backgroundImage: string | null
+  /**
+   * Características PRÓPRIAS de cada módulo (aditivas — não subscrevem a base).
+   * Sub-objeto existe apenas no escopo do módulo correspondente.
+   */
+  clock?: { style: 'digital' | 'analog'; showSeconds: boolean; format24h: boolean }
+  timer?: { timeFormat: 'hh:mm:ss.ms' | 'hh:mm:ss' | 'mm:ss.ms' | 'mm:ss' }
+  countdown?: { timeFormat: 'hh:mm:ss' | 'mm:ss' }
 }
+
+export const DEFAULT_CLOCK_MODULE_SETTINGS: NonNullable<StageSettings['clock']> = {
+  style: 'digital',
+  showSeconds: true,
+  format24h: true,
+}
+
+export const DEFAULT_TIMER_MODULE_SETTINGS: NonNullable<StageSettings['timer']> = {
+  timeFormat: 'hh:mm:ss.ms',
+}
+
+export const DEFAULT_COUNTDOWN_MODULE_SETTINGS: NonNullable<StageSettings['countdown']> = {
+  timeFormat: 'hh:mm:ss',
+}
+
+export const TIMER_TIME_FORMAT_OPTIONS: NonNullable<StageSettings['timer']>['timeFormat'][] = [
+  'hh:mm:ss.ms',
+  'hh:mm:ss',
+  'mm:ss.ms',
+  'mm:ss',
+]
+
+export const COUNTDOWN_TIME_FORMAT_OPTIONS: NonNullable<StageSettings['countdown']>['timeFormat'][] = [
+  'hh:mm:ss',
+  'mm:ss',
+]
 
 export const DEFAULT_STAGE_SETTINGS: StageSettings = {
   backgroundColor: '#0A0E1A',
@@ -206,6 +239,39 @@ export function parseStageSettings(raw: unknown): StageSettings {
       (s['bgImg'].startsWith('data:') || s['bgImg'].startsWith(OFFICIAL_BG_PREFIX))
         ? s['bgImg']
         : null,
+    ...(s['clock'] && typeof s['clock'] === 'object'
+      ? {
+          clock: {
+            style: (s['clock'] as Record<string, unknown>)['style'] === 'analog' ? ('analog' as const) : ('digital' as const),
+            showSeconds:
+              (s['clock'] as Record<string, unknown>)['showSeconds'] === true,
+            format24h:
+              (s['clock'] as Record<string, unknown>)['format24h'] !== false,
+          } satisfies StageSettings['clock'],
+        }
+      : {}),
+    ...(s['timer'] && typeof s['timer'] === 'object'
+      ? {
+          timer: {
+            timeFormat: TIMER_TIME_FORMAT_OPTIONS.includes(
+              (s['timer'] as Record<string, unknown>)['timeFormat'] as NonNullable<StageSettings['timer']>['timeFormat'],
+            )
+              ? ((s['timer'] as Record<string, unknown>)['timeFormat'] as NonNullable<StageSettings['timer']>['timeFormat'])
+              : DEFAULT_TIMER_MODULE_SETTINGS.timeFormat,
+          } satisfies StageSettings['timer'],
+        }
+      : {}),
+    ...(s['countdown'] && typeof s['countdown'] === 'object'
+      ? {
+          countdown: {
+            timeFormat: COUNTDOWN_TIME_FORMAT_OPTIONS.includes(
+              (s['countdown'] as Record<string, unknown>)['timeFormat'] as NonNullable<StageSettings['countdown']>['timeFormat'],
+            )
+              ? ((s['countdown'] as Record<string, unknown>)['timeFormat'] as NonNullable<StageSettings['countdown']>['timeFormat'])
+              : DEFAULT_COUNTDOWN_MODULE_SETTINGS.timeFormat,
+          } satisfies StageSettings['countdown'],
+        }
+      : {}),
   }
 }
 
@@ -232,5 +298,8 @@ export function serializeStageSettings(s: StageSettings): Record<string, unknown
     bWeight: s.bibleFontWeight,
     bFg: s.bibleTextColor,
     bgImg: s.backgroundImage,
+    ...(s.clock ? { clock: s.clock } : {}),
+    ...(s.timer ? { timer: s.timer } : {}),
+    ...(s.countdown ? { countdown: s.countdown } : {}),
   }
 }
