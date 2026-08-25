@@ -8,6 +8,7 @@ import { readEffectiveStageSettings, subscribeStageSettings } from '../../settin
 import { resolveBackgroundImage, type StageSettings } from '../../settings/types/stage-settings'
 
 
+import StageCustomizationDialog from '../../settings/components/StageCustomizationDialog.vue'
 import ClockConfigDialog from '../components/ClockConfigDialog.vue'
 import ClockPreview from '../components/ClockPreview.vue'
 import ClockProjectFab from '../components/ClockProjectFab.vue'
@@ -129,16 +130,10 @@ const stageBg = computed(() => ({
       </GlassCard>
     </div>
 
-    <ClockConfigDialog
+    <StageCustomizationDialog
       :open="configOpen"
-      :config="config"
+      scope="clock"
       @close="closeConfig"
-      @update:style="setStyle"
-      @update:show-seconds="setShowSeconds"
-      @update:format24h="setFormat24h"
-      @update:bg-color="setBgColor"
-      @update:text-color="setTextColor"
-      @reset="resetToDefault"
     />
 
     <ClockProjectFab
