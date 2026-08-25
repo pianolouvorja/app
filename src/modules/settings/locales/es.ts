@@ -41,7 +41,6 @@ export default {
         'El Modo Oscuro reduce el consumo de energía en pantallas OLED y disminuye la fatiga visual en entornos de culto.',
       tipLight:
         'El Modo Claro ofrece mejor legibilidad en entornos muy iluminados durante cultos diurnos.',
-      changeTheme: 'Cambiar tema',
     },
     placeholder: {
       general: 'Preferencias generales de la aplicación próximamente.',
@@ -124,14 +123,6 @@ export default {
       checkUpdate: 'Buscar actualizaciones',
       checking: 'Buscando...',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
-      checkUpdate: 'Buscar actualizaciones',
-      checking: 'Comprobando…',
-      updateAvailable: 'Actualización disponible',
-      updateDesktopOnly: 'Solo escritorio',
-      updateError: 'Error de actualización',
-      updateHint: 'Reinicie para aplicar',
-      updateNotAvailable: 'Sin actualizaciones',
-      updateTitle: 'Actualización de la aplicación',
     },
     stage: {
       title: 'Personalizar Escenario',

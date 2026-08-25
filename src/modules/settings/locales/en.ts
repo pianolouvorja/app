@@ -41,7 +41,6 @@ export default {
         'Dark Mode reduces power consumption on OLED displays and decreases eye strain in worship environments.',
       tipLight:
         'Light Mode offers better readability in brightly lit environments during daytime services.',
-      changeTheme: 'Change theme',
     },
     placeholder: {
       general: 'General app preferences coming soon.',
@@ -124,14 +123,6 @@ export default {
       checkUpdate: 'Check for updates',
       checking: 'Checking...',
       desktopOnly: 'Only available in the desktop app.',
-      checkUpdate: 'Check for updates',
-      checking: 'Checking…',
-      updateAvailable: 'Update available',
-      updateDesktopOnly: 'Desktop only',
-      updateError: 'Update error',
-      updateHint: 'Restart to apply',
-      updateNotAvailable: 'No updates',
-      updateTitle: 'App update',
     },
     stage: {
       title: 'Customize Stage',
