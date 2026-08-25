@@ -134,6 +134,17 @@ export interface ModuleHandlerDeps {
   countdown?: CountdownStoreLike
   clock?: ClockStoreLike
   random?: RandomStoreLike
+  /** Palco (cast TV) — comandos palco.* vindos do remote (web/APK). */
+  palco?: PalcoDeps
+}
+
+/** Dependências do namespace palco (sender de cast para TV). */
+export interface PalcoDeps {
+  status(): Promise<{ running: boolean; clients: number } | null>
+  turnOn(): Promise<boolean>
+  turnOff(): Promise<void>
+  project(scope: string, input: { text: string; footerRef?: string }): void
+  idle(): void
 }
 
 function isNum(v: unknown): v is number {
@@ -520,7 +531,7 @@ async function executeRandom(
   }
 }
 
-function snapshotRandom(random: RandomStoreLike): Record<string, unknown> {
+function snapshotRandom(random: RandomStoreLike): Record<string, unknown> | null {
   const session = readField<Record<string, unknown>>(random, 'session')
   const runtime = readField<Record<string, unknown>>(random, 'runtime')
   return {
@@ -530,6 +541,39 @@ function snapshotRandom(random: RandomStoreLike): Record<string, unknown> {
     isDrawing: runtime?.isDrawing === true,
     currentDisplay: (runtime?.currentDisplay as string) ?? null,
     isProjecting: readField<boolean>(random, 'isProjecting') === true,
+  }
+}
+
+/**
+ * Namespace palco — o sender de cast para TV no main process.
+ * Comandos: palco.on / palco.off / palco.status / palco.project / palco.idle
+ */
+async function executePalco(
+  palco: PalcoDeps,
+  action: string,
+  msg: Record<string, unknown>,
+): Promise<boolean> {
+  switch (action) {
+    case 'palco.on':
+      return palco.turnOn()
+    case 'palco.off': {
+      await palco.turnOff()
+      return true
+    }
+    case 'palco.project': {
+      const text = typeof msg.text === 'string' ? msg.text : ''
+      if (!text) return false
+      const scope = typeof msg.scope === 'string' ? msg.scope : 'hymns'
+      const footerRef = typeof msg.footerRef === 'string' ? msg.footerRef : undefined
+      palco.project(scope, { text, footerRef })
+      return true
+    }
+    case 'palco.idle': {
+      palco.idle()
+      return true
+    }
+    default:
+      return false
   }
 }
 
@@ -555,6 +599,9 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
         if (namespace === 'random' && deps.random) {
           return executeRandom(deps.random, action, msg)
         }
+        if (namespace === 'palco' && deps.palco) {
+          return executePalco(deps.palco, action, msg)
+        }
         return false
       } catch {
         return false
@@ -575,6 +622,10 @@ export function createModuleHandlers(deps: ModuleHandlerDeps): ModuleHandlers {
       if (namespace === 'clock' && deps.clock) return snapshotClock(deps.clock)
       if (namespace === 'random' && deps.random) {
         return snapshotRandom(deps.random)
+      }
+      if (namespace === 'palco' && deps.palco) {
+        // snapshot assíncrono não existe aqui — devolve status síncrono leve
+        return { available: true }
       }
       return null
     },

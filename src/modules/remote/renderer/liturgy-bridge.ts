@@ -17,6 +17,7 @@ import type { MediaPlaybackMode } from '../../media/types/media'
 
 import { resolveMediaTarget } from './media-target'
 import { createModuleHandlers } from './module-handlers'
+import { palcoSession } from '../../settings/services/palco-session'
 import { openMusicPlayer } from '../../media/services/open-music-player'
 import {
   loadAlbumMusicIndex,
@@ -55,7 +56,7 @@ const LITURGY_ACTIONS = new Set([
 ])
 
 /** Namespaces v2 (controle remoto total — spec Obsidian v2). */
-const V2_NAMESPACES = new Set(['media', 'bible', 'timer', 'countdown', 'clock', 'random'])
+const V2_NAMESPACES = new Set(['media', 'bible', 'timer', 'countdown', 'clock', 'random', 'palco'])
 
 export function installRemoteLiturgyBridge({ router }: { router: Router }) {
   const liturgy = useLiturgyStore()
@@ -106,6 +107,13 @@ export function installRemoteLiturgyBridge({ router }: { router: Router }) {
     countdown: useCountdownStore() as never,
     clock: useClockStore() as never,
     random: useRandomStore() as never,
+    palco: {
+      status: () => palcoSession.status(),
+      turnOn: () => palcoSession.turnOn(),
+      turnOff: () => palcoSession.turnOff(),
+      project: (scope, input) => palcoSession.project(scope, input),
+      idle: () => palcoSession.idle(),
+    },
   })
 
   const send = (channel: string, payload: Record<string, unknown>) => {

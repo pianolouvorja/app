@@ -70,6 +70,20 @@ contextBridge.exposeInMainWorld('louvorja', {
     onClients: (callback) => subscribe('remote:clients', callback),
   },
 
+  // Palco (cast p/ TV — receiver conecta em WS :7081, HTTP :7080)
+  palco: {
+    start: () => ipcRenderer.invoke('palco:start'),
+    stop: () => ipcRenderer.invoke('palco:stop'),
+    status: () => ipcRenderer.invoke('palco:status'),
+    send: (msg) => ipcRenderer.invoke('palco:send', msg),
+    serveMedia: (name, mime, base64) =>
+      ipcRenderer.invoke('palco:serve-media', { name, mime, base64 }),
+    clearMedia: () => ipcRenderer.invoke('palco:clear-media'),
+    onEvent: (callback) => subscribe('palco:event', callback),
+    onReceiverConnected: (callback) => subscribe('palco:receiver-connected', callback),
+    onReceiverDisconnected: (callback) => subscribe('palco:receiver-disconnected', callback),
+  },
+
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),

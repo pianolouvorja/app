@@ -14,6 +14,7 @@ import { resolveAppLocale } from "./locale.mjs";
 import { registerWorkspaceIpc } from "./ipc/register.mjs";
 import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
 import { attachRemoteServer } from "./remote-server.mjs";
+import { attachPalcoServer } from "./palco-server.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
 import { initUpdater } from "./updater.mjs";
@@ -431,6 +432,7 @@ app.whenReady().then(async () => {
 	ensureLinuxTaskbarIntegration();
 	// Controle remoto: WS :7071 — APK conecta e comanda liturgia/player
 	attachRemoteServer(() => mainWindow?.webContents ?? null);
+	attachPalcoServer(() => mainWindow?.webContents ?? null);
 	ensureWorkspaceDirectories();
 
 	// Splash screen — feedback visual imediato antes de qualquer coisa
