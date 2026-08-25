@@ -11,6 +11,8 @@ import {
 const props = defineProps<{
   durationMs: number
   disabled?: boolean
+  /** Modo compacto: só os campos HH:MM:SS inline, sem cabeçalho (usado no card do grupo de tempo). */
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -49,9 +51,15 @@ function onSeconds(event: Event) {
 <template>
   <div
     class="countdown-duration"
-    :class="{ 'countdown-duration--disabled': disabled }"
+    :class="{
+      'countdown-duration--disabled': disabled,
+      'countdown-duration--compact': compact,
+    }"
   >
-    <div class="countdown-duration__head">
+    <div
+      v-if="!compact"
+      class="countdown-duration__head"
+    >
       <i
         class="ti ti-hourglass"
         aria-hidden="true"
@@ -130,6 +138,37 @@ function onSeconds(event: Event) {
   &--disabled {
     opacity: 0.55;
     pointer-events: none;
+  }
+
+  /* Modo compacto: faixa inline dentro do card do grupo de tempo */
+  &--compact {
+    gap: 0;
+    padding: 0.5rem 0.75rem;
+    background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+    backdrop-filter: blur(4px);
+
+    .countdown-duration__fields {
+      gap: 0.3rem;
+    }
+
+    .countdown-duration__field {
+      min-width: 3.25rem;
+      gap: 0.15rem;
+
+      span {
+        font-size: 0.6rem;
+      }
+
+      input {
+        height: 2rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    .countdown-duration__sep {
+      padding-bottom: 0.35rem;
+      font-size: 1rem;
+    }
   }
 }
 

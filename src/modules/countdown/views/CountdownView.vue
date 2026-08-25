@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import { resolveBackgroundImage, type StageSettings } from '../../settings/types/stage-settings'
+
 
 import CountdownConfigDialog from '../components/CountdownConfigDialog.vue'
 import CountdownDurationInput from '../components/CountdownDurationInput.vue'
@@ -44,6 +48,24 @@ function goBack() {
 function onToggleProjection() {
   void toggleProjection()
 }
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('countdown'))
+let unsubStage: (() => void) | null = null
+onMounted(() => {
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('countdown')
+  })
+})
+onUnmounted(() => unsubStage?.())
+
+const stageBg = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
 </script>
 
 <template>
@@ -95,15 +117,18 @@ function onToggleProjection() {
             </button>
           </div>
 
-          <div class="countdown-view__duration">
-            <CountdownDurationInput
-              :duration-ms="runtime.durationMs"
-              :disabled="isRunning"
-              @update:duration-ms="setDurationMs"
-            />
-          </div>
-
-          <div class="countdown-view__preview">
+          <div
+          class="countdown-view__preview"
+          :style="stageBg"
+        >
+            <div class="countdown-view__duration">
+              <CountdownDurationInput
+                :duration-ms="runtime.durationMs"
+                :disabled="isRunning"
+                compact
+                @update:duration-ms="setDurationMs"
+              />
+            </div>
             <CountdownPreview
               :config="config"
               :runtime="runtime"
@@ -293,8 +318,8 @@ function onToggleProjection() {
   display: flex;
   width: 100%;
   max-width: 56rem;
-  min-height: 22rem;
-  max-height: min(100%, 34rem);
+  aspect-ratio: 21 / 9;
+  max-height: min(100%, 28rem);
   overflow: hidden;
   flex-direction: column;
 }
@@ -334,11 +359,20 @@ function onToggleProjection() {
 }
 
 .countdown-view__duration {
-  flex-shrink: 0;
-  padding: 1rem 1.25rem 0;
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  border-radius: var(--ds-radius-md, 0.75rem 0 0.75rem 0);
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 25%);
 }
 
 .countdown-view__preview {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
   flex: 1;
   min-height: 8rem;
   padding: 0.75rem 1.5rem 0.5rem;
