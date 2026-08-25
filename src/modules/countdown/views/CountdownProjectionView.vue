@@ -4,6 +4,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ProjectionBackground } from '@design-system/index'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 
+import type { StageSettings } from '../../settings/types/stage-settings'
+import {
+  readEffectiveStageSettings,
+  subscribeStageSettings,
+} from '../../settings/services/stage-settings-runtime'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+
 import CountdownPreview from '../components/CountdownPreview.vue'
 import {
   COUNTDOWN_CONFIG_CHANNEL,
@@ -32,6 +39,10 @@ const runtime = ref<CountdownRuntimeState>({
   savedTimesMs: [],
   durationMs: DEFAULT_COUNTDOWN_DURATION_MS,
 })
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('countdown'))
+
+let unsubStage: (() => void) | null = null
 
 let configChannel: BroadcastChannel | null = null
 let runtimeChannel: BroadcastChannel | null = null
@@ -67,6 +78,10 @@ onMounted(() => {
   refreshRuntime()
   window.addEventListener('storage', onStorage)
 
+unsubStage = subscribeStageSettings(() => {
+  stage.value = readEffectiveStageSettings('countdown')
+})
+
   try {
     configChannel = new BroadcastChannel(COUNTDOWN_CONFIG_CHANNEL)
     configChannel.addEventListener('message', onConfigMessage)
@@ -84,6 +99,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+unsubStage?.()
+unsubStage = null
   configChannel?.removeEventListener('message', onConfigMessage)
   configChannel?.close()
   configChannel = null
@@ -92,16 +109,39 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const surfaceStyle = computed(() => ({
-  background: config.value.bgColor,
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
+
+const stageAlign = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
 }))
 </script>
 
 <template>
-  <ProjectionBackground class="countdown-projection">
+  <ProjectionBackground
+    class="countdown-projection"
+    :style="stageStyle"
+  >
     <div
       class="countdown-projection__stage"
-      :style="surfaceStyle"
+      :style="stageAlign"
     >
       <CountdownPreview
         :config="config"
