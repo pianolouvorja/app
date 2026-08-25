@@ -88,6 +88,12 @@ const stageAlign = computed(() => ({
         ? 'flex-end'
         : 'center',
 }))
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.clock
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
@@ -99,7 +105,7 @@ const stageAlign = computed(() => ({
       class="clock-projection__stage"
       :style="stageAlign"
     >
-      <ClockPreview :config="config" />
+      <ClockPreview :config="effectiveConfig" />
     </div>
   </ProjectionBackground>
 </template>

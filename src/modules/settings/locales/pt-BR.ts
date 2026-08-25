@@ -215,6 +215,11 @@ export default {
       alignBottom: 'Em baixo',
       reset: 'Redefinir',
       resetConfirm: 'Voltar este módulo para o padrão?',
-    }
+      moduleFeatures: 'Características deste módulo',
+      clockStyle: 'Estilo do relógio',
+      clockShowSeconds: 'Mostrar segundos',
+      clockFormat24h: 'Formato 24h',
+      timeFormat: 'Formato do tempo',
+    },
   },
 }

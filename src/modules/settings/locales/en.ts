@@ -175,6 +175,11 @@ export default {
       alignBottom: 'Bottom',
       reset: 'Reset',
       resetConfirm: 'Reset this module to default?',
+      moduleFeatures: 'Module features',
+      clockStyle: 'Clock style',
+      clockShowSeconds: 'Show seconds',
+      clockFormat24h: '24h format',
+      timeFormat: 'Time format',
     },
 
     remote: {

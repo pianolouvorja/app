@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { GlassCard } from '@design-system/index'
 
 import { useStageSettings } from '../composables/useStageSettings'
 import {
+  COUNTDOWN_TIME_FORMAT_OPTIONS,
+  DEFAULT_CLOCK_MODULE_SETTINGS,
+  DEFAULT_COUNTDOWN_MODULE_SETTINGS,
+  DEFAULT_TIMER_MODULE_SETTINGS,
   OFFICIAL_BG_PREFIX,
   STAGE_BG_PRESETS,
   STAGE_FG_PRESETS,
   STAGE_MODULE_SCOPES,
   STAGE_OFFICIAL_BACKGROUNDS,
   STAGE_REF_PRESETS,
+  TIMER_TIME_FORMAT_OPTIONS,
   officialBgUrl,
   resolveBackgroundImage,
   type StageFontWeight,
@@ -71,6 +76,48 @@ const weightOptions: { value: StageFontWeight; label: string }[] = [
   { value: 600, label: t('settings.stage.weightMedium') },
   { value: 800, label: t('settings.stage.weightStrong') },
 ]
+
+// --- Características próprias por módulo (aditivas) ---
+
+const clockStyleOptions = [
+  { value: 'digital' as const, label: t('clock.digital') },
+  { value: 'analog' as const, label: t('clock.analog') },
+]
+
+const timerFormatOptions = TIMER_TIME_FORMAT_OPTIONS.map((value) => ({
+  value,
+  label: value,
+}))
+
+const countdownFormatOptions = COUNTDOWN_TIME_FORMAT_OPTIONS.map((value) => ({
+  value,
+  label: value,
+}))
+
+function patchClock(partial: Partial<NonNullable<StageSettings['clock']>>) {
+  const current = settings.value.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS
+  patch({ clock: { ...current, ...partial } })
+}
+
+function patchModuleTimeFormat(value: string) {
+  if (activeScope.value === 'timer') {
+    const current = settings.value.timer ?? DEFAULT_TIMER_MODULE_SETTINGS
+    patch({ timer: { ...current, timeFormat: value as NonNullable<StageSettings['timer']>['timeFormat'] } })
+  } else if (activeScope.value === 'countdown') {
+    const current = settings.value.countdown ?? DEFAULT_COUNTDOWN_MODULE_SETTINGS
+    patch({ countdown: { ...current, timeFormat: value as NonNullable<StageSettings['countdown']>['timeFormat'] } })
+  }
+}
+
+const moduleTimeFormat = computed(() => {
+  if (activeScope.value === 'timer') {
+    return settings.value.timer?.timeFormat ?? DEFAULT_TIMER_MODULE_SETTINGS.timeFormat
+  }
+  if (activeScope.value === 'countdown') {
+    return settings.value.countdown?.timeFormat ?? DEFAULT_COUNTDOWN_MODULE_SETTINGS.timeFormat
+  }
+  return null
+})
 
 const bibleWeightOptions: { value: StageSettings['bibleFontWeight']; label: string }[] = [
   { value: 400, label: t('settings.stage.weightNormal') },
@@ -399,6 +446,93 @@ const confirmReset = ref(false)
               @input="patch({ footerRefColor: ($event.target as HTMLInputElement).value })"
             >
           </label>
+        </div>
+      </div>
+    </template>
+
+    <!-- Características PRÓPRIAS do módulo (clock/timer/countdown) — aditivas -->
+    <template v-if="activeScope === 'clock'">
+      <div class="stage-custom__section stage-custom__section--module">
+        <p class="stage-custom__label">{{ t('settings.stage.moduleFeatures') }}</p>
+
+        <p class="stage-custom__label stage-custom__label--sub">
+          {{ t('settings.stage.clockStyle') }}
+        </p>
+        <div class="stage-custom__segment" role="radiogroup">
+          <button
+            v-for="opt in clockStyleOptions"
+            :key="opt.value"
+            type="button"
+            role="radio"
+            :aria-checked="(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).style === opt.value"
+            class="stage-custom__segment-btn"
+            :class="{ 'stage-custom__segment-btn--active': (settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).style === opt.value }"
+            @click="patchClock({ style: opt.value })"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+
+        <div class="stage-custom__toggle-row">
+          <button
+            type="button"
+            class="stage-custom__toggle-label"
+            @click="patchClock({ showSeconds: !(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).showSeconds })"
+          >
+            {{ t('settings.stage.clockShowSeconds') }}
+          </button>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).showSeconds"
+            class="stage-custom__switch"
+            :class="{ 'stage-custom__switch--on': (settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).showSeconds }"
+            :aria-label="t('settings.stage.clockShowSeconds')"
+            @click="patchClock({ showSeconds: !(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).showSeconds })"
+          />
+        </div>
+
+        <div class="stage-custom__toggle-row">
+          <button
+            type="button"
+            class="stage-custom__toggle-label"
+            @click="patchClock({ format24h: !(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).format24h })"
+          >
+            {{ t('settings.stage.clockFormat24h') }}
+          </button>
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).format24h"
+            class="stage-custom__switch"
+            :class="{ 'stage-custom__switch--on': (settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).format24h }"
+            :aria-label="t('settings.stage.clockFormat24h')"
+            @click="patchClock({ format24h: !(settings.clock ?? DEFAULT_CLOCK_MODULE_SETTINGS).format24h })"
+          />
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="activeScope === 'timer' || activeScope === 'countdown'">
+      <div class="stage-custom__section stage-custom__section--module">
+        <p class="stage-custom__label">{{ t('settings.stage.moduleFeatures') }}</p>
+
+        <p class="stage-custom__label stage-custom__label--sub">
+          {{ t('settings.stage.timeFormat') }}
+        </p>
+        <div class="stage-custom__segment" role="radiogroup">
+          <button
+            v-for="opt in activeScope === 'timer' ? timerFormatOptions : countdownFormatOptions"
+            :key="opt.value"
+            type="button"
+            role="radio"
+            :aria-checked="moduleTimeFormat === opt.value"
+            class="stage-custom__segment-btn"
+            :class="{ 'stage-custom__segment-btn--active': moduleTimeFormat === opt.value }"
+            @click="patchModuleTimeFormat(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
         </div>
       </div>
     </template>

@@ -57,6 +57,12 @@ const stageBg = computed(() => ({
   backgroundSize: 'cover',
   backgroundPosition: 'center',
 }))
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.clock
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
@@ -112,7 +118,7 @@ const stageBg = computed(() => ({
           :style="stageBg"
         >
           <ClockPreview
-            :config="config"
+            :config="effectiveConfig"
             preview
           />
         </div>

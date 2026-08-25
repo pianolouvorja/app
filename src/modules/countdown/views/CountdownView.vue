@@ -67,6 +67,12 @@ const stageBg = computed(() => ({
   backgroundSize: 'cover',
   backgroundPosition: 'center',
 }))
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.countdown
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
@@ -131,7 +137,7 @@ const stageBg = computed(() => ({
               />
             </div>
             <CountdownPreview
-              :config="config"
+              :config="effectiveConfig"
               :runtime="runtime"
               preview
             />
