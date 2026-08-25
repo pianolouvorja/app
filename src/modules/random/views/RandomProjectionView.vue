@@ -120,6 +120,12 @@ const stageAlign = computed(() => ({
         ? 'flex-end'
         : 'center',
 }))
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.random
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
@@ -132,7 +138,7 @@ const stageAlign = computed(() => ({
       :style="stageAlign"
     >
       <RandomPreview
-        :config="config"
+        :config="effectiveConfig"
         :runtime="runtime"
       />
     </div>

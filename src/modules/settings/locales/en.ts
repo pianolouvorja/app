@@ -180,6 +180,13 @@ export default {
       clockShowSeconds: 'Show seconds',
       clockFormat24h: '24h format',
       timeFormat: 'Time format',
+      randomFontSize: 'Font size (draw)',
+      randomTextTransform: 'Text case',
+      randomAnimationSpeed: 'Animation speed',
+      transformNone: 'None',
+      speedSlow: 'Slow',
+      speedNormal: 'Normal',
+      speedFast: 'Fast',
     },
 
     remote: {

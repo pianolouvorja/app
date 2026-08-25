@@ -75,6 +75,7 @@ export type StageSettings = {
   clock?: { style: 'digital' | 'analog'; showSeconds: boolean; format24h: boolean }
   timer?: { timeFormat: 'hh:mm:ss.ms' | 'hh:mm:ss' | 'mm:ss.ms' | 'mm:ss' }
   countdown?: { timeFormat: 'hh:mm:ss' | 'mm:ss' }
+  random?: { fontSizePc: number; textTransform: 'none' | 'uppercase' | 'lowercase'; animationSpeed: 'slow' | 'normal' | 'fast' }
 }
 
 export const DEFAULT_CLOCK_MODULE_SETTINGS: NonNullable<StageSettings['clock']> = {
@@ -90,6 +91,24 @@ export const DEFAULT_TIMER_MODULE_SETTINGS: NonNullable<StageSettings['timer']> 
 export const DEFAULT_COUNTDOWN_MODULE_SETTINGS: NonNullable<StageSettings['countdown']> = {
   timeFormat: 'hh:mm:ss',
 }
+
+export const DEFAULT_RANDOM_MODULE_SETTINGS: NonNullable<StageSettings['random']> = {
+  fontSizePc: 15,
+  textTransform: 'none',
+  animationSpeed: 'normal',
+}
+
+export const RANDOM_TEXT_TRANSFORM_OPTIONS: NonNullable<StageSettings['random']>['textTransform'][] = [
+  'none',
+  'uppercase',
+  'lowercase',
+]
+
+export const RANDOM_ANIMATION_SPEED_OPTIONS: NonNullable<StageSettings['random']>['animationSpeed'][] = [
+  'slow',
+  'normal',
+  'fast',
+]
 
 export const TIMER_TIME_FORMAT_OPTIONS: NonNullable<StageSettings['timer']>['timeFormat'][] = [
   'hh:mm:ss.ms',
@@ -272,6 +291,27 @@ export function parseStageSettings(raw: unknown): StageSettings {
           } satisfies StageSettings['countdown'],
         }
       : {}),
+    ...(s['random'] && typeof s['random'] === 'object'
+      ? {
+          random: {
+            fontSizePc: clamp(
+              asNumber((s['random'] as Record<string, unknown>)['fontSizePc'], 15),
+              5,
+              50,
+            ),
+            textTransform: RANDOM_TEXT_TRANSFORM_OPTIONS.includes(
+              (s['random'] as Record<string, unknown>)['textTransform'] as NonNullable<StageSettings['random']>['textTransform'],
+            )
+              ? ((s['random'] as Record<string, unknown>)['textTransform'] as NonNullable<StageSettings['random']>['textTransform'])
+              : 'none',
+            animationSpeed: RANDOM_ANIMATION_SPEED_OPTIONS.includes(
+              (s['random'] as Record<string, unknown>)['animationSpeed'] as NonNullable<StageSettings['random']>['animationSpeed'],
+            )
+              ? ((s['random'] as Record<string, unknown>)['animationSpeed'] as NonNullable<StageSettings['random']>['animationSpeed'])
+              : 'normal',
+          } satisfies StageSettings['random'],
+        }
+      : {}),
   }
 }
 
@@ -301,5 +341,6 @@ export function serializeStageSettings(s: StageSettings): Record<string, unknown
     ...(s.clock ? { clock: s.clock } : {}),
     ...(s.timer ? { timer: s.timer } : {}),
     ...(s.countdown ? { countdown: s.countdown } : {}),
+    ...(s.random ? { random: s.random } : {}),
   }
 }
