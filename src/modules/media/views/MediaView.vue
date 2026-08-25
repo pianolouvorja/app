@@ -48,6 +48,8 @@ const {
   setVolume,
   switchMode,
   toggleProjection,
+  audioOnTv,
+  onToggleAudioOnTv,
   togglePlaylist,
   setPlaylistOpen,
   requestClose,
@@ -248,6 +250,7 @@ async function onToggleFullscreen() {
             :progress-ratio="progressRatio"
             :volume="volume"
             :projecting="isProjecting"
+            :audio-on-tv="audioOnTv"
             :playlist-open="showPlaylist"
             @toggle-play="togglePlay"
             @previous-slide="previousSlide"
@@ -256,6 +259,7 @@ async function onToggleFullscreen() {
             @update:volume="setVolume"
             @update:mode="onMode"
             @toggle-projection="toggleProjection"
+            @toggle-audio-on-tv="onToggleAudioOnTv"
             @toggle-playlist="togglePlaylist"
             @toggle-fullscreen="onToggleFullscreen"
           />
