@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import { resolveBackgroundImage, type StageSettings } from '../../settings/types/stage-settings'
+
 
 import TimerConfigDialog from '../components/TimerConfigDialog.vue'
 import TimerPreview from '../components/TimerPreview.vue'
@@ -41,6 +45,24 @@ function goBack() {
 function onToggleProjection() {
   void toggleProjection()
 }
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('timer'))
+let unsubStage: (() => void) | null = null
+onMounted(() => {
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('timer')
+  })
+})
+onUnmounted(() => unsubStage?.())
+
+const stageBg = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
 </script>
 
 <template>
@@ -92,7 +114,10 @@ function onToggleProjection() {
             </button>
           </div>
 
-          <div class="timer-view__preview">
+          <div
+          class="timer-view__preview"
+          :style="stageBg"
+        >
             <TimerPreview
               :config="config"
               :runtime="runtime"
@@ -322,6 +347,8 @@ function onToggleProjection() {
 }
 
 .timer-view__preview {
+  border-radius: 0.75rem;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
   padding: 1.5rem 1.5rem 0.5rem;
