@@ -113,6 +113,20 @@ export default {
       clearData: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
+      tv: 'TV',
+      tvs: 'TVs do Palco',
+      tvsHint: 'Cadastre TVs e escolha onde cada módulo projeta.',
+      addTv: 'Adicionar TV',
+      selected: 'selecionada',
+      start: 'Ligar',
+      stop: 'Desligar',
+      removeTv: 'Remover TV',
+      moduleHint: 'Nos módulos, escolha Espelhar (todas) ou uma TV individual.',
+      route: 'Destino do palco',
+      mirror: 'Espelhar todas',
+      connectedShort: 'TV online',
+
+
       updateTitle: 'Atualizações',
       updateHint:
         'Verifica se há uma nova versão do aplicativo disponível para download.',

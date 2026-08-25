@@ -6,6 +6,7 @@ import MainScreenOptionsCard from '../components/MainScreenOptionsCard.vue'
 import MonitorArrangementCard from '../components/MonitorArrangementCard.vue'
 import MultiScreenSelectCard from '../components/MultiScreenSelectCard.vue'
 import PalcoCard from '../components/PalcoCard.vue'
+import PalcoSlotsCard from '../components/PalcoSlotsCard.vue'
 import StageCustomizationCard from '../components/StageCustomizationCard.vue'
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
@@ -35,6 +36,8 @@ onMounted(() => {
     </div>
 
     <PalcoCard />
+
+    <PalcoSlotsCard />
 
     <StageCustomizationCard only-scope="global" />
   </div>

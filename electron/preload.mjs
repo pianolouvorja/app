@@ -72,15 +72,18 @@ contextBridge.exposeInMainWorld('louvorja', {
 
   // Palco (cast p/ TV — receiver conecta em WS :7081, HTTP :7080)
   palco: {
-    start: () => ipcRenderer.invoke('palco:start'),
-    stop: () => ipcRenderer.invoke('palco:stop'),
-    status: () => ipcRenderer.invoke('palco:status'),
-    send: (msg) => ipcRenderer.invoke('palco:send', msg),
-    serveMedia: (name, mime, base64) =>
-      ipcRenderer.invoke('palco:serve-media', { name, mime, base64 }),
-    servePath: (filePath) =>
-      ipcRenderer.invoke('palco:serve-path', { path: filePath }),
-    clearMedia: () => ipcRenderer.invoke('palco:clear-media'),
+    slots: () => ipcRenderer.invoke('palco:slots'),
+    createSlot: (label) => ipcRenderer.invoke('palco:slot-create', { label }),
+    removeSlot: (slotId) => ipcRenderer.invoke('palco:slot-remove', { id: slotId }),
+    start: (slotId = '0') => ipcRenderer.invoke('palco:start', { slotId }),
+    stop: (slotId = '0') => ipcRenderer.invoke('palco:stop', { slotId }),
+    status: (slotId = '0') => ipcRenderer.invoke('palco:status', { slotId }),
+    send: (msg, slotId = '0') => ipcRenderer.invoke('palco:send', { slotId, ...msg }),
+    serveMedia: (name, mime, base64, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-media', { slotId, name, mime, base64 }),
+    servePath: (filePath, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-path', { slotId, path: filePath }),
+    clearMedia: (slotId = '0') => ipcRenderer.invoke('palco:clear-media', { slotId }),
     onEvent: (callback) => subscribe('palco:event', callback),
     onReceiverConnected: (callback) => subscribe('palco:receiver-connected', callback),
     onReceiverDisconnected: (callback) => subscribe('palco:receiver-disconnected', callback),

@@ -123,6 +123,20 @@ export default {
       checkUpdate: 'Check for updates',
       checking: 'Checking...',
       desktopOnly: 'Only available in the desktop app.',
+      tv: 'TV',
+      tvs: 'Stage TVs',
+      tvsHint: 'Register TVs and choose where each module projects.',
+      addTv: 'Add TV',
+      selected: 'selected',
+      start: 'Start',
+      stop: 'Stop',
+      removeTv: 'Remove TV',
+      moduleHint: 'In each module, choose Mirror (all) or one individual TV.',
+      route: 'Stage destination',
+      mirror: 'Mirror all',
+      connectedShort: 'TV online',
+
+
     },
     palco: {
       title: 'Stage (TV)',

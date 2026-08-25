@@ -123,6 +123,20 @@ export default {
       checkUpdate: 'Buscar actualizaciones',
       checking: 'Buscando...',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
+      tv: 'TV',
+      tvs: 'TVs del Palco',
+      tvsHint: 'Registre TVs y elija dónde proyecta cada módulo.',
+      addTv: 'Añadir TV',
+      selected: 'seleccionada',
+      start: 'Encender',
+      stop: 'Apagar',
+      removeTv: 'Eliminar TV',
+      moduleHint: 'En cada módulo, elija Espejar (todas) o una TV individual.',
+      route: 'Destino del palco',
+      mirror: 'Espejar todas',
+      connectedShort: 'TV online',
+
+
     },
     palco: {
       title: 'Palco (TV)',

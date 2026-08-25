@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import BibleNavPanel from '../components/BibleNavPanel.vue'
 import BibleProjectFab from '../components/BibleProjectFab.vue'
 import BibleToolbar from '../components/BibleToolbar.vue'
@@ -79,7 +80,7 @@ function onNextVerse() {
       @update:bible-search-query="globalSearchQuery = $event"
     />
     <StagePaletteButton scope="bible" />
-
+    <PalcoRouteSelect module="bible" />
 
     <div
       v-if="lastErrorKey"

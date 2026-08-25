@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -68,6 +69,7 @@ const effectiveConfig = computed(() => {
 <template>
   <section class="clock-view">
     <header class="clock-view__header">
+      <PalcoRouteSelect module="clock" />
       <button
         type="button"
         class="clock-view__back"
