@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import MediaCloseDialog from '../components/MediaCloseDialog.vue'
 import MediaPlayerPill from '../components/MediaPlayerPill.vue'
 import MediaSlideStage from '../components/MediaSlideStage.vue'
@@ -163,6 +164,8 @@ async function onToggleFullscreen() {
         />
       </button>
     </header>
+    <StagePaletteButton scope="hymns" />
+
 
     <div
       v-if="lastErrorKey"

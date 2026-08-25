@@ -9,8 +9,11 @@ import {
   COUNTDOWN_TIME_FORMAT_OPTIONS,
   DEFAULT_CLOCK_MODULE_SETTINGS,
   DEFAULT_COUNTDOWN_MODULE_SETTINGS,
+  DEFAULT_RANDOM_MODULE_SETTINGS,
   DEFAULT_TIMER_MODULE_SETTINGS,
   OFFICIAL_BG_PREFIX,
+  RANDOM_ANIMATION_SPEED_OPTIONS,
+  RANDOM_TEXT_TRANSFORM_OPTIONS,
   STAGE_BG_PRESETS,
   STAGE_FG_PRESETS,
   STAGE_MODULE_SCOPES,
@@ -118,6 +121,23 @@ const moduleTimeFormat = computed(() => {
   }
   return null
 })
+
+const randomTransformOptions = [
+  { value: 'none' as const, label: t('settings.stage.transformNone') },
+  { value: 'uppercase' as const, label: 'AA' },
+  { value: 'lowercase' as const, label: 'aa' },
+]
+
+const randomSpeedOptions = [
+  { value: 'slow' as const, label: t('settings.stage.speedSlow') },
+  { value: 'normal' as const, label: t('settings.stage.speedNormal') },
+  { value: 'fast' as const, label: t('settings.stage.speedFast') },
+]
+
+function patchRandom(partial: Partial<NonNullable<StageSettings['random']>>) {
+  const current = settings.value.random ?? DEFAULT_RANDOM_MODULE_SETTINGS
+  patch({ random: { ...current, ...partial } })
+}
 
 const bibleWeightOptions: { value: StageSettings['bibleFontWeight']; label: string }[] = [
   { value: 400, label: t('settings.stage.weightNormal') },
@@ -530,6 +550,62 @@ const confirmReset = ref(false)
             class="stage-custom__segment-btn"
             :class="{ 'stage-custom__segment-btn--active': moduleTimeFormat === opt.value }"
             @click="patchModuleTimeFormat(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="activeScope === 'random'">
+      <div class="stage-custom__section stage-custom__section--module">
+        <p class="stage-custom__label">{{ t('settings.stage.moduleFeatures') }}</p>
+
+        <div class="stage-custom__row-head">
+          <span>{{ t('settings.stage.randomFontSize') }}</span>
+          <span class="stage-custom__chip">{{ Math.round(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS ? (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).fontSizePc : 15) }}%</span>
+        </div>
+        <input
+          type="range"
+          min="5"
+          max="50"
+          step="1"
+          :value="(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).fontSizePc"
+          :aria-label="t('settings.stage.randomFontSize')"
+          @input="patchRandom({ fontSizePc: Number(($event.target as HTMLInputElement).value) })"
+        >
+
+        <p class="stage-custom__label stage-custom__label--sub">
+          {{ t('settings.stage.randomTextTransform') }}
+        </p>
+        <div class="stage-custom__segment" role="radiogroup">
+          <button
+            v-for="opt in randomTransformOptions"
+            :key="opt.value"
+            type="button"
+            role="radio"
+            :aria-checked="(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).textTransform === opt.value"
+            class="stage-custom__segment-btn"
+            :class="{ 'stage-custom__segment-btn--active': (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).textTransform === opt.value }"
+            @click="patchRandom({ textTransform: opt.value })"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+
+        <p class="stage-custom__label stage-custom__label--sub">
+          {{ t('settings.stage.randomAnimationSpeed') }}
+        </p>
+        <div class="stage-custom__segment" role="radiogroup">
+          <button
+            v-for="opt in randomSpeedOptions"
+            :key="opt.value"
+            type="button"
+            role="radio"
+            :aria-checked="(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).animationSpeed === opt.value"
+            class="stage-custom__segment-btn"
+            :class="{ 'stage-custom__segment-btn--active': (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).animationSpeed === opt.value }"
+            @click="patchRandom({ animationSpeed: opt.value })"
           >
             {{ opt.label }}
           </button>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
 import RandomConfigDialog from '../components/RandomConfigDialog.vue'
 import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
@@ -73,6 +77,17 @@ async function onImportFile(file: File) {
     // falha de leitura: mantém lista atual
   }
 }
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('random'))
+let unsubStage: (() => void) | null = null
+onMounted(() => { unsubStage = subscribeStageSettings(() => { stage.value = readEffectiveStageSettings('random') }) })
+onUnmounted(() => unsubStage?.())
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.random
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
@@ -141,6 +156,8 @@ async function onImportFile(file: File) {
         {{ t('random.resetAll') }}
       </button>
     </header>
+    <StagePaletteButton scope="random" />
+
 
     <div class="random-view__content">
       <div class="random-view__panel random-view__panel--available">
@@ -165,7 +182,7 @@ async function onImportFile(file: File) {
 
       <div class="random-view__stage">
         <RandomStage
-          :config="config"
+          :config="effectiveConfig"
           :runtime="runtime"
           :can-draw="canDraw"
           :is-projecting="isProjecting"

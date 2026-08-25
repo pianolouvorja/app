@@ -220,6 +220,13 @@ export default {
       clockShowSeconds: 'Mostrar segundos',
       clockFormat24h: 'Formato 24h',
       timeFormat: 'Formato do tempo',
+      randomFontSize: 'Tamanho da fonte (sorteio)',
+      randomTextTransform: 'Caixa do texto',
+      randomAnimationSpeed: 'Velocidade da animação',
+      transformNone: 'Normal',
+      speedSlow: 'Lenta',
+      speedNormal: 'Normal',
+      speedFast: 'Rápida',
     },
   },
 }
