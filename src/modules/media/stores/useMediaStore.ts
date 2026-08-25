@@ -522,6 +522,28 @@ export const useMediaStore = defineStore('media', () => {
     else await play()
   }
 
+  /**
+   * Rota de áudio TV ↔ local (paridade APK routesToTv).
+   * true → player local pausa; som sai no Palco (TV). O envio à TV é
+   * feito pela palco-bridge (watcher abaixo), que também espelha seek.
+   */
+  const audioOnTv = ref(false)
+
+  async function setAudioOnTv(on: boolean): Promise<void> {
+    if (audioOnTv.value === on) return
+    audioOnTv.value = on
+    if (on) {
+      // local silencia e pausa na posição atual — a TV assume daí
+      const audio = getMediaAudioElement()
+      audio.volume = 0
+      pauseMediaAudio(audio)
+      status.value = 'paused'
+    } else {
+      // TV para (bridge cuida); local retoma de onde parou
+      await play()
+    }
+  }
+
   function seekTo(seconds: number): void {
     if (!session.value?.audioUrl) return
     const audio = getMediaAudioElement()
@@ -911,6 +933,8 @@ export const useMediaStore = defineStore('media', () => {
     play,
     pause,
     togglePlay,
+    audioOnTv,
+    setAudioOnTv,
     seekTo,
     seekRatio,
     goToSlide,

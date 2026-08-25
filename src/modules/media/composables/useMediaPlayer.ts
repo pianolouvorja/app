@@ -35,6 +35,7 @@ export function useMediaPlayer() {
     currentTimeLabel,
     durationLabel,
     slideCount,
+    audioOnTv,
   } = storeToRefs(store)
 
   async function openTrack(params: MediaOpenParams): Promise<MediaOpenResult> {
@@ -95,6 +96,8 @@ export function useMediaPlayer() {
     startProjection: store.startProjection,
     clearProjection: store.clearProjection,
     toggleProjection: store.toggleProjection,
+    audioOnTv,
+    onToggleAudioOnTv: () => store.setAudioOnTv(!audioOnTv.value),
     close: store.close,
     clearError: store.clearError,
     syncProjectionFlag: store.syncProjectionFlag,
