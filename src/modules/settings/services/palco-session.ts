@@ -103,15 +103,27 @@ class PalcoSession {
   /**
    * BG do build do desktop (/assets/bg-XX-<hash>.png) não existe na TV —
    * o palco-server serve os oficiais em /bg/:id.png. Converte pra URL absoluta.
+   * Imagens locais (local://media/...) também não existem na TV — o sender
+   * publica em /media/ via servePath (mesma paridade do áudio/cover).
    */
   private async resolveBgUrl(bg: string | null | undefined): Promise<string | undefined> {
     if (!bg) return undefined
     if (/^https?:\/\//i.test(bg)) return bg
     const base = await this.ensureBaseUrl()
-    if (!base) return undefined
+    // bg oficial do build: /assets/bg-XX-<hash>.png
     const m = bg.match(/bg-\d+/)
-    if (m) return `${base}/bg/${m[0]}.png`
-    return `${base}${bg.startsWith('/') ? bg : `/${bg}`}`
+    if (m && bg.includes('/assets/')) return `${base}/bg/${m[0]}.png`
+    // official:bg-XX (não resolvido)
+    if (bg.startsWith('official:')) {
+      const om = bg.match(/bg-\d+/)
+      if (om) return `${base}/bg/${om[0]}.png`
+    }
+    // arquivo local (local://media/... ou path) → servePath
+    const served = await this.serveLocal(bg)
+    if (served) return served
+    // não resolúvel (arquivo inexistente, path quebrado): SEM bg — a TV usa
+    // o bg-fallback dela. Mandar `${base}/local://...` dá 404 na TV.
+    return undefined
   }
 
   /** Projeta texto com o StageSettings do escopo (liturgia/bíblia/hinos/random...). */

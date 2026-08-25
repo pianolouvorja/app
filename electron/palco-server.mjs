@@ -280,7 +280,7 @@ class PalcoSlot {
       let clean = String(filePath ?? '').replace(/^file:\/\//, '')
       const localMatch = clean.match(/^local:\/\/media\/(music|images|covers|slides)\/(.+)$/)
       if (localMatch) {
-        const { resolveMediaDirectory } = await import('./workspace.mjs')
+        const { resolveMediaDirectory } = await import('./paths.mjs')
         const kind = localMatch[1] === 'images' ? 'slides' : localMatch[1]
         clean = path.join(resolveMediaDirectory(kind), decodeURIComponent(localMatch[2]))
       }
