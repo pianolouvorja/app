@@ -27,9 +27,13 @@ let disconnectedHandler: ((info: { count: number }) => void) | null = null
 async function refreshStatus() {
   const st = await palcoSession.status()
   if (st) {
+    const wasOff = !isOn.value
     isOn.value = st.running
     receivers.value = st.clients
     url.value = st.url
+    // Sender já rodando (ligado em sessão anterior ou via remote/APK):
+    // sobe a bridge na hora — sem ela nada espelha na TV.
+    if (st.running && wasOff) startPalcoBridge()
   }
 }
 
