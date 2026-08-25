@@ -254,13 +254,27 @@ function connect(){
     return;
   }
   // F3.3v: valida o host ANTES do WS — se o sender não responde em /status,
-  // o IP é stale (DHCP) → esquece e escaneia JÁ, sem as 3 tentativas de WS
-  // com backoff (que levavam ~15s antes de re-escanear).
-  probeSender(host).then(ok=>{
-    if(ok)doConnect();
-    else{dlog('host stale, re-escaneando');localStorage.removeItem('palcoHost');host='';connect()}
-  });
-}
+    // o IP é stale (DHCP) → esquece e escaneia JÁ, sem as 3 tentativas de WS
+    // com backoff (que levavam ~15s antes de re-escanear).
+    // Exceção: fetch bloqueado (app empacotado webOS) não significa host morto —
+    // tenta WS direto 1x antes de descartar; WS não sofre CORS.
+    probeSender(host).then(ok=>{
+      if(ok)doConnect();
+      else{
+        dlog('probe falhou — tentando WS direto antes de descartar host');
+        directTry();
+      }
+    });
+  }
+  // Tenta WS direto no host salvo; se falhar 1x sem nunca abrir, host é stale.
+  function directTry(){
+    var opened=false;
+    var t=setTimeout(function(){if(!opened){dlog('WS direto falhou — host stale');localStorage.removeItem('palcoHost');host='';connect()}},3000);
+    try{var w=new WebSocket('ws://'+host+':'+port+'/palco');
+      w.onopen=function(){opened=true;clearTimeout(t);try{w.close()}catch(e){};doConnect()};
+      w.onerror=function(){};
+    }catch(e){clearTimeout(t);localStorage.removeItem('palcoHost');host='';connect()}
+  }
 // F3.3u: re-scan contínuo enquanto desconectado — nunca desiste.
 // (antes: 3 falhas → esquecia host → 1 scan → parava com "não encontrado")
 function doConnect(){
@@ -416,7 +430,9 @@ function submitIp(){
   host=v;localStorage.setItem('palcoHost',host);tries=0;
   closeIpEntry();
   try{if(ws)ws.close()}catch(e){}
-  connect();
+  // IP manual conecta WS DIRETO — sem probeSender (fetch /status pode ser
+  // bloqueado em app empacotado webOS; WS não sofre CORS).
+  doConnect();
 }
 window.addEventListener('keydown',function(e){
   var k=e.keyCode;
