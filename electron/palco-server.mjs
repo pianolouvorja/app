@@ -291,6 +291,37 @@ export function attachPalcoServer(getContents) {
     media.set(name, { mime, bytes: Buffer.from(base64, 'base64') })
     return `http://${lanIp()}:${HTTP_PORT}/media/${name}`
   })
+  // Serve arquivo LOCAL (file://, path, ou local://media/<tipo>/<arquivo>)
+  // pra TV — lê bytes no main e publica em /media/<nome>.
+  // Paridade com serveMedia do APK.
+  ipcMain.handle('palco:serve-path', async (_e, { path: filePath }) => {
+    if (!running) return null
+    try {
+      let clean = String(filePath ?? '').replace(/^file:\/\//, '')
+      // local://media/<tipo>/<arquivo> → workspace do app
+      const localMatch = clean.match(/^local:\/\/media\/(music|images|covers|slides)\/(.+)$/)
+      if (localMatch) {
+        const { resolveMediaDirectory } = await import('./paths.mjs')
+        const kind = localMatch[1] === 'images' ? 'slides' : localMatch[1]
+        clean = path.join(resolveMediaDirectory(kind), decodeURIComponent(localMatch[2]))
+      }
+      const { stat, readFile: rf } = await import('node:fs/promises')
+      const info = await stat(clean)
+      if (!info.isFile() || info.size > 200 * 1024 * 1024) return null
+      const base = path.basename(clean).replace(/[^A-Za-z0-9._-]/g, '_')
+      const name = `local_${Date.now()}_${base}`
+      const bytes = await rf(clean)
+      const mime = /\.(mp3|m4a)$/i.test(base)
+        ? 'audio/mpeg'
+        : /\.mp4$/i.test(base)
+          ? 'video/mp4'
+          : 'image/png'
+      media.set(name, { mime, bytes })
+      return `http://${lanIp()}:${HTTP_PORT}/media/${name}`
+    } catch {
+      return null
+    }
+  })
   ipcMain.handle('palco:clear-media', () => {
     media.clear()
     return true
