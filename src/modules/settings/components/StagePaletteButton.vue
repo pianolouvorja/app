@@ -12,6 +12,9 @@ import StageCustomizationDialog from './StageCustomizationDialog.vue'
 const props = defineProps<{
   /** Escopo do módulo (ex.: 'bible', 'liturgy', 'hymns', 'random'). */
   scope: string
+  /** Deslocamento extra à direita (px) — módulos com botão de ação no
+   *  canto inferior direito (ex.: Bíblia "Projetar") empurram o FAB. */
+  rightOffset?: number
 }>()
 
 const { t } = useI18n()
@@ -23,6 +26,7 @@ const open = ref(false)
     <button
       type="button"
       class="stage-palette-fab"
+      :style="props.rightOffset ? { right: `calc(1.25rem + ${props.rightOffset}px)` } : undefined"
       :aria-label="t('settings.stage.title')"
       :title="t('settings.stage.title')"
       @click="open = true"
