@@ -124,6 +124,14 @@ export default {
       checking: 'Buscando...',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
     },
+    palco: {
+      title: 'Palco (TV)',
+      subtitle: 'Proyecte en la TV vía receiver LouvorJA — misma red',
+      connected: '{count} TV conectada',
+      waiting: 'Esperando la TV…',
+      hint: 'En la TV, abra la app Palco (o un navegador en http://SU-IP:7080) — la encuentra automáticamente.',
+      desktopOnly: 'Solo disponible en la aplicación de escritorio.',
+    },
     stage: {
       title: 'Personalizar Escenario',
       scopeGlobal: 'Predeterminado (global)',

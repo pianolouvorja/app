@@ -163,6 +163,14 @@ export default {
       waitingClient: 'Aguardando controle remoto…',
       clientConnected: '{device} conectado',
     },
+    palco: {
+      title: 'Palco (TV)',
+      subtitle: 'Projete na TV via receiver LouvorJA — mesma rede',
+      connected: '{count} TV conectada',
+      waiting: 'Aguardando TV conectar…',
+      hint: 'Na TV, abra o app Palco (ou o browser em http://SEU-IP:7080) — ele encontra o app automaticamente.',
+      desktopOnly: 'Disponível apenas no aplicativo desktop.',
+    },
     stage: {
       title: 'Personalizar Palco',
       scopeGlobal: 'Padrão (global)',

@@ -124,6 +124,14 @@ export default {
       checking: 'Checking...',
       desktopOnly: 'Only available in the desktop app.',
     },
+    palco: {
+      title: 'Stage (TV)',
+      subtitle: 'Cast to the TV via LouvorJA receiver — same network',
+      connected: '{count} TV connected',
+      waiting: 'Waiting for TV to connect…',
+      hint: 'On the TV, open the Palco app (or a browser at http://YOUR-IP:7080) — it finds this app automatically.',
+      desktopOnly: 'Only available in the desktop app.',
+    },
     stage: {
       title: 'Customize Stage',
       scopeGlobal: 'Default (global)',
