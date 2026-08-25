@@ -9,15 +9,16 @@ export default {
   },
   common: {
     comingSoon: 'Próximamente',
+    cancel: 'Cancelar',
   },
   monitors: {
     selectScreens: 'Seleccionar pantallas',
     identify: 'Detectar pantallas',
-    hint: 'Marca los monitores donde el recurso debe proyectarse.',
+    hint: 'Comprobar los monitores donde se debe proyectar el recurso.',
     loading: 'Detectando monitores…',
     empty: 'No se encontraron monitores extendidos.',
     primary: 'Principal',
-    selectedCount: '{count} seleccionada(s)',
+    selectedCount: '{count} seleccionadas',
   },
   popupCount: {
     label: 'Pantallas',
@@ -28,15 +29,15 @@ export default {
   },
   uiZoom: {
     label: 'Zoom de página',
-    zoomIn: 'Aumentar zoom',
-    zoomOut: 'Disminuir zoom',
+    zoomIn: 'Acercar',
+    zoomOut: 'Alejar',
   },
   nav: {
     home: 'Inicio',
-    albums: 'Centro de Medios',
+    albums: 'Central de Medios',
     liturgy: 'Liturgia',
     bible: 'Biblia',
     utilities: 'Utilidades',
-    settings: 'Configuración',
+    settings: 'Configuraciones',
   },
 }

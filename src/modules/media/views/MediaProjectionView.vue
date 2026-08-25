@@ -8,10 +8,17 @@ import {
   readMediaRuntimeFromStorage,
 } from '../services/media-runtime'
 import { stripHtmlBreaks } from '../services/media-slides'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 import type { MediaProjectionRuntime } from '../types/media'
 import { DEFAULT_MEDIA_PROJECTION } from '../types/media'
 
 const runtime = ref<MediaProjectionRuntime>({ ...DEFAULT_MEDIA_PROJECTION })
+
+// Personalização do Palco (escopo hymns)
+const stage = ref<StageSettings>(readEffectiveStageSettings('hymns'))
+let unsubStage: (() => void) | null = null
 
 let channel: BroadcastChannel | null = null
 
@@ -36,6 +43,10 @@ function onStorage(event: StorageEvent) {
 onMounted(() => {
   applyRuntime(readMediaRuntimeFromStorage())
 
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('hymns')
+  })
+
   try {
     channel = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL)
     channel.onmessage = (event) => {
@@ -50,34 +61,86 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+  unsubStage?.()
   channel?.close()
   channel = null
 })
+
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+}))
+
+// BG custom do Palco tem prioridade sobre a capa do álbum (como o APK).
+const bgImage = computed(
+  () => resolveBackgroundImage(stage.value.backgroundImage) ?? runtime.value.imageUrl,
+)
+
+const contentStyle = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
+}))
+
+const textStyle = computed(() => ({
+  color: stage.value.textColor,
+  fontSize: `${(stage.value.fontSize / 1920) * 100}cqw`,
+  fontWeight: String(stage.value.fontWeight),
+  textAlign: stage.value.textAlign,
+  textShadow: stage.value.textShadow
+    ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
+    : 'none',
+}))
+
+const boxStyle = computed(() =>
+  stage.value.textBox
+    ? {
+        backgroundColor: `rgba(0,0,0,${stage.value.boxOpacity})`,
+        border: stage.value.boxBorder ? '1px solid rgba(255,255,255,0.25)' : 'none',
+        // Padrão folha característico do design
+        borderRadius: 'clamp(14px, 2.4vmin, 32px) 0 clamp(14px, 2.4vmin, 32px) 0',
+      }
+    : {},
+)
 </script>
 
 <template>
-  <div class="media-projection">
+  <div
+    class="media-projection"
+    :style="stageStyle"
+  >
     <div
-      v-if="runtime.imageUrl"
+      v-if="bgImage"
       class="media-projection__bg"
-      :style="{ backgroundImage: `url(${runtime.imageUrl})` }"
+      :style="{ backgroundImage: `url(${bgImage})` }"
       aria-hidden="true"
     />
 
     <div
       v-if="runtime.active"
       class="media-projection__content"
+      :style="contentStyle"
     >
       <p
         v-if="showTitle"
         class="media-projection__title"
         :class="{ 'media-projection__title--cover': runtime.isCover }"
+        :style="textStyle"
       >
         {{ runtime.title }}
       </p>
       <p
         v-if="lyric && !runtime.isCover"
         class="media-projection__lyric"
+        :style="boxStyle"
       >
         {{ lyric }}
       </p>
@@ -93,6 +156,8 @@ onUnmounted(() => {
   overflow: hidden;
   background: #000;
   color: #fff;
+  /* container p/ unidades cqw do stage-settings */
+  container-type: size;
 }
 
 .media-projection__bg {

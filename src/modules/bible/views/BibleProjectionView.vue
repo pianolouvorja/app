@@ -11,9 +11,16 @@ import {
   readBibleRuntimeFromStorage,
   type BibleProjectionRuntime,
 } from '../services/bible-runtime'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
 let runtimeChannel: BroadcastChannel | null = null
+
+// Personalização do Palco (escopo bible)
+const stage = ref<StageSettings>(readEffectiveStageSettings('bible'))
+let unsubStage: (() => void) | null = null
 
 function refreshRuntime() {
   runtime.value = readBibleRuntimeFromStorage()
@@ -33,6 +40,10 @@ onMounted(() => {
   refreshRuntime()
   window.addEventListener('storage', onStorage)
 
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('bible')
+  })
+
   try {
     runtimeChannel = new BroadcastChannel(BIBLE_RUNTIME_CHANNEL)
     runtimeChannel.addEventListener('message', onRuntimeMessage)
@@ -43,6 +54,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+  unsubStage?.()
   runtimeChannel?.removeEventListener('message', onRuntimeMessage)
   runtimeChannel?.close()
   runtimeChannel = null
@@ -55,11 +67,66 @@ const showContent = computed(
 const contentKey = computed(
   () => `${runtime.value.text}|${runtime.value.reference}`,
 )
+
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
+
+const stageAlign = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
+}))
+
+const verseStyle = computed(() => ({
+  color: stage.value.bibleTextColor,
+  fontSize: `${(stage.value.bibleFontSize / 1920) * 100}cqw`,
+  fontWeight: String(stage.value.bibleFontWeight),
+  textAlign: stage.value.textAlign,
+  textShadow: stage.value.textShadow
+    ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
+    : 'none',
+}))
+
+const verseBoxStyle = computed(() => {
+  if (!stage.value.textBox) return {}
+  return {
+    backgroundColor: `rgba(0,0,0,${stage.value.boxOpacity})`,
+    border: stage.value.boxBorder ? '1px solid rgba(255,255,255,0.25)' : 'none',
+    // Padrão folha característico do design (como o media-projection)
+    borderRadius: 'clamp(14px, 2.4vmin, 32px) 0 clamp(14px, 2.4vmin, 32px) 0',
+  }
+})
+
+const referenceStyle = computed(() => ({
+  color: stage.value.footerRefColor,
+  fontWeight: String(stage.value.footerRefWeight),
+}))
 </script>
 
 <template>
-  <ProjectionBackground class="bible-projection">
-    <div class="bible-projection__stage">
+  <ProjectionBackground
+    class="bible-projection"
+    :style="stageStyle"
+  >
+    <div
+      class="bible-projection__stage"
+      :style="stageAlign"
+    >
       <Transition
         name="bible-fade"
         mode="out-in"
@@ -68,16 +135,19 @@ const contentKey = computed(
           v-if="showContent"
           :key="contentKey"
           class="bible-projection__content"
+          :style="verseBoxStyle"
         >
           <p
             v-if="runtime.text"
             class="bible-projection__text"
+            :style="verseStyle"
           >
             {{ runtime.text }}
           </p>
           <p
-            v-if="runtime.reference"
+            v-if="runtime.reference && stage.showBibleVersion"
             class="bible-projection__reference"
+            :style="referenceStyle"
           >
             {{ runtime.reference }}
           </p>
@@ -97,6 +167,8 @@ const contentKey = computed(
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  /* container p/ unidades cqw do stage-settings (font-size proporcional) */
+  container-type: size;
 }
 
 .bible-projection__stage {
