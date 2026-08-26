@@ -67,8 +67,9 @@
     text-align:center;width:84vw;font-size:16vh;font-weight:700;
     font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.8)}
   #timer small{display:block;font-size:2.8vh;font-weight:300;opacity:.7;margin-top:2vh}
+  /* Vídeo acima do idle (z=20) — idle nunca pode cobrir reprodução. */
   #video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:contain;
-    background:#000;z-index:5}
+    background:#000;z-index:20}
 </style>
 </head>
 <body>
@@ -536,10 +537,13 @@ function handle(m){
       break}
     case 'video':{
       const v=$('video');
+      hideIdle();hideNp();
       if(m.action==='stop'){v.pause();v.removeAttribute('src');v.style.display='none';
-        v.load();sendEvent({v:2,type:'ended',media:'video'});break}
+        v.load();showIdle('Aguardando conteúdo…');
+        sendEvent({v:2,type:'ended',media:'video'});break}
       if(m.url){v.src=proxyUrl(m.url);v.style.display='';
-        v.onended=()=>{v.style.display='none';v.removeAttribute('src');
+        v.onended=()=>{v.style.display='none';v.removeAttribute('src');v.load();
+          showIdle('Aguardando conteúdo…');
           sendEvent({v:2,type:'ended',media:'video'})}}
       if(m.action==='play'){
         const a=$('audio'); a.pause(); // exclusao mutua com audio
