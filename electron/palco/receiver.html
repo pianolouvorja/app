@@ -661,6 +661,11 @@ function handle(m){
     case 'video':{
       const v=$('video');
       hideIdle();hideNp();
+      // Vídeo assumindo a TV: qualquer ÁUDIO anterior (hino/MP3) é PARADO
+      // e limpo. Sem isso, o 'audio play' do tvBroadcast (que manda nos dois
+      // canais) retomava o hino por cima do vídeo (caso real 26/08).
+      {const a=$('audio');
+        if(a&&a.src&&!(m.action==='stop'&&!m.url)){a.pause();a.removeAttribute('src');a.load()}}
       if(m.action==='stop'){v.pause();v.removeAttribute('src');v.style.display='none';
         v.load();showIdle('Aguardando conteúdo…');
         sendEvent({v:2,type:'ended',media:'video'});break}
