@@ -512,8 +512,11 @@
         }
 
         /** Manda ação (play/pause/seek/stop) p/ todas as TVs marcadas. */
-        function tvBroadcast(action, extra) {
+        async function tvBroadcast(action, extra) {
           if (!window.louvorja || !window.louvorja.palco) return
+          // Receiver pode ter conectado depois do boot do popup — atualiza
+          // a lista antes de mandar (pause/play não chegavam a quem entrou tarde).
+          try { tvSlots = (await window.louvorja.palco.slots()) || [] } catch (e) { /* segue com a atual */ }
           for (var i = 0; i < tvSlots.length; i++) {
             var slot = tvSlots[i]
             if (slot.clients > 0 && tvChecked[slot.id] !== false) {
@@ -648,10 +651,10 @@
           var state = await window.louvorja.projection.getPlaybackState()
           if (state && !state.paused) {
             await window.louvorja.projection.remotePause()
-            tvBroadcast('pause')
+            await tvBroadcast('pause')
           } else {
             await window.louvorja.projection.remotePlay()
-            tvBroadcast('play')
+            await tvBroadcast('play')
           }
           refresh()
         })
@@ -759,7 +762,7 @@
           if (!state || !(state.duration > 0)) return
           var t = (Number(seek.value) / 1000) * state.duration
           await window.louvorja.projection.remoteSeek(t)
-          tvBroadcast('seek', { position: t })
+          await tvBroadcast('seek', { position: t })
           refresh()
         })
 
