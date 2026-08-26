@@ -395,7 +395,13 @@ function viewKey(viewRoute: typeof route) {
   height: var(--ds-header-height, 5rem);
   padding: 0 var(--ds-spacing-page);
   border-bottom: 1px solid var(--ds-color-outline);
-  position: relative;
+  /* Fixo no topo: o conteúdo rola embaixo, o header nunca sobe
+     (pedido 26/08 — header acompanhava o scroll da página). */
+  position: fixed;
+  top: var(--app-titlebar-height, 0px);
+  left: 0;
+  right: 0;
+  background: var(--ds-color-surface, #10131a);
   z-index: 40;
 }
 
@@ -537,10 +543,13 @@ function viewKey(viewRoute: typeof route) {
 .app-shell__main {
   position: relative;
   z-index: 1;
-  min-height: calc(
+  /* Header fixo: main começa abaixo dele e rola SOZINHO. */
+  margin-top: calc(var(--app-titlebar-height, 0px) + var(--ds-header-height, 5rem));
+  height: calc(
     100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
-      var(--ds-header-height, 5rem) - var(--ds-dock-height)
+      var(--ds-header-height, 5rem)
   );
+  overflow-y: auto;
   padding-bottom: var(--ds-dock-height);
 }
 
