@@ -351,6 +351,25 @@ export function startPalcoBridge() {
   if (started) return
   started = true
 
+  // Setas do controle da TV: navegam slides do PDF/PPT quando ativo.
+  // O receiver manda {type:'remote-key', key:'prev'|'next'}; sem este
+  // listener as setas só funcionavam com vídeo (decisão local na TV).
+  palcoSession.onEvent((msg) => {
+    const m = msg as { type?: string; key?: string }
+    if (m?.type !== 'remote-key') return
+    const bridge = (window as unknown as {
+      louvorja?: {
+        projection?: {
+          remotePptPrev?: () => Promise<unknown>
+          remotePptNext?: () => Promise<unknown>
+        }
+      }
+    }).louvorja
+    if (!bridge?.projection?.remotePptNext || !bridge.projection.remotePptPrev) return
+    if (m.key === 'prev') void bridge.projection.remotePptPrev()
+    else if (m.key === 'next') void bridge.projection.remotePptNext()
+  })
+
   bindChannel<MediaProjectionRuntime>(
     MEDIA_RUNTIME_CHANNEL,
     MEDIA_RUNTIME_STORAGE_KEY,

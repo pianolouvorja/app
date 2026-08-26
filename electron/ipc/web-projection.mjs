@@ -1335,7 +1335,10 @@ export function closeWebProjectionWindows() {
   try {
     const { getPalcoManager } = require('./palco-server.mjs')
     const manager = getPalcoManager && getPalcoManager()
-    if (manager) manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+    if (manager) {
+      manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+      manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })
+    }
   } catch {
     /* palco não anexado */
   }
