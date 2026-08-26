@@ -1,5 +1,19 @@
 export default {
   settings: {
+    outputs: {
+      title: 'Saídas — conteúdo por tela',
+      hint: 'Escolha o conteúdo de cada saída. "Espelhar" segue a projeção principal.',
+      monitor: 'Monitor',
+      tvConnected: 'TV conectada',
+      tvOffline: 'TV offline',
+      mirror: 'Espelhar projeção',
+      bible: 'Bíblia',
+      media: 'Hinos / Mídia',
+      video: 'Vídeo',
+      pdf: 'PDF',
+      ppt: 'Apresentação',
+      assign: 'Conteúdo da saída {output}',
+    },
     title: 'Configurações',
     sectionTitle: {
       appearance: 'Configurações de Aparência',

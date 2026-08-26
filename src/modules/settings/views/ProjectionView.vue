@@ -7,6 +7,7 @@ import MonitorArrangementCard from '../components/MonitorArrangementCard.vue'
 import MultiScreenSelectCard from '../components/MultiScreenSelectCard.vue'
 import PalcoCard from '../components/PalcoCard.vue'
 import PalcoSlotsCard from '../components/PalcoSlotsCard.vue'
+import OutputSelectorPanel from '../components/OutputSelectorPanel.vue'
 import StageCustomizationCard from '../components/StageCustomizationCard.vue'
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
@@ -38,6 +39,11 @@ onMounted(() => {
     <PalcoCard />
 
     <PalcoSlotsCard />
+
+    <section class="projection-settings__outputs">
+      <h2>{{ $t('settings.outputs.title') }}</h2>
+      <OutputSelectorPanel mode="assign" />
+    </section>
 
     <StageCustomizationCard only-scope="global" />
   </div>

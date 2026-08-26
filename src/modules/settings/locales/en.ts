@@ -1,5 +1,19 @@
 export default {
   settings: {
+    outputs: {
+      title: 'Outputs — content per screen',
+      hint: 'Choose content per output. "Mirror" follows the main projection.',
+      monitor: 'Monitor',
+      tvConnected: 'TV connected',
+      tvOffline: 'TV offline',
+      mirror: 'Mirror main',
+      bible: 'Bible',
+      media: 'Hymns / Media',
+      video: 'Video',
+      pdf: 'PDF',
+      ppt: 'Presentation',
+      assign: 'Content for {output}',
+    },
     title: 'Settings',
     sectionTitle: {
       appearance: 'Appearance Settings',
