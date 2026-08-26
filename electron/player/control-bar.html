@@ -520,8 +520,14 @@
           for (var i = 0; i < tvSlots.length; i++) {
             var slot = tvSlots[i]
             if (slot.clients > 0 && tvChecked[slot.id] !== false) {
+              // pause/play/stop valem para QUALQUER mídia tocando na TV
+              // (vídeo OU áudio de item de liturgia) — manda nos dois canais.
               void window.louvorja.palco.send(
                 Object.assign({ v: 2, type: 'video', action: action }, extra || {}),
+                slot.id,
+              )
+              void window.louvorja.palco.send(
+                Object.assign({ v: 2, type: 'audio', action: action }, extra || {}),
                 slot.id,
               )
             }
