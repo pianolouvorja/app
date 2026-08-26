@@ -379,6 +379,14 @@ class PalcoManager {
   getSlot(id = '0') { return this.#slots.get(id) }
   getAllSlots() { return Array.from(this.#slots.values()) }
   getPrincipal() { return this.#slots.get('0') }
+
+  /** Broadcast p/ TODOS os slots ligados (ex: projeção fechou → idle). */
+  broadcastAll(msg) {
+    for (const slot of this.#slots.values()) {
+      try { if (slot.running) slot.broadcastTransient(msg) } catch { /* ignore */ }
+    }
+    return true
+  }
 }
 
 /** Instância única do manager. */

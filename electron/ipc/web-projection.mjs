@@ -1330,6 +1330,15 @@ export function closeWebProjectionWindows() {
   lastSiteMonitorIds = []
   lastVideoMonitorIds = []
   siteControlPanelOpen = false
+  // Palco (TVs): projeção fechou (ended OU manual) → todas as TVs voltam
+  // ao idle. Sem isso o último frame ficava congelado na TV.
+  try {
+    const { getPalcoManager } = require('./palco-server.mjs')
+    const manager = getPalcoManager && getPalcoManager()
+    if (manager) manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+  } catch {
+    /* palco não anexado */
+  }
   if (win && !win.isDestroyed()) {
     win.close()
   }
