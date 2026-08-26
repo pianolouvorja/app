@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Controles de PDF</title>
+    <title>Controles de documento</title>
     <style>
       * { box-sizing: border-box; }
       html, body {
@@ -168,8 +168,10 @@
           <p class="panel__title">Selecionar telas</p>
           <button id="identifyMonitors" class="panel__identify" type="button">Identificar</button>
         </div>
-        <p class="panel__hint">Marque os monitores onde o PDF deve ser projetado</p>
+        <p class="panel__hint">Marque os monitores onde o documento deve ser projetado</p>
         <div id="monitorList"><p class="panel__empty">Nenhum monitor estendido encontrado.</p></div>
+        <p class="panel__hint" id="tvHint" style="display:none">TVs conectadas pelo Palco (cast)</p>
+        <div id="tvList"></div>
       </div>
 
       <div class="bar">
@@ -276,6 +278,38 @@
           }
         }
 
+        var tvSlots = []
+        var tvChecked = {}
+        var tvList = document.getElementById('tvList')
+        var tvHint = document.getElementById('tvHint')
+
+        function renderTvs() {
+          var connected = tvSlots.filter(function (slot) { return slot.clients > 0 })
+          tvHint.style.display = connected.length ? '' : 'none'
+          var html = connected.length ? '<ul class="panel__list"><li class="panel__empty">Espelhamento automático ativo</li>' : ''
+          for (var i = 0; i < connected.length; i++) {
+            var slot = connected[i]
+            html += '<li><label class="panel__option is-active"><input type="checkbox" checked disabled><span class="panel__option-body"><span class="panel__option-name">' + slot.label + '</span><span class="panel__option-meta">TV · ' + slot.clients + ' conectada(s) · HTTP ' + slot.httpPort + ' / WS ' + slot.wsPort + '</span></span></label></li>'
+          }
+          if (connected.length) html += '</ul>'
+          tvList.innerHTML = html
+        }
+
+        async function syncPptToTvs() {
+          if (!window.louvorja || !window.louvorja.palco || !window.louvorja.projection || !window.louvorja.projection.captureSourceFrame) return
+          var png = await window.louvorja.projection.captureSourceFrame()
+          if (!png) return
+          tvSlots = await window.louvorja.palco.slots().catch(function () { return [] })
+          renderTvs()
+          for (var i = 0; i < tvSlots.length; i++) {
+            var slot = tvSlots[i]
+            if (slot.clients > 0 && tvChecked[slot.id] !== false) {
+              var url = await window.louvorja.palco.serveMedia('ppt-slide.png', 'image/png', png, slot.id)
+              if (url) await window.louvorja.palco.send({ v: 2, type: 'projection', background: url, text: '', footerRef: '' }, slot.id)
+            }
+          }
+        }
+
         async function loadMonitors() {
           if (!window.louvorja) return
           var list =
@@ -327,8 +361,8 @@
 
         async function refresh() {
           if (!window.louvorja || !window.louvorja.projection) return
-          var state = window.louvorja.projection.getPdfPageState
-            ? await window.louvorja.projection.getPdfPageState()
+          var state = window.louvorja.projection.getPptSlideState
+            ? await window.louvorja.projection.getPptSlideState()
             : null
           if (state) setCounter(state.index, state.total)
           if (state && typeof state.projecting === 'boolean') {
@@ -342,14 +376,16 @@
         }
 
         prevBtn.addEventListener('click', async function () {
-          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePdfPrev) {
-            await window.louvorja.projection.remotePdfPrev()
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePptPrev) {
+            await window.louvorja.projection.remotePptPrev()
+            await syncPptToTvs()
             await refresh()
           }
         })
         nextBtn.addEventListener('click', async function () {
-          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePdfNext) {
-            await window.louvorja.projection.remotePdfNext()
+          if (window.louvorja && window.louvorja.projection && window.louvorja.projection.remotePptNext) {
+            await window.louvorja.projection.remotePptNext()
+            await syncPptToTvs()
             await refresh()
           }
         })
@@ -369,6 +405,7 @@
         })
 
         void loadMonitors()
+        void syncPptToTvs()
         void refresh()
         setInterval(function () { void refresh() }, 500)
       })()
