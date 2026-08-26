@@ -474,20 +474,32 @@
               ? await window.louvorja.projection.getSourceMediaInfo()
               : null
           if (!media || !media.filePath) return
+          var st =
+            window.louvorja.projection &&
+            window.louvorja.projection.getPlaybackState
+              ? await window.louvorja.projection.getPlaybackState().catch(function () { return null })
+              : null
+          var posMs = st && st.currentTime > 0 ? Math.round(st.currentTime * 1000) : 0
           for (var i = 0; i < tvSlots.length; i++) {
             var slot = tvSlots[i]
             if (slot.clients > 0 && tvChecked[slot.id] !== false) {
-              void tvSendVideo(slot.id, media.filePath, media.title)
+              void tvSendVideo(slot.id, media.filePath, media.title, posMs)
             }
           }
         }
 
-        async function tvSendVideo(slotId, filePath, title) {
+        async function tvSendVideo(slotId, filePath, title, positionMs) {
           try {
             var url = await window.louvorja.palco.servePath(filePath, slotId)
             if (!url) return
             await window.louvorja.palco.send(
-              { v: 2, type: 'video', url: url, title: title || '' },
+              {
+                v: 2,
+                type: 'video',
+                url: url,
+                title: title || '',
+                positionMs: positionMs || 0,
+              },
               slotId,
             )
             await window.louvorja.palco.send(
@@ -497,6 +509,32 @@
           } catch (e) {
             /* slot pode ter caído */
           }
+        }
+
+        /** Manda ação (play/pause/seek/stop) p/ todas as TVs marcadas. */
+        function tvBroadcast(action, extra) {
+          if (!window.louvorja || !window.louvorja.palco) return
+          for (var i = 0; i < tvSlots.length; i++) {
+            var slot = tvSlots[i]
+            if (slot.clients > 0 && tvChecked[slot.id] !== false) {
+              void window.louvorja.palco.send(
+                Object.assign({ v: 2, type: 'video', action: action }, extra || {}),
+                slot.id,
+              )
+            }
+          }
+        }
+
+        /** Sync periódico do currentTime → TVs (corrige drift; não recarrega). */
+        var lastTvSyncMs = 0
+        async function tvSyncPosition() {
+          if (!window.louvorja || !window.louvorja.projection) return
+          var now = Date.now()
+          if (now - lastTvSyncMs < 3000) return
+          lastTvSyncMs = now
+          var state = await window.louvorja.projection.getPlaybackState()
+          if (!state || state.paused || !(state.currentTime > 0)) return
+          tvBroadcast('seek', { position: state.currentTime })
         }
 
         async function onToggleTv(event) {
@@ -610,8 +648,10 @@
           var state = await window.louvorja.projection.getPlaybackState()
           if (state && !state.paused) {
             await window.louvorja.projection.remotePause()
+            tvBroadcast('pause')
           } else {
             await window.louvorja.projection.remotePlay()
+            tvBroadcast('play')
           }
           refresh()
         })
@@ -719,10 +759,11 @@
           if (!state || !(state.duration > 0)) return
           var t = (Number(seek.value) / 1000) * state.duration
           await window.louvorja.projection.remoteSeek(t)
+          tvBroadcast('seek', { position: t })
           refresh()
         })
 
-        setInterval(refresh, 400)
+        setInterval(function () { refresh(); tvSyncPosition() }, 400)
         loadMonitors()
         loadTvs()
         refresh()

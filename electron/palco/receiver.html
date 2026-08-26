@@ -559,9 +559,20 @@ function handle(m){
         v.load();showIdle('Aguardando conteúdo…');
         sendEvent({v:2,type:'ended',media:'video'});break}
       if(m.url){v.src=proxyUrl(m.url);v.style.display='';
+        // Sync inicial (padrão F3.3g do áudio): positionMs aplicado antes
+        // do play — seguro p/ metadata não carregada (loadedmetadata once).
+        if(typeof m.positionMs==='number'&&m.positionMs>0){
+          const apply=()=>{try{v.currentTime=m.positionMs/1000}catch(e){}};
+          if(v.readyState>=1)apply();else v.addEventListener('loadedmetadata',apply,{once:true});
+        }
         v.onended=()=>{v.style.display='none';v.removeAttribute('src');v.load();
           showIdle('Aguardando conteúdo…');
           sendEvent({v:2,type:'ended',media:'video'})}}
+      if(m.action==='seek'){
+        const target=(m.position||((m.positionMs||0)/1000)||0);
+        if(Math.abs(v.currentTime-target)>0.3){try{v.currentTime=target}catch(e){}}
+        if(v.paused&&target>0.2)playVideoWithFallback();
+      }
       if(m.action==='play'){
         const a=$('audio'); a.pause(); // exclusao mutua com audio
         // Fallback mudo (padrão F3.3h do áudio): browser bloqueia play
