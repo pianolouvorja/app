@@ -304,7 +304,7 @@
           for (var i = 0; i < tvSlots.length; i++) {
             var slot = tvSlots[i]
             if (slot.clients > 0 && tvChecked[slot.id] !== false) {
-              var url = await window.louvorja.palco.serveMedia('ppt-slide.png', 'image/png', png, slot.id)
+              var url = await window.louvorja.palco.serveMedia('ppt-slide-' + Date.now() + '-' + i + '.png', 'image/png', png, slot.id)
               if (url) await window.louvorja.palco.send({ v: 2, type: 'projection', background: url, text: '', footerRef: '' }, slot.id)
             }
           }
