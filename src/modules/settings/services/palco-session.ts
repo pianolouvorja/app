@@ -250,6 +250,44 @@ class PalcoSession {
     }, this.activeSlotId)
   }
 
+  /** Vídeo na TV — arquivo local servido em /media/ pelo sender. */
+  async video(input: {
+    url?: string
+    title?: string
+    action?: 'play' | 'pause' | 'stop'
+  }): Promise<void> {
+    if (!this.isElectron) return
+    let url = input.url
+    if (url && !/^https?:\/\//i.test(url)) {
+      url = (await this.serveLocal(url)) ?? undefined
+    }
+    if (!url && input.action !== 'stop') return
+    await palcoApi().send({
+      v: 2,
+      type: 'video',
+      ...input,
+      url,
+    }, this.activeSlotId)
+  }
+
+  /** Vídeo roteado: mirror → todas as TVs ligadas; slot individual → só essa. */
+  async videoRouted(input: Parameters<PalcoSession['video']>[0]): Promise<void> {
+    if (!this.isElectron) return
+    const route = getPalcoRoute('liturgy')
+    if (route !== 'mirror') {
+      const previous = this.activeSlotId
+      this.setSlot(route)
+      try { await this.video(input) } finally { this.setSlot(previous) }
+      return
+    }
+    const slots = await this.slots()
+    await Promise.all(slots.filter((slot) => slot.running).map((slot) => {
+      const previous = this.activeSlotId
+      this.setSlot(slot.id)
+      return this.video(input).finally(() => this.setSlot(previous))
+    }))
+  }
+
   /**
    * Áudio roteado: rota mirror → todas as TVs ligadas; slot individual →
    * só essa TV (paridade com projectRouted). Play/pause/seek/stop vão ao
