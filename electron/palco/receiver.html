@@ -341,8 +341,25 @@ function hideMuteBadge(){const b=$('muteBadge');if(b)b.remove()}
 function unmuteNow(){
   mutedUnlock=false;hideMuteBadge();
   a0.muted=false;
+  const vv=$('video'); if(vv){vv.muted=false; if(vv.paused&&vv.src)vv.play().catch(function(){})}
   a0.play().then(()=>sendEvent({v:1,type:'unlocked'})).catch(()=>{});
   sendEvent({v:1,type:'unlocked'});
+}
+function playVideoWithFallback(){
+  const v=$('video');
+  v.muted=false;
+  v.play().then(()=>{
+    dlog('VID PLAY OK (som)');
+  }).catch(e=>{
+    dlog('VID PLAY FAIL som: '+e.name+' — retry mudo');
+    v.muted=true;
+    v.play().then(()=>{
+      dlog('VID PLAY OK mudo — aguardando gesto p/ som');
+      mutedUnlock=true;showMuteBadge();
+    }).catch(e2=>{
+      dlog('VID PLAY FAIL mudo tb: '+e2.name);
+    });
+  });
 }
 function playWithFallback(){
   a0.muted=false;
@@ -547,8 +564,10 @@ function handle(m){
           sendEvent({v:2,type:'ended',media:'video'})}}
       if(m.action==='play'){
         const a=$('audio'); a.pause(); // exclusao mutua com audio
-        v.play().then(()=>sendEvent({v:2,type:'unlocked'}))
-                .catch(e=>dlog('VID PLAY FAIL: '+e.name));
+        // Fallback mudo (padrão F3.3h do áudio): browser bloqueia play
+        // com som sem gesto — retry mudo toca na hora, badge pede o gesto.
+        playVideoWithFallback();
+        sendEvent({v:2,type:'unlocked'});
       }
       if(m.action==='pause')v.pause();
       break}
