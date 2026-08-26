@@ -172,6 +172,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     getPdfPageState: () => ipcRenderer.invoke('projection:get-pdf-page-state'),
     remotePptNext: () => ipcRenderer.invoke('projection:remote-ppt-next'),
     remotePptPrev: () => ipcRenderer.invoke('projection:remote-ppt-prev'),
+    captureSourceFrame: () =>
+      ipcRenderer.invoke('projection:capture-source-frame'),
     getPptSlideState: () =>
       ipcRenderer.invoke('projection:get-ppt-slide-state'),
     getSiteTargetMonitors: () =>

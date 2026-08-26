@@ -25,6 +25,7 @@ import {
   getPptSlideState,
   getSourceNavigationState,
   getSourcePlaybackState,
+  captureSourceFrameBase64,
   getVideoTargetMonitorIds,
   openWebProjectionWindows,
   registerProjectionCapturePermissions,
@@ -296,6 +297,15 @@ export function registerWorkspaceIpc() {
       return await remotePptPrev()
     } catch (error) {
       console.error('[ipc] projection:remote-ppt-prev', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('projection:capture-source-frame', async () => {
+    try {
+      return await captureSourceFrameBase64()
+    } catch (error) {
+      console.error('[ipc] projection:capture-source-frame', error)
       return null
     }
   })

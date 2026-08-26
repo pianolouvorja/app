@@ -2095,6 +2095,20 @@ export async function getPdfPageState() {
   }
 }
 
+/** Rasteriza o slide/página atual do popup para o Palco (TV/browser).
+ * Controle fica fora do sourceWindow, então a imagem contém só conteúdo. */
+export async function captureSourceFrameBase64() {
+  if (!sourceWindow || sourceWindow.isDestroyed()) return null
+  try {
+    const image = await sourceWindow.webContents.capturePage()
+    const png = image.toPNG()
+    if (!png?.length) return null
+    return png.toString('base64')
+  } catch {
+    return null
+  }
+}
+
 /** Avança para o próximo slide da apresentação no popup. */
 export async function remotePptNext() {
   return remotePdfNext()
