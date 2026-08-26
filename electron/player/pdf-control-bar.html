@@ -405,7 +405,11 @@
         })
 
         void loadMonitors()
+        // PDF.js renderiza de forma assíncrona; primeira captura pode pegar
+        // canvas vazio/loading. Tenta após render inicial sem duplicar estado.
         void syncPptToTvs()
+        setTimeout(function () { void syncPptToTvs() }, 700)
+        setTimeout(function () { void syncPptToTvs() }, 1800)
         void refresh()
         setInterval(function () { void refresh() }, 500)
       })()
