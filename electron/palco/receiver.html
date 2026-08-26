@@ -272,6 +272,12 @@ function showIdle(msg){
   $('idle').classList.remove('hidden');
   // volta pro BG do palco (personalizado) — música "saiu de cena"
   $('bg').removeAttribute('src');
+  // Now-playing e timer precisam SAIR junto — senão o título residual
+  // do áudio e o cronômetro 00:00 sobrepõem o idle (caso real: MP3
+  // da liturgia termina após timer espelhado).
+  hideNp();
+  {const t=$('timer'); if(t.style.display!=='none'){clearInterval(t._iv||0);
+    t.style.display='none';}}
   $('text').textContent='';$('footer').textContent='';
   // F3.3ac: remove estilos de projeção (caixa/sombra) — senão a caixa
   // vazia continuava desenhada no idle após "Limpar projeção".
