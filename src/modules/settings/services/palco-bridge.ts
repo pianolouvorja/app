@@ -115,7 +115,10 @@ async function projectMedia() {
   }
   await palcoSession.projectRouted('hymns', 'hymns', {
     text: text.split('\n').join('<br>'),
-    footerRef: r.isCover ? '' : r.title,
+    // Título NUNCA no rodapé dos slides de letra — o nome da música
+    // aparece só na capa (decisão Rafael 26/08: repetir a cada slide
+    // polui a projeção).
+    footerRef: '',
     background: r.imageUrl ?? undefined,
   })
 }
