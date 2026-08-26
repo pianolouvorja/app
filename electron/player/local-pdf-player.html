@@ -77,7 +77,14 @@
         }
 
         const total = pdfDoc.numPages
-        pageIndex = ((nextIndex % total) + total) % total
+        // Fim da apresentação: avançar no ÚLTIMO slide encerra a projeção
+        // (autoclose — TVs voltam ao idle). Prev segue cíclico (1 → último).
+        if (nextIndex >= total) {
+          try { window.louvorja?.projection?.notifyVideoEnded?.() } catch (e) { /* sem preload */ }
+          return state()
+        }
+        if (nextIndex < 0) nextIndex = total - 1
+        pageIndex = nextIndex
         const token = ++renderToken
         const page = await pdfDoc.getPage(pageIndex + 1)
         if (token !== renderToken) return state()
