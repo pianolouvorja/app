@@ -116,7 +116,7 @@ class PalcoSlot {
           try { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) } catch { this.#clients.delete(ws) }
         }
         if (remoteIp) {
-          try { ws.send(JSON.stringify({ v: 2, type: 'youare', ip: remoteIp })) } catch { /* ignore */ }
+          try { ws.send(JSON.stringify({ v: 2, type: 'youare', ip: remoteIp, slot: this.#id, slotLabel: this.#label })) } catch { /* ignore */ }
         }
         this.#contents()?.send('palco:receiver-connected', { ip: remoteIp, count: this.#clients.size, slotId: this.#id })
         ws.on('message', (raw) => {

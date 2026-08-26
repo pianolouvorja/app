@@ -148,7 +148,7 @@ function dlog(m1,m2,m3){try{console.log('[P]',m1,m2!==undefined?String(m2):'',m3
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 // F3.3q: versão no idle (canto inferior direito) — ?v= override ou padrão.
-(function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'0.1.31';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
+(function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'0.1.32';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
 // webOS: ares-launch -p '{"host":"..."}' chega em PalmSystem.launchParams,
 // NÃO na query string. Merge dos dois (query string tem prioridade).
 try{
@@ -172,8 +172,11 @@ function proxyUrl(original){
 
 function setStatus(t,err){const s=$('status');s.textContent=t;
   const c=$('idleConn');if(c){
-    if(t.indexOf('●')===0)c.textContent='conectado a '+t.slice(1).trim();
-    else c.textContent=t+' · tecla vermelha = digitar IP';
+    if(t.indexOf('●')===0){
+      var lb=localStorage.getItem('palcoSlotLabel');
+      c.textContent=(lb?lb+' · ':'')+'conectado a '+t.slice(1).trim()+' · vermelha = digitar IP';
+    }
+    else c.textContent=(localStorage.getItem('palcoSlotLabel')?localStorage.getItem('palcoSlotLabel')+' · ':'')+t+' · tecla vermelha = digitar IP';
   }
   s.className=err?'err':''}
 
@@ -633,14 +636,20 @@ function handle(m){
         if(mode!=='chrono'&&rem<=0){clearInterval(t._iv)}},1000);
       break}
     case 'idle':showIdle(m.msg||'Aguardando conteúdo…');break;
-    // F3.3x: sender informa o IP DA TV (visto pelo socket) — exibido
-    // discretamente no idle pra debug/ares.
+    // F3.3x: sender informa IP DA TV (visto pelo socket) + SLOT onde ela
+    // caiu — identificação visível pro operador conferir com o app.
     case 'youare':{
       if(m.ip){
+        var who=(m.slotLabel||m.slot||'Palco');
+        var isMain=!m.slot||m.slot==='0';
+        if(isMain)who='Principal (espelho)';
         var el=document.getElementById('idleConn');
         if(el&&document.getElementById('idle')&&!document.getElementById('idle').classList.contains('hidden'))
-          el.textContent='TV '+m.ip+' · conectado · vermelha = digitar IP';
-        try{localStorage.setItem('palcoSelfIp',m.ip)}catch(e){}
+          el.textContent=who+' · TV '+m.ip+' · conectado · vermelha = digitar IP';
+        try{
+          localStorage.setItem('palcoSelfIp',m.ip);
+          localStorage.setItem('palcoSlotLabel',who);
+        }catch(e){}
       }
       break;
     }
