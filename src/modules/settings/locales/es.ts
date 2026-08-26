@@ -142,6 +142,10 @@ export default {
 
     },
     palco: {
+      cableGroup: 'Monitores (cable)',
+      tvGroup: 'TVs (Palco)',
+      monitor: 'Monitor {n}',
+
       title: 'Palco (TV)',
       subtitle: 'Proyecte en la TV vía receiver LouvorJA — misma red',
       connected: '{count} TV conectada',

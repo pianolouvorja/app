@@ -142,6 +142,10 @@ export default {
 
     },
     palco: {
+      cableGroup: 'Monitors (cable)',
+      tvGroup: 'TVs (Palco)',
+      monitor: 'Monitor {n}',
+
       title: 'Stage (TV)',
       subtitle: 'Cast to the TV via LouvorJA receiver — same network',
       connected: '{count} TV connected',

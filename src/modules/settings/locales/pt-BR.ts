@@ -181,6 +181,10 @@ export default {
       clientConnected: '{device} conectado',
     },
     palco: {
+      cableGroup: 'Monitores (cabo)',
+      tvGroup: 'TVs (Palco)',
+      monitor: 'Monitor {n}',
+
       title: 'Palco (TV)',
       subtitle: 'Projete na TV via receiver LouvorJA — mesma rede',
       connected: '{count} TV conectada',
