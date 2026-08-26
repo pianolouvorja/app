@@ -183,10 +183,12 @@ let host=qs.get('host')||localStorage.getItem('palcoHost')||location.hostname||'
 let port=qs.get('port')||'7081';
 
 function probeSender(ip){
+  // HTTP = porta WS - 1 (padrão do sender: 7081 WS / 7080 HTTP; slots +2)
+  var httpPort=(parseInt(port,10)||7081)-1;
   return new Promise(res=>{
     var done=false;
     var t=setTimeout(function(){if(!done){done=true;res(null)}},450);
-    fetch('http://'+ip+':7080/status')
+    fetch('http://'+ip+':'+httpPort+'/status')
       .then(function(r){return r.json()})
       .then(function(j){if(!done){done=true;clearTimeout(t);
         res(j&&('unlocked' in j)?ip:null)}})
@@ -395,7 +397,7 @@ function openIpEntry(){
   ipEntry.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.85);'+
     'display:flex;align-items:center;justify-content:center';
   ipEntry.innerHTML='<div style="text-align:center">'+
-    '<p style="font-size:2.6vh;opacity:.7;margin:0 0 2vh 0">Digite o IP do celular (LouvorJA ativo) e pressione OK</p>'+
+    '<p style="font-size:2.6vh;opacity:.7;margin:0 0 2vh 0">Digite o IP — ou SÓ A PORTA (ex.: 7081) para achar o LouvorJA na rede</p>'+
     '<p id="ipVal" style="font-size:6vh;font-weight:700;letter-spacing:.5vh;margin:0;'+
     'min-height:7vh;border-bottom:.3vh solid #FCCE02;padding:0 4vh"></p>'+
     '<p style="font-size:1.8vh;opacity:.5;margin:2vh 0 0 0">OK conectar · vermelha cancelar · tecla 463 apagar</p></div>';
@@ -408,6 +410,16 @@ function closeIpEntry(){if(ipEntry){ipEntry.remove();ipEntry=null}}
 function submitIp(){
   var v=(ipEntry&&ipEntry._val)||'';
   if(!v)return;
+  // Só dígitos (2-5) = PORTA: o sender é achado por scan com essa porta
+  // (usuário não decora IP; nova TV na rede de igreja conecta fácil).
+  if(/^\d{2,5}$/.test(v)&&!/\./.test(v)){
+    port=v;tries=0;closeIpEntry();
+    try{if(ws)ws.close()}catch(e){}
+    host='';localStorage.removeItem('palcoHost');
+    setStatus('procurando LouvorJA na porta '+port+'…');
+    scanSubnet();
+    return;
+  }
   host=v;localStorage.setItem('palcoHost',host);tries=0;
   closeIpEntry();
   try{if(ws)ws.close()}catch(e){}
