@@ -17,7 +17,10 @@
   #content{position:fixed;top:0;left:0;right:0;bottom:0;padding:6vh 8vw;
     box-sizing:border-box}
   #text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    text-align:center;width:84vw;font-size:6.5vh;font-weight:700;line-height:1.35;
+    /* Caixa INLINE igual via cabo: encolhe até o texto (fit-content),
+       nunca passa de 86vw — padding abraça a palavra mais longa. */
+    display:inline-block;width:fit-content;max-width:86vw;
+    text-align:center;font-size:6.5vh;font-weight:700;line-height:1.35;
     letter-spacing:.03em;text-transform:uppercase;
     text-shadow:0 2px 12px rgba(0,0,0,.8)}
   /* F3.3m: estilos dinâmicos da letra (sombra/caixinha) */
@@ -38,7 +41,7 @@
   #text.cover-on{text-transform:uppercase;font-weight:900;letter-spacing:.03em;
     color:#f6c32a;background:none;padding:0;border:none;box-shadow:none;
     border-radius:0;line-height:1.1}
-  #text.box-off{background:none;padding:0;border:none}
+  #text.box-off{background:none;padding:0;border:none;box-shadow:none}
 
   #footer{position:fixed;bottom:4vh;left:0;right:0;text-align:center;
     font-size:2.6vh;font-weight:300;opacity:.7}
