@@ -22,6 +22,7 @@ import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { app, ipcMain } from 'electron'
@@ -338,6 +339,19 @@ class PalcoSlot {
 }
 
 /** Gerenciador de slots (singleton no main process). */
+function slotsConfigPath() {
+  return path.join(app.getPath('userData'), 'palco-slots.json')
+}
+
+function readPersistedSlots() {
+  try {
+    const raw = JSON.parse(readFileSync(slotsConfigPath(), 'utf8'))
+    return Array.isArray(raw) ? raw : []
+  } catch {
+    return []
+  }
+}
+
 class PalcoManager {
   #slots = new Map() // id -> PalcoSlot
   #getContents // callback renderer
@@ -347,6 +361,33 @@ class PalcoManager {
   /** Slot principal (id='0') sempre existe. */
   init() {
     this.ensureSlot('0', 'Principal', BASE_HTTP_PORT, BASE_WS_PORT)
+    // Operador configura TV 2/porta 7082 uma vez; slots voltam após restart.
+    for (const item of readPersistedSlots()) {
+      const httpPort = Number(item?.httpPort)
+      const wsPort = Number(item?.wsPort)
+      const id = String(item?.id ?? '')
+      const label = String(item?.label ?? '').trim()
+      if (
+        id !== '0' && label && Number.isInteger(httpPort) &&
+        Number.isInteger(wsPort) && httpPort >= BASE_HTTP_PORT + 2 &&
+        wsPort === httpPort + 1 && this.#slots.size < MAX_SLOTS
+      ) this.ensureSlot(id, label, httpPort, wsPort)
+    }
+  }
+
+  persistSlots() {
+    try {
+      const rows = Array.from(this.#slots.values())
+        .filter((slot) => slot.id !== '0')
+        .map((slot) => ({ id: slot.id, label: slot.label, httpPort: slot.httpPort, wsPort: slot.wsPort }))
+      const file = slotsConfigPath()
+      mkdirSync(path.dirname(file), { recursive: true })
+      const tmp = `${file}.tmp`
+      writeFileSync(tmp, JSON.stringify(rows, null, 2), 'utf8')
+      renameSync(tmp, file)
+    } catch (error) {
+      console.warn('[palco] persist slots:', error?.message ?? error)
+    }
   }
 
   /** Garante slot; cria se não existe. */
@@ -363,7 +404,9 @@ class PalcoManager {
     let httpPort = BASE_HTTP_PORT + 2, wsPort = BASE_WS_PORT + 2
     while (this.#slots.has(String(httpPort))) { httpPort += 2; wsPort += 2 }
     const id = String(httpPort) // id = porta HTTP (ex: "7082")
-    return this.ensureSlot(id, label, httpPort, wsPort)
+    const slot = this.ensureSlot(id, label, httpPort, wsPort)
+    this.persistSlots()
+    return slot
   }
 
   /** Remove slot (exceto principal). */
@@ -373,6 +416,7 @@ class PalcoManager {
     if (!slot) return false
     slot.stop()
     this.#slots.delete(id)
+    this.persistSlots()
     return true
   }
 
