@@ -125,7 +125,18 @@
         // capturePage cinza durante loading/GPU do BrowserWindow.
         capturePng() {
           if (!canvas || canvas.width < 2 || canvas.height < 2) return null
-          return canvas.toDataURL('image/png').split(',')[1] || null
+          // Canvas PDF.js pode carregar alpha/cor premultiplicada. Em WAM
+          // isso compõe contra preto e escurece azul/amarelo. Achata em
+          // sRGB opaco branco antes do PNG, igual render visível no operador.
+          const flat = document.createElement('canvas')
+          flat.width = canvas.width
+          flat.height = canvas.height
+          const flatCtx = flat.getContext('2d', { alpha: false })
+          if (!flatCtx) return null
+          flatCtx.fillStyle = '#ffffff'
+          flatCtx.fillRect(0, 0, flat.width, flat.height)
+          flatCtx.drawImage(canvas, 0, 0)
+          return flat.toDataURL('image/png').split(',')[1] || null
         },
         async next() {
           if (!(await ensureReady())) return state()
