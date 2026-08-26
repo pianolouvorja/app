@@ -134,17 +134,19 @@ export async function executeLiturgyItem(
       return { ok: true }
     }
 
+    case 'audio':
     case 'video': {
       const filePath = item.filePath?.trim()
-      // Browser: vídeo local é upload (blob URL) — filePath do desktop não existe lá.
+      // Browser: mídia local é upload (blob URL) — filePath do desktop não existe lá.
       const objectUrl = getLiturgyVideoObjectUrl(item.id)
       if (!filePath && !objectUrl) {
         return { ok: false, messageKey: 'liturgy.messages.videoSelectFile' }
       }
 
+      const fallbackLabel = item.type === 'audio' ? 'Áudio' : 'Vídeo'
       const opened = await openLiturgyLocalVideoControl(
-        filePath || item.name?.trim() || 'Vídeo',
-        item.name?.trim() || filePath || 'Vídeo',
+        filePath || item.name?.trim() || fallbackLabel,
+        item.name?.trim() || filePath || fallbackLabel,
         objectUrl,
       )
       if (!opened) {
@@ -246,7 +248,7 @@ export async function playLiturgyItemOnScreens(
     return openLiturgyMusicOnScreens(item)
   }
 
-  if (item.type === 'video') {
+  if (item.type === 'audio' || item.type === 'video') {
     const filePath = item.filePath?.trim()
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }

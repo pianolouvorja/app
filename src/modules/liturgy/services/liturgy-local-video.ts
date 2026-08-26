@@ -52,3 +52,21 @@ export function readVideoDuration(file: File): Promise<number> {
     window.setTimeout(() => done(0), 5000)
   })
 }
+
+/** Duração (s) de arquivo de áUDIO — lida de um <audio> temporário. */
+export function readAudioDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const audio = document.createElement('audio')
+    audio.preload = 'metadata'
+    const done = (value: number) => {
+      URL.revokeObjectURL(url)
+      resolve(Number.isFinite(value) ? value : 0)
+    }
+    audio.onloadedmetadata = () => done(audio.duration)
+    audio.onerror = () => done(0)
+    audio.src = url
+    // timeout de segurança: 5s
+    window.setTimeout(() => done(0), 5000)
+  })
+}
