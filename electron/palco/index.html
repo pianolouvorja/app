@@ -145,7 +145,7 @@ function dlog(m1,m2,m3){try{console.log('[P]',m1,m2!==undefined?String(m2):'',m3
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 // F3.3q: versão no idle (canto inferior direito) — ?v= override ou padrão.
-(function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'0.1.29';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
+(function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'0.1.30';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
 // webOS: ares-launch -p '{"host":"..."}' chega em PalmSystem.launchParams,
 // NÃO na query string. Merge dos dois (query string tem prioridade).
 try{
@@ -181,20 +181,35 @@ function sendEvent(m){try{if(ws&&ws.readyState===1)ws.send(JSON.stringify(m))}ca
 // Prioridade: launchParams/query host > último host válido (localStorage)
 // > scan da sub-rede via GET :7080/status (resposta JSON identifica sender).
 let host=qs.get('host')||localStorage.getItem('palcoHost')||location.hostname||'';
-let port=qs.get('port')||'7081';
+let port=qs.get('port')||localStorage.getItem('palcoPort')||'7081';
 
-function probeSender(ip){
-  // HTTP = porta WS - 1 (padrão do sender: 7081 WS / 7080 HTTP; slots +2)
-  var httpPort=(parseInt(port,10)||7081)-1;
+function probeHttp(ip,httpPort){
   return new Promise(res=>{
-    var done=false;
-    var t=setTimeout(function(){if(!done){done=true;res(null)}},450);
     fetch('http://'+ip+':'+httpPort+'/status')
       .then(function(r){return r.json()})
-      .then(function(j){if(!done){done=true;clearTimeout(t);
-        res(j&&('unlocked' in j)?ip:null)}})
-      .catch(function(){if(!done){done=true;clearTimeout(t);res(null)}});
+      .then(function(j){res(j&&('unlocked' in j)?j:null)})
+      .catch(function(){res(null)});
   });
+}
+function probeSender(ip){
+  // Porta digitada pode ser WS (7081) OU HTTP do slot (a UI mostra a HTTP,
+  // ex.: slot 1 = 7082/7083). Tenta a dupla HTTP/WS em ambos os sentidos:
+  // p como HTTP, p-1 (p=WS) e p+1 (p=HTTP→WS=p+1).
+  var p=parseInt(port,10)||7081;
+  return probeHttp(ip,p).then(function(j){
+    if(j)return normalizePort(ip,j,p);          // p era HTTP
+    return probeHttp(ip,p-1).then(function(j2){
+      if(j2)return normalizePort(ip,j2,p);      // p era WS (HTTP=p-1)
+      return probeHttp(ip,p+1).then(function(j3){
+        if(j3)return normalizePort(ip,j3,p+1);  // p era HTTP, WS=p+1
+        return null;
+      });
+    });
+  });
+}
+function normalizePort(ip,j,wsPort){
+  port=String(wsPort);
+  return ip;
 }
 
 async function scanSubnet(){
@@ -267,7 +282,8 @@ function doConnect(){
   try{ws=new WebSocket('ws://'+host+':'+port+'/palco')}catch(e){retry();return}
   ws.onopen=()=>{tries=0;dlog('WS OPEN '+host);setStatus('● '+host);
     if(window.__hideSplash)window.__hideSplash(); // F3.3j: splash sai no connect
-    localStorage.setItem('palcoHost',host)};
+    localStorage.setItem('palcoHost',host);
+    localStorage.setItem('palcoPort',port)};
   ws.onmessage=ev=>{try{handle(JSON.parse(ev.data))}catch(e){}};
   ws.onclose=()=>{dlog('WS CLOSE');stopMediaOnServerLoss();showIdle();
     // host falhou 3x → esquece e re-escaneia (IP mudou)
@@ -441,7 +457,7 @@ function submitIp(){
   // Só dígitos (2-5) = PORTA: o sender é achado por scan com essa porta
   // (usuário não decora IP; nova TV na rede de igreja conecta fácil).
   if(/^\d{2,5}$/.test(v)&&!/\./.test(v)){
-    port=v;tries=0;closeIpEntry();
+    port=v;localStorage.setItem('palcoPort',port);tries=0;closeIpEntry();
     try{if(ws)ws.close()}catch(e){}
     host='';localStorage.removeItem('palcoHost');
     setStatus('procurando LouvorJA na porta '+port+'…');
