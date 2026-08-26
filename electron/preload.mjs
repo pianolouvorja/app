@@ -152,6 +152,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteToggleMute: () => ipcRenderer.invoke('projection:remote-toggle-mute'),
     remoteSetVolume: (volume) =>
       ipcRenderer.invoke('projection:remote-set-volume', volume),
+    getSourceMediaInfo: () =>
+      ipcRenderer.invoke('projection:get-source-media-info'),
     getPlaybackState: () => ipcRenderer.invoke('projection:get-playback-state'),
     getNavigationState: () => ipcRenderer.invoke('projection:get-navigation-state'),
     remoteGoBack: () => ipcRenderer.invoke('projection:remote-go-back'),

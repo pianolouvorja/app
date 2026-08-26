@@ -1490,9 +1490,17 @@ function openSiteScreensOnTargets(loadUrl, targets) {
   return targets.length > 0
 }
 
+let currentSourceFilePath = ''
+let currentSourceTitle = ''
+
 export async function openWebProjectionWindows(payload) {
   const input = payload ?? {}
   let effective = input
+
+  currentSourceFilePath =
+    typeof effective.filePath === 'string' ? effective.filePath.trim() : ''
+  currentSourceTitle =
+    typeof effective.title === 'string' ? effective.title.trim() : ''
 
   if (input.mode === 'presentation') {
     const filePath =
@@ -1919,6 +1927,11 @@ export async function remoteSetVolumeSource(volume) {
   } catch {
     return null
   }
+}
+
+/** FilePath/título da mídia corrente (para o popup espelhar no Palco). */
+export function getSourceMediaInfo() {
+  return { filePath: currentSourceFilePath, title: currentSourceTitle }
 }
 
 /** Estado de playback do vídeo no popup (para a barra do operador). */
