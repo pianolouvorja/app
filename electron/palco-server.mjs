@@ -265,13 +265,37 @@ class PalcoSlot {
       return
     }
 
-    // Mídia local servida pelo sender
+    // Mídia local servida pelo sender — com HTTP Range (streaming/seek):
+    // sem Range o <video> do receiver baixa o MP4 inteiro antes de tocar
+    // fluido (stutter em 1080p) e seek não funciona.
     if (p.startsWith('/media/')) {
       const name = p.slice('/media/'.length)
       const entry = this.#media.get(name)
       if (!entry) { res.statusCode = 404; res.end(); return }
       res.setHeader('Content-Type', entry.mime)
-      res.setHeader('Content-Length', entry.bytes.length)
+      res.setHeader('Accept-Ranges', 'bytes')
+      const total = entry.bytes.length
+      const range = req.headers.range
+      if (range) {
+        const rm = /bytes=(\d*)-(\d*)/.exec(String(range))
+        if (rm) {
+          const start = rm[1] ? parseInt(rm[1], 10) : 0
+          const end = rm[2] ? Math.min(parseInt(rm[2], 10), total - 1) : total - 1
+          if (start <= end && start < total) {
+            res.statusCode = 206
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${total}`)
+            res.setHeader('Content-Length', end - start + 1)
+            if (req.method === 'HEAD') { res.end(); return }
+            res.end(entry.bytes.subarray(start, end + 1))
+            return
+          }
+        }
+        res.statusCode = 416
+        res.setHeader('Content-Range', `bytes */${total}`)
+        res.end()
+        return
+      }
+      res.setHeader('Content-Length', total)
       if (req.method === 'HEAD') { res.end(); return }
       res.end(entry.bytes)
       return
