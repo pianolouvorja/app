@@ -245,7 +245,21 @@ class PalcoSlot {
             res.end(buf)
             return
           }
-        } catch { /* cai no 404 */ }
+        } catch { /* tenta a fonte direto */ }
+        // Dev (Vite em memória) ou dist sem hash: serve direto da FONTE
+        // src/assets/backgrounds/ — fonte da verdade em dev E prod.
+        try {
+          const base = id.replace(/\.png$/, '')
+          for (const cand of [base + '.png', base + '.jpg', base + '.webp']) {
+            const buf = await readFile(path.join(__dirname, '..', 'src', 'assets', 'backgrounds', cand)).catch(() => null)
+            if (buf) {
+              res.setHeader('Content-Type', cand.endsWith('.jpg') ? 'image/jpeg' : 'image/png')
+              res.setHeader('Cache-Control', 'public, max-age=86400')
+              res.end(buf)
+              return
+            }
+          }
+        } catch { /* 404 abaixo */ }
       }
       res.statusCode = 404; res.end(); return
     }
