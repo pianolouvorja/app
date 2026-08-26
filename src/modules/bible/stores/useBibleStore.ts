@@ -70,6 +70,7 @@ export const useBibleStore = defineStore('bible', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('bible')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -189,13 +190,20 @@ export const useBibleStore = defineStore('bible', () => {
     if (isProjecting.value) publishProjectionState(selection)
   }
 
-  async function openProjection() {
+  async function openProjection(opts?: { targets?: 'all' | 'tvs-only' }) {
     syncProjection()
     if (projection.value.verses.length === 0 || !projection.value.text) {
       return false
     }
 
     publishProjectionState(projection.value)
+    // 'tvs-only': publica runtime para as TVs Palco SEM abrir janela no
+    // monitor cabeado — desacopla TV do cabo (spec multi-telas 26/08).
+    if (opts?.targets === 'tvs-only') {
+      isProjecting.value = true
+      startProjectionWatch()
+      return true
+    }
     const opened = await openProjectionModule('bible')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -203,19 +211,38 @@ export const useBibleStore = defineStore('bible', () => {
     return opened
   }
 
+  /** Projetando somente nas TVs (sem janela cabheada). */
+  const projectingTvsOnly = ref(false)
+
   function clearProjectionWindow() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
     publishProjectionState(emptySelection())
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('bible')) {
+    if (isProjecting.value && (isProjectionModuleOpen('bible') || projectingTvsOnly.value)) {
       clearProjectionWindow()
       return false
     }
     return openProjection()
+  }
+
+  /** Projeta só nas TVs Palco (spec multi-telas F2). */
+  async function projectTvsOnly() {
+    if (isProjecting.value && projectingTvsOnly.value) {
+      clearProjectionWindow()
+      return false
+    }
+    if (isProjectionModuleOpen('bible')) {
+      // já projetando no cabo → migra para só-TVs fechando a janela
+      closeProjectionModule()
+    }
+    const ok = await openProjection({ targets: 'tvs-only' })
+    projectingTvsOnly.value = ok
+    return ok
   }
 
   async function refreshChapter() {
@@ -481,6 +508,8 @@ export const useBibleStore = defineStore('bible', () => {
     syncProjection,
     openProjection,
     toggleProjection,
+    projectTvsOnly,
+    projectingTvsOnly,
     clearProjectionWindow,
   }
 })

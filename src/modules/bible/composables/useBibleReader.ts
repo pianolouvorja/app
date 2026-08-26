@@ -1,5 +1,5 @@
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, toRef } from 'vue'
 
 import { useBibleStore } from '../stores/useBibleStore'
 
@@ -110,6 +110,8 @@ export function useBibleReader() {
     goToAdjacentVerse: store.goToAdjacentVerse,
     syncProjection: store.syncProjection,
     toggleProjection: store.toggleProjection,
+    projectTvsOnly: store.projectTvsOnly,
+    projectingTvsOnly: toRef(store, 'projectingTvsOnly'),
     clearProjectionWindow: store.clearProjectionWindow,
     refresh: store.bootstrap,
   }

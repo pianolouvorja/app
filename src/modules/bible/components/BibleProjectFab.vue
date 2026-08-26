@@ -8,6 +8,7 @@ defineProps<{
 
 const emit = defineEmits<{
   project: []
+  projectTvs: []
   clear: []
 }>()
 
@@ -36,6 +37,19 @@ function onClick(projecting: boolean, disabled: boolean) {
         :class="projecting ? 'ti-player-stop' : 'ti-player-play'"
         aria-hidden="true"
       />
+    </button>
+    <!-- Só TVs (spec multi-telas F2): publica nas TVs Palco sem abrir
+         janela no monitor cabeado. -->
+    <button
+      v-if="!projecting"
+      type="button"
+      class="bible-project-fab__btn bible-project-fab__btn--tv"
+      :disabled="disabled"
+      :aria-label="t('bible.projectTvsOnly')"
+      :title="t('bible.projectTvsOnly')"
+      @click="emit('projectTvs')"
+    >
+      <i class="ti ti-device-tv" aria-hidden="true" />
     </button>
   </div>
 </template>
@@ -71,6 +85,16 @@ function onClick(projecting: boolean, disabled: boolean) {
   .ti {
     font-size: 2rem;
     line-height: 1;
+  }
+
+  &--tv {
+    width: 3.25rem;
+    height: 3.25rem;
+    align-self: flex-end;
+
+    .ti {
+      font-size: 1.6rem;
+    }
   }
 
   &--active {
