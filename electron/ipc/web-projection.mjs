@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
+import { getPalcoManager } from './palco-server.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -1332,9 +1333,10 @@ export function closeWebProjectionWindows() {
   siteControlPanelOpen = false
   // Palco (TVs): projeção fechou (ended OU manual) → todas as TVs voltam
   // ao idle. Sem isso o último frame ficava congelado na TV.
+  // Import estático: require() de .mjs lança ERR_REQUIRE_ESM no Electron
+  // ESM e o catch silencioso engolia o stop — TVs ficavam com mídia presa.
   try {
-    const { getPalcoManager } = require('./palco-server.mjs')
-    const manager = getPalcoManager && getPalcoManager()
+    const manager = getPalcoManager()
     if (manager) {
       manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
       manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })

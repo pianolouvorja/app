@@ -581,14 +581,15 @@ function handle(m){
             if(a.readyState>=1)apply();else a.addEventListener('loadedmetadata',apply,{once:true});
           }
           a.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};
-          // Áudio "desconhecido" (sem metadados): mostra o nome do arquivo
-          // no now-playing em vez de fundo preto — igual comportamento de
-          // quando a gente toca só o áudio no app.
-          const npTitle=m.title||(m.url?decodeURIComponent(String(m.url).split('/').pop()||'').replace(/\.[a-z0-9]+$/i,''):'');
-          if(npTitle){
-            showNp(npTitle, m.subtitle||'', m.cover||'');
-            $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
+          // Áudio "desconhecido" (sem metadados): now-playing padrão do
+          // Palco — sem nome de arquivo, com a animação eq indicando que
+          // há algo tocando. Mesmo visual do "só áudio" do app.
+          if(m.title){
+            showNp(m.title, m.subtitle||'', m.cover||'');
+          }else{
+            showNp('Reproduzindo áudio', m.subtitle||'', m.cover||'');
           }
+          $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
         }
       }
       if(m.action==='play'){
