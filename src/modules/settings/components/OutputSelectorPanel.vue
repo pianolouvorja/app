@@ -222,9 +222,16 @@ onUnmounted(() => unsubscribeDisplays?.())
     padding: 0.35rem 0.5rem;
     border-radius: 0.5rem;
     border: 1px solid color-mix(in srgb, #fff 20%, transparent);
-    background: transparent;
+    background: color-mix(in srgb, #fff 8%, transparent);
     color: inherit;
     font-size: 0.8rem;
+
+    /* option nativa pega fundo do SO (branco) — texto claro ficaria
+       ilegível. Cores explícitas garantem contraste em qualquer tema. */
+    option {
+      background: #1c2433;
+      color: #fff;
+    }
   }
 }
 </style>
