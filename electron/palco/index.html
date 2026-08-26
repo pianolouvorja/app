@@ -67,8 +67,9 @@
     text-align:center;width:84vw;font-size:16vh;font-weight:700;
     font-variant-numeric:tabular-nums;text-shadow:0 2px 12px rgba(0,0,0,.8)}
   #timer small{display:block;font-size:2.8vh;font-weight:300;opacity:.7;margin-top:2vh}
+  /* Vídeo acima do idle (z=20) — idle nunca pode cobrir reprodução. */
   #video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:contain;
-    background:#000;z-index:5}
+    background:#000;z-index:20}
 </style>
 </head>
 <body>
@@ -183,10 +184,12 @@ let host=qs.get('host')||localStorage.getItem('palcoHost')||location.hostname||'
 let port=qs.get('port')||'7081';
 
 function probeSender(ip){
+  // HTTP = porta WS - 1 (padrão do sender: 7081 WS / 7080 HTTP; slots +2)
+  var httpPort=(parseInt(port,10)||7081)-1;
   return new Promise(res=>{
     var done=false;
     var t=setTimeout(function(){if(!done){done=true;res(null)}},450);
-    fetch('http://'+ip+':7080/status')
+    fetch('http://'+ip+':'+httpPort+'/status')
       .then(function(r){return r.json()})
       .then(function(j){if(!done){done=true;clearTimeout(t);
         res(j&&('unlocked' in j)?ip:null)}})
@@ -272,6 +275,12 @@ function showIdle(msg){
   $('idle').classList.remove('hidden');
   // volta pro BG do palco (personalizado) — música "saiu de cena"
   $('bg').removeAttribute('src');
+  // Now-playing e timer precisam SAIR junto — senão o título residual
+  // do áudio e o cronômetro 00:00 sobrepõem o idle (caso real: MP3
+  // da liturgia termina após timer espelhado).
+  hideNp();
+  {const t=$('timer'); if(t.style.display!=='none'){clearInterval(t._iv||0);
+    t.style.display='none';}}
   $('text').textContent='';$('footer').textContent='';
   // F3.3ac: remove estilos de projeção (caixa/sombra) — senão a caixa
   // vazia continuava desenhada no idle após "Limpar projeção".
@@ -290,6 +299,10 @@ function coverUrl(cover){
 }
 function showNp(title,sub,cover){
   hideIdle();$('text').style.display='none';
+  // Timer espelhado antes do áudio precisa SAIR — senão o cronômetro
+  // sobrepõe o now-playing (caso real: liturgia toca MP3 após timer).
+  {const t=$('timer'); if(t.style.display!=='none'){clearInterval(t._iv||0);
+    t.style.display='none';$('text').style.display='none';}}
   const np=$('np');np.style.display='';
   $('npTitle').textContent=title;
   $('npSub').textContent=sub;
@@ -385,7 +398,7 @@ function openIpEntry(){
   ipEntry.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.85);'+
     'display:flex;align-items:center;justify-content:center';
   ipEntry.innerHTML='<div style="text-align:center">'+
-    '<p style="font-size:2.6vh;opacity:.7;margin:0 0 2vh 0">Digite o IP do celular (LouvorJA ativo) e pressione OK</p>'+
+    '<p style="font-size:2.6vh;opacity:.7;margin:0 0 2vh 0">Digite o IP — ou SÓ A PORTA (ex.: 7081) para achar o LouvorJA na rede</p>'+
     '<p id="ipVal" style="font-size:6vh;font-weight:700;letter-spacing:.5vh;margin:0;'+
     'min-height:7vh;border-bottom:.3vh solid #FCCE02;padding:0 4vh"></p>'+
     '<p style="font-size:1.8vh;opacity:.5;margin:2vh 0 0 0">OK conectar · vermelha cancelar · tecla 463 apagar</p></div>';
@@ -398,6 +411,16 @@ function closeIpEntry(){if(ipEntry){ipEntry.remove();ipEntry=null}}
 function submitIp(){
   var v=(ipEntry&&ipEntry._val)||'';
   if(!v)return;
+  // Só dígitos (2-5) = PORTA: o sender é achado por scan com essa porta
+  // (usuário não decora IP; nova TV na rede de igreja conecta fácil).
+  if(/^\d{2,5}$/.test(v)&&!/\./.test(v)){
+    port=v;tries=0;closeIpEntry();
+    try{if(ws)ws.close()}catch(e){}
+    host='';localStorage.removeItem('palcoHost');
+    setStatus('procurando LouvorJA na porta '+port+'…');
+    scanSubnet();
+    return;
+  }
   host=v;localStorage.setItem('palcoHost',host);tries=0;
   closeIpEntry();
   try{if(ws)ws.close()}catch(e){}
@@ -514,10 +537,13 @@ function handle(m){
       break}
     case 'video':{
       const v=$('video');
+      hideIdle();hideNp();
       if(m.action==='stop'){v.pause();v.removeAttribute('src');v.style.display='none';
-        v.load();sendEvent({v:2,type:'ended',media:'video'});break}
+        v.load();showIdle('Aguardando conteúdo…');
+        sendEvent({v:2,type:'ended',media:'video'});break}
       if(m.url){v.src=proxyUrl(m.url);v.style.display='';
-        v.onended=()=>{v.style.display='none';v.removeAttribute('src');
+        v.onended=()=>{v.style.display='none';v.removeAttribute('src');v.load();
+          showIdle('Aguardando conteúdo…');
           sendEvent({v:2,type:'ended',media:'video'})}}
       if(m.action==='play'){
         const a=$('audio'); a.pause(); // exclusao mutua com audio
