@@ -60,7 +60,10 @@ function onClick(projecting: boolean, disabled: boolean) {
   right: 2rem;
   bottom: calc(var(--ds-dock-height, 5.5rem) + 1.25rem);
   z-index: 35;
+  /* Coluna vertical: play em cima, TV embaixo — não invade o
+     StagePaletteButton (que fica à direita com offset próprio). */
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.65rem;
 }
@@ -90,7 +93,6 @@ function onClick(projecting: boolean, disabled: boolean) {
   &--tv {
     width: 3.25rem;
     height: 3.25rem;
-    align-self: flex-end;
 
     .ti {
       font-size: 1.6rem;
