@@ -56,6 +56,7 @@ class PalcoSlot {
   #httpServer
   #wss
   #clients = new Set()
+  #receiverIps = new Map() // WebSocket -> IP físico da TV/browser
   #lastByType = new Map() // replay pro receiver que chega tarde
   #running = false
   #media = new Map() // mídia local servida em /media/
@@ -112,6 +113,7 @@ class PalcoSlot {
         if (req?.url && !req.url.startsWith('/palco')) { ws.close(); return }
         this.#clients.add(ws)
         const remoteIp = req?.socket?.remoteAddress?.replace('::ffff:', '')
+        if (remoteIp) this.#receiverIps.set(ws, remoteIp)
         // replay do estado atual pro receiver que chegou depois
         for (const msg of this.#lastByType.values()) {
           try { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) } catch { this.#clients.delete(ws) }
@@ -125,6 +127,7 @@ class PalcoSlot {
         })
         ws.on('close', () => {
           this.#clients.delete(ws)
+          this.#receiverIps.delete(ws)
           this.#contents()?.send('palco:receiver-disconnected', { count: this.#clients.size, slotId: this.#id })
         })
         ws.on('error', () => this.#clients.delete(ws))
@@ -177,6 +180,7 @@ class PalcoSlot {
       label: this.#label,
       running: this.#running,
       clients: this.#clients.size,
+      receiverIps: Array.from(new Set(this.#receiverIps.values())),
       url: `http://${lanIp()}:${this.#httpPort}`,
       wsUrl: `ws://${lanIp()}:${this.#wsPort}/palco`,
     }
