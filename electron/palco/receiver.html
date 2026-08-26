@@ -652,7 +652,7 @@ function handle(m){
       if(m.action==='seek'){
         const target=(m.position||m.positionMs/1000||0);
         // só corrige se o desvio for perceptível — micro-sync causa stutter
-        if(Math.abs(a.currentTime-target)>0.3){try{a.currentTime=target}catch(e){}}
+        if(Math.abs(a.currentTime-target)>0.12){try{a.currentTime=target}catch(e){}}
         // sender mandou seek enquanto deveria tocar (play inicial pode ter
         // falhado por autoplay) → retoma; playWithFallback cuida do unlock
         if(a.paused&&target>0.2)playWithFallback();
@@ -681,7 +681,14 @@ function handle(m){
           sendEvent({v:2,type:'ended',media:'video'})}}
       if(m.action==='seek'){
         const target=(m.position||((m.positionMs||0)/1000)||0);
-        if(Math.abs(v.currentTime-target)>0.3){try{v.currentTime=target}catch(e){}}
+        // Spec multi-telas F4: tolerância 0.12s (era 0.3 — perceptível em
+        // lábio/voz). Drift pequeno = correção SUAVE via playbackRate
+        // (sem corte); grande (≥0.5s) = salto.
+        const drift=target-v.currentTime;
+        if(Math.abs(drift)>0.5){try{v.currentTime=target}catch(e){};v.playbackRate=1}
+        else if(drift>0.12)v.playbackRate=Math.min(1.05,1+drift*0.5);
+        else if(drift<-0.12)v.playbackRate=Math.max(0.95,1+drift*0.5);
+        else v.playbackRate=1;
         if(v.paused&&target>0.2)playVideoWithFallback();
       }
       if(m.action==='play'){
