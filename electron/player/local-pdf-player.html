@@ -121,6 +121,12 @@
         getState() {
           return state()
         },
+        // PNG do canvas já renderizado — usado pelo Palco nas TVs. Evita
+        // capturePage cinza durante loading/GPU do BrowserWindow.
+        capturePng() {
+          if (!canvas || canvas.width < 2 || canvas.height < 2) return null
+          return canvas.toDataURL('image/png').split(',')[1] || null
+        },
         async next() {
           if (!(await ensureReady())) return state()
           return renderPage(pageIndex + 1)

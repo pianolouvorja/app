@@ -2100,6 +2100,13 @@ export async function getPdfPageState() {
 export async function captureSourceFrameBase64() {
   if (!sourceWindow || sourceWindow.isDestroyed()) return null
   try {
+    // PDF/PPT convertido: canvas PDF.js é fonte real do slide. capturePage
+    // pegava o frame cinza de loading antes do render/GPU finalizar.
+    const canvasPng = await sourceWindow.webContents.executeJavaScript(
+      "window.__liturgyPdf && window.__liturgyPdf.capturePng ? window.__liturgyPdf.capturePng() : null",
+      true,
+    )
+    if (typeof canvasPng === 'string' && canvasPng.length > 32) return canvasPng
     const image = await sourceWindow.webContents.capturePage()
     const png = image.toPNG()
     if (!png?.length) return null
