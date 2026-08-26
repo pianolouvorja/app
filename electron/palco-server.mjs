@@ -84,6 +84,18 @@ class PalcoSlot {
     }
   }
 
+  /** Transiente: só p/ conectados AGORA — não grava replay.
+   * Pause/play/seek/stop destruíam o replay: uma msg {video,action:play}
+   * SEM url sobrescrevia o estado completo, e quem reconectasse recebia
+   * play sem src (nada projetava) + timer/audio velhos em ordem errada.
+   */
+  broadcastTransient(obj) {
+    const data = JSON.stringify(obj)
+    for (const ws of this.#clients) {
+      try { if (ws.readyState === ws.OPEN) ws.send(data) } catch { this.#clients.delete(ws) }
+    }
+  }
+
   /** Inicia HTTP + WS deste slot. */
   async start() {
     if (this.#running) return true
@@ -148,7 +160,12 @@ class PalcoSlot {
       try { m = JSON.parse(m) } catch { return false }
     }
     if (!m || typeof m !== 'object' || !m.type) return false
-    this.broadcast(m)
+    // Transientes: action sem url/conteúdo NÃO entra no replay.
+    const transient =
+      m.action === 'pause' || m.action === 'play' || m.action === 'seek' ||
+      (m.action === 'stop' && m.type === 'audio')
+    if (transient) this.broadcastTransient(m)
+    else this.broadcast(m)
     return true
   }
 
