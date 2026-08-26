@@ -22,6 +22,7 @@ import {
   playLiturgyLocalVideoOnScreens,
   playLiturgyWebOnConfiguredScreens,
 } from './liturgy-web-projection'
+import { palcoSession } from '../../settings/services/palco-session'
 
 export type LiturgyActionResult =
   | { ok: true; messageKey?: string }
@@ -152,6 +153,16 @@ export async function executeLiturgyItem(
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
+      // Áudio externo: espelha pra TODAS as TVs conectadas (rota mirror
+      // padrão do módulo liturgy). Projetor via cabo não recebe — não há
+      // imagem, só o som na TV.
+      if (item.type === 'audio' && filePath) {
+        void palcoSession.audioRouted({
+          url: filePath,
+          title: item.name?.trim() || undefined,
+          action: 'play',
+        })
+      }
       return { ok: true }
     }
 
@@ -259,6 +270,14 @@ export async function playLiturgyItemOnScreens(
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+    }
+    // Áudio externo: espelha o som pra todas as TVs conectadas (mirror).
+    if (item.type === 'audio') {
+      void palcoSession.audioRouted({
+        url: filePath,
+        title: item.name?.trim() || undefined,
+        action: 'play',
+      })
     }
     return { ok: true }
   }
