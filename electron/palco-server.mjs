@@ -205,6 +205,8 @@ class PalcoSlot {
         // Versão do RECEIVER (appinfo.json embutido, mesmo do .ipk webOS) —
         // o HTML resolve via fetch. NÃO usar a versão do app desktop aqui.
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        // Receiver sempre revalida — evita browser preso em HTML antigo
+        res.setHeader('Cache-Control', 'no-cache')
         res.end(page)
       } catch {
         res.statusCode = 404
