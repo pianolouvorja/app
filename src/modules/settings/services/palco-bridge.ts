@@ -120,6 +120,7 @@ async function projectMedia() {
     // polui a projeção).
     footerRef: '',
     background: r.imageUrl ?? undefined,
+    isCover: r.isCover === true,
   })
 }
 

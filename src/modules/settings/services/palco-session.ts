@@ -26,6 +26,8 @@ type ProjectionInput = {
   footerVersion?: string
   /** BG: URL http(s) já resolvível pela TV; omitir usa o bg do stage. */
   background?: string
+  /** Capa da música: título destaque amarelo, sem caixinha (paridade cabo). */
+  isCover?: boolean
 }
 
 /** Acesso tipado ao palco exposto pelo preload (contextBridge). */
@@ -158,6 +160,7 @@ class PalcoSession {
       footerColor: s.footerRefColor,
       footerWeight: s.footerRefWeight,
       footerVersion: input.footerVersion,
+      isCover: input.isCover === true,
     }, this.activeSlotId)
   }
 

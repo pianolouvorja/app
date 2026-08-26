@@ -28,11 +28,16 @@
   #text.box-on{background:rgba(0,0,0,var(--box-bg,.45));
     /* Player: radius folha clamp(14px,2.4vmin,32px) 0, borda 0.2vmin e
        sombra suave. Padding mínimo — caixa abraça o texto (vmin). */
-    padding:1.6vmin 2.6vmin;
+    padding:1.6vmin 1.8vmin;
     border-radius:clamp(14px,2.4vmin,32px) 0 clamp(14px,2.4vmin,32px) 0;
     border:var(--box-border,clamp(2px,.2vmin,4px) solid rgba(255,255,255,.25));
     box-shadow:0 10px 30px rgba(0,0,0,.4)}
   #text.shadow-off{text-shadow:none}
+  /* Capa da música (isCover): título destaque amarelo, sem caixinha/borda —
+     paridade com media-projection__title--cover via cabo. */
+  #text.cover-on{text-transform:uppercase;font-weight:900;letter-spacing:.03em;
+    color:#f6c32a;background:none;padding:0;border:none;box-shadow:none;
+    border-radius:0;line-height:1.1}
   #text.box-off{background:none;padding:0;border:none}
 
   #footer{position:fixed;bottom:4vh;left:0;right:0;text-align:center;
@@ -335,7 +340,7 @@ function showIdle(msg){
   $('text').textContent='';$('footer').textContent='';
   // F3.3ac: remove estilos de projeção (caixa/sombra) — senão a caixa
   // vazia continuava desenhada no idle após "Limpar projeção".
-  $('text').classList.remove('box-on','shadow-on','box-off','shadow-off');
+  $('text').classList.remove('box-on','shadow-on','box-off','shadow-off','cover-on');
   $('text').style.removeProperty('--box-bg');
   $('text').style.removeProperty('--box-border');
   $('text').style.removeProperty('--ts');
@@ -554,6 +559,7 @@ function handle(m){
       // preserva a tonalidade original do canvas do operador.
       $('veil').style.display=m.text?'':'none';
       $('text').innerHTML=m.text||'';
+      $('text').classList.toggle('cover-on',m.isCover===true);
       // F3.3o: fontSize/fontWeight dinâmicos (settings do operador).
       {const t=$('text');
         if(typeof m.fontSize==='number')
