@@ -6,6 +6,7 @@
  * StageSettings efetivo do escopo para as mensagens do protocolo Palco v2.
  */
 
+import { useOutputRegistry } from './output-registry'
 import { readEffectiveStageSettings } from '../../settings/services/stage-settings-runtime'
 import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 import { getPalcoRoute, type PalcoModule } from './palco-routing'
@@ -171,12 +172,22 @@ class PalcoSession {
     try { await this.project(scope, input) } finally { this.setSlot(previous) }
   }
 
-  /** Espelha módulo em todos slots ligados, ou usa rota individual. */
+  /** Espelha módulo em todos slots ligados, ou usa rota individual.
+   *
+   * Spec multi-telas (registry de saídas): slot com módulo ATRIBUÍDO só
+   * recebe o conteúdo atribuído; slot espelho (null) recebe tudo —
+   * comportamento legado preservado quando ninguém configura nada. */
   async projectRouted(module: PalcoModule, scope: string, input: ProjectionInput): Promise<void> {
     const route = getPalcoRoute(module)
     if (route !== 'mirror') return this.projectTo(route, scope, input)
+    const { moduleForSlot } = useOutputRegistry()
     const slots = await this.slots()
-    await Promise.all(slots.filter((s) => s.running).map((s) => this.projectTo(s.id, scope, input)))
+    await Promise.all(
+      slots
+        .filter((s) => s.running)
+        .filter((s) => moduleForSlot(s.id) === null || moduleForSlot(s.id) === module)
+        .map((s) => this.projectTo(s.id, scope, input)),
+    )
   }
 
   /** BG permanente do palco (idle) — bg global do stage. */
