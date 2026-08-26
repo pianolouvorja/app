@@ -380,6 +380,18 @@ class PalcoManager {
   getAllSlots() { return Array.from(this.#slots.values()) }
   getPrincipal() { return this.#slots.get('0') }
 
+  /** Para mídia em TODAS as TVs (áudio+vídeo) — usado no quit do app. */
+  stopAllMedia() {
+    for (const slot of this.#slots.values()) {
+      try {
+        if (!slot.running) continue
+        slot.broadcastTransient({ v: 2, type: 'audio', action: 'stop' })
+        slot.broadcastTransient({ v: 2, type: 'video', action: 'stop' })
+      } catch { /* ignore */ }
+    }
+    return true
+  }
+
   /** Broadcast p/ TODOS os slots ligados (ex: projeção fechou → idle). */
   broadcastAll(msg) {
     for (const slot of this.#slots.values()) {

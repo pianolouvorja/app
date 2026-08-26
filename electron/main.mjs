@@ -486,6 +486,17 @@ app.on("second-instance", () => {
 	mainWindow.focus();
 });
 
+app.on("will-quit", () => {
+	// Palco: app fechando → TVs param a mídia na hora (não toca até o fim).
+	try {
+		const { getPalcoManager } = require("./palco-server.mjs");
+		const manager = getPalcoManager && getPalcoManager();
+		if (manager) manager.stopAllMedia();
+	} catch {
+		/* palco não anexado */
+	}
+});
+
 app.on("window-all-closed", () => {
 	// window-all-closed pode disparar quando o splash fecha mas a main
 	// ainda está carregando. Só saímos se mainWindow já existiu ou se
