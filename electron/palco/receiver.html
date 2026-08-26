@@ -19,7 +19,8 @@
   #text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     /* Caixa INLINE igual via cabo: encolhe até o texto (fit-content),
        nunca passa de 86vw — padding abraça a palavra mais longa. */
-    display:inline-block;width:fit-content;max-width:86vw;
+    display:inline-block;width:fit-content;max-width:86vw;max-height:72vh;
+    overflow-wrap:break-word;
     text-align:center;font-size:6.5vh;font-weight:700;line-height:1.35;
     letter-spacing:.03em;text-transform:uppercase;
     text-shadow:0 2px 12px rgba(0,0,0,.8)}
