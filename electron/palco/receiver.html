@@ -290,6 +290,10 @@ function coverUrl(cover){
 }
 function showNp(title,sub,cover){
   hideIdle();$('text').style.display='none';
+  // Timer espelhado antes do áudio precisa SAIR — senão o cronômetro
+  // sobrepõe o now-playing (caso real: liturgia toca MP3 após timer).
+  {const t=$('timer'); if(t.style.display!=='none'){clearInterval(t._iv||0);
+    t.style.display='none';$('text').style.display='none';}}
   const np=$('np');np.style.display='';
   $('npTitle').textContent=title;
   $('npSub').textContent=sub;
