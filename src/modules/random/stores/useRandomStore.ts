@@ -303,6 +303,10 @@ export const useRandomStore = defineStore('random', () => {
     cancelAnimation = runDrawAnimation(pool, config.value.animationSpeed, {
       onTick: (candidate) => {
         runtime.value = {
+          // ...spread: sortear NUNCA derruba 'projecting' — objeto novo
+          // sem a flag soltava o claim e a TV congelava no último frame
+          // (bug real 27/08: número sorteado não aparecia na TV).
+          ...runtime.value,
           currentDisplay: candidate,
           isDrawing: true,
         }
@@ -311,6 +315,7 @@ export const useRandomStore = defineStore('random', () => {
       onFinish: (winner) => {
         cancelAnimation = null
         runtime.value = {
+          ...runtime.value,
           currentDisplay: winner,
           isDrawing: false,
         }
