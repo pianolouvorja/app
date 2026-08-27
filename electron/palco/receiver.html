@@ -714,6 +714,13 @@ function handle(m){
       hideIdle();
       const t=$('timer');
       if(m.action==='stop'){t.style.display='none';clearInterval(t._iv||0);$('text').style.display='';break}
+      // BG do escopo timer (fix 27/08): mesma cadeia da projection —
+      // mensagem > bgPalco > fallback. Antes o timer ignorava bg e a TV
+      // ficava no fundo que sobrou do módulo anterior.
+      {const bgEl=$('bg');bgEl.onerror=()=>{bgEl.onerror=null;bgEl.src='bg-fallback.png'};
+       if(m.background){bgEl.src=proxyUrl(m.background)}
+       else if(bgPalco){bgEl.src=proxyUrl(bgPalco)}
+       else{bgEl.src='bg-fallback.png'}}
       t.style.display='';$('text').style.display='none';
       let rem=(m.duration||0)*1000; // countdown segundos
       const mode=m.mode||'countdown';

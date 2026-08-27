@@ -207,13 +207,19 @@ class PalcoSession {
     }, this.activeSlotId)
   }
 
-  /** Timer na TV (countdown/chrono). */
-  timer(opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string }): void {
+  /** Timer na TV (countdown/chrono) — com bg do escopo do módulo. */
+  async timer(opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string; background?: string }): Promise<void> {
     if (!this.isElectron) return
-    void palcoApi().send({
+    let background = opts.background
+    if (!background) {
+      const s = readEffectiveStageSettings('timer')
+      background = await this.resolveBgUrl(resolveBackgroundImage(s.backgroundImage))
+    }
+    await palcoApi().send({
       v: 2,
       type: 'timer',
       ...opts,
+      background,
     }, this.activeSlotId)
   }
 
@@ -223,7 +229,7 @@ class PalcoSession {
     await Promise.all(slots.map(async (id) => {
       const previous = this.activeSlotId
       this.setSlot(id)
-      try { this.timer(opts) } finally { this.setSlot(previous) }
+      try { await this.timer(opts) } finally { this.setSlot(previous) }
     }))
   }
 
