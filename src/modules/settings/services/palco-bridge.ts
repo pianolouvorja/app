@@ -421,6 +421,7 @@ function bindChannel<T>(
   apply: (v: T) => void,
 ) {
   const onMsg = (raw: unknown) => {
+    debugPalco('bindMsg', channelName, JSON.stringify(raw)?.slice(0, 60))
     apply(normalize(raw))
   }
   try {
@@ -446,6 +447,23 @@ function bindChannel<T>(
   } catch {
     // sem estado inicial
   }
+  // Poll de storage (fix 27/08): BroadcastChannel same-window não entrega
+  // em todos os contextos (HMR/Electron dev) e o evento 'storage' só
+  // dispara em OUTRAS janelas. Polling leve garante a atualização viva.
+  let lastRaw: string | null = raw_snapshot()
+  function raw_snapshot(): string | null {
+    try { return localStorage.getItem(storageKey) } catch { return null }
+  }
+  const poll = window.setInterval(() => {
+    const now = raw_snapshot()
+    if (now !== lastRaw) {
+      lastRaw = now
+      if (now) {
+        try { onMsg(JSON.parse(now)) } catch { /* ignore */ }
+      }
+    }
+  }, 2000)
+  unwatchers.push(() => window.clearInterval(poll))
 }
 
 export function startPalcoBridge() {

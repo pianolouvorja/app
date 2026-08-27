@@ -144,6 +144,9 @@ export const useRandomStore = defineStore('random', () => {
     runtime.value = {
       currentDisplay: pool.currentDisplay,
       isDrawing: false,
+      // hydrate preserva a intenção de projeção (fix 27/08): reconstruir
+      // sem a flag derrubava 'projecting' e a TV perdia o dono no boot
+      projecting: runtime.value.projecting === true,
     }
     syncRuntime()
     isProjecting.value = isProjectionModuleOpen('random')
