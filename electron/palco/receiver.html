@@ -692,6 +692,19 @@ function handle(m){
       if(m.action==='stop'){v.pause();v.removeAttribute('src');v.style.display='none';
         v.load();showIdle('Aguardando conteúdo…');
         sendEvent({v:2,type:'ended',media:'video'});break}
+      // MP3/áudio puro no canal video (fix 27/08): o popup manda mídia nos
+      // DOIS canais; <video> com MP3 = tela preta fullscreen. Tratar como
+      // áudio: now-playing + eq + bg — mesmo visual dos hinos.
+      if(m.url&&/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/i.test(m.url)){
+        {const a=$('audio');const next=proxyUrl(m.url);
+         if(a.src!==next){a.src=next;}
+         a.play().catch(function(){});
+         a.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};}
+        if(m.title){showNp(m.title,m.subtitle||'',m.cover||'')}
+        else{showNp('Reproduzindo áudio',m.subtitle||'',m.cover||'')}
+        $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
+        break;
+      }
       if(m.url){v.src=proxyUrl(m.url);v.style.display='';
         // Sync inicial (padrão F3.3g do áudio): positionMs aplicado antes
         // do play — seguro p/ metadata não carregada (loadedmetadata once).
