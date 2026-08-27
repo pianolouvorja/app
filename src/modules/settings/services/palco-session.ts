@@ -355,6 +355,13 @@ class PalcoSession {
     try { this.idle(msg) } finally { this.setSlot(previous) }
   }
 
+  /** Timer num slot específico sem alterar o slot ativo global. */
+  timerTo(slotId: string, opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string }): void {
+    const previous = this.activeSlotId
+    this.setSlot(slotId)
+    try { this.timer(opts) } finally { this.setSlot(previous) }
+  }
+
   /** Serve mídia local e retorna a URL para a TV. */
   async serveMedia(name: string, mime: string, base64: string): Promise<string | null> {
     if (!this.isElectron) return null

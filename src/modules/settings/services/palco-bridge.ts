@@ -13,6 +13,9 @@
 import { palcoSession } from './palco-session'
 import { useOutputRegistry } from './output-registry'
 import type { OutputModule } from './output-registry'
+import { planForSlot, OWNER_TO_PALCO_MODULE } from './output-plan'
+import { getPalcoRoute } from './palco-routing'
+import type { ProjectionInput } from './palco-session'
 import { readEffectiveStageSettings } from './stage-settings-runtime'
 import {
   MEDIA_RUNTIME_CHANNEL,
@@ -82,24 +85,35 @@ function fmtClock(ms: number): string {
 // ===== projeção por módulo =====
 
 /**
- * Sweep de slots atribuídos (spec 2026-08-27): todo slot com módulo
- * ATRIBUÍDO deve refletir o estado ATUAL daquele módulo — conteúdo se
- * ativo, idle se não. Sem isto, slot da Bíblia ficava com o último
- * versículo CONGELADO quando outro módulo era projetado no mirror
- * (projectRouted filtra o slot e ninguém mandava idle pra ele).
- * Chamar após cada projectOwner().
+ * Renderiza TODOS os slots segundo o plano (spec 2026-08-27 — takeover
+ * híbrido): decisãoo pura em output-plan.ts; aqui só efeitos.
+ * Takeover: owner com rota pro slot renderiza nele (toma a tela).
+ * Restore: slot atribuído mostra o conteúdo ATUAL do módulo atribuído
+ * (se vivo) — nunca fica congelado; degradado → idle.
+ * SERIAL: projectTo/timerTo trocam activeSlotId/baseUrl por sender.
  */
-async function sweepAssignedSlots(): Promise<void> {
+async function renderAllSlots(): Promise<void> {
   if (!palcoSession.isElectron) return
   const { moduleForSlot } = useOutputRegistry()
   const slots = await palcoSession.slots()
   for (const s of slots) {
     if (!s.running) continue
-    const m = moduleForSlot(s.id)
-    if (!m) continue // espelho: projectRouted já cobre
-    if (owner === m) continue // dono acabou de projetar neste slot
-    if (assignedSlotHasContent(m)) continue
-    palcoSession.idleTo(s.id)
+    const plan = planForSlot(s.id, {
+      owner,
+      routeOf: (m) => getPalcoRoute(m),
+      assignedOf: (slotId) => moduleForSlot(slotId),
+      isAlive: assignedSlotHasContent,
+    })
+    if (plan.render === 'owner') {
+      await renderOwnerTo(s.id)
+    } else if (plan.render === 'assigned') {
+      // video/pdf/ppt: runtime vive nos popups (não na bridge) — não tocar.
+      if (plan.module === 'bible' || plan.module === 'media') {
+        await renderModuleTo(plan.module, s.id)
+      }
+    } else {
+      palcoSession.idleTo(s.id)
+    }
   }
 }
 
@@ -108,124 +122,123 @@ function assignedSlotHasContent(m: OutputModule): boolean {
   switch (m) {
     case 'bible': return runtimes.bible.active && Boolean(runtimes.bible.text)
     case 'media': return Boolean(runtimes.media.lyric || runtimes.media.title)
-    // video/pdf/ppt (media-module) e clock/timer/countdown só existem
-    // como PalcoRoute, não como OutputModule do registry — nada a varrer.
+    // video/pdf/ppt: popups mandam direto ao slot — bridge não renderiza,
+    // mas também NÃO considera morto (não mandar idle por cima deles).
     default: return true
   }
 }
 
-async function projectOwner() {
-  if (!owner) {
-    palcoSession.idle()
-    await sweepAssignedSlots()
-    return
-  }
+/** Input de projeção do owner (ou null → idle). */
+function ownerInput(): ProjectionInput | { timer: TimerOpts } | null {
   switch (owner) {
-    case 'media':
-      await projectMedia()
-      break
-    case 'bible':
-      await projectBible()
-      break
-    case 'random':
-      await projectRandom()
-      break
-    case 'timer':
-      projectTimer()
-      break
-    case 'countdown':
-      projectCountdown()
-      break
-    case 'clock':
-      projectClock()
-      break
+    case 'media': {
+      const r = runtimes.media
+      const text = r.lyric || r.title || ''
+      if (!text) return null
+      return {
+        text: text.split('\n').join('<br>'),
+        // Título NUNCA no rodapé dos slides de letra — o nome da música
+        // aparece só na capa (decisão Rafael 26/08).
+        footerRef: '',
+        background: r.imageUrl ?? undefined,
+        isCover: r.isCover === true,
+      }
+    }
+    case 'bible': {
+      const r = runtimes.bible
+      if (!r.active || !r.text) return null
+      return { text: r.text.split('\n').join('<br>'), footerRef: r.reference }
+    }
+    case 'random': {
+      const r = runtimes.random
+      if (!r.currentDisplay) return null
+      return { text: r.currentDisplay }
+    }
+    case 'timer': {
+      const r = runtimes.timer
+      if (!r || r.status === 'idle') return null
+      return { timer: { mode: 'chrono' as const, label: '', duration: Math.floor(elapsedMs(r) / 1000) } }
+    }
+    case 'countdown': {
+      const r = runtimes.countdown
+      if (!r || r.status === 'idle') return null
+      const remaining = Math.max(0, r.durationMs - elapsedMs(r))
+      return { timer: { mode: 'countdown' as const, label: '', duration: Math.ceil(remaining / 1000) } }
+    }
+    default:
+      return null
   }
-  await sweepAssignedSlots()
 }
 
-async function projectMedia() {
-  const r = runtimes.media
-  const text = r.lyric || r.title || ''
-  if (!text) {
-    palcoSession.idle()
+type TimerOpts = { mode: 'countdown' | 'chrono'; label?: string; duration?: number }
+
+async function renderOwnerTo(slotId: string): Promise<void> {
+  if (owner === 'clock') return renderClockTo(slotId)
+  const input = ownerInput()
+  if (!input) return palcoSession.idleTo(slotId)
+  if ('timer' in input) return palcoSession.timerTo(slotId, input.timer)
+  await palcoSession.projectTo(slotId, OWNER_TO_PALCO_MODULE[owner!] ?? 'random', input)
+}
+
+/** Slot atribuído: renderiza o módulo atribuído (restore). */
+async function renderModuleTo(m: 'bible' | 'media', slotId: string): Promise<void> {
+  if (m === 'bible') {
+    const r = runtimes.bible
+    if (!r.active || !r.text) return palcoSession.idleTo(slotId)
+    await palcoSession.projectTo(slotId, 'bible', {
+      text: r.text.split('\n').join('<br>'),
+      footerRef: r.reference,
+    })
     return
   }
-  await palcoSession.projectRouted('hymns', 'hymns', {
+  const r = runtimes.media
+  const text = r.lyric || r.title || ''
+  if (!text) return palcoSession.idleTo(slotId)
+  await palcoSession.projectTo(slotId, 'hymns', {
     text: text.split('\n').join('<br>'),
-    // Título NUNCA no rodapé dos slides de letra — o nome da música
-    // aparece só na capa (decisão Rafael 26/08: repetir a cada slide
-    // polui a projeção).
     footerRef: '',
     background: r.imageUrl ?? undefined,
     isCover: r.isCover === true,
   })
 }
 
-async function projectBible() {
-  const r = runtimes.bible
-  if (!r.active || !r.text) {
-    palcoSession.idle()
-    return
+async function projectOwner() {
+  if (owner === 'clock') {
+    // relógio tem tick próprio; renderAllSlots cobre os demais slots
   }
-  await palcoSession.projectRouted('bible', 'bible', {
-    text: r.text.split('\n').join('<br>'),
-    footerRef: r.reference,
-  })
-}
-
-async function projectRandom() {
-  const r = runtimes.random
-  if (!r.currentDisplay) {
-    palcoSession.idle()
-    return
-  }
-  await palcoSession.projectRouted('random', 'random', {
-    text: r.currentDisplay,
-  })
-}
-
-function projectTimer() {
-  const r = runtimes.timer
-  if (!r || r.status === 'idle') {
-    palcoSession.idle()
-    return
-  }
-  palcoSession.timerRouted('timer', {
-    mode: 'chrono',
-    label: '',
-    duration: Math.floor(elapsedMs(r) / 1000),
-  })
-}
-
-function projectCountdown() {
-  const r = runtimes.countdown
-  if (!r || r.status === 'idle') {
-    palcoSession.idle()
-    return
-  }
-  const remaining = Math.max(0, r.durationMs - elapsedMs(r))
-  palcoSession.timerRouted('countdown', {
-    mode: 'countdown',
-    label: '',
-    duration: Math.ceil(remaining / 1000),
-  })
+  await renderAllSlots()
 }
 
 let clockTimer: number | null = null
-function projectClock() {
-  const s = readEffectiveStageSettings('clock')
-  const render = () => {
-    const now = new Date()
-    const hh = String(now.getHours()).padStart(2, '0')
-    const mm = String(now.getMinutes()).padStart(2, '0')
-    void palcoSession.projectRouted('clock', 'clock', {
-      text: `${hh}:${mm}`,
-    })
-  }
+
+/** Relógio num slot específico (tick próprio de 15s). */
+async function renderClockTo(slotId: string): Promise<void> {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  await palcoSession.projectTo(slotId, 'clock', { text: `${hh}:${mm}` })
+}
+
+/** Reinicia o tick do relógio pro slot tomado (owner=clock). */
+function restartClockTick(): void {
   if (clockTimer) window.clearInterval(clockTimer)
-  render()
-  clockTimer = window.setInterval(render, 15000)
-  void s
+  const tick = async () => {
+    const { moduleForSlot } = useOutputRegistry()
+    const slots = await palcoSession.slots()
+    for (const s of slots) {
+      if (!s.running) continue
+      if (planForSlot(s.id, {
+        owner,
+        routeOf: (m) => getPalcoRoute(m),
+        assignedOf: (id) => moduleForSlot(id),
+        isAlive: assignedSlotHasContent,
+      }).render === 'owner') {
+        await renderClockTo(s.id)
+      }
+    }
+  }
+  void tick()
+  clockTimer = window.setInterval(() => void tick(), 15000)
 }
 
 function stopClock() {
@@ -239,13 +252,13 @@ function stopClock() {
 function claim(o: Exclude<Owner, null>) {
   if (owner === 'clock') stopClock()
   owner = o
+  if (o === 'clock') restartClockTick()
   void projectOwner()
 }
 
 /**
- * Dono saindo → idle. SEM cadeia de fallback (spec 2026-08-27):
- * runtime sticky de outro módulo (ex.: bible.active) NÃO reassume
- * sozinho — voltar exige clique Projetar explícito (intenção).
+ * Dono saindo → re-planeja slots (spec 2026-08-27): slot atribuído
+ * restaura o módulo atribuído (se vivo), espelho → novo owner/idle.
  */
 function release(o: Exclude<Owner, null>) {
   if (owner !== o) return
