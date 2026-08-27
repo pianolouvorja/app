@@ -20,7 +20,7 @@ import {
   pickDefaultVersionId,
   resolveTestament,
 } from '../services/bible-catalog'
-import { publishBibleSelection } from '../services/bible-runtime'
+import { publishBibleSelection, publishBibleRuntimeOff } from '../services/bible-runtime'
 import {
   buildProjectionText,
   emptySelection,
@@ -75,6 +75,9 @@ export const useBibleStore = defineStore('bible', () => {
       if (!isProjectionModuleOpen('bible')) {
         isProjecting.value = false
         stopProjectionWatch()
+        // solta o runtime: sem isto o restore eterno mantinha a bíblia
+        // na TV mesmo com a projeção desligada (bug real 27/08)
+        publishBibleRuntimeOff()
       }
     }, 400)
   }
@@ -225,6 +228,7 @@ export const useBibleStore = defineStore('bible', () => {
     projectingTvsOnly.value = false
     stopProjectionWatch()
     publishProjectionState(emptySelection())
+    publishBibleRuntimeOff()
   }
 
   async function toggleProjection() {

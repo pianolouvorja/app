@@ -55,7 +55,7 @@ let owner: Owner = null
 
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
-  bible: { active: false, text: '', reference: '' },
+  bible: { active: false, text: '', reference: '', projecting: false },
   random: { currentDisplay: '', isDrawing: false, projecting: false },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
@@ -120,7 +120,7 @@ async function renderAllSlots(): Promise<void> {
 /** Módulo atribuído a um slot tem conteúdo ativo pra mostrar nele? */
 function assignedSlotHasContent(m: OutputModule): boolean {
   switch (m) {
-    case 'bible': return runtimes.bible.active && Boolean(runtimes.bible.text)
+    case 'bible': return Boolean(runtimes.bible.projecting) && runtimes.bible.active && Boolean(runtimes.bible.text)
     case 'media': return Boolean(runtimes.media.lyric || runtimes.media.title)
     // video/pdf/ppt: popups mandam direto ao slot — bridge não renderiza,
     // mas também NÃO considera morto (não mandar idle por cima deles).
@@ -146,7 +146,7 @@ function ownerInput(): ProjectionInput | { timer: TimerOpts } | null {
     }
     case 'bible': {
       const r = runtimes.bible
-      if (!r.active || !r.text) return null
+      if (!r.projecting || !r.active || !r.text) return null
       return { text: r.text.split('\n').join('<br>'), footerRef: r.reference }
     }
     case 'random': {
@@ -189,7 +189,7 @@ async function renderOwnerTo(slotId: string): Promise<void> {
 async function renderModuleTo(m: 'bible' | 'media', slotId: string): Promise<void> {
   if (m === 'bible') {
     const r = runtimes.bible
-    if (!r.active || !r.text) return palcoSession.idleTo(slotId)
+    if (!r.projecting || !r.active || !r.text) return palcoSession.idleTo(slotId)
     await palcoSession.projectTo(slotId, 'bible', {
       text: r.text.split('\n').join('<br>'),
       footerRef: r.reference,
@@ -470,9 +470,9 @@ export function startPalcoBridge() {
     BIBLE_RUNTIME_CHANNEL,
     BIBLE_RUNTIME_STORAGE_KEY,
     normalizeBibleRuntime,
-    (v: { active: boolean; text: string; reference: string }) => {
+    (v: { active: boolean; text: string; reference: string; projecting?: boolean }) => {
       runtimes.bible = v
-      setIntent('bible', v.active)
+      setIntent('bible', Boolean(v.projecting) && v.active)
     },
   )
 
