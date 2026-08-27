@@ -187,7 +187,10 @@ let bgPalco='';  // BG personalizado do palco (idle) — persiste entre músicas
 
 function proxyUrl(original){
   if(!original)return original;
-  if(original.startsWith('http://'+host+':7080/'))return original; // ja local
+  // Qualquer porta do MESMO sender é local: 7080 (Principal), 7082 (TV 2),
+  // 7084... Antes só aceitava :7080; bg vindo de slot :7082 era proxyado
+  // de volta e falhava → receiver caía no bg-12 (caso real 26/08).
+  if(original.startsWith('http://'+host+':'))return original;
   if(original.startsWith('http://')||original.startsWith('https://')){
     return `http://${host}:7080/proxy?url=${encodeURIComponent(original)}`;
   }
