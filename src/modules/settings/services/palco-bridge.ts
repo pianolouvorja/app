@@ -508,9 +508,10 @@ export function startPalcoBridge() {
       (v: TimerRuntimeState | null): void => {
         if (!v) return
         runtimes.timer = v
-        // Botão Projetar é o dono explícito: 00:00/pausado continua visível
-        // até Retirar da projeção, igual Bíblia (não solta após 400ms).
-        setIntent('timer', runtimeIsFresh(v) && (Boolean(v.projecting) || v.status !== 'idle'))
+        // Dono = 'projecting' APENAS (fix 27/08): o '|| status !== idle'
+        // fazia countdown PAUSADO no storage claimar o palco no boot sem
+        // ninguém tocar nele — roubava o owner de qualquer módulo ativo.
+        setIntent('timer', runtimeIsFresh(v) && Boolean(v.projecting))
       },
     )
 
@@ -521,7 +522,7 @@ export function startPalcoBridge() {
       (v: CountdownRuntimeState | null): void => {
         if (!v) return
         runtimes.countdown = v
-        setIntent('countdown', runtimeIsFresh(v) && (Boolean(v.projecting) || v.status !== 'idle'))
+        setIntent('countdown', runtimeIsFresh(v) && Boolean(v.projecting))
       },
     )
 
