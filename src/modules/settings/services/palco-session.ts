@@ -42,6 +42,7 @@ function palcoApi(): {
   onEvent(cb: (m: unknown) => void): void
   onReceiverConnected(cb: (i: unknown) => void): void
   onReceiverDisconnected(cb: (i: unknown) => void): void
+  wake?(): Promise<{ ok: boolean; results?: string[] } | null>
 } {
   return (window as never as { louvorja: { palco: never } }).louvorja.palco
 }
@@ -81,9 +82,10 @@ class PalcoSession {
     this.baseUrl = null // recarrega no próximo project
     const ok = await palcoApi().start(this.activeSlotId)
     if (ok) {
-      // liga o palco: bg permanente + idle
+      // liga o palco: bg permanente + idle + wakeup dos receivers
       this.sendBgPalco()
       this.idle()
+      try { void palcoApi().wake?.() } catch { /* best-effort */ }
     }
     return ok
   }

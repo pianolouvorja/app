@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   // Palco (cast p/ TV — receiver conecta em WS :7081, HTTP :7080)
   palco: {
     slots: () => ipcRenderer.invoke('palco:slots'),
+    wake: () => ipcRenderer.invoke('palco:wake'),
     createSlot: (label) => ipcRenderer.invoke('palco:slot-create', { label }),
     removeSlot: (slotId) => ipcRenderer.invoke('palco:slot-remove', { id: slotId }),
     start: (slotId = '0') => ipcRenderer.invoke('palco:start', { slotId }),
