@@ -47,14 +47,14 @@ const {
               aria-hidden="true"
             />
 
-            <v-btn
+            <button
               v-else
-              color="primary"
+              type="button"
               class="starting-overlay__retry"
               @click="retryBootstrap"
             >
               {{ t('starting.retry') }}
-            </v-btn>
+            </button>
           </main>
         </Transition>
       </div>
@@ -109,6 +109,13 @@ const {
 
 .starting-overlay__retry {
   margin-top: 0.25rem;
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .starting-fade-enter-active,

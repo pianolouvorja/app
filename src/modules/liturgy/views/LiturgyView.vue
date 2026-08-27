@@ -77,6 +77,8 @@ const {
   reorderItems,
   selectItem,
   playItemOnScreens,
+  importJa,
+  importScheduled,
   toggleItemDone,
   openCustomDialog,
   closeCustomDialog,
@@ -91,6 +93,7 @@ const {
   onManageTeam,
   onMusicPick,
   clearMusicPick,
+  onVideoFileSelected,
   onMusicSung,
   onMusicInstrumental,
   onMusicSlides,
@@ -171,6 +174,32 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 
           <div class="liturgy-view__toolbar-actions">
             <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.importJa')"
+              @click="importJa"
+            >
+              <i
+                class="ti ti-file-import"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.importJa') }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.scheduled.import')"
+              @click="importScheduled"
+            >
+              <i
+                class="ti ti-calendar-down"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.scheduled.import') }}</span>
+            </button>
+
+            <button
               v-if="currentItems.length > 0"
               type="button"
               class="liturgy-view__lock"
@@ -246,6 +275,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           :music-instrumental-by-id="musicInstrumentalById"
           :busy-music-id="busyMusicId"
           @select="selectItem"
+          @video-file-selected="onVideoFileSelected"
           @play-screens="playItemOnScreens"
           @edit="openEditDialog"
           @add-sub-item="openAddSubItemDialog"

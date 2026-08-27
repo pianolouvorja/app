@@ -32,11 +32,14 @@
     "@tabler/icons-webfont": "^3.45.0",
     "basic-ftp": "^6.0.1",
     "electron-updater": "^6.8.9",
+    "jsqr": "^1.4.0",
     "pinia": "^3.0.4",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.38",
     "vue-i18n": "^11.4.6",
     "vue-router": "^4.6.4",
-    "vuetify": "^4.1.4"
+    "vuetify": "^4.1.4",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -45,6 +48,7 @@
     "@tailwindcss/vite": "^4.3.2",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.13.2",
+    "@types/qrcode": "^1.5.6",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.9.1",
@@ -141,9 +145,13 @@
           "Name": "LouvorJA - PIANO",
           "Comment": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
           "Categories": "AudioVideo;",
-          "StartupWMClass": "louvorja-piano"
+          "StartupWMClass": "louvorja-piano",
+          "MimeType": "application/x-louvorja-liturgy;"
         }
-      }
+      },
+      "mimeTypes": [
+        "application/x-louvorja-liturgy"
+      ]
     },
     "win": {
       "target": [
@@ -183,7 +191,15 @@
       "provider": "github",
       "owner": "pianolouvorja",
       "repo": "app"
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "ja",
+        "name": "LouvorJA Liturgia",
+        "description": "Liturgia exportada pelo LouvorJA Delphi",
+        "role": "Editor"
+      }
+    ]
   },
   "description": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
   "author": {

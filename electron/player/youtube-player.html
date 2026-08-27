@@ -100,6 +100,14 @@
                 } catch (e) {}
                 applySync(pendingSync)
               },
+              // Autoclose: vídeo do YouTube acabou → fecha projeção sozinho.
+              onStateChange: function (event) {
+                if (event.data === 0) {
+                  try {
+                    window.louvorja?.projection?.notifyVideoEnded?.()
+                  } catch (e) {}
+                }
+              },
             },
           })
         }

@@ -2,7 +2,7 @@ export const LITURGY_WEB_RUNTIME_CHANNEL = 'louvorja-liturgy-web-runtime'
 export const LITURGY_WEB_RUNTIME_STORAGE_KEY = 'louvorja-liturgy-web-runtime-state'
 export const LITURGY_YT_SYNC_CHANNEL = 'louvorja-liturgy-yt-sync'
 
-export type LiturgyWebKind = 'youtube' | 'vimeo' | 'site'
+export type LiturgyWebKind = 'youtube' | 'vimeo' | 'site' | 'local-video'
 
 export type LiturgyWebProjectionRuntime = {
   active: boolean

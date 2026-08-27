@@ -7,6 +7,7 @@ import type { Router } from 'vue-router'
 import type { LiturgyItem } from '../types/liturgy'
 import { INTERNAL_FILE_TYPES } from '../types/liturgy'
 import { isExecutableItem } from './liturgy-item-helpers'
+import { getLiturgyVideoObjectUrl } from './liturgy-local-video'
 import {
   openLiturgyLocalImageControl,
   openLiturgyLocalPdfControl,
@@ -135,13 +136,16 @@ export async function executeLiturgyItem(
 
     case 'video': {
       const filePath = item.filePath?.trim()
-      if (!filePath) {
-        return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
+      // Browser: vídeo local é upload (blob URL) — filePath do desktop não existe lá.
+      const objectUrl = getLiturgyVideoObjectUrl(item.id)
+      if (!filePath && !objectUrl) {
+        return { ok: false, messageKey: 'liturgy.messages.videoSelectFile' }
       }
 
       const opened = await openLiturgyLocalVideoControl(
-        filePath,
-        item.name?.trim() || filePath,
+        filePath || item.name?.trim() || 'Vídeo',
+        item.name?.trim() || filePath || 'Vídeo',
+        objectUrl,
       )
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }

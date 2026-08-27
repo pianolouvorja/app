@@ -60,6 +60,16 @@ contextBridge.exposeInMainWorld('louvorja', {
   platform: process.platform,
   isElectron: true,
 
+  // Controle remoto (APK via WS :7071): comandos chegam do main.
+  remote: {
+    onCommand: (callback) => subscribe('remote:command', callback),
+    onStateRequest: (callback) => subscribe('remote:request-state', callback),
+    sendAck: (ack) => ipcRenderer.send('remote:ack', ack),
+    sendState: (state) => ipcRenderer.send('remote:state', state),
+    pairingInfo: () => ipcRenderer.invoke('remote:pairing-info'),
+    onClients: (callback) => subscribe('remote:clients', callback),
+  },
+
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),
@@ -74,6 +84,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   workspace: {
+    readBinaryFile: (path) => ipcRenderer.invoke('dialog:read-binary-file', path),
     getRecord: (filename) => ipcRenderer.invoke('workspace:get-record', filename),
     saveRecord: (filename, data) => ipcRenderer.invoke('workspace:save-record', filename, data),
     clear: () => ipcRenderer.invoke('workspace:clear'),
@@ -91,6 +102,7 @@ contextBridge.exposeInMainWorld('louvorja', {
       ipcRenderer.invoke('media:download', url, mediaType, filename),
     check: (mediaType, filename) => ipcRenderer.invoke('media:check', mediaType, filename),
     delete: (mediaType, filename) => ipcRenderer.invoke('media:delete', mediaType, filename),
+    probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },
 
   displays: {
@@ -128,6 +140,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteReload: () => ipcRenderer.invoke('projection:remote-reload'),
     toggleSiteScreens: () => ipcRenderer.invoke('projection:toggle-site-screens'),
     toggleVideoScreens: () => ipcRenderer.invoke('projection:toggle-video-screens'),
+    // Player HTML (local-video/youtube) avisa que o vídeo acabou → autoclose.
+    notifyVideoEnded: () => ipcRenderer.send('projection:video-ended'),
     remoteImageNext: () => ipcRenderer.invoke('projection:remote-image-next'),
     remoteImagePrev: () => ipcRenderer.invoke('projection:remote-image-prev'),
     getImageSlideState: () =>

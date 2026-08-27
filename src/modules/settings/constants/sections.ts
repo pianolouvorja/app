@@ -23,6 +23,11 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     routeName: 'settings-projection',
     labelKey: 'settings.tabs.projection',
   },
+  {
+    id: 'remote',
+    routeName: 'settings-remote',
+    labelKey: 'settings.tabs.remote',
+  },
 ]
 
 export const VISIBLE_SETTINGS_SECTIONS = SETTINGS_SECTIONS.filter(

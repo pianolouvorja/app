@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import AppearanceView from './views/AppearanceView.vue'
 import GeneralView from './views/GeneralView.vue'
 import ProjectionView from './views/ProjectionView.vue'
+import RemotePairingView from '@modules/remote/views/RemotePairingView.vue'
+import { isElectronShell } from '@shared/services/desktop-bridge'
 import SettingsView from './views/SettingsView.vue'
 
 export const settingsRoutes: RouteRecordRaw[] = [
@@ -41,6 +43,18 @@ export const settingsRoutes: RouteRecordRaw[] = [
         path: 'projection',
         name: 'settings-projection',
         component: ProjectionView,
+        meta: {
+          navKey: 'settings',
+        },
+      },
+      // Controle remoto — desktop: WS :7071 (RemotePairingView);
+      // web: P2P WebRTC 2-QR (P2pPairingView), sem servidor.
+      {
+        path: 'remote',
+        name: 'settings-remote',
+        component: isElectronShell()
+          ? RemotePairingView
+          : () => import('@modules/remote/views/WsPairingView.vue'),
         meta: {
           navKey: 'settings',
         },

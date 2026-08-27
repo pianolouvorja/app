@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import { closeProjectionModule } from '@shared/composables/useProjectionWindow'
+
 import {
   DEFAULT_LITURGY_WEB_RUNTIME,
   LITURGY_WEB_RUNTIME_CHANNEL,
@@ -15,9 +17,22 @@ const runtime = ref<LiturgyWebProjectionRuntime>({
 })
 let runtimeChannel: BroadcastChannel | null = null
 
+const isLocalVideo = computed(() => runtime.value.kind === 'local-video')
+
 const showFrame = computed(
   () => runtime.value.active && Boolean(runtime.value.url),
 )
+
+/** Autoclose: vídeo local acabou → fecha as janelas de projeção sozinhas. */
+function onLocalVideoEnded() {
+  try {
+    URL.revokeObjectURL(runtime.value.url)
+  } catch {
+    // url já revogada
+  }
+  window.close()
+  closeProjectionModule()
+}
 
 const frameSrc = computed(() => {
   if (!showFrame.value) return ''
@@ -91,7 +106,17 @@ onUnmounted(() => {
 
 <template>
   <div class="liturgy-web-projection">
+    <video
+      v-if="isLocalVideo && showFrame"
+      :key="frameSrc"
+      class="liturgy-web-projection__frame"
+      :src="frameSrc"
+      autoplay
+      playsinline
+      @ended="onLocalVideoEnded"
+    />
     <iframe
+      v-else-if="showFrame"
       v-if="showFrame"
       :key="frameSrc"
       class="liturgy-web-projection__frame"

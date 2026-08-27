@@ -17,6 +17,7 @@ import {
   type LiturgyItemType,
   type LiturgyMusicOption,
 } from '../types/liturgy'
+import { probeMediaDurationMs } from '../services/media-probe'
 import { formatMomentDuration, isValidLiturgyUrl } from '../services/liturgy-item-helpers'
 import { normalizeLiturgyTimeHHmm } from '../services/liturgy-format'
 
@@ -363,6 +364,11 @@ async function selectLocalFile() {
     const next: Partial<LiturgyItemDraft> = {
       filePath: paths[0] ?? '',
       filePaths: multiple ? paths : [],
+    }
+    // Duração automática de mídia local (vídeo/áudio) via ffprobe.
+    if (!multiple && paths[0]) {
+      const probed = await probeMediaDurationMs(paths[0]!)
+      if (probed > 0) next.durationMs = probed
     }
     if (!props.draft.name.trim()) {
       if (multiple && paths.length > 1) {

@@ -1,4 +1,7 @@
 export default {
+  projection: {
+    confirmClose: 'La proyección está en curso. Cerrar esta ventana detiene la música. ¿Realmente desea salir?',
+  },
   app: {
     name: 'Louvor JA',
     nameLouvor: 'Louvor',
