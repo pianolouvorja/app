@@ -348,6 +348,13 @@ class PalcoSession {
     }, this.activeSlotId)
   }
 
+  /** Idle num slot específico sem alterar o slot ativo global. */
+  idleTo(slotId: string, msg?: string): void {
+    const previous = this.activeSlotId
+    this.setSlot(slotId)
+    try { this.idle(msg) } finally { this.setSlot(previous) }
+  }
+
   /** Serve mídia local e retorna a URL para a TV. */
   async serveMedia(name: string, mime: string, base64: string): Promise<string | null> {
     if (!this.isElectron) return null

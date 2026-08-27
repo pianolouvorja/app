@@ -11,6 +11,8 @@
  */
 
 import { palcoSession } from './palco-session'
+import { useOutputRegistry } from './output-registry'
+import type { OutputModule } from './output-registry'
 import { readEffectiveStageSettings } from './stage-settings-runtime'
 import {
   MEDIA_RUNTIME_CHANNEL,
@@ -79,9 +81,43 @@ function fmtClock(ms: number): string {
 
 // ===== projeção por módulo =====
 
+/**
+ * Sweep de slots atribuídos (spec 2026-08-27): todo slot com módulo
+ * ATRIBUÍDO deve refletir o estado ATUAL daquele módulo — conteúdo se
+ * ativo, idle se não. Sem isto, slot da Bíblia ficava com o último
+ * versículo CONGELADO quando outro módulo era projetado no mirror
+ * (projectRouted filtra o slot e ninguém mandava idle pra ele).
+ * Chamar após cada projectOwner().
+ */
+async function sweepAssignedSlots(): Promise<void> {
+  if (!palcoSession.isElectron) return
+  const { moduleForSlot } = useOutputRegistry()
+  const slots = await palcoSession.slots()
+  for (const s of slots) {
+    if (!s.running) continue
+    const m = moduleForSlot(s.id)
+    if (!m) continue // espelho: projectRouted já cobre
+    if (owner === m) continue // dono acabou de projetar neste slot
+    if (assignedSlotHasContent(m)) continue
+    palcoSession.idleTo(s.id)
+  }
+}
+
+/** Módulo atribuído a um slot tem conteúdo ativo pra mostrar nele? */
+function assignedSlotHasContent(m: OutputModule): boolean {
+  switch (m) {
+    case 'bible': return runtimes.bible.active && Boolean(runtimes.bible.text)
+    case 'media': return Boolean(runtimes.media.lyric || runtimes.media.title)
+    // video/pdf/ppt (media-module) e clock/timer/countdown só existem
+    // como PalcoRoute, não como OutputModule do registry — nada a varrer.
+    default: return true
+  }
+}
+
 async function projectOwner() {
   if (!owner) {
     palcoSession.idle()
+    await sweepAssignedSlots()
     return
   }
   switch (owner) {
@@ -104,6 +140,7 @@ async function projectOwner() {
       projectClock()
       break
   }
+  await sweepAssignedSlots()
 }
 
 async function projectMedia() {
@@ -198,19 +235,21 @@ function stopClock() {
   }
 }
 
-/** Marca o dono e re-projeta; dono saindo → volta pro anterior ativo ou idle. */
+/** Marca o dono e re-projeta. */
 function claim(o: Exclude<Owner, null>) {
   if (owner === 'clock') stopClock()
   owner = o
   void projectOwner()
 }
 
+/**
+ * Dono saindo → idle. SEM cadeia de fallback (spec 2026-08-27):
+ * runtime sticky de outro módulo (ex.: bible.active) NÃO reassume
+ * sozinho — voltar exige clique Projetar explícito (intenção).
+ */
 function release(o: Exclude<Owner, null>) {
   if (owner !== o) return
   owner = null
-  // outro módulo ativo assume; senão idle
-  if (runtimes.media.lyric || runtimes.media.title) return claim('media')
-  if (runtimes.bible.active) return claim('bible')
   void projectOwner()
 }
 
@@ -314,6 +353,34 @@ function useMediaStoreSafe() {
 
 type Norm<T> = (raw: unknown) => T
 
+/**
+ * Ownership por INTENÇÃO (spec 2026-08-27): claim só na transição
+ * false→true do sinal de projeção do módulo; release só na transição
+ * true→false. Mensagens intermediárias de runtime (tick do timer,
+ * troca de versículo, re-publicação sticky) NÃO disputam o owner —
+ * eliminam a concorrência em que a Bíblia ativa roubava o palco do
+ * Timer projetado (caso real 26/08: timer→projection bíblia→idle).
+ * runtime do dono continua re-renderizando via projectOwner() abaixo.
+ */
+const intent = {
+  media: false,
+  bible: false,
+  random: false,
+  timer: false,
+  countdown: false,
+}
+
+function setIntent(o: keyof typeof intent, wants: boolean) {
+  if (intent[o] === wants) {
+    // sem mudança de intenção: se for o dono, apenas re-renderiza
+    if (owner === o) void projectOwner()
+    return
+  }
+  intent[o] = wants
+  if (wants) claim(o)
+  else release(o)
+}
+
 function bindChannel<T>(
   channelName: string,
   storageKey: string,
@@ -377,7 +444,7 @@ export function startPalcoBridge() {
     normalizeMediaRuntime,
     (v) => {
       runtimes.media = v
-      v.active && (v.lyric || v.title) ? claim('media') : release('media')
+      setIntent('media', Boolean(v.active && (v.lyric || v.title)))
     },
   )
 
@@ -387,7 +454,7 @@ export function startPalcoBridge() {
     normalizeBibleRuntime,
     (v: { active: boolean; text: string; reference: string }) => {
       runtimes.bible = v
-      v.active ? claim('bible') : release('bible')
+      setIntent('bible', v.active)
     },
   )
 
@@ -397,7 +464,7 @@ export function startPalcoBridge() {
     normalizeRandomRuntime,
     (v: { currentDisplay: string; isDrawing: boolean }) => {
       runtimes.random = v
-      v.currentDisplay ? claim('random') : release('random')
+      setIntent('random', Boolean(v.currentDisplay))
     },
   )
 
@@ -410,8 +477,7 @@ export function startPalcoBridge() {
         runtimes.timer = v
         // Botão Projetar é o dono explícito: 00:00/pausado continua visível
         // até Retirar da projeção, igual Bíblia (não solta após 400ms).
-        if (v.projecting || v.status !== 'idle') claim('timer')
-        else release('timer')
+        setIntent('timer', Boolean(v.projecting) || v.status !== 'idle')
       },
     )
 
@@ -422,8 +488,7 @@ export function startPalcoBridge() {
       (v: CountdownRuntimeState | null): void => {
         if (!v) return
         runtimes.countdown = v
-        if (v.projecting || v.status !== 'idle') claim('countdown')
-        else release('countdown')
+        setIntent('countdown', Boolean(v.projecting) || v.status !== 'idle')
       },
     )
 
@@ -459,6 +524,15 @@ export function startPalcoBridge() {
   void projectOwner()
 }
 
+/** Liga/desliga o relógio na TV (chamado pelo módulo clock). */
+export function palcoClockOn() {
+  claim('clock')
+}
+export function palcoClockOff() {
+  release('clock')
+}
+
+/** Pausa todos os ticks internos (bridge sendo desligado). */
 export function stopPalcoBridge() {
   if (!started) return
   started = false
@@ -468,13 +542,10 @@ export function stopPalcoBridge() {
   unwatchers = []
   stopClock()
   owner = null
+  intent.media = false
+  intent.bible = false
+  intent.random = false
+  intent.timer = false
+  intent.countdown = false
   lastAudioKey = ''
-}
-
-/** Liga/desliga o relógio na TV (chamado pelo módulo clock). */
-export function palcoClockOn() {
-  claim('clock')
-}
-export function palcoClockOff() {
-  release('clock')
 }
