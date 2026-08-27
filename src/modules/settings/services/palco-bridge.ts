@@ -68,6 +68,15 @@ let clockInterval: number | null = null
 
 // ===== helpers =====
 
+/** Runtime de timer/countdown hidratado de storage é confiável? Sessão
+ * morta (app fechado projetando) deixa segmentStartedAt antigo e
+ * projecting:true — o "contador 00:00 fantasma" roubava o owner no boot.
+ * Confiável = segmento iniciado há menos de 12h. */
+function runtimeIsFresh(seg: { segmentStartedAt: number | null }): boolean {
+  if (!seg.segmentStartedAt) return true // pausado/idle sem segmento vivo
+  return Date.now() - seg.segmentStartedAt < 12 * 60 * 60 * 1000
+}
+
 function elapsedMs(seg: { status: string; segmentStartedAt: number | null; accumulatedMs: number }): number {
   if (seg.status !== 'running' && seg.status !== 'paused') return seg.accumulatedMs
   if (seg.status === 'paused' || !seg.segmentStartedAt) return seg.accumulatedMs
@@ -96,6 +105,7 @@ async function renderAllSlots(): Promise<void> {
   if (!palcoSession.isElectron) return
   const { moduleForSlot } = useOutputRegistry()
   const slots = await palcoSession.slots()
+  debugPalco('renderAllSlots slots=', JSON.stringify(slots), 'routeRandom=', getPalcoRoute('random'), 'routeBible=', getPalcoRoute('bible'))
   for (const s of slots) {
     if (!s.running) continue
     const plan = planForSlot(s.id, {
@@ -104,6 +114,7 @@ async function renderAllSlots(): Promise<void> {
       assignedOf: (slotId) => moduleForSlot(slotId),
       isAlive: assignedSlotHasContent,
     })
+    debugPalco('slot', s.id, 'plan=', JSON.stringify(plan), 'owner=', owner)
     if (plan.render === 'owner') {
       await renderOwnerTo(s.id)
     } else if (plan.render === 'assigned') {
@@ -255,6 +266,7 @@ function stopClock() {
 
 /** Marca o dono e re-projeta. */
 function claim(o: Exclude<Owner, null>) {
+  debugPalco('CLAIM', o)
   if (owner === 'clock') stopClock()
   owner = o
   if (o === 'clock') restartClockTick()
@@ -388,7 +400,10 @@ const intent = {
   countdown: false,
 }
 
+function debugPalco(...a: unknown[]) { console.info('[palco]', ...a) }
+
 function setIntent(o: keyof typeof intent, wants: boolean) {
+  debugPalco('setIntent', o, wants, '(owner=', owner, ')')
   if (intent[o] === wants) {
     // sem mudança de intenção: se for o dono, apenas re-renderiza
     if (owner === o) void projectOwner()
@@ -495,7 +510,7 @@ export function startPalcoBridge() {
         runtimes.timer = v
         // Botão Projetar é o dono explícito: 00:00/pausado continua visível
         // até Retirar da projeção, igual Bíblia (não solta após 400ms).
-        setIntent('timer', Boolean(v.projecting) || v.status !== 'idle')
+        setIntent('timer', runtimeIsFresh(v) && (Boolean(v.projecting) || v.status !== 'idle'))
       },
     )
 
@@ -506,7 +521,7 @@ export function startPalcoBridge() {
       (v: CountdownRuntimeState | null): void => {
         if (!v) return
         runtimes.countdown = v
-        setIntent('countdown', Boolean(v.projecting) || v.status !== 'idle')
+        setIntent('countdown', runtimeIsFresh(v) && (Boolean(v.projecting) || v.status !== 'idle'))
       },
     )
 
