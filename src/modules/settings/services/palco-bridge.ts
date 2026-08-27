@@ -405,8 +405,12 @@ function debugPalco(...a: unknown[]) { console.info('[palco]', ...a) }
 function setIntent(o: keyof typeof intent, wants: boolean) {
   debugPalco('setIntent', o, wants, '(owner=', owner, ')')
   if (intent[o] === wants) {
-    // sem mudança de intenção: se for o dono, apenas re-renderiza
+    // sem mudança de intenção: se for o dono, re-renderiza; e se NINGUÉM
+    // é dono mas este módulo tem intenção viva, ele reassume (fix 27/08:
+    // random religado após bíblia sair ficava órfão — intent já true,
+    // early-return engolia o claim e a TV morria no idle)
     if (owner === o) void projectOwner()
+    else if (wants && owner === null) claim(o)
     return
   }
   intent[o] = wants
