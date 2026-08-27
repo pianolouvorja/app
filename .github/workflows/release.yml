@@ -52,6 +52,15 @@ jobs:
       - name: Build Vite
         run: npm run build-only -- --base=./
 
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            rpm \
+            libarchive-tools \
+            fakeroot \
+            dpkg
+
       - name: Package Linux targets
         run: |
           node -e "require('node:fs').rmSync('dist-electron', { recursive: true, force: true })"
