@@ -120,6 +120,16 @@ export default {
       updateError: 'Não foi possível verificar atualizações.',
       updateDesktopOnly:
         'Atualizações automáticas estão disponíveis apenas no aplicativo desktop.',
+      syncTitle: 'Sincronização',
+      syncHint:
+        'Exporta ou importa um pacote .louvorja com sua liturgia. Use para transferir entre celular, desktop e web.',
+      syncExport: 'Exportar pacote',
+      syncImport: 'Importar pacote',
+      syncExported: 'Pacote exportado com sucesso.',
+      syncImported: 'Pacote importado: {applied}.',
+      syncNothingToApply: 'Nada para importar — dados locais já estão atualizados.',
+      syncInvalid: 'Arquivo .louvorja inválido ou de versão incompatível.',
+      syncCancelled: 'Operação cancelada.',
     },
   },
 }
