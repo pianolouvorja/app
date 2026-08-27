@@ -184,12 +184,15 @@ class PalcoSession {
     if (route !== 'mirror') return this.projectTo(route, scope, input)
     const { moduleForSlot } = useOutputRegistry()
     const slots = await this.slots()
-    await Promise.all(
-      slots
-        .filter((s) => s.running)
-        .filter((s) => moduleForSlot(s.id) === null || moduleForSlot(s.id) === module)
-        .map((s) => this.projectTo(s.id, scope, input)),
-    )
+    const targets = slots
+      .filter((s) => s.running)
+      .filter((s) => moduleForSlot(s.id) === null || moduleForSlot(s.id) === module)
+    // SERIAL, nunca Promise.all: projectTo troca activeSlotId/baseUrl para
+    // gerar URLs (/bg,/media) daquele sender. Em paralelo, TV Principal
+    // recebia URL :7082 (TV 2) e caía no fallback (caso real 26/08).
+    for (const target of targets) {
+      await this.projectTo(target.id, scope, input)
+    }
   }
 
   /** BG permanente do palco (idle) — bg global do stage. */
