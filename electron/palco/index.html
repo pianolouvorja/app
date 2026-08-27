@@ -560,7 +560,11 @@ function handle(m){
       const bgEl=$('bg');
       bgEl.onerror=()=>{bgEl.onerror=null;bgEl.src='bg-fallback.png'};
       if(m.background){bgEl.src=proxyUrl(m.background)}
-      else{bgEl.src='bg-fallback.png'} // F3.3j: BG padrão sem imagem
+      // Sem bg na mensagem: usa o BG configurado no app (bgPalco — enviado
+      // ao ligar o palco). Só se NÃO houver bg configurado cai no fallback
+      // fixo. Vale pra qualquer módulo (26/08 Rafael).
+      else if(bgPalco){bgEl.src=proxyUrl(bgPalco)}
+      else{bgEl.src='bg-fallback.png'}
       // Slide/PDF/PPT (text vazio) é mídia visual pura: sem véu de leitura,
       // preserva a tonalidade original do canvas do operador.
       $('veil').style.display=m.text?'':'none';
