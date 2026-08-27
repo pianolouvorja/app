@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 💬 Discord da comunidade
-    url: https://discord.gg/louvorja
-    about: Para dúvidas e discussões gerais
-  - name: 📧 Contato direto
-    url: mailto:app@pianolouvorja.com.br
-    about: Para assuntos privados
+  - name: Segurança
+    url: https://github.com/pianolouvorja
+    about: Não publique vulnerabilidades ou segredos em issues públicas.
+  - name: Perguntas e ideias rápidas
+    url: https://github.com/pianolouvorja
+    about: Abra uma feature request com contexto e critérios de aceite.

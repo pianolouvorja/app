@@ -21,6 +21,7 @@ export default {
       experienceTitle: 'Experiencia Visual',
       experienceSubtitle: 'Sienta la atmósfera de Louvor JA transformarse',
       systemTheme: 'Tema del Sistema',
+      changeTheme: 'Cambiar tema',
       lightMode: 'Modo Claro',
       darkMode: 'Modo Oscuro',
       glassIntensity: 'Intensidad del Cristal',
@@ -123,6 +124,25 @@ export default {
       checkUpdate: 'Buscar actualizaciones',
       checking: 'Buscando...',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
+      updateTitle: 'Actualizaciones',
+      updateHint: 'Verifica si hay una nueva versión de la aplicación disponible.',
+      checkUpdate: 'Buscar actualizaciones',
+      checking: 'Verificando...',
+      updateAvailable: '¡Versión {version} disponible!',
+      updateNotAvailable: 'Ya está usando la versión más reciente.',
+      updateError: 'No se pudieron verificar las actualizaciones.',
+      updateDesktopOnly:
+        'Las actualizaciones automáticas solo están disponibles en la aplicación de escritorio.',
+      syncTitle: 'Sincronización',
+      syncHint:
+        'Exporta o importa un paquete .louvorja con su liturgia. Úselo para transferir entre móvil, escritorio y web.',
+      syncExport: 'Exportar paquete',
+      syncImport: 'Importar paquete',
+      syncExported: 'Paquete exportado exitosamente.',
+      syncImported: 'Paquete importado: {applied}.',
+      syncNothingToApply: 'Nada que importar — los datos locales ya están actualizados.',
+      syncInvalid: 'Archivo .louvorja inválido o de versión incompatible.',
+      syncCancelled: 'Operación cancelada.',
     },
 
     remote: {

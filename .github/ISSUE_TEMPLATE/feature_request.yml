@@ -1,48 +1,34 @@
-name: Feature Request
-description: Sugere uma nova feature ou melhoria
-labels: ["enhancement", "triage"]
+name: Feature request
+description: Proponha melhoria ou funcionalidade
+labels: [enhancement]
 body:
   - type: textarea
-    id: problema
+    id: problem
     attributes:
-      label: Problema que resolve
-      description: Qual dor o usuário sente hoje?
+      label: Problema / necessidade
+      description: Que fluxo atual precisa melhorar?
     validations:
       required: true
   - type: textarea
-    id: solucao
+    id: proposal
     attributes:
-      label: Solução proposta
-      description: O que você quer que aconteça?
+      label: Proposta
+      description: Como deve funcionar?
     validations:
       required: true
-  - type: dropdown
-    id: prioridade
+  - type: textarea
+    id: acceptance
     attributes:
-      label: Prioridade
-      options:
-        - P0 — Crítico (bloqueia uso)
-        - P1 — Alto (impacto grande na UX)
-        - P2 — Médio (seria bom ter)
-        - P3 — Baixo (nice to have)
+      label: Critérios de aceite
+      placeholder: |
+        - [ ] ...
     validations:
       required: true
-  - type: dropdown
-    id: modulo
+  - type: textarea
+    id: alternatives
     attributes:
-      label: Módulo afetado
-      options:
-        - Router / Navegação
-        - Liturgia
-        - Bíblia
-        - Álbuns / Hinos
-        - Mídia / Player
-        - Settings / Aparência
-        - Design System
-        - Desktop (Electron)
-        - Updater
-        - Splash/EULA
-        - Infra / Deploy
-        - Outro
-    validations:
-      required: false
+      label: Alternativas consideradas
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Referências / mockups / evidências
