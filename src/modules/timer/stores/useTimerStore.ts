@@ -6,6 +6,7 @@ import {
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
 
 import { computeElapsedMs } from '../services/timer-format'
 import {
@@ -31,6 +32,7 @@ export const useTimerStore = defineStore('timer', () => {
     savedTimesMs: [],
   })
   const isProjecting = ref(false)
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -48,6 +50,7 @@ export const useTimerStore = defineStore('timer', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('timer')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -177,6 +180,13 @@ export const useTimerStore = defineStore('timer', () => {
 
   async function syncProjection() {
     syncRuntime()
+    if (isPalcoTvOnlyRoute('timer')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      return
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('timer')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -186,11 +196,12 @@ export const useTimerStore = defineStore('timer', () => {
   function clearProjection() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('timer')) {
+    if (isProjecting.value && (isProjectionModuleOpen('timer') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }

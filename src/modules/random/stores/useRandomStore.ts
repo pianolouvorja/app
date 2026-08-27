@@ -6,6 +6,7 @@ import {
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
 
 import {
   buildNumberRange,
@@ -72,6 +73,9 @@ export const useRandomStore = defineStore('random', () => {
   const runtime = ref<RandomRuntimeState>({ ...DEFAULT_RANDOM_RUNTIME })
   const draftName = ref('')
   const isProjecting = ref(false)
+  // Rota individual do Palco não abre janela cabo; impede o watch de
+  // encerrar a projeção em 400ms por não encontrar janela.
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
   const rangeError = ref<'invalid' | 'tooLarge' | null>(null)
@@ -112,6 +116,7 @@ export const useRandomStore = defineStore('random', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('random')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -363,6 +368,15 @@ export const useRandomStore = defineStore('random', () => {
 
   async function syncProjection() {
     syncRuntime()
+    // Mesmo contrato da Bíblia: slot individual = só TV; Espelhar =
+    // janela nos monitores selecionados + TVs Palco.
+    if (isPalcoTvOnlyRoute('random')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      return
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('random')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -372,11 +386,12 @@ export const useRandomStore = defineStore('random', () => {
   function clearProjection() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('random')) {
+    if (isProjecting.value && (isProjectionModuleOpen('random') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }

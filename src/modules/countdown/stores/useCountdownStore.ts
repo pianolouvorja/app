@@ -6,6 +6,7 @@ import {
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
 
 import {
   computeElapsedMs,
@@ -36,6 +37,7 @@ export const useCountdownStore = defineStore('countdown', () => {
     durationMs: DEFAULT_COUNTDOWN_DURATION_MS,
   })
   const isProjecting = ref(false)
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -57,6 +59,7 @@ export const useCountdownStore = defineStore('countdown', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('countdown')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -265,6 +268,13 @@ export const useCountdownStore = defineStore('countdown', () => {
 
   async function syncProjection() {
     syncRuntime()
+    if (isPalcoTvOnlyRoute('countdown')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      return
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('countdown')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -274,11 +284,12 @@ export const useCountdownStore = defineStore('countdown', () => {
   function clearProjection() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('countdown')) {
+    if (isProjecting.value && (isProjectionModuleOpen('countdown') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }
