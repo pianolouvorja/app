@@ -46,23 +46,25 @@ export type SlotPlan =
 export function planForSlot(slotId: string, input: SlotPlanInput): SlotPlan {
   const { owner, routeOf, assignedOf, isAlive } = input
 
+  // owner está roteado individualmente? determina o alcance dele
+  const ownerRoute = owner ? routeOf(OWNER_TO_PALCO_MODULE[owner]) : null
+  const ownerRoutedHere = owner !== null && ownerRoute === slotId
+
   // 1. takeover: owner roteado pra este slot
-  if (owner) {
-    const pm = OWNER_TO_PALCO_MODULE[owner]
-    if (routeOf(pm) === slotId) return { render: 'owner' }
-  }
+  if (ownerRoutedHere) return { render: 'owner' }
+
+  const assigned = assignedOf(slotId)
 
   // 2. restore: atribuição vence em slots não-tomados (owner sendo o
-  // próprio módulo atribuído é o mesmo conteúdo — cai na regra 1 via rota
-  // mirror ou aqui; explícito para clareza)
-  const assigned = assignedOf(slotId)
+  // próprio módulo atribuído é o mesmo conteúdo — explícito p/ clareza)
   if (assigned !== null && isAlive(assigned)) {
     if (owner && OWNER_TO_PALCO_MODULE[owner] === assigned) return { render: 'owner' }
     return { render: 'assigned', module: assigned }
   }
 
-  // 3. espelho legado
-  if (assigned === null && owner) return { render: 'owner' }
+  // 3. espelho legado — SÓ quando o owner está em mirror. Owner com rota
+  // individual NÃO vaza pros espelhos: as demais telas não são dele.
+  if (assigned === null && owner && ownerRoute === 'mirror') return { render: 'owner' }
 
   // 4. degradado
   return { render: 'idle' }

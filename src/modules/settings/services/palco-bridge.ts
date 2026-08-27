@@ -156,12 +156,14 @@ function ownerInput(): ProjectionInput | { timer: TimerOpts } | null {
     }
     case 'timer': {
       const r = runtimes.timer
-      if (!r || r.status === 'idle') return null
+      // guard: runtime stale (storage de sessão morta) não projeta —
+      // era a causa do "contador 00:00 fundo preto" na TV.
+      if (!r || r.status === 'idle' || !r.projecting) return null
       return { timer: { mode: 'chrono' as const, label: '', duration: Math.floor(elapsedMs(r) / 1000) } }
     }
     case 'countdown': {
       const r = runtimes.countdown
-      if (!r || r.status === 'idle') return null
+      if (!r || r.status === 'idle' || !r.projecting) return null
       const remaining = Math.max(0, r.durationMs - elapsedMs(r))
       return { timer: { mode: 'countdown' as const, label: '', duration: Math.ceil(remaining / 1000) } }
     }

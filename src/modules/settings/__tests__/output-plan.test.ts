@@ -86,6 +86,29 @@ describe('planForSlot (spec 2026-08-27 takeover híbrido)', () => {
     expect(plan).toEqual({ render: 'assigned', module: 'bible' })
   })
 
+
+  it('owner com rota individual NAO vaza pro espelho (fix 27/08 bug real)', () => {
+    // biblia roteada pra TV 2 (slot 7082); slot Principal (0) espelho sem atribuição
+    // ANTES: regra 3 mostrava biblia no Principal também (todas as TVs).
+    const plan = planForSlot('0', {
+      owner: 'bible',
+      routeOf: (m) => (m === 'bible' ? '7082' : 'mirror'),
+      assignedOf: () => null,
+      isAlive: aliveYes,
+    })
+    expect(plan).toEqual({ render: 'idle' })
+  })
+
+  it('owner em mirror continua espelhando em slots sem atribuição', () => {
+    const plan = planForSlot('0', {
+      owner: 'bible',
+      routeOf: () => 'mirror',
+      assignedOf: () => null,
+      isAlive: aliveYes,
+    })
+    expect(plan).toEqual({ render: 'owner' })
+  })
+
   it('mapeia Owner → PalcoModule corretamente', () => {
     expect(OWNER_TO_PALCO_MODULE.media).toBe('hymns')
     expect(OWNER_TO_PALCO_MODULE.bible).toBe('bible')
