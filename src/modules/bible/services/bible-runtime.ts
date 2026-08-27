@@ -47,7 +47,9 @@ export function normalizeBibleRuntime(raw: unknown): BibleProjectionRuntime {
     active: source.active === true && text.length > 0,
     text,
     reference,
-    projecting: source.projecting !== false,
+    // storage LEGADO (sem a chave) = NAO projetando: quem projeta publica
+    // runtime novo. Default true ressuscitava biblia de sessao morta (27/08).
+    projecting: source.projecting === true,
   }
 }
 
