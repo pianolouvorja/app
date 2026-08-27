@@ -239,6 +239,9 @@ async function renderClockTo(slotId: string): Promise<void> {
 function restartClockTick(): void {
   if (clockTimer) window.clearInterval(clockTimer)
   const tick = async () => {
+    // guarda: clock deixou de ser o owner (ou bridge caiu) → NADA a fazer.
+    // O tick nunca re-claima — quem decide owner é a intenção do módulo.
+    if (owner !== 'clock') return
     const { moduleForSlot } = useOutputRegistry()
     const slots = await palcoSession.slots()
     for (const s of slots) {
@@ -280,6 +283,10 @@ function claim(o: Exclude<Owner, null>) {
 function release(o: Exclude<Owner, null>) {
   if (owner !== o) return
   owner = null
+  // clock: o tick de 15s tem que MORRER no release — sem isto o interval
+  // sobrevivente re-renderizava (e re-claimava) o relógio por cima do
+  // módulo projetado depois (bug real 27/08: cronômetro nunca assumia).
+  if (o === 'clock') stopClock()
   void projectOwner()
 }
 
