@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GlassCard } from '@design-system/index'
 import { palcoSession } from '../services/palco-session'
@@ -11,6 +11,7 @@ type Slot = {
   clients: number
   httpPort: number
   wsPort: number
+  receiverIps?: string[]
 }
 
 const { t } = useI18n()
@@ -54,7 +55,13 @@ function selectSlot(id: string) {
   palcoSession.setSlot(id)
 }
 
-onMounted(() => void refresh())
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  void refresh()
+  // Receiver pode conectar após abrir esta tela; IP deve aparecer sem fechar.
+  refreshTimer = setInterval(() => void refresh(), 3000)
+})
+onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
 </script>
 
 <template>
@@ -84,6 +91,7 @@ onMounted(() => void refresh())
             <small>
               :{{ slot.httpPort }} ·
               {{ slot.clients ? t('settings.palco.connected', { count: slot.clients }) : t('settings.palco.waiting') }}
+              <template v-if="slot.receiverIps?.length"> · {{ slot.receiverIps.join(', ') }}</template>
             </small>
           </span>
         </button>

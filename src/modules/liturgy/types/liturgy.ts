@@ -42,6 +42,7 @@ export const LITURGY_ITEM_TYPES = [
   'notice',
   'scheduled',
   'prayer',
+  'audio',
   'video',
   'images',
   'pdf',
@@ -87,6 +88,7 @@ export const LITURGY_TYPE_GROUPS: LiturgyTypeGroup[] = [
     labelKey: 'liturgy.dialog.groups.internal',
     toneClass: 'secondary',
     types: [
+      { value: 'audio', dot: '#D500F9' }, // magenta
       { value: 'video', dot: '#00B8D4' }, // ciano
       { value: 'images', dot: '#6D4C41' }, // marrom
       { value: 'pdf', dot: '#1A237E' }, // índigo/navy
@@ -290,6 +292,7 @@ export const LITURGY_ITEM_TYPE_META: LiturgyItemTypeMeta[] = [
   { value: 'notice', icon: 'ti-speakerphone', tone: 'warning' },
   { value: 'scheduled', icon: 'ti-calendar-time', tone: 'cyan' },
   { value: 'prayer', icon: 'ti-pray', tone: 'info' },
+  { value: 'audio', icon: 'ti-headphones', tone: 'purple' },
   { value: 'video', icon: 'ti-video', tone: 'orange' },
   { value: 'images', icon: 'ti-photo', tone: 'success' },
   { value: 'pdf', icon: 'ti-file-type-pdf', tone: 'warning' },
@@ -303,6 +306,7 @@ export const LITURGY_ITEM_TYPE_META: LiturgyItemTypeMeta[] = [
 export const EXECUTABLE_ITEM_TYPES: LiturgyItemType[] = [
   'music',
   'verse',
+  'audio',
   'video',
   'images',
   'pdf',
@@ -313,6 +317,7 @@ export const EXECUTABLE_ITEM_TYPES: LiturgyItemType[] = [
 ]
 
 export const INTERNAL_FILE_TYPES: LiturgyItemType[] = [
+  'audio',
   'video',
   'images',
   'pdf',

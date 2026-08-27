@@ -26,6 +26,8 @@ type ProjectionInput = {
   footerVersion?: string
   /** BG: URL http(s) já resolvível pela TV; omitir usa o bg do stage. */
   background?: string
+  /** Capa da música: título destaque amarelo, sem caixinha (paridade cabo). */
+  isCover?: boolean
 }
 
 /** Acesso tipado ao palco exposto pelo preload (contextBridge). */
@@ -158,6 +160,7 @@ class PalcoSession {
       footerColor: s.footerRefColor,
       footerWeight: s.footerRefWeight,
       footerVersion: input.footerVersion,
+      isCover: input.isCover === true,
     }, this.activeSlotId)
   }
 
@@ -248,6 +251,66 @@ class PalcoSession {
       cover,
       background: bg,
     }, this.activeSlotId)
+  }
+
+  /** Vídeo na TV — arquivo local servido em /media/ pelo sender. */
+  async video(input: {
+    url?: string
+    title?: string
+    action?: 'play' | 'pause' | 'stop'
+  }): Promise<void> {
+    if (!this.isElectron) return
+    let url = input.url
+    if (url && !/^https?:\/\//i.test(url)) {
+      url = (await this.serveLocal(url)) ?? undefined
+    }
+    if (!url && input.action !== 'stop') return
+    await palcoApi().send({
+      v: 2,
+      type: 'video',
+      ...input,
+      url,
+    }, this.activeSlotId)
+  }
+
+  /** Vídeo roteado: mirror → todas as TVs ligadas; slot individual → só essa. */
+  async videoRouted(input: Parameters<PalcoSession['video']>[0]): Promise<void> {
+    if (!this.isElectron) return
+    const route = getPalcoRoute('liturgy')
+    if (route !== 'mirror') {
+      const previous = this.activeSlotId
+      this.setSlot(route)
+      try { await this.video(input) } finally { this.setSlot(previous) }
+      return
+    }
+    const slots = await this.slots()
+    await Promise.all(slots.filter((slot) => slot.running).map((slot) => {
+      const previous = this.activeSlotId
+      this.setSlot(slot.id)
+      return this.video(input).finally(() => this.setSlot(previous))
+    }))
+  }
+
+  /**
+   * Áudio roteado: rota mirror → todas as TVs ligadas; slot individual →
+   * só essa TV (paridade com projectRouted). Play/pause/seek/stop vão ao
+   * slot-alvo sem trocar o slot ativo global.
+   */
+  async audioRouted(input: Parameters<PalcoSession['audio']>[0]): Promise<void> {
+    if (!this.isElectron) return
+    const route = getPalcoRoute('liturgy')
+    if (route !== 'mirror') {
+      const previous = this.activeSlotId
+      this.setSlot(route)
+      try { await this.audio(input) } finally { this.setSlot(previous) }
+      return
+    }
+    const slots = await this.slots()
+    await Promise.all(slots.filter((slot) => slot.running).map((slot) => {
+      const previous = this.activeSlotId
+      this.setSlot(slot.id)
+      return this.audio(input).finally(() => this.setSlot(previous))
+    }))
   }
 
   /** Publica arquivo local no /media/ do sender e devolve URL absoluta. */

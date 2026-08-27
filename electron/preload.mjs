@@ -152,6 +152,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteToggleMute: () => ipcRenderer.invoke('projection:remote-toggle-mute'),
     remoteSetVolume: (volume) =>
       ipcRenderer.invoke('projection:remote-set-volume', volume),
+    getSourceMediaInfo: () =>
+      ipcRenderer.invoke('projection:get-source-media-info'),
     getPlaybackState: () => ipcRenderer.invoke('projection:get-playback-state'),
     getNavigationState: () => ipcRenderer.invoke('projection:get-navigation-state'),
     remoteGoBack: () => ipcRenderer.invoke('projection:remote-go-back'),
@@ -170,6 +172,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     getPdfPageState: () => ipcRenderer.invoke('projection:get-pdf-page-state'),
     remotePptNext: () => ipcRenderer.invoke('projection:remote-ppt-next'),
     remotePptPrev: () => ipcRenderer.invoke('projection:remote-ppt-prev'),
+    captureSourceFrame: () =>
+      ipcRenderer.invoke('projection:capture-source-frame'),
     getPptSlideState: () =>
       ipcRenderer.invoke('projection:get-ppt-slide-state'),
     getSiteTargetMonitors: () =>

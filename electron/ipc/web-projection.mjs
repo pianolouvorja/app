@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
+import { getPalcoManager } from '../palco-server.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -1330,6 +1331,19 @@ export function closeWebProjectionWindows() {
   lastSiteMonitorIds = []
   lastVideoMonitorIds = []
   siteControlPanelOpen = false
+  // Palco (TVs): projeção fechou (ended OU manual) → todas as TVs voltam
+  // ao idle. Sem isso o último frame ficava congelado na TV.
+  // Import estático: require() de .mjs lança ERR_REQUIRE_ESM no Electron
+  // ESM e o catch silencioso engolia o stop — TVs ficavam com mídia presa.
+  try {
+    const manager = getPalcoManager()
+    if (manager) {
+      manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+      manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })
+    }
+  } catch {
+    /* palco não anexado */
+  }
   if (win && !win.isDestroyed()) {
     win.close()
   }
@@ -1490,9 +1504,17 @@ function openSiteScreensOnTargets(loadUrl, targets) {
   return targets.length > 0
 }
 
+let currentSourceFilePath = ''
+let currentSourceTitle = ''
+
 export async function openWebProjectionWindows(payload) {
   const input = payload ?? {}
   let effective = input
+
+  currentSourceFilePath =
+    typeof effective.filePath === 'string' ? effective.filePath.trim() : ''
+  currentSourceTitle =
+    typeof effective.title === 'string' ? effective.title.trim() : ''
 
   if (input.mode === 'presentation') {
     const filePath =
@@ -1921,6 +1943,11 @@ export async function remoteSetVolumeSource(volume) {
   }
 }
 
+/** FilePath/título da mídia corrente (para o popup espelhar no Palco). */
+export function getSourceMediaInfo() {
+  return { filePath: currentSourceFilePath, title: currentSourceTitle }
+}
+
 /** Estado de playback do vídeo no popup (para a barra do operador). */
 export async function getSourcePlaybackState() {
   if (!sourceWindow || sourceWindow.isDestroyed()) return null
@@ -2068,6 +2095,27 @@ export async function getPdfPageState() {
       total: Number(state.total) || 0,
       projecting: isVideoProjectingToScreens(),
     }
+  } catch {
+    return null
+  }
+}
+
+/** Rasteriza o slide/página atual do popup para o Palco (TV/browser).
+ * Controle fica fora do sourceWindow, então a imagem contém só conteúdo. */
+export async function captureSourceFrameBase64() {
+  if (!sourceWindow || sourceWindow.isDestroyed()) return null
+  try {
+    // PDF/PPT convertido: canvas PDF.js é fonte real do slide. capturePage
+    // pegava o frame cinza de loading antes do render/GPU finalizar.
+    const canvasPng = await sourceWindow.webContents.executeJavaScript(
+      "window.__liturgyPdf && window.__liturgyPdf.capturePng ? window.__liturgyPdf.capturePng() : null",
+      true,
+    )
+    if (typeof canvasPng === 'string' && canvasPng.length > 32) return canvasPng
+    const image = await sourceWindow.webContents.capturePage()
+    const png = image.toPNG()
+    if (!png?.length) return null
+    return png.toString('base64')
   } catch {
     return null
   }

@@ -8,6 +8,7 @@ import {
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import { palcoSession } from '../../settings/services/palco-session'
 
 import {
   parseLiturgyWebTarget,
@@ -179,6 +180,10 @@ async function openLiturgyLocalVideo(
     withScreens,
   })
   if (!opened) return false
+  // Espelho no Palco (TVs conectadas): arquivo servido em /media/ pelo
+  // sender (servePath) e enviado como {type:'video'} pro receiver —
+  // rota mirror do módulo liturgy por padrão.
+  void palcoSession.videoRouted({ url: path, title: label })
   if (!withScreens || !bridge.projection.remotePlay) return true
 
   await sleep(400)
@@ -261,13 +266,20 @@ async function openLiturgyLocalPdf(
   closeProjectionModule()
   const monitorIds = await resolveTargetMonitorIds()
 
-  return bridge.projection.openUrl({
+  const opened = await bridge.projection.openUrl({
     filePath: path,
     title: label,
     monitorIds,
     mode: 'pdf',
     withScreens,
   })
+  if (opened) {
+    // Palco: título na TV enquanto o PDF roda no popup/projetor.
+    void palcoSession.projectRouted('liturgy', 'liturgy', {
+      text: label,
+    })
+  }
+  return opened
 }
 
 /** Popup de controle do PDF, sem projetar nas telas. */
@@ -306,13 +318,20 @@ async function openLiturgyLocalPresentation(
   closeProjectionModule()
   const monitorIds = await resolveTargetMonitorIds()
 
-  return bridge.projection.openUrl({
+  const opened = await bridge.projection.openUrl({
     filePath: path,
     title: label,
     monitorIds,
     mode: 'presentation',
     withScreens,
   })
+  if (opened) {
+    // Palco: título na TV enquanto a apresentação roda no popup/projetor.
+    void palcoSession.projectRouted('liturgy', 'liturgy', {
+      text: label,
+    })
+  }
+  return opened
 }
 
 /** Popup de controle da apresentação, sem projetar nas telas. */

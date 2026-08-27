@@ -22,6 +22,7 @@ import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { app, ipcMain } from 'electron'
@@ -55,6 +56,7 @@ class PalcoSlot {
   #httpServer
   #wss
   #clients = new Set()
+  #receiverIps = new Map() // WebSocket -> IP físico da TV/browser
   #lastByType = new Map() // replay pro receiver que chega tarde
   #running = false
   #media = new Map() // mídia local servida em /media/
@@ -84,6 +86,18 @@ class PalcoSlot {
     }
   }
 
+  /** Transiente: só p/ conectados AGORA — não grava replay.
+   * Pause/play/seek/stop destruíam o replay: uma msg {video,action:play}
+   * SEM url sobrescrevia o estado completo, e quem reconectasse recebia
+   * play sem src (nada projetava) + timer/audio velhos em ordem errada.
+   */
+  broadcastTransient(obj) {
+    const data = JSON.stringify(obj)
+    for (const ws of this.#clients) {
+      try { if (ws.readyState === ws.OPEN) ws.send(data) } catch { this.#clients.delete(ws) }
+    }
+  }
+
   /** Inicia HTTP + WS deste slot. */
   async start() {
     if (this.#running) return true
@@ -99,12 +113,13 @@ class PalcoSlot {
         if (req?.url && !req.url.startsWith('/palco')) { ws.close(); return }
         this.#clients.add(ws)
         const remoteIp = req?.socket?.remoteAddress?.replace('::ffff:', '')
+        if (remoteIp) this.#receiverIps.set(ws, remoteIp)
         // replay do estado atual pro receiver que chegou depois
         for (const msg of this.#lastByType.values()) {
           try { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg)) } catch { this.#clients.delete(ws) }
         }
         if (remoteIp) {
-          try { ws.send(JSON.stringify({ v: 2, type: 'youare', ip: remoteIp })) } catch { /* ignore */ }
+          try { ws.send(JSON.stringify({ v: 2, type: 'youare', ip: remoteIp, slot: this.#id, slotLabel: this.#label })) } catch { /* ignore */ }
         }
         this.#contents()?.send('palco:receiver-connected', { ip: remoteIp, count: this.#clients.size, slotId: this.#id })
         ws.on('message', (raw) => {
@@ -112,6 +127,7 @@ class PalcoSlot {
         })
         ws.on('close', () => {
           this.#clients.delete(ws)
+          this.#receiverIps.delete(ws)
           this.#contents()?.send('palco:receiver-disconnected', { count: this.#clients.size, slotId: this.#id })
         })
         ws.on('error', () => this.#clients.delete(ws))
@@ -148,7 +164,12 @@ class PalcoSlot {
       try { m = JSON.parse(m) } catch { return false }
     }
     if (!m || typeof m !== 'object' || !m.type) return false
-    this.broadcast(m)
+    // Transientes: action sem url/conteúdo NÃO entra no replay.
+    const transient =
+      m.action === 'pause' || m.action === 'play' || m.action === 'seek' ||
+      (m.action === 'stop' && m.type === 'audio')
+    if (transient) this.broadcastTransient(m)
+    else this.broadcast(m)
     return true
   }
 
@@ -159,6 +180,7 @@ class PalcoSlot {
       label: this.#label,
       running: this.#running,
       clients: this.#clients.size,
+      receiverIps: Array.from(new Set(this.#receiverIps.values())),
       url: `http://${lanIp()}:${this.#httpPort}`,
       wsUrl: `ws://${lanIp()}:${this.#wsPort}/palco`,
     }
@@ -183,6 +205,8 @@ class PalcoSlot {
         // Versão do RECEIVER (appinfo.json embutido, mesmo do .ipk webOS) —
         // o HTML resolve via fetch. NÃO usar a versão do app desktop aqui.
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        // Receiver sempre revalida — evita browser preso em HTML antigo
+        res.setHeader('Cache-Control', 'no-cache')
         res.end(page)
       } catch {
         res.statusCode = 404
@@ -221,7 +245,21 @@ class PalcoSlot {
             res.end(buf)
             return
           }
-        } catch { /* cai no 404 */ }
+        } catch { /* tenta a fonte direto */ }
+        // Dev (Vite em memória) ou dist sem hash: serve direto da FONTE
+        // src/assets/backgrounds/ — fonte da verdade em dev E prod.
+        try {
+          const base = id.replace(/\.png$/, '')
+          for (const cand of [base + '.png', base + '.jpg', base + '.webp']) {
+            const buf = await readFile(path.join(__dirname, '..', 'src', 'assets', 'backgrounds', cand)).catch(() => null)
+            if (buf) {
+              res.setHeader('Content-Type', cand.endsWith('.jpg') ? 'image/jpeg' : 'image/png')
+              res.setHeader('Cache-Control', 'public, max-age=86400')
+              res.end(buf)
+              return
+            }
+          }
+        } catch { /* 404 abaixo */ }
       }
       res.statusCode = 404; res.end(); return
     }
@@ -248,13 +286,37 @@ class PalcoSlot {
       return
     }
 
-    // Mídia local servida pelo sender
+    // Mídia local servida pelo sender — com HTTP Range (streaming/seek):
+    // sem Range o <video> do receiver baixa o MP4 inteiro antes de tocar
+    // fluido (stutter em 1080p) e seek não funciona.
     if (p.startsWith('/media/')) {
       const name = p.slice('/media/'.length)
       const entry = this.#media.get(name)
       if (!entry) { res.statusCode = 404; res.end(); return }
       res.setHeader('Content-Type', entry.mime)
-      res.setHeader('Content-Length', entry.bytes.length)
+      res.setHeader('Accept-Ranges', 'bytes')
+      const total = entry.bytes.length
+      const range = req.headers.range
+      if (range) {
+        const rm = /bytes=(\d*)-(\d*)/.exec(String(range))
+        if (rm) {
+          const start = rm[1] ? parseInt(rm[1], 10) : 0
+          const end = rm[2] ? Math.min(parseInt(rm[2], 10), total - 1) : total - 1
+          if (start <= end && start < total) {
+            res.statusCode = 206
+            res.setHeader('Content-Range', `bytes ${start}-${end}/${total}`)
+            res.setHeader('Content-Length', end - start + 1)
+            if (req.method === 'HEAD') { res.end(); return }
+            res.end(entry.bytes.subarray(start, end + 1))
+            return
+          }
+        }
+        res.statusCode = 416
+        res.setHeader('Content-Range', `bytes */${total}`)
+        res.end()
+        return
+      }
+      res.setHeader('Content-Length', total)
       if (req.method === 'HEAD') { res.end(); return }
       res.end(entry.bytes)
       return
@@ -297,6 +359,19 @@ class PalcoSlot {
 }
 
 /** Gerenciador de slots (singleton no main process). */
+function slotsConfigPath() {
+  return path.join(app.getPath('userData'), 'palco-slots.json')
+}
+
+function readPersistedSlots() {
+  try {
+    const raw = JSON.parse(readFileSync(slotsConfigPath(), 'utf8'))
+    return Array.isArray(raw) ? raw : []
+  } catch {
+    return []
+  }
+}
+
 class PalcoManager {
   #slots = new Map() // id -> PalcoSlot
   #getContents // callback renderer
@@ -306,6 +381,33 @@ class PalcoManager {
   /** Slot principal (id='0') sempre existe. */
   init() {
     this.ensureSlot('0', 'Principal', BASE_HTTP_PORT, BASE_WS_PORT)
+    // Operador configura TV 2/porta 7082 uma vez; slots voltam após restart.
+    for (const item of readPersistedSlots()) {
+      const httpPort = Number(item?.httpPort)
+      const wsPort = Number(item?.wsPort)
+      const id = String(item?.id ?? '')
+      const label = String(item?.label ?? '').trim()
+      if (
+        id !== '0' && label && Number.isInteger(httpPort) &&
+        Number.isInteger(wsPort) && httpPort >= BASE_HTTP_PORT + 2 &&
+        wsPort === httpPort + 1 && this.#slots.size < MAX_SLOTS
+      ) this.ensureSlot(id, label, httpPort, wsPort)
+    }
+  }
+
+  persistSlots() {
+    try {
+      const rows = Array.from(this.#slots.values())
+        .filter((slot) => slot.id !== '0')
+        .map((slot) => ({ id: slot.id, label: slot.label, httpPort: slot.httpPort, wsPort: slot.wsPort }))
+      const file = slotsConfigPath()
+      mkdirSync(path.dirname(file), { recursive: true })
+      const tmp = `${file}.tmp`
+      writeFileSync(tmp, JSON.stringify(rows, null, 2), 'utf8')
+      renameSync(tmp, file)
+    } catch (error) {
+      console.warn('[palco] persist slots:', error?.message ?? error)
+    }
   }
 
   /** Garante slot; cria se não existe. */
@@ -322,7 +424,9 @@ class PalcoManager {
     let httpPort = BASE_HTTP_PORT + 2, wsPort = BASE_WS_PORT + 2
     while (this.#slots.has(String(httpPort))) { httpPort += 2; wsPort += 2 }
     const id = String(httpPort) // id = porta HTTP (ex: "7082")
-    return this.ensureSlot(id, label, httpPort, wsPort)
+    const slot = this.ensureSlot(id, label, httpPort, wsPort)
+    this.persistSlots()
+    return slot
   }
 
   /** Remove slot (exceto principal). */
@@ -332,12 +436,33 @@ class PalcoManager {
     if (!slot) return false
     slot.stop()
     this.#slots.delete(id)
+    this.persistSlots()
     return true
   }
 
   getSlot(id = '0') { return this.#slots.get(id) }
   getAllSlots() { return Array.from(this.#slots.values()) }
   getPrincipal() { return this.#slots.get('0') }
+
+  /** Para mídia em TODAS as TVs (áudio+vídeo) — usado no quit do app. */
+  stopAllMedia() {
+    for (const slot of this.#slots.values()) {
+      try {
+        if (!slot.running) continue
+        slot.broadcastTransient({ v: 2, type: 'audio', action: 'stop' })
+        slot.broadcastTransient({ v: 2, type: 'video', action: 'stop' })
+      } catch { /* ignore */ }
+    }
+    return true
+  }
+
+  /** Broadcast p/ TODOS os slots ligados (ex: projeção fechou → idle). */
+  broadcastAll(msg) {
+    for (const slot of this.#slots.values()) {
+      try { if (slot.running) slot.broadcastTransient(msg) } catch { /* ignore */ }
+    }
+    return true
+  }
 }
 
 /** Instância única do manager. */

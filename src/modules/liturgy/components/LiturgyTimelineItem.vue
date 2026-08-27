@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { isElectronShell } from '@shared/services/desktop-bridge'
 import {
+  readAudioDuration,
   readVideoDuration,
   setLiturgyVideoFile,
 } from '../services/liturgy-local-video'
@@ -80,9 +81,9 @@ const categoryTimeRange = computed(() => {
   return '—'
 })
 const isStreamVideo = computed(() => props.item.type === 'online_video')
-const showVideoUpload = computed(
+const isLocalMediaUpload = computed(
   () =>
-    props.item.type === 'video' &&
+    (props.item.type === 'video' || props.item.type === 'audio') &&
     !isElectronShell() &&
     Boolean(props.item.id),
 )
@@ -95,10 +96,15 @@ async function onVideoFileChange(event: Event) {
   if (!file) return
   videoFileName.value = file.name
   setLiturgyVideoFile(props.item.id, file)
-  const duration = await readVideoDuration(file)
+  const duration =
+    props.item.type === 'audio'
+      ? await readAudioDuration(file)
+      : await readVideoDuration(file)
   emit('videoFileSelected', duration)
 }
-const isLocalVideo = computed(() => props.item.type === 'video')
+const isLocalVideo = computed(
+  () => props.item.type === 'video' || props.item.type === 'audio',
+)
 const isLocalImages = computed(() => props.item.type === 'images')
 const isLocalPdf = computed(() => props.item.type === 'pdf')
 const isLocalPresentation = computed(() => props.item.type === 'presentation')
@@ -362,19 +368,19 @@ const rowHovered = ref(false)
               isVideoRemote ||
               isSiteItem ||
               isMusicItem ||
-              showVideoUpload,
+              isLocalMediaUpload,
           }"
           @click.stop
         >
           <input
             ref="videoFileInput"
             type="file"
-            accept="video/*"
+            :accept="item.type === 'audio' ? 'audio/*' : 'video/*'" 
             class="liturgy-item__file-input"
             @change="onVideoFileChange"
           >
           <button
-            v-if="showVideoUpload"
+            v-if="isLocalMediaUpload"
             type="button"
             class="liturgy-item__action-btn"
             :title="t('liturgy.videoSelectFile')"

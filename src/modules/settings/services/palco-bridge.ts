@@ -115,8 +115,12 @@ async function projectMedia() {
   }
   await palcoSession.projectRouted('hymns', 'hymns', {
     text: text.split('\n').join('<br>'),
-    footerRef: r.isCover ? '' : r.title,
+    // Título NUNCA no rodapé dos slides de letra — o nome da música
+    // aparece só na capa (decisão Rafael 26/08: repetir a cada slide
+    // polui a projeção).
+    footerRef: '',
     background: r.imageUrl ?? undefined,
+    isCover: r.isCover === true,
   })
 }
 
@@ -347,6 +351,25 @@ function bindChannel<T>(
 export function startPalcoBridge() {
   if (started) return
   started = true
+
+  // Setas do controle da TV: navegam slides do PDF/PPT quando ativo.
+  // O receiver manda {type:'remote-key', key:'prev'|'next'}; sem este
+  // listener as setas só funcionavam com vídeo (decisão local na TV).
+  palcoSession.onEvent((msg) => {
+    const m = msg as { type?: string; key?: string }
+    if (m?.type !== 'remote-key') return
+    const bridge = (window as unknown as {
+      louvorja?: {
+        projection?: {
+          remotePptPrev?: () => Promise<unknown>
+          remotePptNext?: () => Promise<unknown>
+        }
+      }
+    }).louvorja
+    if (!bridge?.projection?.remotePptNext || !bridge.projection.remotePptPrev) return
+    if (m.key === 'prev') void bridge.projection.remotePptPrev()
+    else if (m.key === 'next') void bridge.projection.remotePptNext()
+  })
 
   bindChannel<MediaProjectionRuntime>(
     MEDIA_RUNTIME_CHANNEL,
