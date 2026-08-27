@@ -205,6 +205,7 @@ export const useBibleStore = defineStore('bible', () => {
     const tvsOnly = opts?.targets === 'tvs-only' || (route !== 'mirror' && !route.startsWith('cable'))
     if (tvsOnly) {
       isProjecting.value = true
+      projectingTvsOnly.value = true // guard do watch: sem janela pra vigiar
       startProjectionWatch()
       return true
     }
