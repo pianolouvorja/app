@@ -5,6 +5,8 @@ export default {
     play: 'Play',
     pause: 'Pause',
     project: 'Project slides',
+    audioOnTv: 'Play sound on TV',
+    audioOnTvOff: 'Sound on computer',
     clearProjection: 'End projection',
     maximize: 'Open player',
     minimize: 'Minimize',

@@ -32,7 +32,7 @@ const digitalFontSize = computed(() => {
 })
 
 const surfaceStyle = computed(() => ({
-  background: props.preview ? 'transparent' : props.config.bgColor,
+  background: 'transparent',
   color: props.preview ? 'var(--ds-color-on-surface)' : props.config.textColor,
 }))
 

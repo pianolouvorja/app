@@ -70,6 +70,25 @@ contextBridge.exposeInMainWorld('louvorja', {
     onClients: (callback) => subscribe('remote:clients', callback),
   },
 
+  // Palco (cast p/ TV — receiver conecta em WS :7081, HTTP :7080)
+  palco: {
+    slots: () => ipcRenderer.invoke('palco:slots'),
+    createSlot: (label) => ipcRenderer.invoke('palco:slot-create', { label }),
+    removeSlot: (slotId) => ipcRenderer.invoke('palco:slot-remove', { id: slotId }),
+    start: (slotId = '0') => ipcRenderer.invoke('palco:start', { slotId }),
+    stop: (slotId = '0') => ipcRenderer.invoke('palco:stop', { slotId }),
+    status: (slotId = '0') => ipcRenderer.invoke('palco:status', { slotId }),
+    send: (msg, slotId = '0') => ipcRenderer.invoke('palco:send', { slotId, ...msg }),
+    serveMedia: (name, mime, base64, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-media', { slotId, name, mime, base64 }),
+    servePath: (filePath, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-path', { slotId, path: filePath }),
+    clearMedia: (slotId = '0') => ipcRenderer.invoke('palco:clear-media', { slotId }),
+    onEvent: (callback) => subscribe('palco:event', callback),
+    onReceiverConnected: (callback) => subscribe('palco:receiver-connected', callback),
+    onReceiverDisconnected: (callback) => subscribe('palco:receiver-disconnected', callback),
+  },
+
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),

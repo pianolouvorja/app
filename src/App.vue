@@ -53,6 +53,14 @@ watch(
 
 onMounted(() => {
   updateChecker.init()
+  // Palco (cast TV): a bridge sobe no BOOT da janela principal — não só
+  // quando o PalcoCard monta. Sem isso, hino/bíblia/timer só espelhavam
+  // se o operador tivesse visitado Configurações → Projeção antes.
+  if (!isProjectionWindow.value) {
+    import('@modules/settings/services/palco-bridge').then((m) => {
+      m.startPalcoBridge()
+    })
+  }
 })
 
 function handleViewNotes() {

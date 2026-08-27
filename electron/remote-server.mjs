@@ -182,6 +182,10 @@ export async function startRemoteServer(wss, contents) {
               typeof msg.numberMax === 'number' ? msg.numberMax : undefined,
             namesText:
               typeof msg.namesText === 'string' ? msg.namesText : undefined,
+            // Palco (cast TV): liga/desliga/projeta/idle
+            text: typeof msg.text === 'string' ? msg.text : undefined,
+            footerRef:
+              typeof msg.footerRef === 'string' ? msg.footerRef : undefined,
           })
           return
         }

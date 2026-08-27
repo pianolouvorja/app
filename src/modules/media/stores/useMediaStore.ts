@@ -522,6 +522,45 @@ export const useMediaStore = defineStore('media', () => {
     else await play()
   }
 
+  /**
+   * Rota de áudio PC ↔ TV ↔ Ambos (paridade APK routesToTv).
+   * 'pc'   → espelho padrão: PC toca, TV sincronizada junto (ambos soam)
+   * 'tv'   → player local pausa/silencia; a TV é a caixa
+   * 'both' → idem 'pc' (alias explícito; a TV é 2ª caixa sincronizada)
+   * O envio à TV é feito pela palco-bridge; projeção via cabo NÃO é afetada.
+   */
+  type AudioRoute = 'pc' | 'tv' | 'both'
+  const savedRoute = localStorage.getItem('louvorja-audio-route')
+  const audioRoute = ref<AudioRoute>(savedRoute === 'tv' || savedRoute === 'both' ? savedRoute : 'pc')
+
+  function persistRoute() {
+    try { localStorage.setItem('louvorja-audio-route', audioRoute.value) } catch { /* ignore */ }
+  }
+
+  /** Compat: consumers legados tratam como boolean (tv ou não). */
+  const audioOnTv = computed(() => audioRoute.value === 'tv')
+
+  async function setAudioRoute(route: AudioRoute): Promise<void> {
+    if (audioRoute.value === route) return
+    const wasTv = audioRoute.value === 'tv'
+    audioRoute.value = route
+    persistRoute()
+    if (route === 'tv') {
+      // local silencia e pausa na posição atual — a TV assume daí
+      const audio = getMediaAudioElement()
+      audio.volume = 0
+      pauseMediaAudio(audio)
+      status.value = 'paused'
+    } else if (wasTv) {
+      // saiu do modo TV → local retoma de onde parou
+      await play()
+    }
+  }
+
+  async function setAudioOnTv(on: boolean): Promise<void> {
+    await setAudioRoute(on ? 'tv' : 'pc')
+  }
+
   function seekTo(seconds: number): void {
     if (!session.value?.audioUrl) return
     const audio = getMediaAudioElement()
@@ -911,6 +950,10 @@ export const useMediaStore = defineStore('media', () => {
     play,
     pause,
     togglePlay,
+    audioOnTv,
+    audioRoute,
+    setAudioRoute,
+    setAudioOnTv,
     seekTo,
     seekRatio,
     goToSlide,

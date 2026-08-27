@@ -5,6 +5,8 @@ export default {
     play: 'Reproduzir',
     pause: 'Pausar',
     project: 'Projetar slides',
+    audioOnTv: 'Tocar som na TV',
+    audioOnTvOff: 'Som no computador',
     clearProjection: 'Encerrar projeção',
     maximize: 'Abrir player',
     minimize: 'Minimizar',
