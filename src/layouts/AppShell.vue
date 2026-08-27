@@ -386,6 +386,10 @@ function viewKey(viewRoute: typeof route) {
 <style scoped lang="scss">
 .app-shell {
   min-height: 100%;
+  /* Uma ÚNICA barra de rolagem: o body não rola — só o main rola
+      (header fixo por cima). Evita scrollbar dupla (26/08). */
+  height: calc(100vh / var(--ui-zoom, 1));
+  overflow: hidden;
 }
 
 .app-shell__header {
