@@ -320,6 +320,13 @@ class PalcoSession {
    */
   async audioRouted(input: Parameters<PalcoSession['audio']>[0]): Promise<void> {
     if (!this.isElectron) return
+    // BG do escopo liturgy quando o chamador não manda (fix 27/08): MP3
+    // sem background deixava o palco preto — o receiver mostra now-playing
+    // + equalizador sobre este bg.
+    if (!input.background) {
+      const st = readEffectiveStageSettings('liturgy')
+      input = { ...input, background: await this.resolveBgUrl(resolveBackgroundImage(st.backgroundImage)) ?? undefined }
+    }
     const route = getPalcoRoute('liturgy')
     if (route !== 'mirror') {
       const previous = this.activeSlotId
