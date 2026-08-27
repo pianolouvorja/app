@@ -158,7 +158,7 @@ const effectiveConfig = computed(() => {
         {{ t('random.resetAll') }}
       </button>
     </header>
-    <StagePaletteButton scope="random" />
+    <StagePaletteButton scope="random" :right-offset="76" />
 
 
     <div class="random-view__content">
