@@ -1,6 +1,6 @@
 {
   "name": "louvorja-piano",
-  "version": "1.17.5",
+  "version": "1.17.6-beta.1",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -79,6 +79,7 @@
     "appId": "com.louvorja.piano",
     "productName": "LouvorJA - PIANO",
     "executableName": "louvorja-piano",
+    "artifactName": "LouvorJA-PIANO-${version}-${arch}.${ext}",
     "npmRebuild": false,
     "directories": {
       "output": "dist-electron",
@@ -105,7 +106,29 @@
         {
           "target": "AppImage",
           "arch": [
-            "x64"
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "pacman",
+          "arch": [
+            "x64",
+            "arm64"
           ]
         }
       ],
@@ -151,7 +174,11 @@
       "allowToChangeInstallationDirectory": true,
       "license": "electron/legal/eula/pt-BR.txt",
       "include": "build/nsis-eula.nsh",
-      "installerLanguages": ["pt_BR", "en_US", "es_ES"]
+      "installerLanguages": [
+        "pt_BR",
+        "en_US",
+        "es_ES"
+      ]
     },
     "publish": {
       "provider": "github",
@@ -160,5 +187,8 @@
     }
   },
   "description": "LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto",
-  "author": "Ezequias Fonseca"
+  "author": {
+    "name": "Ezequias Fonseca",
+    "email": "ezequias@pianolouvorja.com.br"
+  }
 }

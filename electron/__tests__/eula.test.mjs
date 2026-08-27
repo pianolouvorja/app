@@ -106,6 +106,22 @@ describe("acceptEula", () => {
   });
 });
 
+describe("NSIS multilingual EULA configuration", () => {
+  it("uses explicit LCIDs supported by the electron-builder NSIS language set", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const nsisPath = fileURLToPath(new URL("../../build/nsis-eula.nsh", import.meta.url));
+    const script = await readFile(nsisPath, "utf8");
+
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_PORTUGUESE_BR}");
+    expect(script).toContain("!define LANG_ENGLISH_US 1033");
+    expect(script).toContain("!define LANG_SPANISH_ES 3082");
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_ENGLISH_US}");
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_SPANISH_ES}");
+    expect(script).not.toMatch(/LicenseLangString LicenseFile \$\{LANG_(ENGLISH|SPANISH)\}/);
+  });
+});
+
 describe("getEulaText", () => {
   it("le arquivo pt-BR.txt e retorna conteudo como string", () => {
     const text = getEulaText("pt-BR");
@@ -196,7 +212,7 @@ describe("showEulaDialog", () => {
     expect(result).toBe(false);
   });
 
-  it("passa o texto do EULA do locale correto para o dialog", () => {
+  it("passa o texto do EULA do locale correto para o dialog", async () => {
     dialog.showMessageBoxSync.mockReturnValue(0);
     writeWorkspaceRecord.mockReturnValue(true);
 
