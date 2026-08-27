@@ -1,3 +1,4 @@
+import { getPalcoRoute } from '../../settings/services/palco-routing'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -197,9 +198,12 @@ export const useBibleStore = defineStore('bible', () => {
     }
 
     publishProjectionState(projection.value)
-    // 'tvs-only': publica runtime para as TVs Palco SEM abrir janela no
-    // monitor cabeado — desacopla TV do cabo (spec multi-telas 26/08).
-    if (opts?.targets === 'tvs-only') {
+    // Rota do Palco decide o destino (spec multi-telas 26/08): rota
+    // individual (um slot) publica SÓ na TV — sem janela no cabo.
+    // mirror/all mantém o comportamento cabo+TVs de sempre.
+    const route = getPalcoRoute('bible')
+    const tvsOnly = opts?.targets === 'tvs-only' || (route !== 'mirror' && !route.startsWith('cable'))
+    if (tvsOnly) {
       isProjecting.value = true
       startProjectionWatch()
       return true

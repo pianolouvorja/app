@@ -46,16 +46,11 @@ const {
   toggleNavPanel,
   toggleProjection,
   clearProjectionWindow,
-  projectTvsOnly,
   refresh,
 } = useBibleReader()
 
 function onProject() {
   void toggleProjection()
-}
-
-function onProjectTvs() {
-  void projectTvsOnly()
 }
 
 function onClearProjection() {
@@ -172,8 +167,7 @@ function onNextVerse() {
       :disabled="!hasProjection"
       :projecting="isProjecting"
       @project="onProject"
-      @project-tvs="onProjectTvs"
-      @clear="onClearProjection"
+          @clear="onClearProjection"
     />
   </section>
 </template>
