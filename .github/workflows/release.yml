@@ -59,10 +59,19 @@ jobs:
             rpm \
             libarchive-tools \
             fakeroot \
-            dpkg
+            dpkg \
+            binutils
 
       - name: Package Linux targets
+        env:
+          # arm64 runners: fpm empacotado do electron-builder é x86 — usa fpm do sistema
+          USE_SYSTEM_FPM: ${{ matrix.arch == 'arm64' && 'true' || 'false' }}
         run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            sudo apt-get install -y --no-install-recommends ruby ruby-dev build-essential
+            sudo gem install --no-document fpm
+          fi
           node -e "require('node:fs').rmSync('dist-electron', { recursive: true, force: true })"
           npx electron-builder --linux AppImage deb rpm pacman tar.gz --${{ matrix.arch }} --publish never
 
@@ -71,20 +80,45 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
+          echo "Conteúdo de dist-electron/:"
+          find dist-electron -type f | sort | tee /tmp/linux-artifacts.txt
+
           case "$ARCH" in
-            x64) expected='x86_64|amd64|x64' ;;
-            arm64) expected='aarch64|arm64' ;;
-            *) exit 1 ;;
-          esac
-          files=(dist-electron/*)
-          test "${#files[@]}" -ge 4
-          for ext in AppImage deb rpm pacman tar.gz; do
-            find dist-electron -maxdepth 1 -type f -iname "*.$ext" | grep -E "$expected" >/dev/null || {
-              echo "Artefato $ext ausente para $ARCH" >&2
+            x64) arch_re='(x64|x86_64|amd64)' ;;
+            arm64) arch_re='(arm64|aarch64)' ;;
+            *)
+              echo "Arch inválida: $ARCH" >&2
               exit 1
-            }
-          done
-          sha256sum dist-electron/* > dist-electron/SHA256SUMS-${ARCH}
+              ;;
+          esac
+
+          require_one() {
+            local label="$1"
+            shift
+            local matches
+            matches="$(grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei "$1" || true)"
+            if [ -z "$matches" ]; then
+              echo "Artefato ausente ($label) para arch=$ARCH" >&2
+              return 1
+            fi
+            echo "OK $label:"
+            echo "$matches"
+          }
+
+          require_one AppImage '\.AppImage$'
+          require_one deb '\.deb$'
+          require_one rpm '\.rpm$'
+          # pacman: .pacman ou .pkg.tar.*
+          if ! grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei '\.pacman$|\.pkg\.tar\.' >/dev/null; then
+            echo "Artefato ausente (pacman) para arch=$ARCH" >&2
+            exit 1
+          fi
+          echo "OK pacman:"
+          grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei '\.pacman$|\.pkg\.tar\.' || true
+          require_one tar.gz '\.tar\.gz$'
+
+          sha256sum dist-electron/* > "dist-electron/SHA256SUMS-${ARCH}" || \
+            find dist-electron -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > "dist-electron/SHA256SUMS-${ARCH}"
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v4
