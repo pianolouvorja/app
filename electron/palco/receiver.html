@@ -670,6 +670,11 @@ function handle(m){
       break}
     case 'video':{
       const v=$('video');
+      // Metadados/transiente SEM url e SEM stop (fix 27/08): o tvBroadcast
+      // manda 'video' com action vazia/seek junto do áudio — tratar como
+      // load matava o now-playing do MP3 a cada tick (tela preta). Só
+      // load (url) e stop mexem nas camadas visuais.
+      if(!m.url&&m.action!=='stop'){break}
       hideIdle();hideNp();
       // Vídeo assumindo a TV: qualquer ÁUDIO anterior (hino/MP3) é PARADO
       // e limpo. Sem isso, o 'audio play' do tvBroadcast (que manda nos dois
