@@ -56,7 +56,7 @@ let owner: Owner = null
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
   bible: { active: false, text: '', reference: '' },
-  random: { currentDisplay: '', isDrawing: false },
+  random: { currentDisplay: '', isDrawing: false, projecting: false },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
 }
@@ -151,6 +151,9 @@ function ownerInput(): ProjectionInput | { timer: TimerOpts } | null {
     }
     case 'random': {
       const r = runtimes.random
+      // Projeção ativa sem sorteio ainda: assume o palco com o bg do
+      // escopo random (tela de espera — decisão Rafael 27/08).
+      if (!r.currentDisplay && r.projecting) return { text: '' }
       if (!r.currentDisplay) return null
       return { text: r.currentDisplay }
     }
@@ -479,7 +482,7 @@ export function startPalcoBridge() {
     normalizeRandomRuntime,
     (v: { currentDisplay: string; isDrawing: boolean }) => {
       runtimes.random = v
-      setIntent('random', Boolean(v.currentDisplay))
+      setIntent('random', v.projecting || Boolean(v.currentDisplay))
     },
   )
 

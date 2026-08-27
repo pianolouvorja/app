@@ -20,6 +20,7 @@ export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
   return {
     currentDisplay: asString(source.currentDisplay, ''),
     isDrawing: source.isDrawing === true,
+    projecting: source.projecting === true,
   }
 }
 

@@ -367,6 +367,7 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   async function syncProjection() {
+    runtime.value = { ...runtime.value, projecting: true }
     syncRuntime()
     // Mesmo contrato da Bíblia: slot individual = só TV; Espelhar =
     // janela nos monitores selecionados + TVs Palco.
@@ -387,7 +388,9 @@ export const useRandomStore = defineStore('random', () => {
     closeProjectionModule()
     isProjecting.value = false
     projectingTvsOnly.value = false
+    runtime.value = { ...runtime.value, projecting: false }
     stopProjectionWatch()
+    syncRuntime()
   }
 
   async function toggleProjection() {

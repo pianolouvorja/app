@@ -84,12 +84,12 @@ function sends(): Array<{ slot: string; msg: { type: string } }> {
 import { setPalcoRoute } from '../services/palco-routing'
 import { RANDOM_RUNTIME_CHANNEL, RANDOM_RUNTIME_STORAGE_KEY } from '../../random/services/random-runtime'
 
-function publishRandom(currentDisplay: string, isDrawing = false) {
-  const payload = JSON.stringify({ currentDisplay, isDrawing })
+function publishRandom(currentDisplay: string, isDrawing = false, projecting = false) {
+  const payload = JSON.stringify({ currentDisplay, isDrawing, projecting })
   localStorage.setItem(RANDOM_RUNTIME_STORAGE_KEY, payload)
   const ch = new MockBroadcastChannel(RANDOM_RUNTIME_CHANNEL)
   // store real publica o OBJETO no canal (publishRandomRuntime), não a string
-  ch.postMessage({ currentDisplay, isDrawing })
+  ch.postMessage({ currentDisplay, isDrawing, projecting })
   ch.close()
 }
 
@@ -138,7 +138,18 @@ describe('bridge: sorteio projeta na TV roteada (bug 27/08)', () => {
     expect(toTv2.some((s) => s.msg.type === 'projection')).toBe(true)
   })
 
-  it('sorteio SEM conteúdo não projeta nada (idle inicial ok, sem projection)', async () => {
+  it('projetando SEM sorteio → projection vazia (bg do escopo, tela de espera)', async () => {
+    setPalcoRoute('random', '7082')
+    startPalcoBridge()
+    publishRandom('', false, true)
+    await new Promise((r) => setTimeout(r, 150))
+    const all = sends()
+    const proj = all.find((s) => s.slot === '7082' && s.msg.type === 'projection')
+    expect(proj).toBeTruthy()
+    expect((proj?.msg as { input: { text: string } }).input.text).toBe('')
+  })
+
+  it('sem projeção e sem conteúdo → nada além do idle inicial', async () => {
     setPalcoRoute('random', '7082')
     startPalcoBridge()
     publishRandom('')
