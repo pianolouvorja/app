@@ -79,6 +79,10 @@ class PalcoSlot {
 
   /** Broadcast p/ todos os receivers conectados neste slot. */
   broadcast(obj) {
+    // idle = fim da projeção: o cache de replay da projection morre junto,
+    // senão quem reconecta recebe versículo velho por cima do idle
+    // (bíblia fantasma ao recarregar a TV — bug real 27/08).
+    if (obj.type === 'idle') this.#lastByType.delete('projection')
     this.#lastByType.set(obj.type, obj)
     const data = JSON.stringify(obj)
     for (const ws of this.#clients) {
