@@ -59,7 +59,7 @@ export const useTimerStore = defineStore('timer', () => {
   }
 
   function syncRuntime() {
-    publishTimerRuntime(runtime.value)
+    publishTimerRuntime({ ...runtime.value, projecting: isProjecting.value })
   }
 
   function hydrate() {
@@ -183,12 +183,14 @@ export const useTimerStore = defineStore('timer', () => {
     if (isPalcoTvOnlyRoute('timer')) {
       isProjecting.value = true
       projectingTvsOnly.value = true
+      syncRuntime() // publica owner=true após definir o modo
       startProjectionWatch()
       return
     }
     projectingTvsOnly.value = false
     const opened = await openProjectionModule('timer')
     isProjecting.value = opened
+    syncRuntime() // owner segue a projeção, não o status do cronômetro
     if (opened) startProjectionWatch()
     else stopProjectionWatch()
   }

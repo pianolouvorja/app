@@ -402,24 +402,30 @@ export function startPalcoBridge() {
   )
 
   bindChannel<TimerRuntimeState>(
-    TIMER_RUNTIME_CHANNEL,
-    TIMER_RUNTIME_STORAGE_KEY,
-    normalizeTimerRuntime,
-    (v) => {
-      runtimes.timer = v
-      v.status !== 'idle' ? claim('timer') : release('timer')
-    },
-  )
+      TIMER_RUNTIME_CHANNEL,
+      TIMER_RUNTIME_STORAGE_KEY,
+      normalizeTimerRuntime,
+      (v: TimerRuntimeState | null): void => {
+        if (!v) return
+        runtimes.timer = v
+        // Botão Projetar é o dono explícito: 00:00/pausado continua visível
+        // até Retirar da projeção, igual Bíblia (não solta após 400ms).
+        if (v.projecting || v.status !== 'idle') claim('timer')
+        else release('timer')
+      },
+    )
 
-  bindChannel<CountdownRuntimeState>(
-    COUNTDOWN_RUNTIME_CHANNEL,
-    COUNTDOWN_RUNTIME_STORAGE_KEY,
-    normalizeCountdownRuntime,
-    (v) => {
-      runtimes.countdown = v
-      v.status !== 'idle' ? claim('countdown') : release('countdown')
-    },
-  )
+    bindChannel<CountdownRuntimeState>(
+      COUNTDOWN_RUNTIME_CHANNEL,
+      COUNTDOWN_RUNTIME_STORAGE_KEY,
+      normalizeCountdownRuntime,
+      (v: CountdownRuntimeState | null): void => {
+        if (!v) return
+        runtimes.countdown = v
+        if (v.projecting || v.status !== 'idle') claim('countdown')
+        else release('countdown')
+      },
+    )
 
   // Relógio: sem runtime — o toggle do módulo clock chama palcoClockOn/Off.
   // Áudio: watchers do media store (mesma janela)

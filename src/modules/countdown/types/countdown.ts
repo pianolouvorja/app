@@ -14,6 +14,8 @@ export interface CountdownDisplayConfig {
 
 export interface CountdownRuntimeState {
   status: CountdownStatus
+  /** Owner explícito da projeção; countdown parado ainda pode estar no Palco. */
+  projecting?: boolean
   /** Epoch ms when the current running segment started. */
   segmentStartedAt: number | null
   /** Milliseconds already counted down before the current segment. */

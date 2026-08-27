@@ -109,6 +109,10 @@ const verseBoxStyle = computed(() => {
     border: stage.value.boxBorder ? '1px solid rgba(255,255,255,0.25)' : 'none',
     // Padrão folha característico do design (como o media-projection)
     borderRadius: 'clamp(14px, 2.4vmin, 32px) 0 clamp(14px, 2.4vmin, 32px) 0',
+    // caixinha só no versículo: padding para respirar dentro da caixa
+    padding: '0.35em 0.75em',
+    width: 'fit-content',
+    margin: '0 auto',
   }
 })
 
@@ -135,12 +139,11 @@ const referenceStyle = computed(() => ({
           v-if="showContent"
           :key="contentKey"
           class="bible-projection__content"
-          :style="verseBoxStyle"
         >
           <p
             v-if="runtime.text"
             class="bible-projection__text"
-            :style="verseStyle"
+            :style="[verseStyle, verseBoxStyle]"
           >
             {{ runtime.text }}
           </p>

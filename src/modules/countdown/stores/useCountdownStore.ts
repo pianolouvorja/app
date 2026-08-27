@@ -110,7 +110,7 @@ export const useCountdownStore = defineStore('countdown', () => {
   }
 
   function syncRuntime() {
-    publishCountdownRuntime(runtime.value)
+    publishCountdownRuntime({ ...runtime.value, projecting: isProjecting.value })
   }
 
   function hydrate() {
@@ -269,16 +269,18 @@ export const useCountdownStore = defineStore('countdown', () => {
   async function syncProjection() {
     syncRuntime()
     if (isPalcoTvOnlyRoute('countdown')) {
-      isProjecting.value = true
-      projectingTvsOnly.value = true
-      startProjectionWatch()
-      return
-    }
-    projectingTvsOnly.value = false
-    const opened = await openProjectionModule('countdown')
-    isProjecting.value = opened
-    if (opened) startProjectionWatch()
-    else stopProjectionWatch()
+          isProjecting.value = true
+          projectingTvsOnly.value = true
+          syncRuntime()
+          startProjectionWatch()
+          return
+        }
+        projectingTvsOnly.value = false
+        const opened = await openProjectionModule('countdown')
+        isProjecting.value = opened
+        syncRuntime()
+        if (opened) startProjectionWatch()
+        else stopProjectionWatch()
   }
 
   function clearProjection() {
