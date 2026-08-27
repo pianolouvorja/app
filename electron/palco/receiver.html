@@ -636,6 +636,14 @@ function handle(m){
           $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
         }
       }
+      // action-only (play/pause/seek SEM url — tvBroadcast do popup, fix
+      // 27/08): now-playing + bg garantidos também aqui — antes só havia
+      // np dentro do if(m.url) e mensagens sem url deixavam a TV preta.
+      else if(m.action==='play'){
+        if(m.title){showNp(m.title, m.subtitle||'', m.cover||'')}
+        else{showNp('Reproduzindo áudio', m.subtitle||'', m.cover||'')}
+        $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
+      }
       // BG garantido em TODA mensagem de áudio (load, play, pause, seek):
       // sem isso, mensagens action-only podiam deixar tela preta.
       if(!m.background){
