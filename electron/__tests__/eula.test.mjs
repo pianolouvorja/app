@@ -27,8 +27,10 @@ vi.mock("electron", () => ({
     once: vi.fn(),
     on: vi.fn(),
     loadURL: vi.fn(() => Promise.resolve()),
+    loadFile: vi.fn(() => Promise.resolve()),
     webContents: {
       on: vi.fn(),
+      send: vi.fn(),
       setWindowOpenHandler: vi.fn(),
     },
     };
@@ -103,6 +105,22 @@ describe("acceptEula", () => {
         version: 1,
       }),
     );
+  });
+});
+
+describe("NSIS multilingual EULA configuration", () => {
+  it("uses explicit LCIDs supported by the electron-builder NSIS language set", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const nsisPath = fileURLToPath(new URL("../../build/nsis-eula.nsh", import.meta.url));
+    const script = await readFile(nsisPath, "utf8");
+
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_PORTUGUESE_BR}");
+    expect(script).toContain("!define LANG_ENGLISH_US 1033");
+    expect(script).toContain("!define LANG_SPANISH_ES 3082");
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_ENGLISH_US}");
+    expect(script).toContain("LicenseLangString LicenseFile ${LANG_SPANISH_ES}");
+    expect(script).not.toMatch(/LicenseLangString LicenseFile \$\{LANG_(ENGLISH|SPANISH)\}/);
   });
 });
 
@@ -188,31 +206,33 @@ describe("showEulaDialog", () => {
   });
 
   it("retorna false quando usuario recusa EULA (response=1) — sem confirmacao dupla", async () => {
-    __setEulaPresenterForTests(async () => 1); // 1 = Recusar
+    __setEulaPresenterForTests(async () => 1);
 
     const result = await showEulaDialog("pt-BR");
     expect(writeWorkspaceRecord).not.toHaveBeenCalled();
     expect(result).toBe(false);
   });
 
-  it("passa o locale correto para o presenter da janela EULA", async () => {
-    writeWorkspaceRecord.mockReturnValue(true);
-    const seenLocales = [];
+  it("usa o presenter da plataforma (sem dialog de confirmacao extra)", async () => {
     __setEulaPresenterForTests(async (locale) => {
-      seenLocales.push(locale);
+      expect(locale).toBe("pt-BR");
       return 0;
     });
+    writeWorkspaceRecord.mockReturnValue(true);
 
-    const result = await showEulaDialog("pt-BR");
-    expect(seenLocales).toEqual(["pt-BR"]);
-    expect(result).toBe(true);
+    await expect(showEulaDialog("pt-BR")).resolves.toBe(true);
+    expect(dialog.showMessageBoxSync).not.toHaveBeenCalled();
   });
 
-  it("dialog de confirmacao usa locale en", async () => {
-    __setEulaPresenterForTests(async () => 1);
+  it("propaga locale en para o presenter ao recusar", async () => {
+    __setEulaPresenterForTests(async (locale) => {
+      expect(locale).toBe("en");
+      return 1;
+    });
 
-    const result = await showEulaDialog("en");
-    expect(result).toBe(false);
+    await expect(showEulaDialog("en")).resolves.toBe(false);
+    expect(writeWorkspaceRecord).not.toHaveBeenCalled();
+    expect(dialog.showMessageBoxSync).not.toHaveBeenCalled();
   });
 });
 
@@ -257,7 +277,7 @@ describe("checkEulaAcceptance", () => {
 
   it("mostra dialog e retorna false quando usuario recusa", async () => {
     readWorkspaceRecord.mockReturnValue(null);
-    __setEulaPresenterForTests(async () => 1); // Recusar
+    __setEulaPresenterForTests(async () => 1);
 
     const result = await checkEulaAcceptance("pt-BR");
     expect(writeWorkspaceRecord).not.toHaveBeenCalled();
