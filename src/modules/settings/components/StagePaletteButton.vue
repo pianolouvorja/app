@@ -19,7 +19,7 @@ const open = ref(false)
 </script>
 
 <template>
-  <Teleport to="body">
+  <div>
     <button
       type="button"
       class="stage-palette-fab"
@@ -38,16 +38,15 @@ const open = ref(false)
       :scope="props.scope"
       @close="open = false"
     />
-  </Teleport>
+  </div>
 </template>
 
 <style scoped lang="scss">
 .stage-palette-fab {
-  position: fixed;
-  /* Canto SUPERIOR direito: lugar de destaque, fácil visualização.
-   * Não compete com letras (centro), pill (baixo-centro), playlist (direita
-   * no player) nem FABs de ação (baixo-direita). */
-  top: calc(var(--app-titlebar-height, 2rem) + 0.75rem);
+  position: absolute;
+  /* Dentro da janela do player (origin = section media-window):
+   * topo direito da janela, abaixo do header do AppShell onde fica a versão. */
+  top: 0.75rem;
   right: 1.25rem;
   z-index: 40;
   display: inline-flex;
