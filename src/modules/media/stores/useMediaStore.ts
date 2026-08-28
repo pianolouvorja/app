@@ -580,6 +580,10 @@ export const useMediaStore = defineStore('media', () => {
     // Modo TV: a TV é a caixa. O elemento local permanece pausado/mudo —
     // apenas o status muda (a palco-bridge observa e comanda a TV).
     if (audioOnTv.value) {
+      if (!audio.paused) {
+        audio.volume = 0
+        pauseMediaAudio(audio)
+      }
       status.value = 'playing'
       return
     }
@@ -604,8 +608,11 @@ export const useMediaStore = defineStore('media', () => {
     const audio = getMediaAudioElement()
     status.value = 'paused'
 
-    // Modo TV: elemento local já está mudo — status acima já sinaliza a TV.
+    // Modo TV: status acima sinaliza a TV; o elemento local também pausa
+    // (pode estar tocando se o open() rodou antes da rota mudar, ex.:
+    // localStorage 'tv' + abertura de faixa nova).
     if (audioOnTv.value) {
+      pauseMediaAudio(audio)
       return
     }
 
