@@ -24,7 +24,7 @@ import {
   savePlaylists,
   type Playlist,
 } from '../services/playlist-storage'
-import { parsePlaylistsImport, serializePlaylists } from '../playlist-io'
+import { parsePlaylistsImport, serializePlaylists } from '../services/playlist-io'
 
 const { t } = useI18n()
 const router = useRouter()
