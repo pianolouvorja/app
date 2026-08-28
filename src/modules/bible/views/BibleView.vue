@@ -2,7 +2,6 @@
 import { useI18n } from 'vue-i18n'
 
 import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import BibleNavPanel from '../components/BibleNavPanel.vue'
 import BibleProjectFab from '../components/BibleProjectFab.vue'
 import BibleToolbar from '../components/BibleToolbar.vue'
@@ -68,9 +67,6 @@ function onNextVerse() {
 
 <template>
   <section class="bible-view">
-    <div class="bible-view__palette-slot">
-      <StagePaletteButton scope="bible" />
-    </div>
     <BibleToolbar
       :versions="versions"
       :selected-version-id="selectedVersionId"
@@ -173,7 +169,6 @@ function onNextVerse() {
 
 <style scoped lang="scss">
 .bible-view {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -188,13 +183,6 @@ function onNextVerse() {
     gap: 0.65rem;
     padding-top: 0.5rem;
   }
-}
-
-.bible-view__palette-slot {
-  position: absolute;
-  top: 0.75rem;
-  right: var(--ds-spacing-page, 2rem);
-  z-index: 30;
 }
 
 .bible-view__body {
