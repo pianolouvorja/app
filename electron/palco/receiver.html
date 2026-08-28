@@ -16,13 +16,13 @@
   #veil{position:fixed;inset:0;background:rgba(0,0,0,.45)}
   #content{position:fixed;top:0;left:0;right:0;bottom:0;padding:6vh 8vw;
     box-sizing:border-box}
-  #text{position:absolute;top:50%;left:0;right:0;
+  #text{position:absolute;top:50%;left:50%;
     /* Caixa encolhe até o texto como via cabo. display:table = shrink-to-fit
        compatível com Chromium antigo (webOS/Tizen) — fit-content em
        position:absolute colapsava no simulador (26/08). margin auto centra. */
-    display:table;margin:0 auto;max-width:86vw;max-height:72vh;
+    display:table;max-width:86vw;max-height:72vh;transform:translate(-50%,-50%);
     overflow-wrap:break-word;
-    transform:translateY(-50%);
+    transform:translate(-50%,-50%);
     text-align:center;font-size:3.65vw;font-weight:700;line-height:1.35;
     letter-spacing:.03em;text-transform:uppercase;
     text-shadow:0 2px 12px rgba(0,0,0,.8)}
@@ -35,8 +35,8 @@
     /* Player: radius folha clamp(14px,2.4vmin,32px) 0, borda 0.2vmin e
        sombra suave. Padding mínimo — caixa abraça o texto (vmin). */
     padding:1.6vmin 1.8vmin;
-    border-radius:clamp(14px,2.4vmin,32px) 0 clamp(14px,2.4vmin,32px) 0;
-    border:var(--box-border,clamp(2px,.2vmin,4px) solid rgba(255,255,255,.25));
+    border-radius:2.4vmin 0 2.4vmin 0;
+    border:var(--box-border,.2vmin solid rgba(255,255,255,.25));
     box-shadow:0 10px 30px rgba(0,0,0,.4)}
   #text.shadow-off{text-shadow:none}
   /* Capa da música (isCover): título destaque amarelo, sem caixinha/borda —
