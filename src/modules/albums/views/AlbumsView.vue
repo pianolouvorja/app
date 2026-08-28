@@ -53,7 +53,6 @@ const {
   downloadCollection,
   cancelCollection,
   downloadAll,
-  playAllInCategory,
   cancelAll,
   removeCollection,
   playSung,
@@ -376,17 +375,6 @@ async function runAction(
               {{ categorySubtitle(category) }}
             </p>
           </div>
-          <button
-            v-if="!isHymnalsCategory(category)"
-            type="button"
-            class="albums-view__play-all"
-            :aria-label="t('albums.playAll')"
-            :title="t('albums.playAll')"
-            @click="playAllInCategory(category)"
-          >
-            <i class="ti ti-player-play" aria-hidden="true" />
-            {{ t('albums.playAll') }}
-          </button>
         </header>
 
         <div
@@ -674,21 +662,6 @@ async function runAction(
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
-}
-
-.albums-view__play-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 0;
-  border-radius: 0.65rem;
-  padding: 0.5rem 0.7rem;
-  background: var(--ds-color-primary);
-  color: var(--ds-color-on-primary);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .albums-view__category-title {
