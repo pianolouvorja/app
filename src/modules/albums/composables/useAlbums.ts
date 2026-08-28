@@ -8,8 +8,9 @@ import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import type { LibraryAlbum, LibraryAlbumId } from '@modules/sync/types/library'
 import { isDesktopApp } from '@shared/services/desktop-bridge'
 
+import { loadCollectionTracks } from '../services/album-tracks'
 import { useAlbumsStore } from '../stores/useAlbumsStore'
-import type { AlbumCollectionId } from '../types/albums'
+import type { AlbumCategory, AlbumCollectionId } from '../types/albums'
 
 export function useAlbums() {
   const store = useAlbumsStore()
@@ -111,6 +112,26 @@ export function useAlbums() {
     return true
   }
 
+  /** Toca todas as coletâneas da categoria; Hinários são excluídos no caller. */
+  async function playAllInCategory(category: AlbumCategory, mode: MediaPlaybackMode = 'audio') {
+    const queue = [] as Array<{ musicId: number; albumId: number | null; title: string }>
+    for (const collection of category.collections) {
+      if (collection.kind === 'hymnal') continue
+      const albumId = Number(collection.id)
+      if (!Number.isFinite(albumId)) continue
+      const collectionTracks = await loadCollectionTracks(collection)
+      queue.push(...collectionTracks.map((track) => ({
+        musicId: track.musicId,
+        albumId,
+        title: track.name,
+      })))
+    }
+    if (queue.length === 0) return false
+    await mediaStore.playQueue(queue, 0, mode)
+    await router.push({ name: 'media' })
+    return true
+  }
+
   function downloadCollection(collectionId: AlbumCollectionId) {
     void libraryStore.downloadAlbum(collectionId)
   }
@@ -175,6 +196,7 @@ export function useAlbums() {
     playSlides,
     playMode,
     playAllInActiveCollection,
+    playAllInCategory,
     openLyric: store.openLyric,
     closeLyric: store.closeLyric,
   }
