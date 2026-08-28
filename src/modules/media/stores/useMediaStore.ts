@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
-import { isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
+import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
 import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
@@ -874,6 +874,7 @@ export const useMediaStore = defineStore('media', () => {
     // (decisão Rafael/Elias 27/08: mecanismo ligava só com múltiplas telas
     // FÍSICAS; TVs WS agora entram na conta).
     const hasTvs = await hasLivePalcoTvs()
+    console.info('[media-proj] startProjection route=', String(getPalcoRoute('hymns')), 'hasTvs=', hasTvs)
     // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
     // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
     if (isPalcoTvOnlyRoute('hymns')) {
