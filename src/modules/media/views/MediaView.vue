@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
-import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import MediaCloseDialog from '../components/MediaCloseDialog.vue'
 import MediaPlayerPill from '../components/MediaPlayerPill.vue'
 import MediaSlideStage from '../components/MediaSlideStage.vue'
@@ -142,7 +141,6 @@ async function onToggleFullscreen() {
     class="media-window"
   >
     <header class="media-window__toolbar">
-      <PalcoRouteSelect module="hymns" compact />
       <button
         type="button"
         class="media-window__tool-btn"
