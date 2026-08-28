@@ -154,7 +154,7 @@
 
 <div id="status">conectando…</div>
 <!-- F3.3s: versão FORA do #idle — fixa no canto da tela, sempre visível -->
-<p id="idleVer" style="position:fixed;right:1.2vh;bottom:1vh;margin:0;z-index:99;
+<p id="idleVer" style="position:fixed;right:3vh;bottom:3.2vh;margin:0;z-index:99;
   font-size:1.4vh;font-weight:300;letter-spacing:.15vh;opacity:.3;
   font-family:inherit;color:#fff;pointer-events:none"></p>
 <audio id="audio" preload="auto"></audio>
@@ -171,7 +171,7 @@ window.addEventListener('unhandledrejection',function(ev){
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 // F3.3q: versão no idle (canto inferior direito) — ?v= override ou padrão.
-window.__PALCO_APPV__=window.__PALCO_APPV__||'0.1.46';
+window.__PALCO_APPV__=window.__PALCO_APPV__||'0.1.47';
 (function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
 // webOS: ares-launch -p '{"host":"..."}' chega em PalmSystem.launchParams,
 // NÃO na query string. Merge dos dois (query string tem prioridade).
