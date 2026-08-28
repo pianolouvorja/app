@@ -1,7 +1,6 @@
-# Build Windows NSIS — gera instalador .exe x64
-# (Electron 44+ não publica mais win32-ia32 — ver docs/DEPLOY.md)
+# Build Linux AppImage — gera instalador x64 + latest-linux.yml
 # Roda manualmente (workflow_dispatch) ou em push de tags v*
-name: Build Windows
+name: Build Linux
 
 on:
   workflow_dispatch:
@@ -13,9 +12,9 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    name: Build Windows NSIS x64
-    runs-on: windows-latest
+  build-linux:
+    name: Build Linux AppImage x64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -27,17 +26,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite + Electron NSIS (x64) + publish
-        run: npm run electron:build -- --win --x64 --publish always
+      - name: Build Vite + Electron AppImage (x64) + publish
+        run: npm run electron:build -- --linux AppImage --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload x64 installer (artifact backup)
+      - name: Upload AppImage (artifact backup)
         uses: actions/upload-artifact@v4
         with:
-          name: LouvorJA-PIANO-Windows-x64-Setup
-          path: |
-            dist-electron/*Setup*.exe
-            dist-electron/*.exe
+          name: LouvorJA-PIANO-Linux-x64-AppImage
+          path: dist-electron/*.AppImage
           if-no-files-found: warn
           retention-days: 30
