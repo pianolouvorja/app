@@ -21,8 +21,10 @@ import {
   deletePlaylist,
   listPlaylists,
   removePlaylistItem,
+  savePlaylists,
   type Playlist,
 } from '../services/playlist-storage'
+import { parsePlaylistsImport, serializePlaylists } from '../playlist-io'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -99,6 +101,70 @@ function openCollection(collectionId: string | number) {
   void router.push({
     name: 'albums-collection',
     params: { collectionId: String(collectionId) },
+  })
+}
+
+function exportPlaylists() {
+  if (playlists.value.length === 0) return
+  const payload = JSON.stringify(serializePlaylists(playlists.value), null, 2)
+  const blob = new Blob([payload], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const today = new Date().toISOString().slice(0, 10)
+  link.href = url
+  link.download = `playlists-${today}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+const importFeedback = ref('')
+
+function showImportFeedback(message: string) {
+  importFeedback.value = message
+  setTimeout(() => {
+    importFeedback.value = ''
+  }, 3200)
+}
+
+function onImportFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  void file.text().then((raw) => {
+    const result = parsePlaylistsImport(raw)
+    if (!result.ok) {
+      showImportFeedback('Arquivo de playlists inválido.')
+      return
+    }
+    // Merge por nome: playlist nova entra; existente ganha só faixas novas.
+    const current = listPlaylists()
+    const byName = new Map(current.map((p) => [p.name.toLowerCase(), p]))
+    let addedTracks = 0
+    let newLists = 0
+    for (const imported of result.playlists) {
+      const existing = byName.get(imported.name.toLowerCase())
+      if (!existing) {
+        current.push(imported)
+        byName.set(imported.name.toLowerCase(), imported)
+        newLists += 1
+        addedTracks += imported.items.length
+        continue
+      }
+      for (const item of imported.items) {
+        const dup = existing.items.some((i) => i.musicId === item.musicId && i.albumId === item.albumId)
+        if (!dup) {
+          existing.items.push(item)
+          addedTracks += 1
+        }
+      }
+    }
+    savePlaylists(current)
+    playlists.value = listPlaylists()
+    const parts = []
+    if (newLists > 0) parts.push(`${newLists} playlist(s) nova(s)`)
+    if (addedTracks > 0) parts.push(`${addedTracks} faixa(s) adicionada(s)`)
+    showImportFeedback(parts.length > 0 ? `Importado: ${parts.join(', ')}.` : 'Nada novo para importar.')
   })
 }
 
@@ -1215,3 +1281,28 @@ async function runAction(
   }
 }
 </style>
+
+.albums-view__playlists-io {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--ds-color-outline-strong);
+  border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+  background: transparent;
+  color: var(--ds-color-on-surface-variant);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+.albums-view__playlists-io:hover:not(:disabled) {
+  color: var(--ds-color-primary);
+  border-color: color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
+}
+.albums-view__playlists-io:disabled { opacity: 0.35; cursor: not-allowed; }
+.albums-view__playlists-feedback {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ds-color-primary-soft, var(--ds-color-primary));
+  font-size: 0.82rem;
+}

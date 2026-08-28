@@ -36,6 +36,11 @@ export function listPlaylists(): Playlist[] {
   return read()
 }
 
+/** Salva a lista inteira (usado pelo import/merge de arquivos). */
+export function savePlaylists(playlists: Playlist[]): void {
+  save(playlists)
+}
+
 export function createPlaylist(name: string): Playlist {
   const timestamp = now()
   const playlist: Playlist = {
