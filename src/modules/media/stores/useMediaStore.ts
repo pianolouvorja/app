@@ -577,6 +577,13 @@ export const useMediaStore = defineStore('media', () => {
     const seq = ++playPauseSeq
     const audio = getMediaAudioElement()
 
+    // Modo TV: a TV é a caixa. O elemento local permanece pausado/mudo —
+    // apenas o status muda (a palco-bridge observa e comanda a TV).
+    if (audioOnTv.value) {
+      status.value = 'playing'
+      return
+    }
+
     // Sem áudio: retoma o fluxo mudo, sem fade audível.
     if (session.value.mode === 'no_audio') {
       audio.volume = 0
@@ -596,6 +603,11 @@ export const useMediaStore = defineStore('media', () => {
     const seq = ++playPauseSeq
     const audio = getMediaAudioElement()
     status.value = 'paused'
+
+    // Modo TV: elemento local já está mudo — status acima já sinaliza a TV.
+    if (audioOnTv.value) {
+      return
+    }
 
     // Sem áudio / já mudo: pausa direta.
     if (session.value.mode === 'no_audio' || audio.volume <= 0) {

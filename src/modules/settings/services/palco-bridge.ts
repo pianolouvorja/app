@@ -325,6 +325,8 @@ function release(o: Exclude<Owner, null>) {
 // ===== áudio (rota local ↔ TV) =====
 
 let lastAudioKey = ''
+/** Última ação de play/pause enviada à TV (evita martelar a cada poll de 3s). */
+let lastTvPlayState: 'play' | 'pause' | null = null
 let lastPosSyncMs = 0
 let lastAudioRoute: 'pc' | 'tv' | 'both' | null = null
 
@@ -347,12 +349,15 @@ function syncAudio() {
   const routeChanged = lastAudioRoute !== route
   lastAudioRoute = route
 
-  // Rota TV: local pausado — a TV é a caixa. Envia a faixa (1x por URL)
-  // e reenvia quando o operador der play/pause/seek NA UI (que comanda a TV).
+  // Rota TV: local pausado — a TV é a caixa. Faixa é enviada 1x por URL;
+  // play/pause do operador NA UI comanda a TV (watcher de isPlaying chama
+  // syncAudio). Sem isso o pause nunca chegava: URL não muda ao pausar.
   if (route === 'tv') {
     if (key !== lastAudioKey) {
       lastAudioKey = key
+      lastTvPlayState = null
       if (audioUrl) {
+        lastTvPlayState = 'play'
         void palcoSession.audio({
           url: audioUrl,
           title: session?.title ?? undefined,
@@ -363,6 +368,17 @@ function syncAudio() {
         })
       } else {
         void palcoSession.audio({ action: 'stop' })
+      }
+    } else if (audioUrl) {
+      // Mesma faixa: propaga o estado de reprodução do operador.
+      const wanted: 'play' | 'pause' = media.isPlaying ? 'play' : 'pause'
+      if (wanted !== lastTvPlayState) {
+        lastTvPlayState = wanted
+        void palcoSession.audio({
+          url: audioUrl,
+          positionMs: Math.round((media.currentTimeSec ?? 0) * 1000),
+          action: wanted,
+        })
       }
     }
     return
@@ -598,6 +614,12 @@ export function startPalcoBridge() {
     unwatchers.push(
       watch(
         () => [media.isPlaying, media.session?.audioUrl] as const,
+        () => syncAudio(),
+      ),
+      // Modo TV: isPlaying local não muda (player local fica pausado), mas o
+      // status do store reflete o comando do operador (playing/paused).
+      watch(
+        () => [media.status, media.session?.audioUrl] as const,
         () => syncAudio(),
       ),
       watch(
