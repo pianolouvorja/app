@@ -43,11 +43,12 @@ const open = ref(false)
 
 <style scoped lang="scss">
 .stage-palette-fab {
-  position: absolute;
-  /* Rodapé da janela, canto esquerdo: área reservada a controles, nunca
-   * sobrepõe letras (palco centraliza) nem o pill (baixo-centro). */
-  bottom: 0.75rem;
-  left: 1.25rem;
+  /* FORA da media-window: canto superior direito da tela, abaixo do
+   * header do AppShell (versão/logo). Fixo no viewport, não acompanha o
+   * scroll/conteúdo da janela — separado visualmente da área de letras. */
+  position: fixed;
+  top: calc(var(--app-titlebar-height, 2rem) + var(--ds-header-height, 5rem) + 0.75rem);
+  right: 1.25rem;
   z-index: 40;
   display: inline-flex;
   width: 2.5rem;
