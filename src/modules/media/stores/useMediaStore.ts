@@ -61,7 +61,16 @@ export const useMediaStore = defineStore('media', () => {
   const status = ref<MediaPlayerStatus>('idle')
   const lastErrorKey = ref<string | null>(null)
   const minimized = ref(true)
-  const isProjecting = ref(false)
+  const isProjectingRaw = ref(false)
+  const isProjecting = computed({
+    get: () => isProjectingRaw.value,
+    set: (v: boolean) => {
+      if (v !== isProjectingRaw.value) {
+        console.info('[media-proj] isProjecting →', v, new Error().stack?.split('\n').slice(1, 4).join(' | '))
+      }
+      isProjectingRaw.value = v
+    },
+  })
   /** Projetando somente nas TVs (sem janela cabeada). */
   const projectingTvsOnly = ref(false)
   const showPlaylist = ref(true)
@@ -951,6 +960,14 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function syncProjectionFlag(): void {
+    // Modo só-TVs NÃO tem janela cabeada — isProjectionModuleOpen é false
+    // por definição e matava a projeção que o startProjection acabou de
+    // ligar (bug real 27/08: hino ligava e syncProjectionFlag desligava
+    // em seguida; stack do log apontou exatamente aqui).
+    if (projectingTvsOnly.value) {
+      publishProjectionState()
+      return
+    }
     isProjecting.value = isProjectionModuleOpen('media')
     if (isProjecting.value) startProjectionWatch()
     publishProjectionState()
