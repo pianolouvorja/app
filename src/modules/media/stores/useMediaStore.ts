@@ -479,7 +479,10 @@ export const useMediaStore = defineStore('media', () => {
     await refreshResolvedSlideImage()
     void maybeStartOndemandDownload(musicId)
 
-    if (params.project || !minimized.value) {
+    // Hino tocando = PROJETANDO, sempre (decisão Rafael 27/08): destino vem
+    // do seletor na biblioteca (Espelhar/TV individual). Antes: minimizado
+    // não projetava — operador tinha que clicar Projetar a cada hino.
+    if (params.project !== false) {
       await startProjection()
     }
 
