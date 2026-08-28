@@ -197,7 +197,9 @@ async function onToggleFullscreen() {
         />
       </button>
     </header>
-    <StagePaletteButton scope="hymns" />
+    <div class="media-window__fab-bar">
+      <StagePaletteButton scope="hymns" />
+    </div>
 
 
     <div
@@ -364,8 +366,11 @@ async function onToggleFullscreen() {
 .media-window {
   position: relative;
   box-sizing: border-box;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
+  display: flex;
+  flex-direction: column;
+  /* Altura cede espaço à faixa do FAB (2.5rem botão + 0.5rem gap) */
+  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem - 3rem);
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem - 3rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;
@@ -409,8 +414,9 @@ async function onToggleFullscreen() {
 }
 
 .media-window__body {
+  flex: 1;
+  min-height: 0;
   position: relative;
-  height: 100%;
   display: grid;
   grid-template-columns: 1fr;
 }
@@ -430,8 +436,7 @@ async function onToggleFullscreen() {
   overflow: auto;
   background: rgb(12 12 12 / 0.92);
   border-left: 1px solid rgb(255 255 255 / 0.08);
-  /* padding-top maior: FAB da paleta (fixo, topo-direita) não encosta na lista */
-  padding: 3.5rem 0.75rem 1rem;
+  padding: 1rem 0.75rem;
 }
 
 .media-window__playlist-title {
@@ -509,6 +514,15 @@ async function onToggleFullscreen() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.media-window__fab-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0.5rem;
+  margin-bottom: -0.5rem; /* gap sutil: botão encosta na borda da janela */
 }
 
 .media-window__pill-wrap {

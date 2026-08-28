@@ -69,15 +69,11 @@ const displayText = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8vh 6vw 8vh;
-  /* respiro superior: evita letra passar sob o FAB da paleta (fixo topo-direita) */
-  padding-top: max(8vh, calc(3.5rem + 1rem));
+  padding: 8vh 6vw;
   text-align: center;
 
   &--cover {
-    padding: 8vh 6vw 8vh;
-  /* respiro superior: evita letra passar sob o FAB da paleta (fixo topo-direita) */
-  padding-top: max(8vh, calc(3.5rem + 1rem));
+    padding: 8vh 6vw;
   }
 }
 

@@ -43,13 +43,9 @@ const open = ref(false)
 
 <style scoped lang="scss">
 .stage-palette-fab {
-  /* FORA da media-window: canto superior direito da tela, abaixo do
-   * header do AppShell (versão/logo). Fixo no viewport, não acompanha o
-   * scroll/conteúdo da janela — separado visualmente da área de letras. */
-  position: fixed;
-  top: calc(var(--app-titlebar-height, 2rem) + var(--ds-header-height, 5rem) + 0.75rem);
-  right: 1.25rem;
-  z-index: 40;
+  /* Estático: o pai (fab-bar no MediaView ou container do módulo) decide
+   * o lugar. Nada de fixed — não sobrepõe letra nem aside. */
+  position: static;
   display: inline-flex;
   width: 2.5rem;
   height: 2.5rem;
