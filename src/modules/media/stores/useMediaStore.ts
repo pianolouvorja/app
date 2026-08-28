@@ -390,14 +390,14 @@ export const useMediaStore = defineStore('media', () => {
             // ignore
           }
         }
-        if (params.project) {
+        if (params.project !== false) {
           await startProjection()
         }
         return { ok: true }
       }
 
       const result = await switchMode(requestedMode)
-      if (params.project) {
+      if (params.project !== false) {
         await startProjection()
       }
       return result
