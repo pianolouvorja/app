@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useMediaStore } from '@modules/media/stores/useMediaStore'
 
 import { GlassCard } from '@design-system/index'
 import PalcoRouteSelect from '@modules/settings/components/PalcoRouteSelect.vue'
@@ -14,9 +15,18 @@ import AlbumSearchHitRow from '../components/AlbumSearchHitRow.vue'
 import DownloadFailureDialog from '@modules/sync/components/DownloadFailureDialog.vue'
 import { useAlbums } from '../composables/useAlbums'
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
+import {
+  createPlaylist,
+  deletePlaylist,
+  listPlaylists,
+  type Playlist,
+} from '../services/playlist-storage'
 
 const { t } = useI18n()
 const router = useRouter()
+const mediaStore = useMediaStore()
+const playlists = ref<Playlist[]>(listPlaylists())
+const newPlaylistName = ref('')
 
 const {
   categories,
@@ -89,6 +99,25 @@ function openCollection(collectionId: string | number) {
     name: 'albums-collection',
     params: { collectionId: String(collectionId) },
   })
+}
+
+async function playPlaylist(playlist: Playlist) {
+  if (playlist.items.length === 0) return
+  await mediaStore.playQueue(playlist.items, 0)
+  await router.push({ name: 'media' })
+}
+
+function addPlaylist() {
+  const name = newPlaylistName.value.trim()
+  if (!name) return
+  createPlaylist(name)
+  playlists.value = listPlaylists()
+  newPlaylistName.value = ''
+}
+
+function removePlaylist(id: string) {
+  deletePlaylist(id)
+  playlists.value = listPlaylists()
 }
 
 function retry() {
@@ -248,7 +277,25 @@ async function runAction(
       </button>
     </div>
 
-    <template v-else-if="isHubSearching">
+    <section class="albums-view__playlists" aria-labelledby="playlists-title">
+      <header class="albums-view__playlists-header">
+        <h2 id="playlists-title">Playlists</h2>
+        <form @submit.prevent="addPlaylist">
+          <input v-model="newPlaylistName" required placeholder="Nova playlist" aria-label="Nome da playlist">
+          <button type="submit">Criar</button>
+        </form>
+      </header>
+      <div v-if="playlists.length === 0" class="albums-view__state">Nenhuma playlist criada.</div>
+      <div v-else class="albums-view__playlist-list">
+        <article v-for="playlist in playlists" :key="playlist.id" class="albums-view__playlist">
+          <div><strong>{{ playlist.name }}</strong><small>{{ playlist.items.length }} faixa(s)</small></div>
+          <button type="button" :disabled="playlist.items.length === 0" @click="playPlaylist(playlist)">Tocar</button>
+          <button type="button" aria-label="Remover playlist" @click="removePlaylist(playlist.id)">Remover</button>
+        </article>
+      </div>
+    </section>
+
+    <template v-if="isHubSearching">
       <GlassCard
         class="albums-view__results-card"
         :padding="false"
@@ -295,21 +342,21 @@ async function runAction(
     </template>
 
     <div
-      v-else-if="isLoadingCatalog"
+      v-if="isLoadingCatalog"
       class="albums-view__state"
     >
       {{ t('albums.loading') }}
     </div>
 
     <div
-      v-else-if="categories.length === 0"
+      v-if="categories.length === 0"
       class="albums-view__state"
     >
       {{ t('albums.messages.catalogEmpty') }}
     </div>
 
     <div
-      v-else
+      v-if="!isLoadingCatalog && categories.length > 0 && !isHubSearching"
       class="albums-view__body"
     >
       <section
@@ -814,6 +861,26 @@ async function runAction(
     }
   }
 }
+
+.albums-view__playlists {
+  flex-shrink: 0;
+  padding: 1rem;
+  border: 1px solid var(--ds-color-outline-strong);
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
+  background: color-mix(in srgb, var(--ds-color-surface-card) 75%, transparent);
+}
+
+.albums-view__playlists-header, .albums-view__playlist {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.albums-view__playlists-header { justify-content: space-between; }
+.albums-view__playlists-header h2 { margin: 0; }
+.albums-view__playlists form, .albums-view__playlist-list { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.albums-view__playlists input, .albums-view__playlists button { padding: 0.45rem 0.7rem; border-radius: 0.5rem; font: inherit; }
+.albums-view__playlist { justify-content: space-between; padding-top: 0.75rem; }
+.albums-view__playlist small { display: block; color: var(--ds-color-on-surface-variant); }
 
 @media (max-width: 1280px) {
   .albums-view {

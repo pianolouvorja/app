@@ -17,6 +17,7 @@ const emit = defineEmits<{
   instrumental: []
   slides: []
   lyric: []
+  playlist: []
 }>()
 
 const rowHovered = ref(false)
@@ -105,6 +106,16 @@ function onDownloadProgress(progress: number | null) {
     </span>
 
     <div class="album-track-row__actions">
+      <button
+        type="button"
+        class="album-track-row__playlist"
+        :disabled="busy || isDownloading"
+        title="Adicionar à playlist"
+        aria-label="Adicionar à playlist"
+        @click.stop="emit('playlist')"
+      >
+        <i class="ti ti-playlist-add" aria-hidden="true" />
+      </button>
       <MusicTrackActions
         :music-id="track.musicId"
         :track-name="track.name"
@@ -327,6 +338,20 @@ function onDownloadProgress(progress: number | null) {
   font-size: 0.9rem;
   color: var(--ds-color-on-surface-variant);
   text-align: center;
+}
+
+.album-track-row__playlist {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.35rem;
+  background: transparent;
+  color: var(--ds-color-primary);
+  cursor: pointer;
+}
+
+.album-track-row__playlist:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .album-track-row__actions {

@@ -8,6 +8,13 @@ import { MediaCollectionList } from '@design-system/index'
 import AlbumLyricDialog from '../components/AlbumLyricDialog.vue'
 import AlbumTrackRow from '../components/AlbumTrackRow.vue'
 import { useAlbums } from '../composables/useAlbums'
+import {
+  addPlaylistItem,
+  createPlaylist,
+  listPlaylists,
+  type PlaylistItem,
+} from '../services/playlist-storage'
+import type { AlbumTrack } from '../types/albums'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -35,6 +42,9 @@ const {
 } = useAlbums()
 
 const busyMusicId = ref<number | null>(null)
+const playlistItem = ref<PlaylistItem | null>(null)
+const playlistName = ref('')
+const playlists = ref(listPlaylists())
 
 const collectionId = computed(() => String(route.params.collectionId ?? ''))
 
@@ -57,6 +67,31 @@ watch(collectionId, () => {
 
 function goBack() {
   void router.push({ name: 'albums' })
+}
+
+function openPlaylistPicker(track: AlbumTrack) {
+  playlistItem.value = {
+    musicId: track.musicId,
+    albumId: Number(activeCollection.value?.id) || null,
+    title: track.name,
+  }
+}
+
+function addToPlaylist(id: string) {
+  if (!playlistItem.value) return
+  addPlaylistItem(id, playlistItem.value)
+  playlists.value = listPlaylists()
+  playlistItem.value = null
+}
+
+function createPlaylistForTrack() {
+  const name = playlistName.value.trim()
+  if (!playlistItem.value || !name) return
+  const playlist = createPlaylist(name)
+  addPlaylistItem(playlist.id, playlistItem.value)
+  playlists.value = listPlaylists()
+  playlistName.value = ''
+  playlistItem.value = null
 }
 
 async function runAction(
@@ -178,8 +213,25 @@ async function runAction(
         "
         @slides="runAction(track.musicId, () => playSlides(track.musicId))"
         @lyric="runAction(track.musicId, () => openLyric(track.musicId))"
+        @playlist="openPlaylistPicker(track)"
       />
     </MediaCollectionList>
+
+    <Teleport to="body">
+      <div v-if="playlistItem" class="playlist-picker" role="dialog" aria-modal="true" aria-label="Adicionar à playlist">
+        <div class="playlist-picker__panel">
+          <h2>Adicionar “{{ playlistItem.title }}”</h2>
+          <button v-for="playlist in playlists" :key="playlist.id" type="button" @click="addToPlaylist(playlist.id)">
+            {{ playlist.name }}
+          </button>
+          <form class="playlist-picker__create" @submit.prevent="createPlaylistForTrack">
+            <input v-model="playlistName" required placeholder="Nova playlist" aria-label="Nome da nova playlist">
+            <button type="submit">Criar e adicionar</button>
+          </form>
+          <button type="button" @click="playlistItem = null">Cancelar</button>
+        </div>
+      </div>
+    </Teleport>
 
     <AlbumLyricDialog
       :open="lyricOpen"
@@ -295,6 +347,29 @@ async function runAction(
     cursor: pointer;
   }
 }
+
+.playlist-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 55%);
+}
+
+.playlist-picker__panel {
+  display: grid;
+  gap: 0.75rem;
+  width: min(28rem, 100%);
+  padding: 1.25rem;
+  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
+  background: var(--ds-color-surface-card);
+}
+
+.playlist-picker__panel h2 { margin: 0; }
+.playlist-picker button, .playlist-picker input { padding: 0.65rem 0.8rem; border-radius: 0.5rem; font: inherit; }
+.playlist-picker__create { display: grid; gap: 0.5rem; }
 
 @media (max-width: 1280px) {
   .album-collection-view {
