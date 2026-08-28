@@ -377,10 +377,10 @@ async function runAction(
               title="Exportar playlists"
               @click="exportPlaylists"
             >
-              <i class="ti ti-download" aria-hidden="true" />
+              <i class="ti ti-upload" aria-hidden="true" />
             </button>
             <label class="albums-view__playlists-io" aria-label="Importar playlists" title="Importar playlists">
-              <i class="ti ti-upload" aria-hidden="true" />
+              <i class="ti ti-download" aria-hidden="true" />
               <input type="file" accept="application/json,.json" hidden @change="onImportFile">
             </label>
           </form>
