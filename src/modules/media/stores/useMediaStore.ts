@@ -393,6 +393,11 @@ export const useMediaStore = defineStore('media', () => {
 
     const requestedMode: MediaPlaybackMode = params.mode ?? 'audio'
 
+    // Música avulsa (fora da fila): zera a fila para restaurar o padrão de
+    // exibição normal (slides) no painel do player. playQueueItem repovoa depois.
+    queue.value = []
+    queueIndex.value = -1
+
     // Mesma faixa: troca de modo sem reset (legado Media.open + isSameSong).
     if (session.value?.musicId === musicId) {
       minimized.value = params.minimized ?? minimized.value
@@ -629,6 +634,8 @@ export const useMediaStore = defineStore('media', () => {
   /** Toca um item da fila pelo fluxo completo (open → auto-projeção). */
   async function playQueueItem(item: QueueItem, mode?: MediaPlaybackMode): Promise<void> {
     const target = mode ?? session.value?.mode ?? 'audio'
+    const currentQueue = queue.value
+    const currentIndex = queueIndex.value
     await open({
       musicId: item.musicId,
       mode: target,
@@ -636,6 +643,11 @@ export const useMediaStore = defineStore('media', () => {
       // project undefined = contrato 27/08 (projeta se houver destino ativo)
       project: undefined,
     })
+    // open() zera a fila (música avulsa); restaura se ainda somos fila.
+    if (queue.value.length === 0 && currentQueue.length > 0) {
+      queue.value = currentQueue
+      queueIndex.value = currentIndex
+    }
     queueIndex.value = queue.value.findIndex((q) => q.musicId === item.musicId)
     publishProjectionState()
   }
