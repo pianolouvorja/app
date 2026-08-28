@@ -476,3 +476,4 @@ async function runAction(
 .playlist-toast .ti { color: var(--ds-color-primary, #2196f3); font-size: 1.05rem; }
 .playlist-toast-enter-active, .playlist-toast-leave-active { transition: opacity 0.28s ease, transform 0.28s ease; }
 .playlist-toast-enter-from, .playlist-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(0.6rem); }
+</style>
