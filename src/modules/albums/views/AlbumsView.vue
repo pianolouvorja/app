@@ -295,7 +295,7 @@ async function runAction(
       <div class="albums-view__playlists-inner">
         <header class="albums-view__playlists-header">
           <div class="albums-view__playlists-heading">
-            <i class="ti ti-playlist-music" aria-hidden="true" />
+            <i class="ti ti-playlist" aria-hidden="true" />
             <h2 id="playlists-title">Playlists</h2>
           </div>
           <form @submit.prevent="addPlaylist">
@@ -321,7 +321,7 @@ async function runAction(
                 <span class="albums-view__playlist-icon">
                   <i
                     class="ti"
-                    :class="playlist.items.length > 0 ? 'ti-playlist-music' : 'ti-music-off'"
+                    :class="playlist.items.length > 0 ? 'ti-playlist' : 'ti-music-off'"
                     aria-hidden="true"
                   />
                 </span>
@@ -343,7 +343,7 @@ async function runAction(
                   :aria-label="`Tocar ${playlist.name}`"
                   @click="playPlaylist(playlist)"
                 >
-                  <i class="ti ti-player-play-filled" aria-hidden="true" />
+                  <i class="ti ti-player-play" aria-hidden="true" />
                 </button>
                 <button
                   type="button"

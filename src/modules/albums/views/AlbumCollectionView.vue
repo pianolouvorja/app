@@ -245,7 +245,7 @@ async function runAction(
             Crie uma na aba Playlists da Biblioteca.
           </p>
           <button v-for="playlist in playlists" :key="playlist.id" type="button" @click="addToPlaylist(playlist.id)">
-            <i class="ti ti-playlist-music" aria-hidden="true" />
+            <i class="ti ti-playlist" aria-hidden="true" />
             <span class="playlist-picker__name">{{ playlist.name }}</span>
             <small class="playlist-picker__count">{{ playlist.items.length }}</small>
           </button>
