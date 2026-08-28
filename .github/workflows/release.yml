@@ -1,0 +1,214 @@
+name: Release Linux
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to package
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  package:
+    name: Package ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite
+        run: npm run build-only -- --base=./
+
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            rpm \
+            libarchive-tools \
+            fakeroot \
+            dpkg \
+            binutils
+
+      - name: Package Linux targets
+        env:
+          # arm64 runners: fpm empacotado do electron-builder é x86 — usa fpm do sistema
+          USE_SYSTEM_FPM: ${{ matrix.arch == 'arm64' && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            sudo apt-get install -y --no-install-recommends ruby ruby-dev build-essential
+            sudo gem install --no-document fpm
+          fi
+          node -e "require('node:fs').rmSync('dist-electron', { recursive: true, force: true })"
+          npx electron-builder --linux AppImage deb rpm pacman tar.gz --${{ matrix.arch }} --publish never
+
+      - name: Verify package set
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          echo "Conteúdo de dist-electron/:"
+          find dist-electron -type f | sort | tee /tmp/linux-artifacts.txt
+
+          case "$ARCH" in
+            x64) arch_re='(x64|x86_64|amd64)' ;;
+            arm64) arch_re='(arm64|aarch64)' ;;
+            *)
+              echo "Arch inválida: $ARCH" >&2
+              exit 1
+              ;;
+          esac
+
+          require_one() {
+            local label="$1"
+            shift
+            local matches
+            matches="$(grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei "$1" || true)"
+            if [ -z "$matches" ]; then
+              echo "Artefato ausente ($label) para arch=$ARCH" >&2
+              return 1
+            fi
+            echo "OK $label:"
+            echo "$matches"
+          }
+
+          require_one AppImage '\.AppImage$'
+          require_one deb '\.deb$'
+          require_one rpm '\.rpm$'
+          # pacman: .pacman ou .pkg.tar.*
+          if ! grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei '\.pacman$|\.pkg\.tar\.' >/dev/null; then
+            echo "Artefato ausente (pacman) para arch=$ARCH" >&2
+            exit 1
+          fi
+          echo "OK pacman:"
+          grep -E "$arch_re" /tmp/linux-artifacts.txt | grep -Ei '\.pacman$|\.pkg\.tar\.' || true
+          require_one tar.gz '\.tar\.gz$'
+
+          sha256sum dist-electron/* > "dist-electron/SHA256SUMS-${ARCH}" || \
+            find dist-electron -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > "dist-electron/SHA256SUMS-${ARCH}"
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist-electron/
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download x64 artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: linux-x64
+          path: dist-electron
+
+      - name: Download arm64 artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: linux-arm64
+          path: dist-electron
+
+      - name: Resolve tag
+        id: tag
+        run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish release and assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          set -euo pipefail
+          test -n "$TAG"
+          mapfile -t assets < <(find dist-electron -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pacman' -o -name '*.tar.gz' -o -name 'SHA256SUMS-*' \) -print)
+          test "${#assets[@]}" -ge 10
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" "${assets[@]}" --clobber
+
+  downstream:
+    name: Trigger downstream package updates
+    needs: release
+    if: success()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch optional store workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo 'GitHub Release published.'
+          echo 'Flathub, AUR, COPR, OBS, VoidBR and Snap update jobs remain opt-in until their credentials and repository IDs exist.'
+          echo 'No external store is allowed to fail or delete the central release.'
+
+      # Add repository_dispatch calls only after each store account is configured.
+      # Never put store tokens in this workflow or source repository.
+      # Required future secrets: AUR_SSH_PRIVATE_KEY, SNAPCRAFT_STORE_CREDENTIALS,
+      # COPR_CONFIG, OBS_API_TOKEN, GPG_PRIVATE_KEY.
+
+  # Flatpak must be submitted to Flathub first. Flathub builds it from its own repo.
+  # Do not upload a locally built Flatpak as a substitute for the Flathub submission.
+  # Snap stays disabled until core/base compatibility passes on both architectures.
+  # PPA stays disabled until Debian source packaging exists.
+  # VoidBR merge remains maintainer-controlled.
+  # OBS/COPR can consume the GitHub source/release after account setup.
+
+  verify:
+    name: Verify central release
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --json assets --jq '.assets[].name' | tee /tmp/assets
+          test "$(grep -cE '\.(AppImage|deb|rpm|pacman|tar\.gz)$' /tmp/assets)" -ge 10
+          test "$(grep -c 'SHA256SUMS-' /tmp/assets)" -eq 2
+          echo "Release $TAG valid: x64 + arm64 Linux assets present."
+
+  # Required branch protection target: this job is the release health check.
+  # External stores must be monitored separately; they cannot block GitHub Release.
+  release-health:
+    name: Release Health
+    needs: [release, verify]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'Release pipeline passed.'
+      
