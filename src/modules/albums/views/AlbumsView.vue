@@ -369,7 +369,24 @@ async function runAction(
           <form @submit.prevent="addPlaylist">
             <input v-model="newPlaylistName" required placeholder="Nome da nova playlist..." aria-label="Nome da playlist">
             <button type="submit"><i class="ti ti-plus" aria-hidden="true" /> Criar</button>
+            <button
+              type="button"
+              class="albums-view__playlists-io"
+              :disabled="playlists.length === 0"
+              aria-label="Exportar playlists"
+              title="Exportar playlists"
+              @click="exportPlaylists"
+            >
+              <i class="ti ti-download" aria-hidden="true" />
+            </button>
+            <label class="albums-view__playlists-io" aria-label="Importar playlists" title="Importar playlists">
+              <i class="ti ti-upload" aria-hidden="true" />
+              <input type="file" accept="application/json,.json" hidden @change="onImportFile">
+            </label>
           </form>
+          <p v-if="importFeedback" class="albums-view__playlists-feedback" role="status" aria-live="polite">
+            {{ importFeedback }}
+          </p>
         </header>
 
         <div v-if="playlists.length === 0" class="albums-view__state">
