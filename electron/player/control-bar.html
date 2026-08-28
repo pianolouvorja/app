@@ -536,6 +536,8 @@
 
         /** Sync periódico do currentTime → TVs (corrige drift; não recarrega). */
         var lastTvSyncMs = 0
+        var lastTvPos = 0
+        var lastTvSeekMs = 0
         async function tvSyncPosition() {
           if (!window.louvorja || !window.louvorja.projection) return
           var now = Date.now()
@@ -545,6 +547,11 @@
           lastTvSyncMs = now
           var state = await window.louvorja.projection.getPlaybackState()
           if (!state || state.paused || !(state.currentTime > 0)) return
+          // Só corrige desvio REAL (>1.5s). Seek a cada 1s sem drift causava
+          // stutter no MP3 da TV (receiver re-posicionava sem parar).
+          if (Math.abs(state.currentTime - (lastTvPos || 0)) < 1.5 && Date.now() - lastTvSeekMs < 5000) return
+          lastTvPos = state.currentTime
+          lastTvSeekMs = Date.now()
           tvBroadcast('seek', { position: state.currentTime })
         }
 

@@ -171,6 +171,7 @@ window.addEventListener('unhandledrejection',function(ev){
 const $=id=>document.getElementById(id);
 const qs=new URLSearchParams(location.search);
 // F3.3q: versão no idle (canto inferior direito) — ?v= override ou padrão.
+window.__PALCO_APPV__=window.__PALCO_APPV__||'0.1.45';
 (function(){var el=$('idleVer');if(!el)return;var qv=qs.get('v')||window.__PALCO_APPV__||'';if(qv){el.textContent='PIANO LouvorJA Palco · receiver v'+qv;return}fetch('appinfo.json').then(function(r){return r.json()}).then(function(j){el.textContent='PIANO LouvorJA Palco · receiver v'+(j.version||'?')}).catch(function(){fetch('config.xml').then(function(r){return r.text()}).then(function(t){var m2=t.match(/version="([^"]+)"/);el.textContent='PIANO LouvorJA Palco · receiver v'+(m2?m2[1]:'?')}).catch(function(){el.textContent='PIANO LouvorJA Palco'})})})()
 // webOS: ares-launch -p '{"host":"..."}' chega em PalmSystem.launchParams,
 // NÃO na query string. Merge dos dois (query string tem prioridade).
@@ -667,7 +668,7 @@ function handle(m){
       if(m.action==='seek'){
         const target=(m.position||m.positionMs/1000||0);
         // só corrige se o desvio for perceptível — micro-sync causa stutter
-        if(Math.abs(a.currentTime-target)>0.12){try{a.currentTime=target}catch(e){}}
+        if(Math.abs(a.currentTime-target)>1.0){try{a.currentTime=target}catch(e){}}
         // sender mandou seek enquanto deveria tocar (play inicial pode ter
         // falhado por autoplay) → retoma; playWithFallback cuida do unlock
         if(a.paused&&target>0.2)playWithFallback();
