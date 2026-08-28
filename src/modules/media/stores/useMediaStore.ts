@@ -91,6 +91,8 @@ export const useMediaStore = defineStore('media', () => {
   const resolvedSlideImageUrl = ref<string | null>(null)
   /** Progresso do download sob demanda (null = barra inativa). */
   const ondemandDownloadPercent = ref<number | null>(null)
+  /** Download PRÉ-play: player mostra 'baixando' e toca ao concluir. */
+  const preplayDownloadMusicId = ref<number | null>(null)
   /** Mantém a mensagem visível até fechar o player. */
   const ondemandNoticeVisible = ref(false)
   /** Download sob demanda concluído com sucesso nesta sessão. */
@@ -313,6 +315,55 @@ export const useMediaStore = defineStore('media', () => {
     void startOndemandDownload(musicId)
   }
 
+  /**
+   * Download PRÉ-play: se a faixa não está no disco e o modo tem áudio,
+   * baixa ANTES de abrir o player. UI mostra progresso; ao concluir, o
+   * caller abre a música normalmente (toca na hora, sem erro feio).
+   */
+  async function ensureTrackDownloaded(musicId: number): Promise<boolean> {
+    if (!isDesktopApp()) return true // web: sempre stream remoto
+    try {
+      if (await isTrackMediaDownloaded(musicId)) return true
+    } catch {
+      return true // sem certeza: segue fluxo antigo (stream)
+    }
+
+    const gen = ++ondemandGen
+    ondemandAbort = false
+    preplayDownloadMusicId.value = musicId
+    ondemandNoticeMusicId = musicId
+    ondemandNoticeVisible.value = true
+    ondemandDownloadDone.value = false
+    ondemandDownloadPercent.value = 0
+
+    const result = await downloadTrackMedia(musicId, {
+      onProgress: (percent) => {
+        if (gen !== ondemandGen) return
+        ondemandDownloadPercent.value = percent
+      },
+      shouldAbort: () => gen !== ondemandGen || ondemandAbort,
+    })
+
+    if (gen !== ondemandGen) return false
+
+    if (result.status === 'downloaded') {
+      ondemandDownloadPercent.value = 100
+      ondemandDownloadDone.value = true
+      void useLocalLibraryStore().reconcileAlbumsForMusic(musicId)
+      preplayDownloadMusicId.value = null
+      // feedback some sozinho após um instante; caller já pode tocar
+      return true
+    }
+
+    // falhou/abortado: limpa e segue fluxo antigo (stream remoto)
+    preplayDownloadMusicId.value = null
+    ondemandDownloadPercent.value = null
+    ondemandNoticeVisible.value = false
+    ondemandDownloadDone.value = false
+    ondemandNoticeMusicId = null
+    return true
+  }
+
   function unbindAudio() {
     if (!audioHandlers || !boundAudioElement) {
       audioHandlers = null
@@ -448,6 +499,9 @@ export const useMediaStore = defineStore('media', () => {
 
     if (mode !== 'no_audio') {
       const catalogAudio = pickSourceUrl(mode, track.audioUrl, track.instrumentalUrl)
+      // Sem cópia local: baixa PRIMEIRO (progresso no player) e toca ao fim.
+      const ready = await ensureTrackDownloaded(musicId)
+      if (!ready) return { ok: false, messageKey: 'media.messages.playbackFailed' }
       const resolved = await resolveMusicAudioUrl(catalogAudio)
       if (resolved.ok) {
         playbackUrl = resolved.url
@@ -1075,6 +1129,7 @@ export const useMediaStore = defineStore('media', () => {
     volume,
     resolvedSlideImageUrl,
     ondemandDownloadPercent,
+    preplayDownloadMusicId,
     ondemandNoticeVisible,
     ondemandDownloadDone,
     hasSession,

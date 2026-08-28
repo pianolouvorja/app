@@ -30,6 +30,7 @@ const {
   currentSlide,
   resolvedSlideImageUrl,
   ondemandDownloadPercent,
+  preplayDownloadMusicId,
   ondemandNoticeVisible,
   ondemandDownloadDone,
   currentTimeLabel,
@@ -342,7 +343,9 @@ async function onToggleFullscreen() {
               }"
             >
               {{
-                ondemandDownloadDone
+                preplayDownloadMusicId && !ondemandDownloadDone
+                  ? t('media.ondemandPreplay')
+                  : ondemandDownloadDone
                   ? t('media.ondemandDownloadSuccess')
                   : t('media.ondemandDownload')
               }}
