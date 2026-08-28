@@ -577,14 +577,13 @@ export const useMediaStore = defineStore('media', () => {
     const seq = ++playPauseSeq
     const audio = getMediaAudioElement()
 
-    // Modo TV: a TV é a caixa. O elemento local permanece pausado/mudo —
-    // apenas o status muda (a palco-bridge observa e comanda a TV).
+    // Modo TV: áudio local fica MUTED, mas toca como relógio da letra.
+    // Sem esse clock, timeupdate não dispara e os slides atrasam/congelam.
     if (audioOnTv.value) {
-      if (!audio.paused) {
-        audio.volume = 0
-        pauseMediaAudio(audio)
-      }
-      status.value = 'playing'
+      audio.volume = 0
+      const played = await playMediaAudio(audio)
+      if (seq !== playPauseSeq) return
+      status.value = played ? 'playing' : 'paused'
       return
     }
 
@@ -656,11 +655,11 @@ export const useMediaStore = defineStore('media', () => {
     audioRoute.value = route
     persistRoute()
     if (route === 'tv') {
-      // local silencia e pausa na posição atual — a TV assume daí
+      // TV recebe o som; local continua muted como clock de letras/slides.
       const audio = getMediaAudioElement()
       audio.volume = 0
-      pauseMediaAudio(audio)
-      status.value = 'paused'
+      // Se já tocava no PC, preserva a timeline; a bridge espelha na TV.
+      status.value = audio.paused ? 'paused' : 'playing'
     } else if (wasTv) {
       // saiu do modo TV → local retoma de onde parou
       await play()

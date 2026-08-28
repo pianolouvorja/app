@@ -353,7 +353,8 @@ function syncAudio() {
   // play/pause do operador NA UI comanda a TV (watcher de isPlaying chama
   // syncAudio). Sem isso o pause nunca chegava: URL não muda ao pausar.
   if (route === 'tv') {
-    if (key !== lastAudioKey) {
+    // Entrar na rota TV com a mesma faixa também exige enviar o play inicial.
+    if (key !== lastAudioKey || routeChanged) {
       lastAudioKey = key
       lastTvPlayState = null
       if (audioUrl) {
