@@ -168,14 +168,14 @@ async function onToggleFullscreen() {
 
 <template>
   <div class="media-page">
-    <div class="media-page__fab-bar">
-      <StagePaletteButton scope="hymns" />
-    </div>
-
     <section
       ref="stageRoot"
       class="media-window"
     >
+    <div class="media-window__palette-slot">
+      <StagePaletteButton scope="hymns" />
+    </div>
+
     <header class="media-window__toolbar">
       <button
         type="button"
@@ -367,20 +367,9 @@ async function onToggleFullscreen() {
 <style scoped lang="scss">
 .media-page {
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem; /* gap sutil entre a faixa do FAB e a janela */
   height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
-}
-
-.media-page__fab-bar {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 0.25rem;
 }
 
 .media-window {
@@ -532,6 +521,13 @@ async function onToggleFullscreen() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.media-window__palette-slot {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 30;
 }
 
 .media-window__pill-wrap {
