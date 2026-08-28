@@ -21,6 +21,7 @@ export default {
     coverSlide: 'Portada / título',
     playlist: 'Lista de diapositivas',
     ondemandDownload: 'Descarga bajo demanda',
+    ondemandPreplay: 'Espera — descargando la canción...',
     ondemandDownloadSuccess: '¡Descarga bajo demanda completada con éxito!',
     dismiss: 'Descartar',
     closeConfirmTitle: '¿Desea cerrar esta canción?',

@@ -17,6 +17,7 @@ export default {
       actions: 'Acciones',
     },
     trackCount: '{count} pistas',
+    playAll: 'Reproducir todo',
     loading: 'Cargando…',
     retry: 'Intentar de nuevo',
     dismiss: 'Descartar',

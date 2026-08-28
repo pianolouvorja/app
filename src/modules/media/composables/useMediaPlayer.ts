@@ -19,6 +19,7 @@ export function useMediaPlayer() {
     volume,
     resolvedSlideImageUrl,
     ondemandDownloadPercent,
+    preplayDownloadMusicId,
     ondemandNoticeVisible,
     ondemandDownloadDone,
     hasSession,
@@ -36,6 +37,8 @@ export function useMediaPlayer() {
     durationLabel,
     slideCount,
     audioOnTv,
+    queue,
+    queueIndex,
   } = storeToRefs(store)
 
   async function openTrack(params: MediaOpenParams): Promise<MediaOpenResult> {
@@ -60,6 +63,7 @@ export function useMediaPlayer() {
     volume,
     resolvedSlideImageUrl,
     ondemandDownloadPercent,
+    preplayDownloadMusicId,
     ondemandNoticeVisible,
     ondemandDownloadDone,
     hasSession,
@@ -76,6 +80,8 @@ export function useMediaPlayer() {
     currentTimeLabel,
     durationLabel,
     slideCount,
+    queue,
+    queueIndex,
     openTrack,
     play: store.play,
     pause: store.pause,
@@ -85,6 +91,7 @@ export function useMediaPlayer() {
     goToSlide: store.goToSlide,
     nextSlide: store.nextSlide,
     previousSlide: store.previousSlide,
+    jumpToQueue: store.jumpToQueue,
     setVolume: store.setVolume,
     minimize: store.minimize,
     maximize: store.maximize,

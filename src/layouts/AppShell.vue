@@ -91,6 +91,7 @@ const isOnCountdownRoute = computed(() => route.name === 'utilities-countdown')
 const isOnClockRoute = computed(() => route.name === 'utilities-clock')
 const isOnLiturgyRoute = computed(() => route.meta.navKey === 'liturgy')
 
+
 const isLiturgyProjecting = computed(
   () =>
     siteProjectionItemId.value != null || videoProjectionItemId.value != null,

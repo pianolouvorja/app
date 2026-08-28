@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import BibleNavPanel from '../components/BibleNavPanel.vue'
 import BibleProjectFab from '../components/BibleProjectFab.vue'
@@ -78,10 +77,6 @@ function onNextVerse() {
       @select-version="selectVersion"
       @toggle-nav="toggleNavPanel"
       @update:bible-search-query="globalSearchQuery = $event"
-    />
-    <StagePaletteButton
-      scope="bible"
-      :right-offset="76"
     />
     <PalcoRouteSelect module="bible" />
 
