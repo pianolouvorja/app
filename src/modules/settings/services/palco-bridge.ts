@@ -11,6 +11,10 @@
  */
 
 import { palcoSession } from './palco-session'
+import { publishBibleRuntimeOff } from '../../bible/services/bible-runtime'
+import { publishRandomRuntime, readRandomRuntimeFromStorage } from '../../random/services/random-runtime'
+import { publishTimerRuntime } from '../../timer/services/timer-runtime'
+import { publishCountdownRuntime } from '../../countdown/services/countdown-runtime'
 import { useOutputRegistry } from './output-registry'
 import type { OutputModule } from './output-registry'
 import { planForSlot, OWNER_TO_PALCO_MODULE } from './output-plan'
@@ -267,10 +271,36 @@ function stopClock() {
   }
 }
 
+/**
+ * Takeover DESLIGA os outros (decisão Rafael 27/08): módulo esquecido
+ * ligado é desprojetado de verdade quando outro assume — nada ressuscita
+ * sozinho depois. Mata também zumbis de storage no boot.
+ */
+function turnOffOthers(current: Exclude<Owner, null>) {
+  const others: Exclude<Owner, null>[] = ['media', 'bible', 'random', 'timer', 'countdown']
+  for (const m of others) {
+    if (m === current || !intent[m]) continue
+    try {
+      if (m === 'bible') publishBibleRuntimeOff()
+      else if (m === 'random') publishRandomRuntime({ ...readRandomRuntimeFromStorage(), projecting: false })
+      else if (m === 'timer') {
+        const r = runtimes.timer
+        if (r) publishTimerRuntime({ ...r, projecting: false })
+      } else if (m === 'countdown') {
+        const r = runtimes.countdown
+        if (r) publishCountdownRuntime({ ...r, projecting: false })
+      }
+      intent[m] = false
+      debugPalco('turnOff', m)
+    } catch { /* publica best-effort */ }
+  }
+}
+
 /** Marca o dono e re-projeta. */
 function claim(o: Exclude<Owner, null>) {
   debugPalco('CLAIM', o)
   if (owner === 'clock') stopClock()
+  turnOffOthers(o)
   owner = o
   if (o === 'clock') restartClockTick()
   void projectOwner()
