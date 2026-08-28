@@ -223,7 +223,6 @@ export const useBibleStore = defineStore('bible', () => {
   const projectingTvsOnly = ref(false)
 
   function clearProjectionWindow() {
-    closeProjectionModule()
     isProjecting.value = false
     projectingTvsOnly.value = false
     stopProjectionWatch()

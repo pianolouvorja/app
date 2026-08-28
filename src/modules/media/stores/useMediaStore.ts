@@ -11,7 +11,6 @@ import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/pa
 import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
-  closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -1051,7 +1050,6 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function clearProjection(): void {
-    closeProjectionModule()
     isProjecting.value = false
     stopProjectionWatch()
     publishProjectionState()

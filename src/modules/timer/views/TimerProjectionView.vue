@@ -141,6 +141,7 @@ const effectiveConfig = computed(() => {
     :style="stageStyle"
   >
     <div
+      v-if="runtime.projecting !== false"
       class="timer-projection__stage"
       :style="stageAlign"
     >
