@@ -101,7 +101,7 @@ function addToPlaylist(id: string) {
   const result = addPlaylistItem(id, item)
   playlists.value = listPlaylists()
   playlistItem.value = null
-  if (result.added) {
+  if (result?.added) {
     showPlaylistFeedback(`“${item.title}” adicionada a “${target?.name ?? 'playlist'}”`)
   } else {
     showPlaylistFeedback(`“${item.title}” já está em “${target?.name ?? 'playlist'}”`)
