@@ -79,10 +79,7 @@ function onNextVerse() {
       @toggle-nav="toggleNavPanel"
       @update:bible-search-query="globalSearchQuery = $event"
     />
-    <StagePaletteButton
-      scope="bible"
-      :right-offset="76"
-    />
+    <StagePaletteButton scope="bible" />
     <PalcoRouteSelect module="bible" />
 
     <div

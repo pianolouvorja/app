@@ -12,9 +12,6 @@ import StageCustomizationDialog from './StageCustomizationDialog.vue'
 const props = defineProps<{
   /** Escopo do módulo (ex.: 'bible', 'liturgy', 'hymns', 'random'). */
   scope: string
-  /** Deslocamento extra à direita (px) — módulos com botão de ação no
-   *  canto inferior direito (ex.: Bíblia "Projetar") empurram o FAB. */
-  rightOffset?: number
 }>()
 
 const { t } = useI18n()
@@ -26,7 +23,6 @@ const open = ref(false)
     <button
       type="button"
       class="stage-palette-fab"
-      :style="props.rightOffset ? { right: `calc(1.25rem + ${props.rightOffset}px)` } : undefined"
       :aria-label="t('settings.stage.title')"
       :title="t('settings.stage.title')"
       @click="open = true"
@@ -48,10 +44,11 @@ const open = ref(false)
 <style scoped lang="scss">
 .stage-palette-fab {
   position: fixed;
-  /* Acima do dock, canto inferior direito — não compete com headers,
-   * toolbars nem com o seletor de destino do palco de cada módulo. */
+  /* Canto inferior ESQUERDO — área sempre livre: palco/letras centralizam,
+   * pill fica embaixo no centro, playlist do player ocupa a direita e os
+   * FABs de ação (Projetar/TV) ficam embaixo à direita. */
   bottom: calc(var(--ds-dock-height, 4.5rem) + 1rem);
-  right: 1.25rem;
+  left: 1.25rem;
   z-index: 40;
   display: inline-flex;
   width: 2.5rem;
