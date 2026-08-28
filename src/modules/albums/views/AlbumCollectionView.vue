@@ -240,8 +240,14 @@ async function runAction(
       <div v-if="playlistItem" class="playlist-picker" role="dialog" aria-modal="true" aria-label="Adicionar à playlist">
         <div class="playlist-picker__panel">
           <h2>Adicionar “{{ playlistItem.title }}”</h2>
+          <p v-if="playlists.length === 0" class="playlist-picker__empty">
+            Você ainda não tem playlists.<br>
+            Crie uma na aba Playlists da Biblioteca.
+          </p>
           <button v-for="playlist in playlists" :key="playlist.id" type="button" @click="addToPlaylist(playlist.id)">
-            {{ playlist.name }}
+            <i class="ti ti-playlist-music" aria-hidden="true" />
+            <span class="playlist-picker__name">{{ playlist.name }}</span>
+            <small class="playlist-picker__count">{{ playlist.items.length }}</small>
           </button>
           <button type="button" class="playlist-picker__cancel" @click="playlistItem = null">Cancelar</button>
         </div>
@@ -363,72 +369,110 @@ async function runAction(
   }
 }
 
+/* Picker de adicionar à playlist — segue o design system (raio assimétrico da marca) */
 .playlist-picker {
   position: fixed;
   inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgb(0 0 0 / 55%);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(4px);
 }
 
 .playlist-picker__panel {
-  display: grid;
-  gap: 0.75rem;
-  width: min(28rem, 100%);
-  padding: 1.25rem;
-  border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
-  background: var(--ds-color-surface-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(26rem, calc(100vh - 4rem));
+  overflow-y: auto;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--ds-color-outline-strong, rgba(255, 255, 255, 0.10));
+  border-radius: var(--ds-radius-lg, 16px 0 16px 0);
+  background: var(--ds-color-surface-card, #242424);
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
 }
 
-.playlist-picker__panel h2 { margin: 0; }
-.playlist-picker button, .playlist-picker input { padding: 0.65rem 0.8rem; border-radius: 0.5rem; font: inherit; }
-.playlist-picker__create { display: grid; gap: 0.5rem; }
-
-@media (max-width: 1280px) {
-  .album-collection-view {
-    gap: 0.75rem;
-    padding: 0.5rem 1rem 0.65rem;
-  }
-
-  .album-collection-view__header {
-    gap: 0.75rem;
-  }
-
-  .album-collection-view__icon {
-    width: 2.25rem;
-    height: 2.25rem;
-
-    .ti {
-      font-size: 1.15rem;
-    }
-  }
-
-  .album-collection-view__title {
-    font-size: 1.15rem;
-  }
+.playlist-picker__panel h2 {
+  margin: 0 0 0.4rem;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ds-color-on-surface, #e5e2e1);
 }
-</style>
 
+.playlist-picker__panel > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--ds-color-outline-strong, rgba(255, 255, 255, 0.10));
+  border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+  background: transparent;
+  color: var(--ds-color-on-surface, #e5e2e1);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.playlist-picker__panel > button:hover {
+  border-color: var(--ds-color-primary, #2196f3);
+  background: color-mix(in srgb, var(--ds-color-primary, #2196f3) 10%, transparent);
+}
+
+.playlist-picker__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.playlist-picker__count {
+  color: var(--ds-color-on-surface-variant, #bfc7d4);
+  font-size: 0.74rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-surface-variant, #353534) 70%, transparent);
+}
+
+.playlist-picker__cancel {
+  margin-top: 0.5rem;
+  justify-content: center;
+  text-align: center;
+  color: var(--ds-color-on-surface-variant, #bfc7d4);
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 0.82rem !important;
+}
+.playlist-picker__cancel:hover {
+  color: var(--ds-color-on-surface, #e5e2e1) !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.playlist-picker__empty {
+  padding: 0.9rem 0.5rem;
+  color: var(--ds-color-on-surface-variant, #bfc7d4);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Toast de feedback */
 .playlist-toast {
   position: fixed;
-  bottom: calc(var(--ds-dock-height, 4rem) + 1rem);
+  bottom: calc(var(--ds-dock-height, 4rem) + 1.25rem);
   left: 50%;
   transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1rem;
-  border-radius: 0.75rem;
-  background: var(--ds-color-surface-card, #1e1e1e);
-  border: 1px solid var(--ds-color-outline-strong);
-  color: var(--ds-color-on-surface);
-  font-size: 0.9rem;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  gap: 0.55rem;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-primary, #2196f3) 35%, transparent);
+  border-radius: var(--ds-radius-md, 12px 0 12px 0);
+  background: var(--ds-color-surface-elevated, #1e1e1e);
+  color: var(--ds-color-on-surface, #e5e2e1);
+  font-size: 0.88rem;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
   z-index: 1200;
 }
-.playlist-toast .ti { color: var(--ds-color-primary); }
-.playlist-toast-enter-active, .playlist-toast-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
-.playlist-toast-enter-from, .playlist-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(0.5rem); }
-.playlist-picker__cancel { margin-top: 0.5rem; }
+.playlist-toast .ti { color: var(--ds-color-primary, #2196f3); font-size: 1.05rem; }
+.playlist-toast-enter-active, .playlist-toast-leave-active { transition: opacity 0.28s ease, transform 0.28s ease; }
+.playlist-toast-enter-from, .playlist-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(0.6rem); }
