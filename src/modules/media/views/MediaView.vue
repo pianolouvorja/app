@@ -89,15 +89,28 @@ onMounted(() => {
   maximize()
   setPlaylistOpen(true)
   syncProjectionFlag()
+  window.addEventListener('keydown', onGlobalKeydown)
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('media-player-open')
+  window.removeEventListener('keydown', onGlobalKeydown)
   // Dock / back / qualquer saída da rota: mesmo efeito do botão minimizar
   if (hasSession.value) {
     minimize()
   }
 })
+
+/** ESC abre a confirmação de fechar (nunca fecha direto). */
+function onGlobalKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  const target = event.target as HTMLElement | null
+  // Não sequestrar ESC de inputs/dialogos abertos (ex.: confirmação já aberta)
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (closeConfirmOpen.value) return
+  event.preventDefault()
+  requestClose()
+}
 
 /** Volta para a rota de origem (Liturgia, Álbuns, etc.), sem forçar Álbuns. */
 function leaveMediaRoute() {
