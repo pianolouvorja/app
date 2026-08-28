@@ -558,6 +558,8 @@ window.addEventListener('keydown',function(e){
 },true);
 document.addEventListener('pointerdown',function(){if(mutedUnlock||pendingPlay)unmuteNow()},true);
 
+function isAudioUrl(u){return /\.(mp3|m4a|aac|wav|ogg|flac)(\?|$)/i.test(u||'')}
+
 function handle(m){
   if(m.v!==1&&m.v!==2)return;
   switch(m.type){
@@ -664,7 +666,9 @@ function handle(m){
         else dlog('PLAY ignorado — já tocando');
       }
       if(m.action==='pause'&&!a.paused)a.pause();
-      if(m.action==='stop'){a.pause();a.currentTime=0;showIdle('Aguardando conteúdo…')}
+      if(m.action==='stop'){
+        if(!window.__videoAudioActive){
+          a.pause();a.currentTime=0;showIdle('Aguardando conteúdo…')}}
       if(m.action==='seek'){
         const target=(m.position||m.positionMs/1000||0);
         // só corrige se o desvio for perceptível — micro-sync causa stutter
@@ -676,6 +680,21 @@ function handle(m){
       break}
     case 'video':{
       const v=$('video');
+      // MP3/áudio puro no canal video (popup liturgia manda dual): redireciona
+      // pro fluxo de áudio — now-playing + EQ + bg (tela preta NUNCA).
+      if(m.url&&isAudioUrl(m.url)){
+        const av=$('audio');const next=proxyUrl(m.url);
+        window.__videoAudioActive=true;
+        if(av.src!==next){av.src=next;
+          av.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};
+          showNp(m.title||'Reproduzindo áudio', m.subtitle||'', m.cover||'');
+          $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';}
+        if(m.action==='play'&&av.paused)playWithFallback();
+        if(m.action==='pause'&&!av.paused)av.pause();
+        if(typeof m.positionMs==='number'&&m.positionMs>0){
+          try{av.currentTime=m.positionMs/1000}catch(e){}}
+        break;
+      }
       hideIdle();hideNp();
       // Vídeo assumindo a TV: qualquer ÁUDIO anterior (hino/MP3) é PARADO
       // e limpo. Sem isso, o 'audio play' do tvBroadcast (que manda nos dois
