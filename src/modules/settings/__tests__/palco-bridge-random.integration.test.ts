@@ -130,7 +130,7 @@ describe('bridge: sorteio projeta na TV roteada (bug 27/08)', () => {
   it('sorteio com conteúdo + rota pra TV 2 → projection chega no slot 7082', async () => {
     setPalcoRoute('random', '7082')
     startPalcoBridge()
-    publishRandom('Maria')
+    publishRandom('Maria', false, true)
     await new Promise((r) => setTimeout(r, 150))
     const all = sends()
     const toTv2 = all.filter((s) => s.slot === '7082')
@@ -161,7 +161,7 @@ describe('bridge: sorteio projeta na TV roteada (bug 27/08)', () => {
   it('rota mirror: sorteio vai a todos os slots espelho', async () => {
     setPalcoRoute('random', 'mirror')
     startPalcoBridge()
-    publishRandom('João')
+    publishRandom('João', false, true)
     await new Promise((r) => setTimeout(r, 150))
     const all = sends()
     expect(all.some((s) => s.slot === '0' && s.msg.type === 'projection')).toBe(true)

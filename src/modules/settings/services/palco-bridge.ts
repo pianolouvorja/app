@@ -556,7 +556,10 @@ export function startPalcoBridge() {
     normalizeRandomRuntime,
     (v: { currentDisplay: string; isDrawing: boolean }) => {
       runtimes.random = v
-      setIntent('random', v.projecting || Boolean(v.currentDisplay))
+      // intent = projecting APENAS (fix ping-pong 27/08): o '|| currentDisplay'
+      // mantinha o sorteio vivo após turnOffOthers publicar projecting:false
+      // — random e media trocavam claims em loop e o hino perdia o palco.
+      setIntent('random', Boolean(v.projecting))
     },
   )
 
