@@ -1221,7 +1221,8 @@ async function runAction(
 
 .albums-view__palette-slot {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 30;
+  /* dentro do padding da view (0.75rem) + folga: nunca corta no overflow */
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 40;
 }
