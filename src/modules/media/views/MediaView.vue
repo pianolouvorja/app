@@ -3,7 +3,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import MediaCloseDialog from '../components/MediaCloseDialog.vue'
 import MediaPlayerPill from '../components/MediaPlayerPill.vue'
 import MediaSlideStage from '../components/MediaSlideStage.vue'
@@ -228,9 +227,6 @@ async function onToggleFullscreen() {
       :class="{ 'media-window__body--playlist': showPlaylist }"
     >
       <div class="media-window__stage">
-        <div class="media-window__stage-palette">
-          <StagePaletteButton scope="hymns" />
-        </div>
         <MediaSlideStage
           :lyric="stageLyric"
           :title="stageTitle"
@@ -528,13 +524,6 @@ async function onToggleFullscreen() {
 
 .media-window__stage {
   position: relative;
-}
-
-.media-window__stage-palette {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 30;
 }
 
 .media-window__pill-wrap {

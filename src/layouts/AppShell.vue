@@ -4,6 +4,8 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import StagePaletteButton from '../modules/settings/components/StagePaletteButton.vue'
+
 import { usePageTransition } from '@design-system/composables'
 import { DockFooter, GradientBackground } from '@design-system/index'
 import type { DockNavItem } from '@design-system/types/navigation'
@@ -90,6 +92,16 @@ const isOnTimerRoute = computed(() => route.name === 'utilities-timer')
 const isOnCountdownRoute = computed(() => route.name === 'utilities-countdown')
 const isOnClockRoute = computed(() => route.name === 'utilities-clock')
 const isOnLiturgyRoute = computed(() => route.meta.navKey === 'liturgy')
+
+/** Escopo do FAB de personalização conforme a rota atual (null = esconder). */
+const paletteScope = computed< string | null>(() => {
+  const navKey = route.meta.navKey as string | undefined
+  if (navKey === 'albums' || route.name === 'media') return 'hymns'
+  if (navKey === 'bible') return 'bible'
+  if (navKey === 'liturgy') return 'liturgy'
+  if (navKey === 'random') return 'random'
+  return null
+})
 
 const isLiturgyProjecting = computed(
   () =>
@@ -312,6 +324,11 @@ function viewKey(viewRoute: typeof route) {
       </div>
       <div class="app-shell__header-end">
         <UiZoomControls />
+        <StagePaletteButton
+          v-if="paletteScope"
+          :key="paletteScope"
+          :scope="paletteScope"
+        />
         <div class="app-shell__projection">
           <button
             v-if="hasOpenScreens"

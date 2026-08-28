@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import { useMediaStore } from '@modules/media/stores/useMediaStore'
 
 import { GlassCard } from '@design-system/index'
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import PalcoRouteSelect from '@modules/settings/components/PalcoRouteSelect.vue'
 import type { LibraryAlbum } from '@modules/sync/types/library'
 
@@ -173,10 +172,6 @@ async function runAction(
 
 <template>
   <section class="albums-view">
-    <div class="albums-view__palette-slot">
-      <StagePaletteButton scope="hymns" />
-    </div>
-
     <header class="albums-view__header">
       <div class="albums-view__brand">
         <div class="albums-view__icon">
@@ -1218,11 +1213,3 @@ async function runAction(
   }
 }
 </style>
-
-.albums-view__palette-slot {
-  position: absolute;
-  /* dentro do padding da view (0.75rem) + folga: nunca corta no overflow */
-  top: 1rem;
-  right: 1.5rem;
-  z-index: 40;
-}
