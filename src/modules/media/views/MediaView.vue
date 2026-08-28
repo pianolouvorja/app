@@ -74,7 +74,9 @@ watch(activeListIndex, async (index) => {
   await nextTick()
   const list = playlistListEl.value
   const active = list?.querySelector('.media-window__playlist-item--active')
-  active?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  // Letra em execução sempre no topo do painel (center vertical do item
+  // no primeiro terço) — evidência contínua enquanto toca.
+  active?.scrollIntoView({ block: 'center', behavior: 'smooth' })
 })
 
 const stageLyric = computed(() => currentSlide.value?.lyric ?? '')
@@ -172,10 +174,6 @@ async function onToggleFullscreen() {
       ref="stageRoot"
       class="media-window"
     >
-    <div class="media-window__palette-slot">
-      <StagePaletteButton scope="hymns" />
-    </div>
-
     <header class="media-window__toolbar">
       <button
         type="button"
@@ -230,6 +228,9 @@ async function onToggleFullscreen() {
       :class="{ 'media-window__body--playlist': showPlaylist }"
     >
       <div class="media-window__stage">
+        <div class="media-window__stage-palette">
+          <StagePaletteButton scope="hymns" />
+        </div>
         <MediaSlideStage
           :lyric="stageLyric"
           :title="stageTitle"
@@ -525,7 +526,11 @@ async function onToggleFullscreen() {
   overflow: hidden;
 }
 
-.media-window__palette-slot {
+.media-window__stage {
+  position: relative;
+}
+
+.media-window__stage-palette {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
