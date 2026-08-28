@@ -430,7 +430,8 @@ async function onToggleFullscreen() {
   overflow: auto;
   background: rgb(12 12 12 / 0.92);
   border-left: 1px solid rgb(255 255 255 / 0.08);
-  padding: 1rem 0.75rem;
+  /* padding-top maior: FAB da paleta (fixo, topo-direita) não encosta na lista */
+  padding: 3.5rem 0.75rem 1rem;
 }
 
 .media-window__playlist-title {
