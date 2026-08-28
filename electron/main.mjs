@@ -114,6 +114,7 @@ function createSplash() {
 		menuBarVisible: false,
 		autoHideMenuBar: true,
 		webPreferences: {
+			devTools: isDev,
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: true,
@@ -231,6 +232,7 @@ function buildPopupWindowOptions(url, features = '') {
     fullscreenable: true,
     webPreferences: {
       preload: PRELOAD_PATH,
+      devTools: isDev,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -349,6 +351,7 @@ function createWindow(locale = 'pt-BR') {
 		...(iconPath ? { icon: iconPath } : {}),
 		webPreferences: {
 			preload: PRELOAD_PATH,
+			devTools: isDev,
 			contextIsolation: true,
 			nodeIntegration: false,
 			// false: garante preload/IPC no AppImage empacotado (first-boot / splash)
