@@ -111,7 +111,9 @@ const verseBoxStyle = computed(() => {
     borderRadius: 'clamp(14px, 2.4vmin, 32px) 0 clamp(14px, 2.4vmin, 32px) 0',
     // caixinha só no versículo: padding para respirar dentro da caixa
     padding: '0.35em 0.75em',
-    width: 'fit-content',
+    // Bíblia: caixa horizontal aproveita a projeção e reduz quebras de verso.
+    width: '100%',
+    boxSizing: 'border-box',
     margin: '0 auto',
   }
 })
@@ -189,7 +191,8 @@ const referenceStyle = computed(() => ({
   flex-direction: column;
   gap: 0.6em;
   width: 100%;
-  max-width: 56rem;
+  // Bíblia pede linha mais longa que hinos: retangular, não quadrada.
+  max-width: min(84rem, 86%);
 }
 
 .bible-projection__text {
