@@ -34,6 +34,7 @@ export function normalizeTimerRuntime(raw: unknown): TimerRuntimeState {
 
   return {
     status: asStatus(source.status),
+    projecting: source.projecting === true,
     segmentStartedAt: asNumberOrNull(source.segmentStartedAt),
     accumulatedMs: asNumber(source.accumulatedMs, 0),
     savedTimesMs: asNumberArray(source.savedTimesMs),

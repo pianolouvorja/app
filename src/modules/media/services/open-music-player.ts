@@ -22,24 +22,24 @@ export async function openMusicPlayer(
   }
 
   const mode = params.mode
-  const shouldProject = params.project ?? mode === 'no_audio'
   const mediaStore = useMediaStore()
 
+  // project: repassar SEM RESOLVER (decisão Rafael 27/08). O contrato do
+  // store é opt-out: undefined = projetar se houver destino ATIVO (monitor
+  // estendido OU TV Palco conectada); false explícito = não projetar.
+  // O legado (?? mode==='no_audio') convertia undefined→false e o hino
+  // cantado nunca projetava sozinho — só via botão manual.
   const result = await mediaStore.open({
     musicId,
     mode,
     albumId: params.albumId ?? null,
     minimized: false,
-    project: shouldProject,
+    project: params.project,
   })
 
   if (!result.ok) return result
 
   mediaStore.maximize()
-
-  if (shouldProject && !mediaStore.isProjecting) {
-    await mediaStore.startProjection()
-  }
 
   return result
 }

@@ -167,7 +167,7 @@ function onNextVerse() {
       :disabled="!hasProjection"
       :projecting="isProjecting"
       @project="onProject"
-      @clear="onClearProjection"
+          @clear="onClearProjection"
     />
   </section>
 </template>

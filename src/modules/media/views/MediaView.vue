@@ -166,7 +166,7 @@ async function onToggleFullscreen() {
         />
       </button>
     </header>
-    <StagePaletteButton scope="hymns" />
+    <StagePaletteButton scope="hymns" :right-offset="76" />
 
 
     <div

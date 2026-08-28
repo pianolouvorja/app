@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { GlassCard } from '@design-system/index'
+import PalcoRouteSelect from '@modules/settings/components/PalcoRouteSelect.vue'
 import type { LibraryAlbum } from '@modules/sync/types/library'
 
 import AlbumCollectionCard from '../components/AlbumCollectionCard.vue'
@@ -149,6 +150,7 @@ async function runAction(
       </div>
 
       <div class="albums-view__header-actions">
+        <PalcoRouteSelect module="hymns" compact />
         <button
           v-if="showDownloadControls && categories.length > 0 && !isDownloadingBatch"
           type="button"

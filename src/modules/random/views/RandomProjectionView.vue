@@ -140,6 +140,7 @@ const effectiveConfig = computed(() => {
       <RandomPreview
         :config="effectiveConfig"
         :runtime="runtime"
+        :stage="stage"
       />
     </div>
   </ProjectionBackground>

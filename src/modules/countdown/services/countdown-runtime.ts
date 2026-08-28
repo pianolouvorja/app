@@ -39,6 +39,7 @@ export function normalizeCountdownRuntime(raw: unknown): CountdownRuntimeState {
 
   return {
     status: asStatus(source.status),
+    projecting: source.projecting === true,
     segmentStartedAt: asNumberOrNull(source.segmentStartedAt),
     accumulatedMs: asNumber(source.accumulatedMs, 0),
     durationMs: Math.max(0, asNumber(source.durationMs, DEFAULT_COUNTDOWN_DURATION_MS)),

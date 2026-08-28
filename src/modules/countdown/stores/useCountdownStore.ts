@@ -6,6 +6,7 @@ import {
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
 
 import {
   computeElapsedMs,
@@ -36,6 +37,7 @@ export const useCountdownStore = defineStore('countdown', () => {
     durationMs: DEFAULT_COUNTDOWN_DURATION_MS,
   })
   const isProjecting = ref(false)
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -57,6 +59,7 @@ export const useCountdownStore = defineStore('countdown', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('countdown')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -107,7 +110,7 @@ export const useCountdownStore = defineStore('countdown', () => {
   }
 
   function syncRuntime() {
-    publishCountdownRuntime(runtime.value)
+    publishCountdownRuntime({ ...runtime.value, projecting: isProjecting.value })
   }
 
   function hydrate() {
@@ -265,20 +268,30 @@ export const useCountdownStore = defineStore('countdown', () => {
 
   async function syncProjection() {
     syncRuntime()
-    const opened = await openProjectionModule('countdown')
-    isProjecting.value = opened
-    if (opened) startProjectionWatch()
-    else stopProjectionWatch()
+    if (isPalcoTvOnlyRoute('countdown')) {
+          isProjecting.value = true
+          projectingTvsOnly.value = true
+          syncRuntime()
+          startProjectionWatch()
+          return
+        }
+        projectingTvsOnly.value = false
+        const opened = await openProjectionModule('countdown')
+        isProjecting.value = opened
+        syncRuntime()
+        if (opened) startProjectionWatch()
+        else stopProjectionWatch()
   }
 
   function clearProjection() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('countdown')) {
+    if (isProjecting.value && (isProjectionModuleOpen('countdown') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }

@@ -1,5 +1,19 @@
 export default {
   settings: {
+    outputs: {
+      title: 'Salidas — contenido por pantalla',
+      hint: 'Elija el contenido de cada salida. "Espejo" sigue la proyección principal.',
+      monitor: 'Monitor',
+      tvConnected: 'TV conectada',
+      tvOffline: 'TV sin conexión',
+      mirror: 'Espejar proyección',
+      bible: 'Biblia',
+      media: 'Himnos / Media',
+      video: 'Vídeo',
+      pdf: 'PDF',
+      ppt: 'Presentación',
+      assign: 'Contenido de la salida {output}',
+    },
     title: 'Configuraciones',
     sectionTitle: {
       appearance: 'Configuraciones de Apariencia',
@@ -173,6 +187,10 @@ export default {
       clientConnected: '{device} conectado',
     },
     palco: {
+      cableGroup: 'Monitores (cable)',
+      tvGroup: 'TVs (Palco)',
+      monitor: 'Monitor {n}',
+
       title: 'Palco (TV)',
       subtitle: 'Proyecte en la TV vía receiver LouvorJA — misma red',
       connected: '{count} TV conectada',

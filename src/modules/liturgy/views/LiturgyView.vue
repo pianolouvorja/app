@@ -170,7 +170,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 
       <div class="liturgy-view__main">
         <div class="liturgy-view__toolbar">
-          <StagePaletteButton scope="liturgy" />
+          <StagePaletteButton scope="liturgy" :right-offset="76" />
           <LiturgyDayTabs
             :selected-day="selectedDay"
             @select="selectDay"

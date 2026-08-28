@@ -57,9 +57,12 @@ onMounted(() => {
   // quando o PalcoCard monta. Sem isso, hino/bíblia/timer só espelhavam
   // se o operador tivesse visitado Configurações → Projeção antes.
   if (!isProjectionWindow.value) {
-    import('@modules/settings/services/palco-bridge').then((m) => {
-      m.startPalcoBridge()
-    })
+    import('@modules/settings/services/palco-bridge')
+      .then((m) => {
+        m.startPalcoBridge()
+        console.info('[palco-bridge] subiu no boot')
+      })
+      .catch((e) => console.error('[palco-bridge] FALHOU ao subir no boot:', e))
   }
 })
 

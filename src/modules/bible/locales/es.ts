@@ -23,6 +23,7 @@ export default {
     previousVerse: 'Versículo anterior',
     nextVerse: 'Siguiente versículo',
     clearSelection: 'Limpiar selección',
+    projectTvsOnly: 'Proyectar solo en las TVs',
     clearProjection: 'Quitar de la proyección',
     emptyCatalog: 'No hay contenido bíblico disponible. Complete la inicialización de la app.',
     emptyChapter: 'No se encontraron versículos en este capítulo.',

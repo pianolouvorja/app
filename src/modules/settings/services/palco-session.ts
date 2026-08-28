@@ -6,6 +6,7 @@
  * StageSettings efetivo do escopo para as mensagens do protocolo Palco v2.
  */
 
+import { useOutputRegistry } from './output-registry'
 import { readEffectiveStageSettings } from '../../settings/services/stage-settings-runtime'
 import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 import { getPalcoRoute, type PalcoModule } from './palco-routing'
@@ -17,7 +18,7 @@ type PalcoStatus = {
   wsUrl: string | null
 }
 
-type ProjectionInput = {
+export type ProjectionInput = {
   /** HTML do texto (aceita <br>). */
   text: string
   /** Referência do rodapé (ex.: 'João 3:16 — ARC'). */
@@ -41,6 +42,7 @@ function palcoApi(): {
   onEvent(cb: (m: unknown) => void): void
   onReceiverConnected(cb: (i: unknown) => void): void
   onReceiverDisconnected(cb: (i: unknown) => void): void
+  wake?(): Promise<{ ok: boolean; results?: string[] } | null>
 } {
   return (window as never as { louvorja: { palco: never } }).louvorja.palco
 }
@@ -80,9 +82,10 @@ class PalcoSession {
     this.baseUrl = null // recarrega no próximo project
     const ok = await palcoApi().start(this.activeSlotId)
     if (ok) {
-      // liga o palco: bg permanente + idle
+      // liga o palco: bg permanente + idle + wakeup dos receivers
       this.sendBgPalco()
       this.idle()
+      try { void palcoApi().wake?.() } catch { /* best-effort */ }
     }
     return ok
   }
@@ -171,12 +174,25 @@ class PalcoSession {
     try { await this.project(scope, input) } finally { this.setSlot(previous) }
   }
 
-  /** Espelha módulo em todos slots ligados, ou usa rota individual. */
+  /** Espelha módulo em todos slots ligados, ou usa rota individual.
+   *
+   * Spec multi-telas (registry de saídas): slot com módulo ATRIBUÍDO só
+   * recebe o conteúdo atribuído; slot espelho (null) recebe tudo —
+   * comportamento legado preservado quando ninguém configura nada. */
   async projectRouted(module: PalcoModule, scope: string, input: ProjectionInput): Promise<void> {
     const route = getPalcoRoute(module)
     if (route !== 'mirror') return this.projectTo(route, scope, input)
+    const { moduleForSlot } = useOutputRegistry()
     const slots = await this.slots()
-    await Promise.all(slots.filter((s) => s.running).map((s) => this.projectTo(s.id, scope, input)))
+    const targets = slots
+      .filter((s) => s.running)
+      .filter((s) => moduleForSlot(s.id) === null || moduleForSlot(s.id) === module)
+    // SERIAL, nunca Promise.all: projectTo troca activeSlotId/baseUrl para
+    // gerar URLs (/bg,/media) daquele sender. Em paralelo, TV Principal
+    // recebia URL :7082 (TV 2) e caía no fallback (caso real 26/08).
+    for (const target of targets) {
+      await this.projectTo(target.id, scope, input)
+    }
   }
 
   /** BG permanente do palco (idle) — bg global do stage. */
@@ -191,13 +207,19 @@ class PalcoSession {
     }, this.activeSlotId)
   }
 
-  /** Timer na TV (countdown/chrono). */
-  timer(opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string }): void {
+  /** Timer na TV (countdown/chrono) — com bg do escopo do módulo. */
+  async timer(opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string; background?: string }): Promise<void> {
     if (!this.isElectron) return
-    void palcoApi().send({
+    let background = opts.background
+    if (!background) {
+      const s = readEffectiveStageSettings('timer')
+      background = await this.resolveBgUrl(resolveBackgroundImage(s.backgroundImage))
+    }
+    await palcoApi().send({
       v: 2,
       type: 'timer',
       ...opts,
+      background,
     }, this.activeSlotId)
   }
 
@@ -207,7 +229,7 @@ class PalcoSession {
     await Promise.all(slots.map(async (id) => {
       const previous = this.activeSlotId
       this.setSlot(id)
-      try { this.timer(opts) } finally { this.setSlot(previous) }
+      try { await this.timer(opts) } finally { this.setSlot(previous) }
     }))
   }
 
@@ -298,6 +320,13 @@ class PalcoSession {
    */
   async audioRouted(input: Parameters<PalcoSession['audio']>[0]): Promise<void> {
     if (!this.isElectron) return
+    // BG do escopo liturgy quando o chamador não manda (fix 27/08): MP3
+    // sem background deixava o palco preto — o receiver mostra now-playing
+    // + equalizador sobre este bg.
+    if (!input.background) {
+      const st = readEffectiveStageSettings('liturgy')
+      input = { ...input, background: await this.resolveBgUrl(resolveBackgroundImage(st.backgroundImage)) ?? undefined }
+    }
     const route = getPalcoRoute('liturgy')
     if (route !== 'mirror') {
       const previous = this.activeSlotId
@@ -330,6 +359,20 @@ class PalcoSession {
       type: 'idle',
       msg,
     }, this.activeSlotId)
+  }
+
+  /** Idle num slot específico sem alterar o slot ativo global. */
+  idleTo(slotId: string, msg?: string): void {
+    const previous = this.activeSlotId
+    this.setSlot(slotId)
+    try { this.idle(msg) } finally { this.setSlot(previous) }
+  }
+
+  /** Timer num slot específico sem alterar o slot ativo global. */
+  timerTo(slotId: string, opts: { duration?: number; mode?: 'countdown' | 'chrono'; label?: string }): void {
+    const previous = this.activeSlotId
+    this.setSlot(slotId)
+    try { this.timer(opts) } finally { this.setSlot(previous) }
   }
 
   /** Serve mídia local e retorna a URL para a TV. */

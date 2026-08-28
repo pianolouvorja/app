@@ -735,7 +735,7 @@ function createSourceWindow(loadUrl, title) {
   })
 
   win.on('closed', () => {
-    detachControlBar()
+    detachControlBar(); stopPalcoMediaOnClose()
     if (sourceWindow === win) {
       sourceWindow = null
       closeMirrorWindowsOnly()
@@ -797,7 +797,7 @@ function createSiteSourceWindow(loadUrl, title) {
   })
 
   win.on('closed', () => {
-    detachControlBar()
+    detachControlBar(); stopPalcoMediaOnClose()
     if (sourceWindow === win) {
       sourceWindow = null
       closeMirrorWindowsOnly()
@@ -1102,6 +1102,7 @@ function createMirrorWindow(display) {
 
   win.on('closed', () => {
     mirrorWindows = mirrorWindows.filter((item) => item !== win)
+    stopPalcoMediaOnClose()
   })
 
   const mirrorUrl = `${pathToFileURL(MIRROR_HTML).href}?mode=video`
@@ -1171,6 +1172,7 @@ function createImageProjectionWindow(display, loadUrl) {
 
   win.on('closed', () => {
     mirrorWindows = mirrorWindows.filter((item) => item !== win)
+    stopPalcoMediaOnClose()
   })
 
   void win.loadURL(loadUrl)
@@ -1322,6 +1324,21 @@ function closeMirrorWindowsOnly() {
   stopSiteProjectionSync()
 }
 
+/** X da janela de projeção = mesma limpeza do Escape (fix 27/08):
+ * o handler 'closed' só fazia detachControlBar — nenhum audio/video stop
+ * saía pras TVs e o MP3 ficava tocando após fechar o popup pelo X. */
+function stopPalcoMediaOnClose() {
+  try {
+    const manager = getPalcoManager()
+    if (manager) {
+      manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+      manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })
+    }
+  } catch {
+    /* palco não anexado */
+  }
+}
+
 export function closeWebProjectionWindows() {
   closeMirrorWindowsOnly()
   detachControlBar()
@@ -1335,15 +1352,7 @@ export function closeWebProjectionWindows() {
   // ao idle. Sem isso o último frame ficava congelado na TV.
   // Import estático: require() de .mjs lança ERR_REQUIRE_ESM no Electron
   // ESM e o catch silencioso engolia o stop — TVs ficavam com mídia presa.
-  try {
-    const manager = getPalcoManager()
-    if (manager) {
-      manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
-      manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })
-    }
-  } catch {
-    /* palco não anexado */
-  }
+  stopPalcoMediaOnClose()
   if (win && !win.isDestroyed()) {
     win.close()
   }

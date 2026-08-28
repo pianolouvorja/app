@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
+import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
   closeProjectionModule,
@@ -59,7 +61,18 @@ export const useMediaStore = defineStore('media', () => {
   const status = ref<MediaPlayerStatus>('idle')
   const lastErrorKey = ref<string | null>(null)
   const minimized = ref(true)
-  const isProjecting = ref(false)
+  const isProjectingRaw = ref(false)
+  const isProjecting = computed({
+    get: () => isProjectingRaw.value,
+    set: (v: boolean) => {
+      if (v !== isProjectingRaw.value) {
+        console.info('[media-proj] isProjecting →', v, new Error().stack?.split('\n').slice(1, 4).join(' | '))
+      }
+      isProjectingRaw.value = v
+    },
+  })
+  /** Projetando somente nas TVs (sem janela cabeada). */
+  const projectingTvsOnly = ref(false)
   const showPlaylist = ref(true)
   const closeConfirmOpen = ref(false)
 
@@ -177,8 +190,10 @@ export const useMediaStore = defineStore('media', () => {
       window.addEventListener('louvorja:projection-reapplied', onProjectionReapplied)
     }
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('media')) {
         isProjecting.value = false
+        projectingTvsOnly.value = false
         stopProjectionWatch()
       }
     }, 400)
@@ -385,14 +400,14 @@ export const useMediaStore = defineStore('media', () => {
             // ignore
           }
         }
-        if (params.project) {
+        if (params.project !== false) {
           await startProjection()
         }
         return { ok: true }
       }
 
       const result = await switchMode(requestedMode)
-      if (params.project) {
+      if (params.project !== false) {
         await startProjection()
       }
       return result
@@ -474,7 +489,10 @@ export const useMediaStore = defineStore('media', () => {
     await refreshResolvedSlideImage()
     void maybeStartOndemandDownload(musicId)
 
-    if (params.project || !minimized.value) {
+    // Hino tocando = PROJETANDO, sempre (decisão Rafael 27/08): destino vem
+    // do seletor na biblioteca (Espelhar/TV individual). Antes: minimizado
+    // não projetava — operador tinha que clicar Projetar a cada hino.
+    if (params.project !== false) {
       await startProjection()
     }
 
@@ -848,15 +866,51 @@ export const useMediaStore = defineStore('media', () => {
     return { ok: true, warningKey }
   }
 
+  /** TVs Palco vivas (receiver conectado) — contam como tela ativa. */
+  async function hasLivePalcoTvs(): Promise<boolean> {
+    try {
+      const slots = await palcoSession.slots()
+      return slots.some((s) => s.running && s.clients > 0)
+    } catch {
+      return false
+    }
+  }
+
   async function startProjection(): Promise<boolean> {
     if (!session.value) return false
-    const opened = await openProjectionModule('media')
-    isProjecting.value = opened
-    if (opened) {
+    // Sem NENHUM destino (sem monitor estendido e sem TV Palco conectada)
+    // a projeção não liga — não há pra onde projetar. TV viva = tela ativa
+    // (decisão Rafael/Elias 27/08: mecanismo ligava só com múltiplas telas
+    // FÍSICAS; TVs WS agora entram na conta).
+    const hasTvs = await hasLivePalcoTvs()
+    console.info('[media-proj] startProjection route=', String(getPalcoRoute('hymns')), 'hasTvs=', hasTvs)
+    // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
+    // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
+    if (isPalcoTvOnlyRoute('hymns')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
       startProjectionWatch()
       publishProjectionState()
+      return true
     }
-    return opened
+    const opened = await openProjectionModule('media')
+    if (opened) {
+      projectingTvsOnly.value = false
+    } else if (hasTvs) {
+      // Sem monitor cabeado mas COM TVs Palco vivas: a projeção segue nas
+      // TVs (espelho da bridge). projectingTvsOnly segura o watch 400ms.
+      projectingTvsOnly.value = true
+    } else {
+      // Nenhum destino: não liga.
+      isProjecting.value = false
+      stopProjectionWatch()
+      publishProjectionState()
+      return false
+    }
+    isProjecting.value = true
+    startProjectionWatch()
+    publishProjectionState()
+    return true
   }
 
   function clearProjection(): void {
@@ -906,6 +960,14 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function syncProjectionFlag(): void {
+    // Modo só-TVs NÃO tem janela cabeada — isProjectionModuleOpen é false
+    // por definição e matava a projeção que o startProjection acabou de
+    // ligar (bug real 27/08: hino ligava e syncProjectionFlag desligava
+    // em seguida; stack do log apontou exatamente aqui).
+    if (projectingTvsOnly.value) {
+      publishProjectionState()
+      return
+    }
     isProjecting.value = isProjectionModuleOpen('media')
     if (isProjecting.value) startProjectionWatch()
     publishProjectionState()
