@@ -23,7 +23,7 @@
     display:table;margin:0 auto;max-width:86vw;max-height:72vh;
     overflow-wrap:break-word;
     transform:translateY(-50%);
-    text-align:center;font-size:6.5vh;font-weight:700;line-height:1.35;
+    text-align:center;font-size:3.65vw;font-weight:700;line-height:1.35;
     letter-spacing:.03em;text-transform:uppercase;
     text-shadow:0 2px 12px rgba(0,0,0,.8)}
   /* F3.3m: estilos dinâmicos da letra (sombra/caixinha) */
@@ -95,8 +95,7 @@
 <!-- F3.3j: splash screen — some no WS OPEN ou 2.5s -->
 <div id="splash" style="position:fixed;inset:0;z-index:200;background:#0A0E1A;
   display:flex;align-items:center;justify-content:center;transition:opacity .6s">
-  <!-- Splash com arte oficial (JPG) — substitui SVG inline quebrado -->
-  <img src="splash-palco.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0A0E1A">
+  <img src="splash.jpg" alt="Palco Piano LouvorJA" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
 </div>
 <script>
 (function(){
@@ -503,7 +502,13 @@ function submitIp(){
     scanSubnet();
     return;
   }
-  host=v;localStorage.setItem('palcoHost',host);tries=0;
+  // Multi-palco: aceita IP ou IP:PORTA (ex: 192.168.1.50:7083).
+  var parts=v.split(':');
+  host=parts[0];localStorage.setItem('palcoHost',host);
+  if(parts[1]&&parseInt(parts[1],10)>0){
+    port=String(parseInt(parts[1],10));localStorage.setItem('palcoPort',port);
+  }
+  tries=0;
   closeIpEntry();
   try{if(ws)ws.close()}catch(e){}
   // IP manual conecta WS DIRETO — sem probeSender (fetch /status pode ser
@@ -576,7 +581,7 @@ function handle(m){
       // F3.3o: fontSize/fontWeight dinâmicos (settings do operador).
       {const t=$('text');
         if(typeof m.fontSize==='number')
-          t.style.fontSize=(m.fontSize/10.8)+'vh'; // px@1080p -> vh
+          t.style.fontSize=(m.fontSize/10.8)+'vw'; // px@1080p -> vw (LARGURA): paridade com cqw do cabo
         if(typeof m.fontWeight==='number')
           t.style.fontWeight=m.fontWeight;
       }
@@ -636,14 +641,6 @@ function handle(m){
           $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
         }
       }
-      // action-only (play/pause/seek SEM url — tvBroadcast do popup, fix
-      // 27/08): now-playing + bg garantidos também aqui — antes só havia
-      // np dentro do if(m.url) e mensagens sem url deixavam a TV preta.
-      else if(m.action==='play'){
-        if(m.title){showNp(m.title, m.subtitle||'', m.cover||'')}
-        else{showNp('Reproduzindo áudio', m.subtitle||'', m.cover||'')}
-        $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
-      }
       // BG garantido em TODA mensagem de áudio (load, play, pause, seek):
       // sem isso, mensagens action-only podiam deixar tela preta.
       if(!m.background){
@@ -678,11 +675,6 @@ function handle(m){
       break}
     case 'video':{
       const v=$('video');
-      // Metadados/transiente SEM url e SEM stop (fix 27/08): o tvBroadcast
-      // manda 'video' com action vazia/seek junto do áudio — tratar como
-      // load matava o now-playing do MP3 a cada tick (tela preta). Só
-      // load (url) e stop mexem nas camadas visuais.
-      if(!m.url&&m.action!=='stop'){break}
       hideIdle();hideNp();
       // Vídeo assumindo a TV: qualquer ÁUDIO anterior (hino/MP3) é PARADO
       // e limpo. Sem isso, o 'audio play' do tvBroadcast (que manda nos dois
@@ -692,19 +684,6 @@ function handle(m){
       if(m.action==='stop'){v.pause();v.removeAttribute('src');v.style.display='none';
         v.load();showIdle('Aguardando conteúdo…');
         sendEvent({v:2,type:'ended',media:'video'});break}
-      // MP3/áudio puro no canal video (fix 27/08): o popup manda mídia nos
-      // DOIS canais; <video> com MP3 = tela preta fullscreen. Tratar como
-      // áudio: now-playing + eq + bg — mesmo visual dos hinos.
-      if(m.url&&/\.(mp3|wav|ogg|m4a|aac|flac)(\?|$)/i.test(m.url)){
-        {const a=$('audio');const next=proxyUrl(m.url);
-         if(a.src!==next){a.src=next;}
-         a.play().catch(function(){});
-         a.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};}
-        if(m.title){showNp(m.title,m.subtitle||'',m.cover||'')}
-        else{showNp('Reproduzindo áudio',m.subtitle||'',m.cover||'')}
-        $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';
-        break;
-      }
       if(m.url){v.src=proxyUrl(m.url);v.style.display='';
         // Sync inicial (padrão F3.3g do áudio): positionMs aplicado antes
         // do play — seguro p/ metadata não carregada (loadedmetadata once).
@@ -740,13 +719,6 @@ function handle(m){
       hideIdle();
       const t=$('timer');
       if(m.action==='stop'){t.style.display='none';clearInterval(t._iv||0);$('text').style.display='';break}
-      // BG do escopo timer (fix 27/08): mesma cadeia da projection —
-      // mensagem > bgPalco > fallback. Antes o timer ignorava bg e a TV
-      // ficava no fundo que sobrou do módulo anterior.
-      {const bgEl=$('bg');bgEl.onerror=()=>{bgEl.onerror=null;bgEl.src='bg-fallback.png'};
-       if(m.background){bgEl.src=proxyUrl(m.background)}
-       else if(bgPalco){bgEl.src=proxyUrl(bgPalco)}
-       else{bgEl.src='bg-fallback.png'}}
       t.style.display='';$('text').style.display='none';
       let rem=(m.duration||0)*1000; // countdown segundos
       const mode=m.mode||'countdown';
