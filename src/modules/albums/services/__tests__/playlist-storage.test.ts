@@ -33,9 +33,11 @@ describe('playlist-storage', () => {
     const item = { musicId: 7, albumId: 3, title: 'Vem, Senhor' }
 
     const updated = addPlaylistItem(playlist.id, item)
-    addPlaylistItem(playlist.id, item)
+    const duplicated = addPlaylistItem(playlist.id, item)
 
-    expect(updated?.items).toEqual([item])
+    expect(updated?.playlist.items).toEqual([item])
+    expect(updated?.added).toBe(true)
+    expect(duplicated?.added).toBe(false)
     expect(listPlaylists()[0]?.items).toEqual([item])
   })
 

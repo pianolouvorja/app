@@ -67,18 +67,24 @@ export function deletePlaylist(id: string): boolean {
   return true
 }
 
-export function addPlaylistItem(id: string, item: PlaylistItem): Playlist | null {
+export type AddPlaylistItemResult = {
+  playlist: Playlist
+  added: boolean
+}
+
+export function addPlaylistItem(id: string, item: PlaylistItem): AddPlaylistItemResult | null {
   const playlists = read()
   const playlist = playlists.find((entry) => entry.id === id)
   if (!playlist) return null
   const last = playlist.items.at(-1)
   // Evita toque duplo criar a mesma faixa duas vezes seguidas.
-  if (last?.musicId !== item.musicId || last.albumId !== item.albumId) {
+  const added = last?.musicId !== item.musicId || last.albumId !== item.albumId
+  if (added) {
     playlist.items.push(item)
     playlist.updatedAt = now()
     save(playlists)
   }
-  return playlist
+  return { playlist, added }
 }
 
 export function removePlaylistItem(id: string, index: number): Playlist | null {

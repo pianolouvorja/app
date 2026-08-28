@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -10,7 +10,6 @@ import AlbumTrackRow from '../components/AlbumTrackRow.vue'
 import { useAlbums } from '../composables/useAlbums'
 import {
   addPlaylistItem,
-  createPlaylist,
   listPlaylists,
   type PlaylistItem,
 } from '../services/playlist-storage'
@@ -43,8 +42,22 @@ const {
 
 const busyMusicId = ref<number | null>(null)
 const playlistItem = ref<PlaylistItem | null>(null)
-const playlistName = ref('')
 const playlists = ref(listPlaylists())
+const playlistFeedback = ref('')
+
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null
+
+function showPlaylistFeedback(message: string) {
+  playlistFeedback.value = message
+  if (feedbackTimer) clearTimeout(feedbackTimer)
+  feedbackTimer = setTimeout(() => {
+    playlistFeedback.value = ''
+  }, 2600)
+}
+
+onBeforeUnmount(() => {
+  if (feedbackTimer) clearTimeout(feedbackTimer)
+})
 
 const collectionId = computed(() => String(route.params.collectionId ?? ''))
 
@@ -78,20 +91,17 @@ function openPlaylistPicker(track: AlbumTrack) {
 }
 
 function addToPlaylist(id: string) {
-  if (!playlistItem.value) return
-  addPlaylistItem(id, playlistItem.value)
+  const item = playlistItem.value
+  if (!item) return
+  const target = playlists.value.find((playlist) => playlist.id === id)
+  const result = addPlaylistItem(id, item)
   playlists.value = listPlaylists()
   playlistItem.value = null
-}
-
-function createPlaylistForTrack() {
-  const name = playlistName.value.trim()
-  if (!playlistItem.value || !name) return
-  const playlist = createPlaylist(name)
-  addPlaylistItem(playlist.id, playlistItem.value)
-  playlists.value = listPlaylists()
-  playlistName.value = ''
-  playlistItem.value = null
+  if (result.added) {
+    showPlaylistFeedback(`“${item.title}” adicionada a “${target?.name ?? 'playlist'}”`)
+  } else {
+    showPlaylistFeedback(`“${item.title}” já está em “${target?.name ?? 'playlist'}”`)
+  }
 }
 
 async function runAction(
@@ -218,17 +228,22 @@ async function runAction(
     </MediaCollectionList>
 
     <Teleport to="body">
+      <Transition name="playlist-toast">
+        <div v-if="playlistFeedback" class="playlist-toast" role="status" aria-live="polite">
+          <i class="ti ti-circle-check" aria-hidden="true" />
+          {{ playlistFeedback }}
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
       <div v-if="playlistItem" class="playlist-picker" role="dialog" aria-modal="true" aria-label="Adicionar à playlist">
         <div class="playlist-picker__panel">
           <h2>Adicionar “{{ playlistItem.title }}”</h2>
           <button v-for="playlist in playlists" :key="playlist.id" type="button" @click="addToPlaylist(playlist.id)">
             {{ playlist.name }}
           </button>
-          <form class="playlist-picker__create" @submit.prevent="createPlaylistForTrack">
-            <input v-model="playlistName" required placeholder="Nova playlist" aria-label="Nome da nova playlist">
-            <button type="submit">Criar e adicionar</button>
-          </form>
-          <button type="button" @click="playlistItem = null">Cancelar</button>
+          <button type="button" class="playlist-picker__cancel" @click="playlistItem = null">Cancelar</button>
         </div>
       </div>
     </Teleport>
@@ -395,3 +410,25 @@ async function runAction(
   }
 }
 </style>
+
+.playlist-toast {
+  position: fixed;
+  bottom: calc(var(--ds-dock-height, 4rem) + 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--ds-color-surface-card, #1e1e1e);
+  border: 1px solid var(--ds-color-outline-strong);
+  color: var(--ds-color-on-surface);
+  font-size: 0.9rem;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  z-index: 1200;
+}
+.playlist-toast .ti { color: var(--ds-color-primary); }
+.playlist-toast-enter-active, .playlist-toast-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.playlist-toast-enter-from, .playlist-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(0.5rem); }
+.playlist-picker__cancel { margin-top: 0.5rem; }

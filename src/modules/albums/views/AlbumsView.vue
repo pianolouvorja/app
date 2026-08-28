@@ -19,6 +19,7 @@ import {
   createPlaylist,
   deletePlaylist,
   listPlaylists,
+  removePlaylistItem,
   type Playlist,
 } from '../services/playlist-storage'
 
@@ -117,6 +118,17 @@ function addPlaylist() {
 function removePlaylist(id: string) {
   deletePlaylist(id)
   playlists.value = listPlaylists()
+}
+
+function removePlaylistTrack(id: string, index: number) {
+  removePlaylistItem(id, index)
+  playlists.value = listPlaylists()
+}
+
+const expandedPlaylistId = ref<string | null>(null)
+
+function togglePlaylist(id: string) {
+  expandedPlaylistId.value = expandedPlaylistId.value === id ? null : id
 }
 
 function retry() {
@@ -287,9 +299,51 @@ async function runAction(
       <div v-if="playlists.length === 0" class="albums-view__state">Nenhuma playlist criada.</div>
       <div v-else class="albums-view__playlist-list">
         <article v-for="playlist in playlists" :key="playlist.id" class="albums-view__playlist">
-          <div><strong>{{ playlist.name }}</strong><small>{{ playlist.items.length }} faixa(s)</small></div>
-          <button type="button" :disabled="playlist.items.length === 0" @click="playPlaylist(playlist)">Tocar</button>
-          <button type="button" aria-label="Remover playlist" @click="removePlaylist(playlist.id)">Remover</button>
+          <button
+            type="button"
+            class="albums-view__playlist-toggle"
+            :aria-expanded="expandedPlaylistId === playlist.id"
+            @click="togglePlaylist(playlist.id)"
+          >
+            <i
+              class="ti"
+              :class="expandedPlaylistId === playlist.id ? 'ti-chevron-down' : 'ti-chevron-right'"
+              aria-hidden="true"
+            />
+            <span class="albums-view__playlist-name">
+              <strong>{{ playlist.name }}</strong>
+              <small>{{ playlist.items.length }} faixa(s)</small>
+            </span>
+          </button>
+          <div class="albums-view__playlist-actions">
+            <button
+              type="button"
+              :disabled="playlist.items.length === 0"
+              @click="playPlaylist(playlist)"
+            >
+              <i class="ti ti-player-play" aria-hidden="true" /> Tocar
+            </button>
+            <button
+              type="button"
+              class="albums-view__playlist-remove"
+              :aria-label="`Remover playlist ${playlist.name}`"
+              @click="removePlaylist(playlist.id)"
+            >
+              <i class="ti ti-trash" aria-hidden="true" />
+            </button>
+          </div>
+          <ul v-if="expandedPlaylistId === playlist.id && playlist.items.length > 0" class="albums-view__playlist-tracks">
+            <li v-for="(item, index) in playlist.items" :key="`${item.musicId}-${index}`">
+              <span>{{ index + 1 }}. {{ item.title }}</span>
+              <button
+                type="button"
+                :aria-label="`Remover ${item.title} da playlist`"
+                @click="removePlaylistTrack(playlist.id, index)"
+              >
+                <i class="ti ti-x" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
         </article>
       </div>
     </section>
@@ -852,8 +906,49 @@ async function runAction(
 .albums-view__playlists-header h2 { margin: 0; }
 .albums-view__playlists form, .albums-view__playlist-list { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .albums-view__playlists input, .albums-view__playlists button { padding: 0.45rem 0.7rem; border-radius: 0.5rem; font: inherit; }
-.albums-view__playlist { justify-content: space-between; padding-top: 0.75rem; }
+.albums-view__playlist { justify-content: space-between; padding-top: 0.75rem; flex-wrap: wrap; }
 .albums-view__playlist small { display: block; color: var(--ds-color-on-surface-variant); }
+.albums-view__playlist-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.albums-view__playlist-name { display: flex; flex-direction: column; }
+.albums-view__playlist-actions { display: inline-flex; gap: 0.4rem; align-items: center; }
+.albums-view__playlist-remove { color: var(--ds-color-error, #b3261e); }
+.albums-view__playlist-tracks {
+  flex-basis: 100%;
+  margin: 0.5rem 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.albums-view__playlist-tracks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ds-color-on-surface-variant);
+}
+.albums-view__playlist-tracks button {
+  border: 0;
+  background: transparent;
+  color: var(--ds-color-on-surface-variant);
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.4rem;
+}
+.albums-view__playlist-tracks button:hover { color: var(--ds-color-error, #b3261e); }
 
 @media (max-width: 1280px) {
   .albums-view {
