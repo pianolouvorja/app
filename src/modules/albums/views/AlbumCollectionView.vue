@@ -29,6 +29,7 @@ const {
   playSung,
   playInstrumental,
   playSlides,
+  playAllInActiveCollection,
   openLyric,
   closeLyric,
 } = useAlbums()
@@ -105,6 +106,17 @@ async function runAction(
         </h1>
       </div>
 
+      <button
+        v-if="activeCollection?.kind !== 'hymnal' && filteredTracks.length > 0"
+        type="button"
+        class="album-collection-view__play-all"
+        :aria-label="t('albums.playAll')"
+        :title="t('albums.playAll')"
+        @click="playAllInActiveCollection()"
+      >
+        <i class="ti ti-player-play" aria-hidden="true" />
+        {{ t('albums.playAll') }}
+      </button>
     </header>
 
     <div
@@ -196,6 +208,21 @@ async function runAction(
   align-items: center;
   justify-content: flex-start;
   gap: 1rem;
+}
+
+.album-collection-view__play-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  border: 0;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--ds-color-primary);
+  color: var(--ds-color-on-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .album-collection-view__brand {

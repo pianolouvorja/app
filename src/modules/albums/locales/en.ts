@@ -17,6 +17,7 @@ export default {
       actions: 'Actions',
     },
     trackCount: '{count} tracks',
+    playAll: 'Play all',
     loading: 'Loading…',
     retry: 'Try again',
     dismiss: 'Dismiss',

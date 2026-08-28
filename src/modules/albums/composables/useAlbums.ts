@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useMediaStore } from '@modules/media/stores/useMediaStore'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import type { LibraryAlbum, LibraryAlbumId } from '@modules/sync/types/library'
@@ -12,6 +13,7 @@ import type { AlbumCollectionId } from '../types/albums'
 
 export function useAlbums() {
   const store = useAlbumsStore()
+  const mediaStore = useMediaStore()
   const libraryStore = useLocalLibraryStore()
   const router = useRouter()
   const isDesktop = isDesktopApp()
@@ -91,6 +93,24 @@ export function useAlbums() {
     )
   }
 
+  /** Toca a coletânea inteira. Hinários ficam fora por decisão da spec RF-01. */
+  async function playAllInActiveCollection(mode: MediaPlaybackMode = 'audio') {
+    const collection = activeCollection.value
+    if (!collection || collection.kind === 'hymnal' || tracks.value.length === 0) return false
+    const albumId = Number(collection.id)
+    if (!Number.isFinite(albumId)) return false
+    await mediaStore.playAlbumQueue(
+      tracks.value.map((track) => ({
+        musicId: track.musicId,
+        albumId,
+        title: track.name,
+      })),
+      mode,
+    )
+    await router.push({ name: 'media' })
+    return true
+  }
+
   function downloadCollection(collectionId: AlbumCollectionId) {
     void libraryStore.downloadAlbum(collectionId)
   }
@@ -154,6 +174,7 @@ export function useAlbums() {
     playInstrumental,
     playSlides,
     playMode,
+    playAllInActiveCollection,
     openLyric: store.openLyric,
     closeLyric: store.closeLyric,
   }
