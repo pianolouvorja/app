@@ -367,6 +367,8 @@ async function onToggleFullscreen() {
 <style scoped lang="scss">
 .media-page {
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
