@@ -92,15 +92,33 @@ const stageAlign = computed(() => ({
         : 'center',
 }))
 
-const verseStyle = computed(() => ({
-  color: stage.value.bibleTextColor,
-  fontSize: `${(stage.value.bibleFontSize / 1920) * 100}cqw`,
+/**
+ * Texto bíblico longo precisa ceder tamanho para preservar leitura sem estourar
+ * a área. O slider continua sendo o tamanho-base; a escala só reduz versos
+ * maiores e o clamp impede tanto gigantismo quanto texto minúsculo.
+ */
+const adaptiveBibleFontScale = computed(() => {
+  const length = runtime.value.text.replace(/\s+/g, ' ').trim().length
+  if (length > 360) return 0.66
+  if (length > 260) return 0.76
+  if (length > 170) return 0.86
+  return 1
+})
+
+const verseStyle = computed(() => {
+  const baseCqw = (stage.value.bibleFontSize / 1920) * 100
+  const responsiveCqw = baseCqw * adaptiveBibleFontScale.value
+  return {
+    color: stage.value.bibleTextColor,
+    // 1.5rem protege texto curto em tela pequena; 5rem evita gigantismo.
+    fontSize: `clamp(1.5rem, ${responsiveCqw}cqw, 5rem)`,
   fontWeight: String(stage.value.bibleFontWeight),
   textAlign: stage.value.textAlign,
   textShadow: stage.value.textShadow
     ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
     : 'none',
-}))
+  }
+})
 
 const verseBoxStyle = computed(() => {
   if (!stage.value.textBox) return {}
