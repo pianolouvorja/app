@@ -686,6 +686,9 @@ function handle(m){
       // MP3/áudio puro no canal video (popup liturgia manda dual): redireciona
       // pro fluxo de áudio — now-playing + EQ + bg (tela preta NUNCA).
       if(m.url&&isAudioUrl(m.url)){
+        // Vídeo anterior pode estar fullscreen (z-index alto) e esconder o
+        // now-playing. MP3 é áudio: mata a camada de vídeo antes do cartão.
+        v.pause();v.removeAttribute('src');v.style.display='none';v.load();
         const av=$('audio');const next=proxyUrl(m.url);
         window.__videoAudioActive=true;
         if(av.src!==next){av.src=next;
