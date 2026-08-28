@@ -187,6 +187,9 @@ let bgPalco='';  // BG personalizado do palco (idle) — persiste entre músicas
 
 function proxyUrl(original){
   if(!original)return original;
+  // Sender/popup legado pode mandar barra codificada (%2F) — decodifica
+  // caminho antes de qualquer comparação/use (404 silencioso caso contrário).
+  try{ original=decodeURIComponent(original) }catch(e){}
   // Qualquer porta do MESMO sender é local: 7080 (Principal), 7082 (TV 2),
   // 7084... Antes só aceitava :7080; bg vindo de slot :7082 era proxyado
   // de volta e falhava → receiver caía no bg-12 (caso real 26/08).
