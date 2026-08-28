@@ -661,6 +661,11 @@ export const useMediaStore = defineStore('media', () => {
     if (item) void playQueueItem(item)
   }
 
+  function jumpToQueue(index: number): void {
+    const item = queue.value[index]
+    if (item) void playQueueItem(item)
+  }
+
   function previousTrack(): void {
     const item = resolvePrevious({ items: queue.value, index: queueIndex.value })
     if (item) void playQueueItem(item)
@@ -1093,6 +1098,7 @@ export const useMediaStore = defineStore('media', () => {
     playAlbumQueue,
     playQueueItem,
     nextTrack,
+    jumpToQueue,
     previousTrack,
     clearQueue,
     hasQueue,

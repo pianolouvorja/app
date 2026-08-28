@@ -37,6 +37,9 @@ const {
   durationLabel,
   progressRatio,
   slideProgressRatio,
+  queue,
+  queueIndex,
+  jumpToQueue,
   volume,
   maximize,
   minimize,
@@ -208,32 +211,50 @@ async function onToggleFullscreen() {
         v-if="showPlaylist"
         class="media-window__playlist"
       >
-        <h2 class="media-window__playlist-title">
-          {{ t('media.playlist') }}
-        </h2>
-        <ul class="media-window__playlist-list">
-          <li
-            v-for="item in playlist"
-            :key="item.index"
-          >
-            <button
-              type="button"
-              class="media-window__playlist-item"
-              :class="{
-                'media-window__playlist-item--active': item.index === slideIndex,
-              }"
-              :style="
-                item.index === slideIndex
-                  ? { '--slide-progress': slideProgressRatio }
-                  : undefined
-              "
-              @click="goToSlide(item.index)"
+        <template v-if="queue.length > 1">
+          <h2 class="media-window__playlist-title">Fila de reprodução</h2>
+          <ul class="media-window__playlist-list">
+            <li v-for="(item, index) in queue" :key="`${item.musicId}-${index}`">
+              <button
+                type="button"
+                class="media-window__playlist-item"
+                :class="{ 'media-window__playlist-item--active': index === queueIndex }"
+                @click="jumpToQueue(index)"
+              >
+                <span class="media-window__playlist-index">{{ index + 1 }}</span>
+                <span class="media-window__playlist-label">{{ item.title }}</span>
+              </button>
+            </li>
+          </ul>
+        </template>
+        <template v-else>
+          <h2 class="media-window__playlist-title">
+            {{ t('media.playlist') }}
+          </h2>
+          <ul class="media-window__playlist-list">
+            <li
+              v-for="item in playlist"
+              :key="item.index"
             >
-              <span class="media-window__playlist-index">{{ item.index + 1 }}</span>
-              <span class="media-window__playlist-label">{{ item.label }}</span>
-            </button>
-          </li>
-        </ul>
+              <button
+                type="button"
+                class="media-window__playlist-item"
+                :class="{
+                  'media-window__playlist-item--active': item.index === slideIndex,
+                }"
+                :style="
+                  item.index === slideIndex
+                    ? { '--slide-progress': slideProgressRatio }
+                    : undefined
+                "
+                @click="goToSlide(item.index)"
+              >
+                <span class="media-window__playlist-index">{{ item.index + 1 }}</span>
+                <span class="media-window__playlist-label">{{ item.label }}</span>
+              </button>
+            </li>
+          </ul>
+        </template>
       </aside>
 
       <div class="media-window__pill-wrap">
