@@ -32,11 +32,13 @@ import {
   BIBLE_RUNTIME_CHANNEL,
   BIBLE_RUNTIME_STORAGE_KEY,
   normalizeBibleRuntime,
+  type BibleProjectionRuntime,
 } from '../../bible/services/bible-runtime'
 import {
   RANDOM_RUNTIME_CHANNEL,
   RANDOM_RUNTIME_STORAGE_KEY,
   normalizeRandomRuntime,
+  type RandomRuntimeState,
 } from '../../random/services/random-runtime'
 import {
   TIMER_RUNTIME_CHANNEL,
@@ -429,12 +431,13 @@ type Norm<T> = (raw: unknown) => T
  * Timer projetado (caso real 26/08: timer→projection bíblia→idle).
  * runtime do dono continua re-renderizando via projectOwner() abaixo.
  */
-const intent = {
+const intent: Record<Exclude<Owner, null>, boolean> = {
   media: false,
   bible: false,
   random: false,
   timer: false,
   countdown: false,
+  clock: false,
 }
 
 function debugPalco(...a: unknown[]) { console.info('[palco]', ...a) }
@@ -544,7 +547,7 @@ export function startPalcoBridge() {
     BIBLE_RUNTIME_CHANNEL,
     BIBLE_RUNTIME_STORAGE_KEY,
     normalizeBibleRuntime,
-    (v: { active: boolean; text: string; reference: string; projecting?: boolean }) => {
+    (v: BibleProjectionRuntime) => {
       runtimes.bible = v
       setIntent('bible', Boolean(v.projecting) && v.active)
     },
@@ -554,7 +557,7 @@ export function startPalcoBridge() {
     RANDOM_RUNTIME_CHANNEL,
     RANDOM_RUNTIME_STORAGE_KEY,
     normalizeRandomRuntime,
-    (v: { currentDisplay: string; isDrawing: boolean }) => {
+    (v: RandomRuntimeState) => {
       runtimes.random = v
       // intent = projecting APENAS (fix ping-pong 27/08): o '|| currentDisplay'
       // mantinha o sorteio vivo após turnOffOthers publicar projecting:false

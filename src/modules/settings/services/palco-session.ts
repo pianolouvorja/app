@@ -18,7 +18,7 @@ type PalcoStatus = {
   wsUrl: string | null
 }
 
-type ProjectionInput = {
+export type ProjectionInput = {
   /** HTML do texto (aceita <br>). */
   text: string
   /** Referência do rodapé (ex.: 'João 3:16 — ARC'). */

@@ -3,6 +3,8 @@ import {
   type RandomRuntimeState,
 } from '../types/random'
 
+export type { RandomRuntimeState }
+
 export const RANDOM_RUNTIME_CHANNEL = 'louvorja-random-runtime'
 export const RANDOM_RUNTIME_STORAGE_KEY = 'louvorja-random-runtime-state'
 

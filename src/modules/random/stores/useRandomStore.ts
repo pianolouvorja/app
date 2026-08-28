@@ -172,6 +172,7 @@ export const useRandomStore = defineStore('random', () => {
     runtime.value = {
       currentDisplay: nextPool.currentDisplay,
       isDrawing: false,
+      projecting: runtime.value.projecting,
     }
     draftName.value = ''
     rangeError.value = null
