@@ -44,10 +44,10 @@ const open = ref(false)
 <style scoped lang="scss">
 .stage-palette-fab {
   position: absolute;
-  /* Dentro da janela do player (origin = section media-window):
-   * topo direito da janela, abaixo do header do AppShell onde fica a versão. */
-  top: 0.75rem;
-  right: 1.25rem;
+  /* Rodapé da janela, canto esquerdo: área reservada a controles, nunca
+   * sobrepõe letras (palco centraliza) nem o pill (baixo-centro). */
+  bottom: 0.75rem;
+  left: 1.25rem;
   z-index: 40;
   display: inline-flex;
   width: 2.5rem;

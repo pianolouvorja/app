@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -61,6 +61,21 @@ const {
   clearError,
   syncProjectionFlag,
 } = useMediaPlayer()
+
+const playlistListEl = ref<HTMLUListElement | null>(null)
+
+/** Slide/faixa em reprodução visível no painel lateral (auto-scroll). */
+const activeListIndex = computed(() =>
+  queue.value.length > 1 ? queueIndex.value : slideIndex.value,
+)
+
+watch(activeListIndex, async (index) => {
+  if (index < 0) return
+  await nextTick()
+  const list = playlistListEl.value
+  const active = list?.querySelector('.media-window__playlist-item--active')
+  active?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+})
 
 const stageLyric = computed(() => currentSlide.value?.lyric ?? '')
 const stageTitle = computed(() => session.value?.title ?? '')
@@ -226,7 +241,7 @@ async function onToggleFullscreen() {
       >
         <template v-if="queue.length > 1">
           <h2 class="media-window__playlist-title">Fila de reprodução</h2>
-          <ul class="media-window__playlist-list">
+          <ul ref="playlistListEl" class="media-window__playlist-list">
             <li v-for="(item, index) in queue" :key="`${item.musicId}-${index}`">
               <button
                 type="button"
@@ -244,7 +259,7 @@ async function onToggleFullscreen() {
           <h2 class="media-window__playlist-title">
             {{ t('media.playlist') }}
           </h2>
-          <ul class="media-window__playlist-list">
+          <ul ref="playlistListEl" class="media-window__playlist-list">
             <li
               v-for="item in playlist"
               :key="item.index"
