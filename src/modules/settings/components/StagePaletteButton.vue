@@ -44,11 +44,11 @@ const open = ref(false)
 <style scoped lang="scss">
 .stage-palette-fab {
   position: fixed;
-  /* Canto inferior ESQUERDO — área sempre livre: palco/letras centralizam,
-   * pill fica embaixo no centro, playlist do player ocupa a direita e os
-   * FABs de ação (Projetar/TV) ficam embaixo à direita. */
-  bottom: calc(var(--ds-dock-height, 4.5rem) + 1rem);
-  left: 1.25rem;
+  /* Canto SUPERIOR direito: lugar de destaque, fácil visualização.
+   * Não compete com letras (centro), pill (baixo-centro), playlist (direita
+   * no player) nem FABs de ação (baixo-direita). */
+  top: calc(var(--app-titlebar-height, 2rem) + 0.75rem);
+  right: 1.25rem;
   z-index: 40;
   display: inline-flex;
   width: 2.5rem;
