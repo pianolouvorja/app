@@ -13,6 +13,8 @@ import { checkEulaAcceptance } from "./eula.mjs";
 import { resolveAppLocale } from "./locale.mjs";
 import { registerWorkspaceIpc } from "./ipc/register.mjs";
 import { attachWindowStateEvents, registerWindowIpc } from "./ipc/window.mjs";
+import { attachRemoteServer } from "./remote-server.mjs";
+import { attachPalcoServer } from "./palco-server.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
 import { initUpdater } from "./updater.mjs";
@@ -112,6 +114,7 @@ function createSplash() {
 		menuBarVisible: false,
 		autoHideMenuBar: true,
 		webPreferences: {
+			devTools: isDev,
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: true,
@@ -229,6 +232,7 @@ function buildPopupWindowOptions(url, features = '') {
     fullscreenable: true,
     webPreferences: {
       preload: PRELOAD_PATH,
+      devTools: isDev,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -347,6 +351,7 @@ function createWindow(locale = 'pt-BR') {
 		...(iconPath ? { icon: iconPath } : {}),
 		webPreferences: {
 			preload: PRELOAD_PATH,
+			devTools: isDev,
 			contextIsolation: true,
 			nodeIntegration: false,
 			// false: garante preload/IPC no AppImage empacotado (first-boot / splash)
@@ -428,6 +433,9 @@ function createWindow(locale = 'pt-BR') {
 
 app.whenReady().then(async () => {
 	ensureLinuxTaskbarIntegration();
+	// Controle remoto: WS :7071 — APK conecta e comanda liturgia/player
+	attachRemoteServer(() => mainWindow?.webContents ?? null);
+	attachPalcoServer(() => mainWindow?.webContents ?? null);
 	ensureWorkspaceDirectories();
 
 	// Splash screen — feedback visual imediato antes de qualquer coisa
@@ -479,6 +487,17 @@ app.on("second-instance", () => {
 	if (!mainWindow) return;
 	if (mainWindow.isMinimized()) mainWindow.restore();
 	mainWindow.focus();
+});
+
+app.on("will-quit", () => {
+	// Palco: app fechando → TVs param a mídia na hora (não toca até o fim).
+	try {
+		const { getPalcoManager } = require("./palco-server.mjs");
+		const manager = getPalcoManager && getPalcoManager();
+		if (manager) manager.stopAllMedia();
+	} catch {
+		/* palco não anexado */
+	}
 });
 
 app.on("window-all-closed", () => {

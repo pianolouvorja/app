@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import AlbumLyricDialog from '@modules/albums/components/AlbumLyricDialog.vue'
 
 import LiturgyCloneDialog from '../components/LiturgyCloneDialog.vue'
@@ -77,6 +78,8 @@ const {
   reorderItems,
   selectItem,
   playItemOnScreens,
+  importJa,
+  importScheduled,
   toggleItemDone,
   openCustomDialog,
   closeCustomDialog,
@@ -91,6 +94,7 @@ const {
   onManageTeam,
   onMusicPick,
   clearMusicPick,
+  onVideoFileSelected,
   onMusicSung,
   onMusicInstrumental,
   onMusicSlides,
@@ -107,6 +111,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 <template>
   <section class="liturgy-view">
     <header class="liturgy-view__header">
+      <PalcoRouteSelect module="liturgy" />
       <div class="liturgy-view__brand">
         <i
           class="ti ti-clipboard-text liturgy-view__brand-icon"
@@ -170,6 +175,32 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           />
 
           <div class="liturgy-view__toolbar-actions">
+            <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.importJa')"
+              @click="importJa"
+            >
+              <i
+                class="ti ti-file-import"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.importJa') }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="liturgy-view__clear"
+              :title="t('liturgy.scheduled.import')"
+              @click="importScheduled"
+            >
+              <i
+                class="ti ti-calendar-down"
+                aria-hidden="true"
+              />
+              <span>{{ t('liturgy.scheduled.import') }}</span>
+            </button>
+
             <button
               v-if="currentItems.length > 0"
               type="button"
@@ -246,6 +277,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           :music-instrumental-by-id="musicInstrumentalById"
           :busy-music-id="busyMusicId"
           @select="selectItem"
+          @video-file-selected="onVideoFileSelected"
           @play-screens="playItemOnScreens"
           @edit="openEditDialog"
           @add-sub-item="openAddSubItemDialog"

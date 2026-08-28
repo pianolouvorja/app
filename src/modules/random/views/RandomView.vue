@@ -1,13 +1,18 @@
 <script setup lang="ts">
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
 import RandomConfigDialog from '../components/RandomConfigDialog.vue'
 import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
 import RandomProjectFab from '../components/RandomProjectFab.vue'
 import RandomStage from '../components/RandomStage.vue'
 import { useRandomFeature } from '../composables/useRandom'
+import { appConfirm } from '@shared/composables/useAppConfirm'
 import type { RandomDrawMode } from '../types/random'
 
 const { t } = useI18n()
@@ -55,8 +60,14 @@ function onToggleProjection() {
   void toggleProjection()
 }
 
-function onResetAll() {
-  if (window.confirm(t('random.resetConfirm'))) {
+async function onResetAll() {
+  const confirmed = await appConfirm({
+    title: t('random.resetAll'),
+    message: t('random.resetConfirm'),
+    confirmLabel: t('random.resetAll'),
+    danger: true,
+  })
+  if (confirmed) {
     resetAll()
   }
 }
@@ -73,11 +84,23 @@ async function onImportFile(file: File) {
     // falha de leitura: mantém lista atual
   }
 }
+
+const stage = ref<StageSettings>(readEffectiveStageSettings('random'))
+let unsubStage: (() => void) | null = null
+onMounted(() => { unsubStage = subscribeStageSettings(() => { stage.value = readEffectiveStageSettings('random') }) })
+onUnmounted(() => unsubStage?.())
+
+// Características do módulo vindas do StageSettings (fonte única).
+const effectiveConfig = computed(() => {
+  const mod = stage.value.random
+  return mod ? { ...config.value, ...mod } : { ...config.value }
+})
 </script>
 
 <template>
   <section class="random-view">
     <header class="random-view__header">
+      <PalcoRouteSelect module="random" />
       <button
         type="button"
         class="random-view__back"
@@ -142,6 +165,7 @@ async function onImportFile(file: File) {
       </button>
     </header>
 
+
     <div class="random-view__content">
       <div class="random-view__panel random-view__panel--available">
         <RandomAvailablePanel
@@ -165,7 +189,7 @@ async function onImportFile(file: File) {
 
       <div class="random-view__stage">
         <RandomStage
-          :config="config"
+          :config="effectiveConfig"
           :runtime="runtime"
           :can-draw="canDraw"
           :is-projecting="isProjecting"

@@ -60,6 +60,36 @@ contextBridge.exposeInMainWorld('louvorja', {
   platform: process.platform,
   isElectron: true,
 
+  // Controle remoto (APK via WS :7071): comandos chegam do main.
+  remote: {
+    onCommand: (callback) => subscribe('remote:command', callback),
+    onStateRequest: (callback) => subscribe('remote:request-state', callback),
+    sendAck: (ack) => ipcRenderer.send('remote:ack', ack),
+    sendState: (state) => ipcRenderer.send('remote:state', state),
+    pairingInfo: () => ipcRenderer.invoke('remote:pairing-info'),
+    onClients: (callback) => subscribe('remote:clients', callback),
+  },
+
+  // Palco (cast p/ TV — receiver conecta em WS :7081, HTTP :7080)
+  palco: {
+    slots: () => ipcRenderer.invoke('palco:slots'),
+    wake: () => ipcRenderer.invoke('palco:wake'),
+    createSlot: (label) => ipcRenderer.invoke('palco:slot-create', { label }),
+    removeSlot: (slotId) => ipcRenderer.invoke('palco:slot-remove', { id: slotId }),
+    start: (slotId = '0') => ipcRenderer.invoke('palco:start', { slotId }),
+    stop: (slotId = '0') => ipcRenderer.invoke('palco:stop', { slotId }),
+    status: (slotId = '0') => ipcRenderer.invoke('palco:status', { slotId }),
+    send: (msg, slotId = '0') => ipcRenderer.invoke('palco:send', { slotId, ...msg }),
+    serveMedia: (name, mime, base64, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-media', { slotId, name, mime, base64 }),
+    servePath: (filePath, slotId = '0') =>
+      ipcRenderer.invoke('palco:serve-path', { slotId, path: filePath }),
+    clearMedia: (slotId = '0') => ipcRenderer.invoke('palco:clear-media', { slotId }),
+    onEvent: (callback) => subscribe('palco:event', callback),
+    onReceiverConnected: (callback) => subscribe('palco:receiver-connected', callback),
+    onReceiverDisconnected: (callback) => subscribe('palco:receiver-disconnected', callback),
+  },
+
   window: {
     control: (action) => ipcRenderer.invoke('window:control', action),
     onMaximizedState: (callback) => subscribe('window:maximized-state', callback),
@@ -74,6 +104,7 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   workspace: {
+    readBinaryFile: (path) => ipcRenderer.invoke('dialog:read-binary-file', path),
     getRecord: (filename) => ipcRenderer.invoke('workspace:get-record', filename),
     saveRecord: (filename, data) => ipcRenderer.invoke('workspace:save-record', filename, data),
     clear: () => ipcRenderer.invoke('workspace:clear'),
@@ -91,6 +122,7 @@ contextBridge.exposeInMainWorld('louvorja', {
       ipcRenderer.invoke('media:download', url, mediaType, filename),
     check: (mediaType, filename) => ipcRenderer.invoke('media:check', mediaType, filename),
     delete: (mediaType, filename) => ipcRenderer.invoke('media:delete', mediaType, filename),
+    probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },
 
   displays: {
@@ -121,6 +153,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteToggleMute: () => ipcRenderer.invoke('projection:remote-toggle-mute'),
     remoteSetVolume: (volume) =>
       ipcRenderer.invoke('projection:remote-set-volume', volume),
+    getSourceMediaInfo: () =>
+      ipcRenderer.invoke('projection:get-source-media-info'),
     getPlaybackState: () => ipcRenderer.invoke('projection:get-playback-state'),
     getNavigationState: () => ipcRenderer.invoke('projection:get-navigation-state'),
     remoteGoBack: () => ipcRenderer.invoke('projection:remote-go-back'),
@@ -128,6 +162,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     remoteReload: () => ipcRenderer.invoke('projection:remote-reload'),
     toggleSiteScreens: () => ipcRenderer.invoke('projection:toggle-site-screens'),
     toggleVideoScreens: () => ipcRenderer.invoke('projection:toggle-video-screens'),
+    // Player HTML (local-video/youtube) avisa que o vídeo acabou → autoclose.
+    notifyVideoEnded: () => ipcRenderer.send('projection:video-ended'),
     remoteImageNext: () => ipcRenderer.invoke('projection:remote-image-next'),
     remoteImagePrev: () => ipcRenderer.invoke('projection:remote-image-prev'),
     getImageSlideState: () =>
@@ -137,6 +173,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     getPdfPageState: () => ipcRenderer.invoke('projection:get-pdf-page-state'),
     remotePptNext: () => ipcRenderer.invoke('projection:remote-ppt-next'),
     remotePptPrev: () => ipcRenderer.invoke('projection:remote-ppt-prev'),
+    captureSourceFrame: () =>
+      ipcRenderer.invoke('projection:capture-source-frame'),
     getPptSlideState: () =>
       ipcRenderer.invoke('projection:get-ppt-slide-state'),
     getSiteTargetMonitors: () =>

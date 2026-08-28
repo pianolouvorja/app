@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { GlassCard } from '@design-system/index'
 
 import type { BibleSelection } from '../types/bible'
+import { readEffectiveStageSettings } from '../../settings/services/stage-settings-runtime'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 
 const props = defineProps<{
   chapterTitle: string
@@ -30,6 +32,18 @@ const { t } = useI18n()
 const copyFeedbackKey = ref<string | null>(null)
 
 const canNavigate = computed(() => props.selectedVerses.length > 0)
+
+/** Miniatura reflete a personalização do escopo bible (bg/caixa/cores). */
+const previewStyle = computed(() => {
+  const st = readEffectiveStageSettings('bible')
+  const bg = resolveBackgroundImage(st.backgroundImage)
+  return {
+    backgroundColor: st.backgroundColor,
+    backgroundImage: bg ? `url(${bg})` : undefined,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+})
 
 async function handleCopy() {
   const text = props.hasProjection
@@ -184,6 +198,7 @@ function isSelected(verseNumber: number): boolean {
     <aside
       v-if="hasProjection"
       class="bible-reader__preview"
+      :style="previewStyle"
       aria-live="polite"
     >
       <p class="bible-reader__preview-text">

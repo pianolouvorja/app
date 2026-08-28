@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 
 /**
@@ -21,6 +23,19 @@ export function registerDialogIpc() {
       return multiple ? result.filePaths : result.filePaths[0]
     } catch (error) {
       console.error('[ipc] dialog:open-file', error)
+      return null
+    }
+  })
+}
+
+/** Lê bytes de arquivo escolhido (o decode UTF-8/ANSI fica no renderer). */
+export function registerReadBinaryFileIpc() {
+  ipcMain.handle('dialog:read-binary-file', async (_event, path) => {
+    try {
+      const buffer = await readFile(String(path))
+      return new Uint8Array(buffer)
+    } catch (error) {
+      console.error('[ipc] dialog:read-binary-file', error)
       return null
     }
   })

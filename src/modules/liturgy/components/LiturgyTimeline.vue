@@ -21,6 +21,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  videoFileSelected: [itemId: string, durationSec: number]
   select: [index: number]
   playScreens: [index: number]
   edit: [index: number]
@@ -281,6 +282,9 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           :has-instrumental="musicHasInstrumental(segment.entry.item)"
           :music-busy="isMusicBusy(segment.entry.item)"
           @select="emit('select', segment.entry.index)"
+          @video-file-selected="
+            emit('videoFileSelected', segment.entry.item.id, $event)
+          "
           @play-screens="emit('playScreens', segment.entry.index)"
           @edit="emit('edit', segment.entry.index)"
           @add-sub-item="emit('addSubItem', segment.entry.item.id)"

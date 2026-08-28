@@ -34,6 +34,7 @@ import {
   todayWeekday,
 } from '../services/liturgy-preferences'
 import { clearLiturgyWebRuntime } from '../services/liturgy-web-runtime'
+import { parseJaLiturgy } from '../services/liturgy-ja-import'
 import {
   DEFAULT_LITURGY_ITEM_DRAFT,
   DEFAULT_MOMENT_DURATION_MS,
@@ -344,6 +345,121 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     if (!book) return []
     return Array.from({ length: book.chapters }, (_, index) => index + 1)
   })
+
+  /**
+   * Importa liturgia .ja (LouvorJA Delphi) por dia.
+   * mode='merge' (padrão): itens duplicados são pulados.
+   * mode='overwrite': o dia importado SUBSTITUI o existente inteiro.
+   * Retorna { added, skipped, days, hasDuplicates }.
+   */
+  async function importJaDays(
+    parsed: import('../services/liturgy-ja-import').JaLiturgy,
+    mode: 'merge' | 'overwrite' = 'merge',
+  ) {
+    let added = 0
+    let skipped = 0
+    let hasDuplicates = false
+    const days: string[] = []
+    const enriched = await enrichJaDurations(parsed)
+    for (const [day, items] of Object.entries(enriched)) {
+      const weekday = day as LiturgyWeekday
+      const existing = weekdays.value[weekday] ?? []
+      if (mode === 'overwrite') {
+        weekdays.value = { ...weekdays.value, [weekday]: [...(items ?? [])] }
+        added += items?.length ?? 0
+        days.push(day)
+        continue
+      }
+      const next = [...existing]
+      for (const item of items ?? []) {
+        const dup = existing.some(
+          (e) =>
+            e.type === item.type &&
+            e.name === item.name &&
+            e.musicId === item.musicId &&
+            e.filePath === item.filePath,
+        )
+        if (dup) {
+          skipped++
+          hasDuplicates = true
+          continue
+        }
+        next.push(item)
+        added++
+      }
+      weekdays.value = { ...weekdays.value, [weekday]: next }
+      days.push(day)
+    }
+    persist()
+    return {
+    setItemDurationMs, added, skipped, days, hasDuplicates }
+  }
+
+  /**
+   * Pré-checa quantos itens do .ja já existem (sem alterar nada) —
+   * usado pra decidir entre merge (pular) ou overwrite (substituir).
+   */
+  function countJaDuplicates(parsed: import('../services/liturgy-ja-import').JaLiturgy) {
+    let duplicates = 0
+    for (const [day, items] of Object.entries(parsed)) {
+      const existing = weekdays.value[day as LiturgyWeekday] ?? []
+      for (const item of items ?? []) {
+        if (
+          existing.some(
+            (e) =>
+              e.type === item.type &&
+              e.name === item.name &&
+              e.musicId === item.musicId &&
+              e.filePath === item.filePath,
+          )
+        ) {
+          duplicates++
+        }
+      }
+    }
+    return duplicates
+  }
+
+  /**
+   * Duração automática: música → catálogo (musicList); vídeo/áudio →
+   * ffprobe do arquivo quando o caminho existe localmente (imports do
+   * Delphi trazem caminhos Windows — ficam 0).
+   */
+  async function enrichJaDurations(
+    parsed: import('../services/liturgy-ja-import').JaLiturgy,
+  ): Promise<import('../services/liturgy-ja-import').JaLiturgy> {
+    const byId = new Map(musicList.value.map((m) => [m.id, m]))
+    const probeCache = new Map<string, number>()
+    const result: import('../services/liturgy-ja-import').JaLiturgy = {}
+    for (const [day, items] of Object.entries(parsed)) {
+      result[day as LiturgyWeekday] = await Promise.all(
+        (items ?? []).map(async (item) => {
+          if (item.type === 'music' && item.musicId != null) {
+            const opt = byId.get(item.musicId)
+            if (opt?.durationMs) return { ...item, durationMs: opt.durationMs }
+            return item
+          }
+          if (
+            item.durationMs === 0 &&
+            item.filePath &&
+            (item.type === 'video' || item.type === 'other_files')
+          ) {
+            let probed = probeCache.get(item.filePath)
+            if (probed === undefined) {
+              const { probeMediaDurationMs } = await import(
+                '../services/media-probe'
+              )
+              probed = await probeMediaDurationMs(item.filePath)
+              probeCache.set(item.filePath, probed)
+            }
+            if (probed > 0) return { ...item, durationMs: probed }
+          }
+          return item
+        }),
+      )
+    }
+    return result
+  }
 
   function persist() {
     saveLiturgyState({
@@ -744,6 +860,14 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey.value = result.messageKey ?? null
   }
 
+  /** Atualiza a duração de um item (ex.: vídeo local lido do arquivo no web). */
+  function setItemDurationMs(itemId: string, durationMs: number): void {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return
+    currentItems.value = currentItems.value.map((item) =>
+      item.id === itemId ? { ...item, durationMs } : item,
+    )
+  }
+
   /**
    * Controles do álbum/hinário na linha de música:
    * cantado, instrumental ou slides sem áudio (abre /media).
@@ -1114,6 +1238,8 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     verseChapterOptions,
     hydrate,
     selectDay,
+    importJaDays,
+    countJaDuplicates,
     selectCustomLiturgy,
     setSessionStartFromInput,
     clearSessionStart,
@@ -1152,5 +1278,6 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     clearActionMessage,
     setActionMessage,
     setNotes,
+    setItemDurationMs,
   }
 })

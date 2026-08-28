@@ -3,6 +3,8 @@ import {
   type RandomRuntimeState,
 } from '../types/random'
 
+export type { RandomRuntimeState }
+
 export const RANDOM_RUNTIME_CHANNEL = 'louvorja-random-runtime'
 export const RANDOM_RUNTIME_STORAGE_KEY = 'louvorja-random-runtime-state'
 
@@ -20,6 +22,7 @@ export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
   return {
     currentDisplay: asString(source.currentDisplay, ''),
     isDrawing: source.isDrawing === true,
+    projecting: source.projecting === true,
   }
 }
 

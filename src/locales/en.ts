@@ -1,4 +1,7 @@
 export default {
+  projection: {
+    confirmClose: 'Projection is in progress. Closing this window stops the music. Really leave?',
+  },
   app: {
     name: 'Louvor JA',
     nameLouvor: 'Louvor',
@@ -6,6 +9,7 @@ export default {
   },
   common: {
     comingSoon: 'Coming soon',
+    cancel: 'Cancel',
   },
   monitors: {
     selectScreens: 'Select screens',

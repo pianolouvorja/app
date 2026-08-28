@@ -17,6 +17,7 @@ export default {
       actions: 'Ações',
     },
     trackCount: '{count} faixas',
+    playAll: 'Tocar tudo',
     loading: 'Carregando…',
     retry: 'Tentar novamente',
     dismiss: 'Descartar',

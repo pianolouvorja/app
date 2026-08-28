@@ -1,0 +1,40 @@
+# Build Linux AppImage — gera instalador x64 + latest-linux.yml
+# Roda manualmente (workflow_dispatch) ou em push de tags v*
+name: Build Linux
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux AppImage x64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Vite + Electron AppImage (x64) + publish
+        run: npm run electron:build -- --linux AppImage --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload AppImage (artifact backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: LouvorJA-PIANO-Linux-x64-AppImage
+          path: dist-electron/*.AppImage
+          if-no-files-found: warn
+          retention-days: 30

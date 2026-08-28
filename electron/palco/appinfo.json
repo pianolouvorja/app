@@ -1,0 +1,24 @@
+{
+  "id": "com.piano.louvorja.palco",
+  "version": "0.1.29",
+  "vendor": "LouvorJA",
+  "author": "Rafael Zendron",
+  "email": "app@pianolouvorja.com.br",
+  "type": "web",
+  "main": "index.html",
+  "title": "PIANO LouvorJA Palco",
+  "icon": "icon80.png",
+  "largeIcon": "icon130.png",
+  "uiRevision": 2,
+  "handleKeys": true,
+  "supportSwipeActions": false,
+  "disableAudioFocus": false,
+  "mediaDecoder": {
+    "audio": {
+      "decodeFormat": [
+        "mp3",
+        "aac"
+      ]
+    }
+  }
+}
