@@ -192,7 +192,7 @@ const referenceStyle = computed(() => ({
   gap: 0.6em;
   width: 100%;
   // Bíblia pede linha mais longa que hinos: retangular, não quadrada.
-  max-width: min(84rem, 86%);
+  max-width: min(92rem, 92%);
 }
 
 .bible-projection__text {
