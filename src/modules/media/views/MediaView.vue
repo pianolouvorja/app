@@ -167,10 +167,15 @@ async function onToggleFullscreen() {
 </script>
 
 <template>
-  <section
-    ref="stageRoot"
-    class="media-window"
-  >
+  <div class="media-page">
+    <div class="media-page__fab-bar">
+      <StagePaletteButton scope="hymns" />
+    </div>
+
+    <section
+      ref="stageRoot"
+      class="media-window"
+    >
     <header class="media-window__toolbar">
       <button
         type="button"
@@ -197,10 +202,6 @@ async function onToggleFullscreen() {
         />
       </button>
     </header>
-    <div class="media-window__fab-bar">
-      <StagePaletteButton scope="hymns" />
-    </div>
-
 
     <div
       v-if="lastErrorKey"
@@ -359,19 +360,36 @@ async function onToggleFullscreen() {
       @cancel="cancelClose"
       @confirm="onConfirmClose"
     />
-  </section>
+    </section>
+  </div>
 </template>
 
 <style scoped lang="scss">
+.media-page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem; /* gap sutil entre a faixa do FAB e a janela */
+  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
+  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
+  margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
+}
+
+.media-page__fab-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 0.25rem;
+}
+
 .media-window {
   position: relative;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  /* Altura cede espaço à faixa do FAB (2.5rem botão + 0.5rem gap) */
-  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem - 3rem);
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem - 3rem);
-  margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
+  flex: 1;
+  min-height: 0;
   border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;
   background: #000;
@@ -514,15 +532,6 @@ async function onToggleFullscreen() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.media-window__fab-bar {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0 0.5rem;
-  margin-bottom: -0.5rem; /* gap sutil: botão encosta na borda da janela */
 }
 
 .media-window__pill-wrap {
