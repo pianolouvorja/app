@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
 import { isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
+import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
   closeProjectionModule,
@@ -856,8 +857,23 @@ export const useMediaStore = defineStore('media', () => {
     return { ok: true, warningKey }
   }
 
+  /** TVs Palco vivas (receiver conectado) — contam como tela ativa. */
+  async function hasLivePalcoTvs(): Promise<boolean> {
+    try {
+      const slots = await palcoSession.slots()
+      return slots.some((s) => s.running && s.clients > 0)
+    } catch {
+      return false
+    }
+  }
+
   async function startProjection(): Promise<boolean> {
     if (!session.value) return false
+    // Sem NENHUM destino (sem monitor estendido e sem TV Palco conectada)
+    // a projeção não liga — não há pra onde projetar. TV viva = tela ativa
+    // (decisão Rafael/Elias 27/08: mecanismo ligava só com múltiplas telas
+    // FÍSICAS; TVs WS agora entram na conta).
+    const hasTvs = await hasLivePalcoTvs()
     // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
     // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
     if (isPalcoTvOnlyRoute('hymns')) {
@@ -870,13 +886,16 @@ export const useMediaStore = defineStore('media', () => {
     const opened = await openProjectionModule('media')
     if (opened) {
       projectingTvsOnly.value = false
-    } else {
-      // Sem monitor cabeado o openProjectionModule devolve false — mas as
-      // TVs Palco continuam sendo destino válido do espelho (decisão Rafael
-      // 27/08: hino tocando = projetando nas TELAS ATIVAS). Cabo é destino
-      // ADICIONAL quando existe, não requisito. projectingTvsOnly segura o
-      // watch de 400ms (não há janela pra vigiar — mesmo guard do só-TVs).
+    } else if (hasTvs) {
+      // Sem monitor cabeado mas COM TVs Palco vivas: a projeção segue nas
+      // TVs (espelho da bridge). projectingTvsOnly segura o watch 400ms.
       projectingTvsOnly.value = true
+    } else {
+      // Nenhum destino: não liga.
+      isProjecting.value = false
+      stopProjectionWatch()
+      publishProjectionState()
+      return false
     }
     isProjecting.value = true
     startProjectionWatch()
