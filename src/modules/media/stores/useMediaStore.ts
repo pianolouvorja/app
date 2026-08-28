@@ -2,6 +2,11 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import {
+  type QueueItem,
+  resolveNext,
+  resolvePrevious,
+} from '../services/media-queue'
 import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
 import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
@@ -62,6 +67,9 @@ export const useMediaStore = defineStore('media', () => {
   const lastErrorKey = ref<string | null>(null)
   const minimized = ref(true)
   const isProjectingRaw = ref(false)
+  // Fila de reprodução (spec playlist RF-03): vazia = comportamento atual.
+  const queue = ref<QueueItem[]>([])
+  const queueIndex = ref(-1)
   const isProjecting = computed({
     get: () => isProjectingRaw.value,
     set: (v: boolean) => {
@@ -348,6 +356,12 @@ export const useMediaStore = defineStore('media', () => {
         status.value = session.value ? 'paused' : 'idle'
       },
       onEnded: () => {
+        // Fila (spec playlist RF-03): acabou a faixa, vem a próxima.
+        const nextItem = resolveNext({ items: queue.value, index: queueIndex.value })
+        if (nextItem) {
+          void playQueueItem(nextItem)
+          return
+        }
         status.value = 'paused'
         currentTimeSec.value = durationSec.value
         close()
@@ -608,6 +622,58 @@ export const useMediaStore = defineStore('media', () => {
     }
 
     await refreshResolvedSlideImage()
+  }
+
+  // ===== Fila (spec playlist RF-03) =====
+
+  /** Toca um item da fila pelo fluxo completo (open → auto-projeção). */
+  async function playQueueItem(item: QueueItem, mode?: MediaPlaybackMode): Promise<void> {
+    const target = mode ?? session.value?.mode ?? 'audio'
+    await open({
+      musicId: item.musicId,
+      mode: target,
+      albumId: item.albumId,
+      // project undefined = contrato 27/08 (projeta se houver destino ativo)
+      project: undefined,
+    })
+    queueIndex.value = queue.value.findIndex((q) => q.musicId === item.musicId)
+    publishProjectionState()
+  }
+
+  /** Substitui a fila e toca a partir de startIndex. */
+  async function playQueue(items: QueueItem[], startIndex = 0, mode?: MediaPlaybackMode): Promise<void> {
+    queue.value = items
+    const first = items[startIndex]
+    if (!first) return
+    await playQueueItem(first, mode)
+  }
+
+  /** Fila inteira de um álbum (ordenada por track — caller já ordena). */
+  async function playAlbumQueue(
+    items: Array<{ musicId: number; albumId: number | null; title: string }>,
+    mode?: MediaPlaybackMode,
+  ): Promise<void> {
+    await playQueue(items, 0, mode)
+  }
+
+  function nextTrack(): void {
+    const item = resolveNext({ items: queue.value, index: queueIndex.value })
+    if (item) void playQueueItem(item)
+  }
+
+  function previousTrack(): void {
+    const item = resolvePrevious({ items: queue.value, index: queueIndex.value })
+    if (item) void playQueueItem(item)
+  }
+
+  function clearQueue(): void {
+    queue.value = []
+    queueIndex.value = -1
+  }
+
+  /** Há fila ativa? (UI: next/prev do player = faixa; sem fila = slides) */
+  function hasQueue(): boolean {
+    return queue.value.length > 1
   }
 
   async function nextSlide(): Promise<void> {
@@ -1021,6 +1087,15 @@ export const useMediaStore = defineStore('media', () => {
     goToSlide,
     nextSlide,
     previousSlide,
+    queue,
+    queueIndex,
+    playQueue,
+    playAlbumQueue,
+    playQueueItem,
+    nextTrack,
+    previousTrack,
+    clearQueue,
+    hasQueue,
     setVolume,
     minimize,
     maximize,
