@@ -689,7 +689,7 @@ function handle(m){
           av.onended=()=>{hideNp();showIdle('Aguardando conteúdo…')};
           showNp(m.title||'Reproduzindo áudio', m.subtitle||'', m.cover||'');
           $('bg').src=m.background?proxyUrl(m.background):'bg-fallback.png';}
-        if(m.action==='play'&&av.paused)playWithFallback();
+        if(m.action!=='pause'&&m.action!=='stop'&&av.paused)playWithFallback();
         if(m.action==='pause'&&!av.paused)av.pause();
         if(typeof m.positionMs==='number'&&m.positionMs>0){
           try{av.currentTime=m.positionMs/1000}catch(e){}}
