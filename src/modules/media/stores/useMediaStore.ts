@@ -867,14 +867,21 @@ export const useMediaStore = defineStore('media', () => {
       publishProjectionState()
       return true
     }
-    projectingTvsOnly.value = false
     const opened = await openProjectionModule('media')
-    isProjecting.value = opened
     if (opened) {
-      startProjectionWatch()
-      publishProjectionState()
+      projectingTvsOnly.value = false
+    } else {
+      // Sem monitor cabeado o openProjectionModule devolve false — mas as
+      // TVs Palco continuam sendo destino válido do espelho (decisão Rafael
+      // 27/08: hino tocando = projetando nas TELAS ATIVAS). Cabo é destino
+      // ADICIONAL quando existe, não requisito. projectingTvsOnly segura o
+      // watch de 400ms (não há janela pra vigiar — mesmo guard do só-TVs).
+      projectingTvsOnly.value = true
     }
-    return opened
+    isProjecting.value = true
+    startProjectionWatch()
+    publishProjectionState()
+    return true
   }
 
   function clearProjection(): void {
