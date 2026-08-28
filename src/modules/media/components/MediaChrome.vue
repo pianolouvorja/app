@@ -93,11 +93,13 @@ async function onToggleAudio() {
 <style scoped lang="scss">
 .media-chrome {
   position: fixed;
-  right: 2rem;
-  bottom: calc(var(--ds-dock-height, 5.5rem) + 1.25rem);
+  /* Superior direito: destaque e fácil visualização, longe do conteúdo
+   * central (letras/palco) e do dock inferior. */
+  top: calc(var(--app-titlebar-height, 2rem) + 0.75rem);
+  right: 1.25rem;
   z-index: 36;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
   pointer-events: none;
 }
