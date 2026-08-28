@@ -11,6 +11,15 @@
  */
 
 import { palcoSession } from './palco-session'
+import { publishBibleRuntimeOff } from '../../bible/services/bible-runtime'
+import { publishRandomRuntime, readRandomRuntimeFromStorage } from '../../random/services/random-runtime'
+import { publishTimerRuntime } from '../../timer/services/timer-runtime'
+import { publishCountdownRuntime } from '../../countdown/services/countdown-runtime'
+import { useOutputRegistry } from './output-registry'
+import type { OutputModule } from './output-registry'
+import { planForSlot, OWNER_TO_PALCO_MODULE } from './output-plan'
+import { getPalcoRoute } from './palco-routing'
+import type { ProjectionInput } from './palco-session'
 import { readEffectiveStageSettings } from './stage-settings-runtime'
 import {
   MEDIA_RUNTIME_CHANNEL,
@@ -23,11 +32,13 @@ import {
   BIBLE_RUNTIME_CHANNEL,
   BIBLE_RUNTIME_STORAGE_KEY,
   normalizeBibleRuntime,
+  type BibleProjectionRuntime,
 } from '../../bible/services/bible-runtime'
 import {
   RANDOM_RUNTIME_CHANNEL,
   RANDOM_RUNTIME_STORAGE_KEY,
   normalizeRandomRuntime,
+  type RandomRuntimeState,
 } from '../../random/services/random-runtime'
 import {
   TIMER_RUNTIME_CHANNEL,
@@ -50,8 +61,8 @@ let owner: Owner = null
 
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
-  bible: { active: false, text: '', reference: '' },
-  random: { currentDisplay: '', isDrawing: false },
+  bible: { active: false, text: '', reference: '', projecting: false },
+  random: { currentDisplay: '', isDrawing: false, projecting: false },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
 }
@@ -62,6 +73,15 @@ let unwatchers: Array<() => void> = []
 let clockInterval: number | null = null
 
 // ===== helpers =====
+
+/** Runtime de timer/countdown hidratado de storage é confiável? Sessão
+ * morta (app fechado projetando) deixa segmentStartedAt antigo e
+ * projecting:true — o "contador 00:00 fantasma" roubava o owner no boot.
+ * Confiável = segmento iniciado há menos de 12h. */
+function runtimeIsFresh(seg: { segmentStartedAt: number | null }): boolean {
+  if (!seg.segmentStartedAt) return true // pausado/idle sem segmento vivo
+  return Date.now() - seg.segmentStartedAt < 12 * 60 * 60 * 1000
+}
 
 function elapsedMs(seg: { status: string; segmentStartedAt: number | null; accumulatedMs: number }): number {
   if (seg.status !== 'running' && seg.status !== 'paused') return seg.accumulatedMs
@@ -79,116 +99,171 @@ function fmtClock(ms: number): string {
 
 // ===== projeção por módulo =====
 
-async function projectOwner() {
-  if (!owner) {
-    palcoSession.idle()
-    return
-  }
-  switch (owner) {
-    case 'media':
-      await projectMedia()
-      break
-    case 'bible':
-      await projectBible()
-      break
-    case 'random':
-      await projectRandom()
-      break
-    case 'timer':
-      projectTimer()
-      break
-    case 'countdown':
-      projectCountdown()
-      break
-    case 'clock':
-      projectClock()
-      break
+/**
+ * Renderiza TODOS os slots segundo o plano (spec 2026-08-27 — takeover
+ * híbrido): decisãoo pura em output-plan.ts; aqui só efeitos.
+ * Takeover: owner com rota pro slot renderiza nele (toma a tela).
+ * Restore: slot atribuído mostra o conteúdo ATUAL do módulo atribuído
+ * (se vivo) — nunca fica congelado; degradado → idle.
+ * SERIAL: projectTo/timerTo trocam activeSlotId/baseUrl por sender.
+ */
+async function renderAllSlots(): Promise<void> {
+  if (!palcoSession.isElectron) return
+  const { moduleForSlot } = useOutputRegistry()
+  const slots = await palcoSession.slots()
+  debugPalco('renderAllSlots slots=', JSON.stringify(slots), 'routeRandom=', getPalcoRoute('random'), 'routeBible=', getPalcoRoute('bible'))
+  for (const s of slots) {
+    if (!s.running) continue
+    const plan = planForSlot(s.id, {
+      owner,
+      routeOf: (m) => getPalcoRoute(m),
+      assignedOf: (slotId) => moduleForSlot(slotId),
+      isAlive: assignedSlotHasContent,
+    })
+    debugPalco('slot', s.id, 'plan=', JSON.stringify(plan), 'owner=', owner)
+    if (plan.render === 'owner') {
+      await renderOwnerTo(s.id)
+    } else if (plan.render === 'assigned') {
+      // video/pdf/ppt: runtime vive nos popups (não na bridge) — não tocar.
+      if (plan.module === 'bible' || plan.module === 'media') {
+        await renderModuleTo(plan.module, s.id)
+      }
+    } else {
+      palcoSession.idleTo(s.id)
+    }
   }
 }
 
-async function projectMedia() {
-  const r = runtimes.media
-  const text = r.lyric || r.title || ''
-  if (!text) {
-    palcoSession.idle()
+/** Módulo atribuído a um slot tem conteúdo ativo pra mostrar nele? */
+function assignedSlotHasContent(m: OutputModule): boolean {
+  switch (m) {
+    case 'bible': return Boolean(runtimes.bible.projecting) && runtimes.bible.active && Boolean(runtimes.bible.text)
+    case 'media': return Boolean(runtimes.media.lyric || runtimes.media.title)
+    // video/pdf/ppt: popups mandam direto ao slot — bridge não renderiza,
+    // mas também NÃO considera morto (não mandar idle por cima deles).
+    default: return true
+  }
+}
+
+/** Input de projeção do owner (ou null → idle). */
+function ownerInput(): ProjectionInput | { timer: TimerOpts } | null {
+  switch (owner) {
+    case 'media': {
+      const r = runtimes.media
+      const text = r.lyric || r.title || ''
+      if (!text) return null
+      return {
+        text: text.split('\n').join('<br>'),
+        // Título NUNCA no rodapé dos slides de letra — o nome da música
+        // aparece só na capa (decisão Rafael 26/08).
+        footerRef: '',
+        background: r.imageUrl ?? undefined,
+        isCover: r.isCover === true,
+      }
+    }
+    case 'bible': {
+      const r = runtimes.bible
+      if (!r.projecting || !r.active || !r.text) return null
+      return { text: r.text.split('\n').join('<br>'), footerRef: r.reference }
+    }
+    case 'random': {
+      const r = runtimes.random
+      // Projeção ativa sem sorteio ainda: assume o palco com o bg do
+      // escopo random (tela de espera — decisão Rafael 27/08).
+      if (!r.currentDisplay && r.projecting) return { text: '' }
+      if (!r.currentDisplay) return null
+      return { text: r.currentDisplay }
+    }
+    case 'timer': {
+      const r = runtimes.timer
+      // guard: runtime stale (storage de sessão morta) não projeta —
+      // era a causa do "contador 00:00 fundo preto" na TV.
+      if (!r || r.status === 'idle' || !r.projecting) return null
+      return { timer: { mode: 'chrono' as const, label: '', duration: Math.floor(elapsedMs(r) / 1000) } }
+    }
+    case 'countdown': {
+      const r = runtimes.countdown
+      if (!r || r.status === 'idle' || !r.projecting) return null
+      const remaining = Math.max(0, r.durationMs - elapsedMs(r))
+      return { timer: { mode: 'countdown' as const, label: '', duration: Math.ceil(remaining / 1000) } }
+    }
+    default:
+      return null
+  }
+}
+
+type TimerOpts = { mode: 'countdown' | 'chrono'; label?: string; duration?: number }
+
+async function renderOwnerTo(slotId: string): Promise<void> {
+  if (owner === 'clock') return renderClockTo(slotId)
+  const input = ownerInput()
+  if (!input) return palcoSession.idleTo(slotId)
+  if ('timer' in input) return palcoSession.timerTo(slotId, input.timer)
+  await palcoSession.projectTo(slotId, OWNER_TO_PALCO_MODULE[owner!] ?? 'random', input)
+}
+
+/** Slot atribuído: renderiza o módulo atribuído (restore). */
+async function renderModuleTo(m: 'bible' | 'media', slotId: string): Promise<void> {
+  if (m === 'bible') {
+    const r = runtimes.bible
+    if (!r.projecting || !r.active || !r.text) return palcoSession.idleTo(slotId)
+    await palcoSession.projectTo(slotId, 'bible', {
+      text: r.text.split('\n').join('<br>'),
+      footerRef: r.reference,
+    })
     return
   }
-  await palcoSession.projectRouted('hymns', 'hymns', {
+  const r = runtimes.media
+  const text = r.lyric || r.title || ''
+  if (!text) return palcoSession.idleTo(slotId)
+  await palcoSession.projectTo(slotId, 'hymns', {
     text: text.split('\n').join('<br>'),
-    // Título NUNCA no rodapé dos slides de letra — o nome da música
-    // aparece só na capa (decisão Rafael 26/08: repetir a cada slide
-    // polui a projeção).
     footerRef: '',
     background: r.imageUrl ?? undefined,
     isCover: r.isCover === true,
   })
 }
 
-async function projectBible() {
-  const r = runtimes.bible
-  if (!r.active || !r.text) {
-    palcoSession.idle()
-    return
+async function projectOwner() {
+  if (owner === 'clock') {
+    // relógio tem tick próprio; renderAllSlots cobre os demais slots
   }
-  await palcoSession.projectRouted('bible', 'bible', {
-    text: r.text.split('\n').join('<br>'),
-    footerRef: r.reference,
-  })
-}
-
-async function projectRandom() {
-  const r = runtimes.random
-  if (!r.currentDisplay) {
-    palcoSession.idle()
-    return
-  }
-  await palcoSession.projectRouted('random', 'random', {
-    text: r.currentDisplay,
-  })
-}
-
-function projectTimer() {
-  const r = runtimes.timer
-  if (!r || r.status === 'idle') {
-    palcoSession.idle()
-    return
-  }
-  palcoSession.timerRouted('timer', {
-    mode: 'chrono',
-    label: '',
-    duration: Math.floor(elapsedMs(r) / 1000),
-  })
-}
-
-function projectCountdown() {
-  const r = runtimes.countdown
-  if (!r || r.status === 'idle') {
-    palcoSession.idle()
-    return
-  }
-  const remaining = Math.max(0, r.durationMs - elapsedMs(r))
-  palcoSession.timerRouted('countdown', {
-    mode: 'countdown',
-    label: '',
-    duration: Math.ceil(remaining / 1000),
-  })
+  await renderAllSlots()
 }
 
 let clockTimer: number | null = null
-function projectClock() {
-  const s = readEffectiveStageSettings('clock')
-  const render = () => {
-    const now = new Date()
-    const hh = String(now.getHours()).padStart(2, '0')
-    const mm = String(now.getMinutes()).padStart(2, '0')
-    void palcoSession.projectRouted('clock', 'clock', {
-      text: `${hh}:${mm}`,
-    })
-  }
+
+/** Relógio num slot específico (tick próprio de 15s). */
+async function renderClockTo(slotId: string): Promise<void> {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  await palcoSession.projectTo(slotId, 'clock', { text: `${hh}:${mm}` })
+}
+
+/** Reinicia o tick do relógio pro slot tomado (owner=clock). */
+function restartClockTick(): void {
   if (clockTimer) window.clearInterval(clockTimer)
-  render()
-  clockTimer = window.setInterval(render, 15000)
-  void s
+  const tick = async () => {
+    // guarda: clock deixou de ser o owner (ou bridge caiu) → NADA a fazer.
+    // O tick nunca re-claima — quem decide owner é a intenção do módulo.
+    if (owner !== 'clock') return
+    const { moduleForSlot } = useOutputRegistry()
+    const slots = await palcoSession.slots()
+    for (const s of slots) {
+      if (!s.running) continue
+      if (planForSlot(s.id, {
+        owner,
+        routeOf: (m) => getPalcoRoute(m),
+        assignedOf: (id) => moduleForSlot(id),
+        isAlive: assignedSlotHasContent,
+      }).render === 'owner') {
+        await renderClockTo(s.id)
+      }
+    }
+  }
+  void tick()
+  clockTimer = window.setInterval(() => void tick(), 15000)
 }
 
 function stopClock() {
@@ -198,19 +273,52 @@ function stopClock() {
   }
 }
 
-/** Marca o dono e re-projeta; dono saindo → volta pro anterior ativo ou idle. */
+/**
+ * Takeover DESLIGA os outros (decisão Rafael 27/08): módulo esquecido
+ * ligado é desprojetado de verdade quando outro assume — nada ressuscita
+ * sozinho depois. Mata também zumbis de storage no boot.
+ */
+function turnOffOthers(current: Exclude<Owner, null>) {
+  const others: Exclude<Owner, null>[] = ['media', 'bible', 'random', 'timer', 'countdown']
+  for (const m of others) {
+    if (m === current || !intent[m]) continue
+    try {
+      if (m === 'bible') publishBibleRuntimeOff()
+      else if (m === 'random') publishRandomRuntime({ ...readRandomRuntimeFromStorage(), projecting: false })
+      else if (m === 'timer') {
+        const r = runtimes.timer
+        if (r) publishTimerRuntime({ ...r, projecting: false })
+      } else if (m === 'countdown') {
+        const r = runtimes.countdown
+        if (r) publishCountdownRuntime({ ...r, projecting: false })
+      }
+      intent[m] = false
+      debugPalco('turnOff', m)
+    } catch { /* publica best-effort */ }
+  }
+}
+
+/** Marca o dono e re-projeta. */
 function claim(o: Exclude<Owner, null>) {
+  debugPalco('CLAIM', o)
   if (owner === 'clock') stopClock()
+  turnOffOthers(o)
   owner = o
+  if (o === 'clock') restartClockTick()
   void projectOwner()
 }
 
+/**
+ * Dono saindo → re-planeja slots (spec 2026-08-27): slot atribuído
+ * restaura o módulo atribuído (se vivo), espelho → novo owner/idle.
+ */
 function release(o: Exclude<Owner, null>) {
   if (owner !== o) return
   owner = null
-  // outro módulo ativo assume; senão idle
-  if (runtimes.media.lyric || runtimes.media.title) return claim('media')
-  if (runtimes.bible.active) return claim('bible')
+  // clock: o tick de 15s tem que MORRER no release — sem isto o interval
+  // sobrevivente re-renderizava (e re-claimava) o relógio por cima do
+  // módulo projetado depois (bug real 27/08: cronômetro nunca assumia).
+  if (o === 'clock') stopClock()
   void projectOwner()
 }
 
@@ -314,6 +422,42 @@ function useMediaStoreSafe() {
 
 type Norm<T> = (raw: unknown) => T
 
+/**
+ * Ownership por INTENÇÃO (spec 2026-08-27): claim só na transição
+ * false→true do sinal de projeção do módulo; release só na transição
+ * true→false. Mensagens intermediárias de runtime (tick do timer,
+ * troca de versículo, re-publicação sticky) NÃO disputam o owner —
+ * eliminam a concorrência em que a Bíblia ativa roubava o palco do
+ * Timer projetado (caso real 26/08: timer→projection bíblia→idle).
+ * runtime do dono continua re-renderizando via projectOwner() abaixo.
+ */
+const intent: Record<Exclude<Owner, null>, boolean> = {
+  media: false,
+  bible: false,
+  random: false,
+  timer: false,
+  countdown: false,
+  clock: false,
+}
+
+function debugPalco(...a: unknown[]) { console.info('[palco]', ...a) }
+
+function setIntent(o: keyof typeof intent, wants: boolean) {
+  debugPalco('setIntent', o, wants, '(owner=', owner, ')')
+  if (intent[o] === wants) {
+    // sem mudança de intenção: se for o dono, re-renderiza; e se NINGUÉM
+    // é dono mas este módulo tem intenção viva, ele reassume (fix 27/08:
+    // random religado após bíblia sair ficava órfão — intent já true,
+    // early-return engolia o claim e a TV morria no idle)
+    if (owner === o) void projectOwner()
+    else if (wants && owner === null) claim(o)
+    return
+  }
+  intent[o] = wants
+  if (wants) claim(o)
+  else release(o)
+}
+
 function bindChannel<T>(
   channelName: string,
   storageKey: string,
@@ -321,6 +465,7 @@ function bindChannel<T>(
   apply: (v: T) => void,
 ) {
   const onMsg = (raw: unknown) => {
+    debugPalco('bindMsg', channelName, JSON.stringify(raw)?.slice(0, 60))
     apply(normalize(raw))
   }
   try {
@@ -346,6 +491,23 @@ function bindChannel<T>(
   } catch {
     // sem estado inicial
   }
+  // Poll de storage (fix 27/08): BroadcastChannel same-window não entrega
+  // em todos os contextos (HMR/Electron dev) e o evento 'storage' só
+  // dispara em OUTRAS janelas. Polling leve garante a atualização viva.
+  let lastRaw: string | null = raw_snapshot()
+  function raw_snapshot(): string | null {
+    try { return localStorage.getItem(storageKey) } catch { return null }
+  }
+  const poll = window.setInterval(() => {
+    const now = raw_snapshot()
+    if (now !== lastRaw) {
+      lastRaw = now
+      if (now) {
+        try { onMsg(JSON.parse(now)) } catch { /* ignore */ }
+      }
+    }
+  }, 2000)
+  unwatchers.push(() => window.clearInterval(poll))
 }
 
 export function startPalcoBridge() {
@@ -377,7 +539,7 @@ export function startPalcoBridge() {
     normalizeMediaRuntime,
     (v) => {
       runtimes.media = v
-      v.active && (v.lyric || v.title) ? claim('media') : release('media')
+      setIntent('media', Boolean(v.active && (v.lyric || v.title)))
     },
   )
 
@@ -385,9 +547,9 @@ export function startPalcoBridge() {
     BIBLE_RUNTIME_CHANNEL,
     BIBLE_RUNTIME_STORAGE_KEY,
     normalizeBibleRuntime,
-    (v: { active: boolean; text: string; reference: string }) => {
+    (v: BibleProjectionRuntime) => {
       runtimes.bible = v
-      v.active ? claim('bible') : release('bible')
+      setIntent('bible', Boolean(v.projecting) && v.active)
     },
   )
 
@@ -395,31 +557,39 @@ export function startPalcoBridge() {
     RANDOM_RUNTIME_CHANNEL,
     RANDOM_RUNTIME_STORAGE_KEY,
     normalizeRandomRuntime,
-    (v: { currentDisplay: string; isDrawing: boolean }) => {
+    (v: RandomRuntimeState) => {
       runtimes.random = v
-      v.currentDisplay ? claim('random') : release('random')
+      // intent = projecting APENAS (fix ping-pong 27/08): o '|| currentDisplay'
+      // mantinha o sorteio vivo após turnOffOthers publicar projecting:false
+      // — random e media trocavam claims em loop e o hino perdia o palco.
+      setIntent('random', Boolean(v.projecting))
     },
   )
 
   bindChannel<TimerRuntimeState>(
-    TIMER_RUNTIME_CHANNEL,
-    TIMER_RUNTIME_STORAGE_KEY,
-    normalizeTimerRuntime,
-    (v) => {
-      runtimes.timer = v
-      v.status !== 'idle' ? claim('timer') : release('timer')
-    },
-  )
+      TIMER_RUNTIME_CHANNEL,
+      TIMER_RUNTIME_STORAGE_KEY,
+      normalizeTimerRuntime,
+      (v: TimerRuntimeState | null): void => {
+        if (!v) return
+        runtimes.timer = v
+        // Dono = 'projecting' APENAS (fix 27/08): o '|| status !== idle'
+        // fazia countdown PAUSADO no storage claimar o palco no boot sem
+        // ninguém tocar nele — roubava o owner de qualquer módulo ativo.
+        setIntent('timer', runtimeIsFresh(v) && Boolean(v.projecting))
+      },
+    )
 
-  bindChannel<CountdownRuntimeState>(
-    COUNTDOWN_RUNTIME_CHANNEL,
-    COUNTDOWN_RUNTIME_STORAGE_KEY,
-    normalizeCountdownRuntime,
-    (v) => {
-      runtimes.countdown = v
-      v.status !== 'idle' ? claim('countdown') : release('countdown')
-    },
-  )
+    bindChannel<CountdownRuntimeState>(
+      COUNTDOWN_RUNTIME_CHANNEL,
+      COUNTDOWN_RUNTIME_STORAGE_KEY,
+      normalizeCountdownRuntime,
+      (v: CountdownRuntimeState | null): void => {
+        if (!v) return
+        runtimes.countdown = v
+        setIntent('countdown', runtimeIsFresh(v) && Boolean(v.projecting))
+      },
+    )
 
   // Relógio: sem runtime — o toggle do módulo clock chama palcoClockOn/Off.
   // Áudio: watchers do media store (mesma janela)
@@ -453,6 +623,15 @@ export function startPalcoBridge() {
   void projectOwner()
 }
 
+/** Liga/desliga o relógio na TV (chamado pelo módulo clock). */
+export function palcoClockOn() {
+  claim('clock')
+}
+export function palcoClockOff() {
+  release('clock')
+}
+
+/** Pausa todos os ticks internos (bridge sendo desligado). */
 export function stopPalcoBridge() {
   if (!started) return
   started = false
@@ -462,13 +641,10 @@ export function stopPalcoBridge() {
   unwatchers = []
   stopClock()
   owner = null
+  intent.media = false
+  intent.bible = false
+  intent.random = false
+  intent.timer = false
+  intent.countdown = false
   lastAudioKey = ''
-}
-
-/** Liga/desliga o relógio na TV (chamado pelo módulo clock). */
-export function palcoClockOn() {
-  claim('clock')
-}
-export function palcoClockOff() {
-  release('clock')
 }

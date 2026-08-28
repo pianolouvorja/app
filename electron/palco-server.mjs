@@ -79,6 +79,10 @@ class PalcoSlot {
 
   /** Broadcast p/ todos os receivers conectados neste slot. */
   broadcast(obj) {
+    // idle = fim da projeção: o cache de replay da projection morre junto,
+    // senão quem reconecta recebe versículo velho por cima do idle
+    // (bíblia fantasma ao recarregar a TV — bug real 27/08).
+    if (obj.type === 'idle') this.#lastByType.delete('projection')
     this.#lastByType.set(obj.type, obj)
     const data = JSON.stringify(obj)
     for (const ws of this.#clients) {
@@ -165,9 +169,10 @@ class PalcoSlot {
     }
     if (!m || typeof m !== 'object' || !m.type) return false
     // Transientes: action sem url/conteúdo NÃO entra no replay.
+    // audio stop GRAVA (fix 27/08): é estado terminal — como transient, o
+    // replay ficava com o 'play' velho e o F5 na TV ressuscitava o MP3.
     const transient =
-      m.action === 'pause' || m.action === 'play' || m.action === 'seek' ||
-      (m.action === 'stop' && m.type === 'audio')
+      m.action === 'pause' || m.action === 'play' || m.action === 'seek'
     if (transient) this.broadcastTransient(m)
     else this.broadcast(m)
     return true

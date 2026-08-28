@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import MediaCloseDialog from '../components/MediaCloseDialog.vue'
 import MediaPlayerPill from '../components/MediaPlayerPill.vue'
 import MediaSlideStage from '../components/MediaSlideStage.vue'
@@ -31,12 +30,16 @@ const {
   currentSlide,
   resolvedSlideImageUrl,
   ondemandDownloadPercent,
+  preplayDownloadMusicId,
   ondemandNoticeVisible,
   ondemandDownloadDone,
   currentTimeLabel,
   durationLabel,
   progressRatio,
   slideProgressRatio,
+  queue,
+  queueIndex,
+  jumpToQueue,
   volume,
   maximize,
   minimize,
@@ -58,6 +61,23 @@ const {
   clearError,
   syncProjectionFlag,
 } = useMediaPlayer()
+
+const playlistListEl = ref<HTMLUListElement | null>(null)
+
+/** Slide/faixa em reprodução visível no painel lateral (auto-scroll). */
+const activeListIndex = computed(() =>
+  queue.value.length > 1 ? queueIndex.value : slideIndex.value,
+)
+
+watch(activeListIndex, async (index) => {
+  if (index < 0) return
+  await nextTick()
+  const list = playlistListEl.value
+  const active = list?.querySelector('.media-window__playlist-item--active')
+  // Letra em execução sempre no topo do painel (center vertical do item
+  // no primeiro terço) — evidência contínua enquanto toca.
+  active?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+})
 
 const stageLyric = computed(() => currentSlide.value?.lyric ?? '')
 const stageTitle = computed(() => session.value?.title ?? '')
@@ -86,15 +106,28 @@ onMounted(() => {
   maximize()
   setPlaylistOpen(true)
   syncProjectionFlag()
+  window.addEventListener('keydown', onGlobalKeydown)
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('media-player-open')
+  window.removeEventListener('keydown', onGlobalKeydown)
   // Dock / back / qualquer saída da rota: mesmo efeito do botão minimizar
   if (hasSession.value) {
     minimize()
   }
 })
+
+/** ESC abre a confirmação de fechar (nunca fecha direto). */
+function onGlobalKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  const target = event.target as HTMLElement | null
+  // Não sequestrar ESC de inputs/dialogos abertos (ex.: confirmação já aberta)
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (closeConfirmOpen.value) return
+  event.preventDefault()
+  requestClose()
+}
 
 /** Volta para a rota de origem (Liturgia, Álbuns, etc.), sem forçar Álbuns. */
 function leaveMediaRoute() {
@@ -136,10 +169,11 @@ async function onToggleFullscreen() {
 </script>
 
 <template>
-  <section
-    ref="stageRoot"
-    class="media-window"
-  >
+  <div class="media-page">
+    <section
+      ref="stageRoot"
+      class="media-window"
+    >
     <header class="media-window__toolbar">
       <button
         type="button"
@@ -166,8 +200,6 @@ async function onToggleFullscreen() {
         />
       </button>
     </header>
-    <StagePaletteButton scope="hymns" />
-
 
     <div
       v-if="lastErrorKey"
@@ -208,32 +240,50 @@ async function onToggleFullscreen() {
         v-if="showPlaylist"
         class="media-window__playlist"
       >
-        <h2 class="media-window__playlist-title">
-          {{ t('media.playlist') }}
-        </h2>
-        <ul class="media-window__playlist-list">
-          <li
-            v-for="item in playlist"
-            :key="item.index"
-          >
-            <button
-              type="button"
-              class="media-window__playlist-item"
-              :class="{
-                'media-window__playlist-item--active': item.index === slideIndex,
-              }"
-              :style="
-                item.index === slideIndex
-                  ? { '--slide-progress': slideProgressRatio }
-                  : undefined
-              "
-              @click="goToSlide(item.index)"
+        <template v-if="queue.length > 1">
+          <h2 class="media-window__playlist-title">Fila de reprodução</h2>
+          <ul ref="playlistListEl" class="media-window__playlist-list">
+            <li v-for="(item, index) in queue" :key="`${item.musicId}-${index}`">
+              <button
+                type="button"
+                class="media-window__playlist-item"
+                :class="{ 'media-window__playlist-item--active': index === queueIndex }"
+                @click="jumpToQueue(index)"
+              >
+                <span class="media-window__playlist-index">{{ index + 1 }}</span>
+                <span class="media-window__playlist-label">{{ item.title }}</span>
+              </button>
+            </li>
+          </ul>
+        </template>
+        <template v-else>
+          <h2 class="media-window__playlist-title">
+            {{ t('media.playlist') }}
+          </h2>
+          <ul ref="playlistListEl" class="media-window__playlist-list">
+            <li
+              v-for="item in playlist"
+              :key="item.index"
             >
-              <span class="media-window__playlist-index">{{ item.index + 1 }}</span>
-              <span class="media-window__playlist-label">{{ item.label }}</span>
-            </button>
-          </li>
-        </ul>
+              <button
+                type="button"
+                class="media-window__playlist-item"
+                :class="{
+                  'media-window__playlist-item--active': item.index === slideIndex,
+                }"
+                :style="
+                  item.index === slideIndex
+                    ? { '--slide-progress': slideProgressRatio }
+                    : undefined
+                "
+                @click="goToSlide(item.index)"
+              >
+                <span class="media-window__playlist-index">{{ item.index + 1 }}</span>
+                <span class="media-window__playlist-label">{{ item.label }}</span>
+              </button>
+            </li>
+          </ul>
+        </template>
       </aside>
 
       <div class="media-window__pill-wrap">
@@ -293,7 +343,9 @@ async function onToggleFullscreen() {
               }"
             >
               {{
-                ondemandDownloadDone
+                preplayDownloadMusicId && !ondemandDownloadDone
+                  ? t('media.ondemandPreplay')
+                  : ondemandDownloadDone
                   ? t('media.ondemandDownloadSuccess')
                   : t('media.ondemandDownload')
               }}
@@ -308,16 +360,27 @@ async function onToggleFullscreen() {
       @cancel="cancelClose"
       @confirm="onConfirmClose"
     />
-  </section>
+    </section>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.media-window {
-  position: relative;
+.media-page {
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
+}
+
+.media-window {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;
   background: #000;
@@ -360,8 +423,9 @@ async function onToggleFullscreen() {
 }
 
 .media-window__body {
+  flex: 1;
+  min-height: 0;
   position: relative;
-  height: 100%;
   display: grid;
   grid-template-columns: 1fr;
 }
@@ -459,6 +523,10 @@ async function onToggleFullscreen() {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.media-window__stage {
+  position: relative;
 }
 
 .media-window__pill-wrap {

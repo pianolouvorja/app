@@ -2,6 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import {
+  type QueueItem,
+  resolveNext,
+  resolvePrevious,
+} from '../services/media-queue'
+import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
+import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
   closeProjectionModule,
@@ -59,7 +66,21 @@ export const useMediaStore = defineStore('media', () => {
   const status = ref<MediaPlayerStatus>('idle')
   const lastErrorKey = ref<string | null>(null)
   const minimized = ref(true)
-  const isProjecting = ref(false)
+  const isProjectingRaw = ref(false)
+  // Fila de reprodução (spec playlist RF-03): vazia = comportamento atual.
+  const queue = ref<QueueItem[]>([])
+  const queueIndex = ref(-1)
+  const isProjecting = computed({
+    get: () => isProjectingRaw.value,
+    set: (v: boolean) => {
+      if (v !== isProjectingRaw.value) {
+        console.info('[media-proj] isProjecting →', v, new Error().stack?.split('\n').slice(1, 4).join(' | '))
+      }
+      isProjectingRaw.value = v
+    },
+  })
+  /** Projetando somente nas TVs (sem janela cabeada). */
+  const projectingTvsOnly = ref(false)
   const showPlaylist = ref(true)
   const closeConfirmOpen = ref(false)
 
@@ -70,6 +91,8 @@ export const useMediaStore = defineStore('media', () => {
   const resolvedSlideImageUrl = ref<string | null>(null)
   /** Progresso do download sob demanda (null = barra inativa). */
   const ondemandDownloadPercent = ref<number | null>(null)
+  /** Download PRÉ-play: player mostra 'baixando' e toca ao concluir. */
+  const preplayDownloadMusicId = ref<number | null>(null)
   /** Mantém a mensagem visível até fechar o player. */
   const ondemandNoticeVisible = ref(false)
   /** Download sob demanda concluído com sucesso nesta sessão. */
@@ -177,8 +200,10 @@ export const useMediaStore = defineStore('media', () => {
       window.addEventListener('louvorja:projection-reapplied', onProjectionReapplied)
     }
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('media')) {
         isProjecting.value = false
+        projectingTvsOnly.value = false
         stopProjectionWatch()
       }
     }, 400)
@@ -290,6 +315,55 @@ export const useMediaStore = defineStore('media', () => {
     void startOndemandDownload(musicId)
   }
 
+  /**
+   * Download PRÉ-play: se a faixa não está no disco e o modo tem áudio,
+   * baixa ANTES de abrir o player. UI mostra progresso; ao concluir, o
+   * caller abre a música normalmente (toca na hora, sem erro feio).
+   */
+  async function ensureTrackDownloaded(musicId: number): Promise<boolean> {
+    if (!isDesktopApp()) return true // web: sempre stream remoto
+    try {
+      if (await isTrackMediaDownloaded(musicId)) return true
+    } catch {
+      return true // sem certeza: segue fluxo antigo (stream)
+    }
+
+    const gen = ++ondemandGen
+    ondemandAbort = false
+    preplayDownloadMusicId.value = musicId
+    ondemandNoticeMusicId = musicId
+    ondemandNoticeVisible.value = true
+    ondemandDownloadDone.value = false
+    ondemandDownloadPercent.value = 0
+
+    const result = await downloadTrackMedia(musicId, {
+      onProgress: (percent) => {
+        if (gen !== ondemandGen) return
+        ondemandDownloadPercent.value = percent
+      },
+      shouldAbort: () => gen !== ondemandGen || ondemandAbort,
+    })
+
+    if (gen !== ondemandGen) return false
+
+    if (result.status === 'downloaded') {
+      ondemandDownloadPercent.value = 100
+      ondemandDownloadDone.value = true
+      void useLocalLibraryStore().reconcileAlbumsForMusic(musicId)
+      preplayDownloadMusicId.value = null
+      // feedback some sozinho após um instante; caller já pode tocar
+      return true
+    }
+
+    // falhou/abortado: limpa e segue fluxo antigo (stream remoto)
+    preplayDownloadMusicId.value = null
+    ondemandDownloadPercent.value = null
+    ondemandNoticeVisible.value = false
+    ondemandDownloadDone.value = false
+    ondemandNoticeMusicId = null
+    return true
+  }
+
   function unbindAudio() {
     if (!audioHandlers || !boundAudioElement) {
       audioHandlers = null
@@ -333,6 +407,12 @@ export const useMediaStore = defineStore('media', () => {
         status.value = session.value ? 'paused' : 'idle'
       },
       onEnded: () => {
+        // Fila (spec playlist RF-03): acabou a faixa, vem a próxima.
+        const nextItem = resolveNext({ items: queue.value, index: queueIndex.value })
+        if (nextItem) {
+          void playQueueItem(nextItem)
+          return
+        }
         status.value = 'paused'
         currentTimeSec.value = durationSec.value
         close()
@@ -364,6 +444,11 @@ export const useMediaStore = defineStore('media', () => {
 
     const requestedMode: MediaPlaybackMode = params.mode ?? 'audio'
 
+    // Música avulsa (fora da fila): zera a fila para restaurar o padrão de
+    // exibição normal (slides) no painel do player. playQueueItem repovoa depois.
+    queue.value = []
+    queueIndex.value = -1
+
     // Mesma faixa: troca de modo sem reset (legado Media.open + isSameSong).
     if (session.value?.musicId === musicId) {
       minimized.value = params.minimized ?? minimized.value
@@ -385,14 +470,14 @@ export const useMediaStore = defineStore('media', () => {
             // ignore
           }
         }
-        if (params.project) {
+        if (params.project !== false) {
           await startProjection()
         }
         return { ok: true }
       }
 
       const result = await switchMode(requestedMode)
-      if (params.project) {
+      if (params.project !== false) {
         await startProjection()
       }
       return result
@@ -414,6 +499,9 @@ export const useMediaStore = defineStore('media', () => {
 
     if (mode !== 'no_audio') {
       const catalogAudio = pickSourceUrl(mode, track.audioUrl, track.instrumentalUrl)
+      // Sem cópia local: baixa PRIMEIRO (progresso no player) e toca ao fim.
+      const ready = await ensureTrackDownloaded(musicId)
+      if (!ready) return { ok: false, messageKey: 'media.messages.playbackFailed' }
       const resolved = await resolveMusicAudioUrl(catalogAudio)
       if (resolved.ok) {
         playbackUrl = resolved.url
@@ -474,7 +562,10 @@ export const useMediaStore = defineStore('media', () => {
     await refreshResolvedSlideImage()
     void maybeStartOndemandDownload(musicId)
 
-    if (params.project || !minimized.value) {
+    // Hino tocando = PROJETANDO, sempre (decisão Rafael 27/08): destino vem
+    // do seletor na biblioteca (Espelhar/TV individual). Antes: minimizado
+    // não projetava — operador tinha que clicar Projetar a cada hino.
+    if (params.project !== false) {
       await startProjection()
     }
 
@@ -590,6 +681,70 @@ export const useMediaStore = defineStore('media', () => {
     }
 
     await refreshResolvedSlideImage()
+  }
+
+  // ===== Fila (spec playlist RF-03) =====
+
+  /** Toca um item da fila pelo fluxo completo (open → auto-projeção). */
+  async function playQueueItem(item: QueueItem, mode?: MediaPlaybackMode): Promise<void> {
+    const target = mode ?? session.value?.mode ?? 'audio'
+    const currentQueue = queue.value
+    const currentIndex = queueIndex.value
+    await open({
+      musicId: item.musicId,
+      mode: target,
+      albumId: item.albumId,
+      // project undefined = contrato 27/08 (projeta se houver destino ativo)
+      project: undefined,
+    })
+    // open() zera a fila (música avulsa); restaura se ainda somos fila.
+    if (queue.value.length === 0 && currentQueue.length > 0) {
+      queue.value = currentQueue
+      queueIndex.value = currentIndex
+    }
+    queueIndex.value = queue.value.findIndex((q) => q.musicId === item.musicId)
+    publishProjectionState()
+  }
+
+  /** Substitui a fila e toca a partir de startIndex. */
+  async function playQueue(items: QueueItem[], startIndex = 0, mode?: MediaPlaybackMode): Promise<void> {
+    queue.value = items
+    const first = items[startIndex]
+    if (!first) return
+    await playQueueItem(first, mode)
+  }
+
+  /** Fila inteira de um álbum (ordenada por track — caller já ordena). */
+  async function playAlbumQueue(
+    items: Array<{ musicId: number; albumId: number | null; title: string }>,
+    mode?: MediaPlaybackMode,
+  ): Promise<void> {
+    await playQueue(items, 0, mode)
+  }
+
+  function nextTrack(): void {
+    const item = resolveNext({ items: queue.value, index: queueIndex.value })
+    if (item) void playQueueItem(item)
+  }
+
+  function jumpToQueue(index: number): void {
+    const item = queue.value[index]
+    if (item) void playQueueItem(item)
+  }
+
+  function previousTrack(): void {
+    const item = resolvePrevious({ items: queue.value, index: queueIndex.value })
+    if (item) void playQueueItem(item)
+  }
+
+  function clearQueue(): void {
+    queue.value = []
+    queueIndex.value = -1
+  }
+
+  /** Há fila ativa? (UI: next/prev do player = faixa; sem fila = slides) */
+  function hasQueue(): boolean {
+    return queue.value.length > 1
   }
 
   async function nextSlide(): Promise<void> {
@@ -848,15 +1003,51 @@ export const useMediaStore = defineStore('media', () => {
     return { ok: true, warningKey }
   }
 
+  /** TVs Palco vivas (receiver conectado) — contam como tela ativa. */
+  async function hasLivePalcoTvs(): Promise<boolean> {
+    try {
+      const slots = await palcoSession.slots()
+      return slots.some((s) => s.running && s.clients > 0)
+    } catch {
+      return false
+    }
+  }
+
   async function startProjection(): Promise<boolean> {
     if (!session.value) return false
-    const opened = await openProjectionModule('media')
-    isProjecting.value = opened
-    if (opened) {
+    // Sem NENHUM destino (sem monitor estendido e sem TV Palco conectada)
+    // a projeção não liga — não há pra onde projetar. TV viva = tela ativa
+    // (decisão Rafael/Elias 27/08: mecanismo ligava só com múltiplas telas
+    // FÍSICAS; TVs WS agora entram na conta).
+    const hasTvs = await hasLivePalcoTvs()
+    console.info('[media-proj] startProjection route=', String(getPalcoRoute('hymns')), 'hasTvs=', hasTvs)
+    // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
+    // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
+    if (isPalcoTvOnlyRoute('hymns')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
       startProjectionWatch()
       publishProjectionState()
+      return true
     }
-    return opened
+    const opened = await openProjectionModule('media')
+    if (opened) {
+      projectingTvsOnly.value = false
+    } else if (hasTvs) {
+      // Sem monitor cabeado mas COM TVs Palco vivas: a projeção segue nas
+      // TVs (espelho da bridge). projectingTvsOnly segura o watch 400ms.
+      projectingTvsOnly.value = true
+    } else {
+      // Nenhum destino: não liga.
+      isProjecting.value = false
+      stopProjectionWatch()
+      publishProjectionState()
+      return false
+    }
+    isProjecting.value = true
+    startProjectionWatch()
+    publishProjectionState()
+    return true
   }
 
   function clearProjection(): void {
@@ -906,6 +1097,14 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function syncProjectionFlag(): void {
+    // Modo só-TVs NÃO tem janela cabeada — isProjectionModuleOpen é false
+    // por definição e matava a projeção que o startProjection acabou de
+    // ligar (bug real 27/08: hino ligava e syncProjectionFlag desligava
+    // em seguida; stack do log apontou exatamente aqui).
+    if (projectingTvsOnly.value) {
+      publishProjectionState()
+      return
+    }
     isProjecting.value = isProjectionModuleOpen('media')
     if (isProjecting.value) startProjectionWatch()
     publishProjectionState()
@@ -930,6 +1129,7 @@ export const useMediaStore = defineStore('media', () => {
     volume,
     resolvedSlideImageUrl,
     ondemandDownloadPercent,
+    preplayDownloadMusicId,
     ondemandNoticeVisible,
     ondemandDownloadDone,
     hasSession,
@@ -959,6 +1159,16 @@ export const useMediaStore = defineStore('media', () => {
     goToSlide,
     nextSlide,
     previousSlide,
+    queue,
+    queueIndex,
+    playQueue,
+    playAlbumQueue,
+    playQueueItem,
+    nextTrack,
+    jumpToQueue,
+    previousTrack,
+    clearQueue,
+    hasQueue,
     setVolume,
     minimize,
     maximize,

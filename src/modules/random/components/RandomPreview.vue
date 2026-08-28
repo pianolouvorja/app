@@ -1,28 +1,38 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import type { StageSettings } from '../../settings/types/stage-settings'
 import type { RandomDisplayConfig, RandomRuntimeState } from '../types/random'
 
 const props = defineProps<{
   config: RandomDisplayConfig
   runtime: RandomRuntimeState
+  /** Personalização Palco do escopo Sorteio — mesma fonte do receiver. */
+  stage?: StageSettings
 }>()
 
 const surfaceStyle = computed(() => ({
-  background: props.config.bgColor,
-  color: props.config.textColor,
+  // Com imagem do Palco, ProjectionBackground já pinta o bg. Não cobrir
+  // com o bg legado do Sorteio; sem imagem, mantém o visual legado.
+  background: props.stage?.backgroundImage ? 'transparent' : props.config.bgColor,
+  color: props.stage?.textColor ?? props.config.textColor,
 }))
 
-const textStyle = computed(() => ({
-  fontSize: props.runtime.isDrawing
-    ? `${props.config.fontSizePc * 0.8}vw`
-    : `${props.config.fontSizePc}vw`,
-  textTransform: props.config.textTransform,
-  textShadow: props.runtime.isDrawing
-    ? 'none'
-    : `0 10px 40px ${props.config.textColor}60`,
-  opacity: props.runtime.currentDisplay ? 1 : 0,
-}))
+const textStyle = computed(() => {
+  const st = props.stage
+  const drawing = props.runtime.isDrawing
+  return {
+    fontSize: st ? `${(st.fontSize / 1920) * 100}vw` : (drawing ? `${props.config.fontSizePc * 0.8}vw` : `${props.config.fontSizePc}vw`),
+    fontWeight: st?.fontWeight ?? 900,
+    textTransform: st ? 'uppercase' : props.config.textTransform,
+    textShadow: drawing || st?.textShadow === false ? 'none' : (st ? `0 0 ${st.shadowBlur}vw rgba(0,0,0,${st.shadowIntensity})` : `0 10px 40px ${props.config.textColor}60`),
+    background: st?.textBox && !drawing ? `rgba(0,0,0,${st.boxOpacity})` : 'transparent',
+    border: st?.textBox && st.boxBorder && !drawing ? '1px solid rgba(255,255,255,.25)' : 'none',
+    borderRadius: st?.textBox ? '1.4cqw 0 1.4cqw 0' : '0',
+    padding: st?.textBox ? '2.5vmin 1.8vmin' : '0 2.5rem',
+    opacity: props.runtime.currentDisplay ? 1 : 0,
+  }
+})
 </script>
 
 <template>

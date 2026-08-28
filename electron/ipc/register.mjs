@@ -58,6 +58,30 @@ export function registerWorkspaceIpc() {
   registerReadBinaryFileIpc()
   registerProjectionCapturePermissions()
 
+  // Wakeup do receiver (spec multi-telas): abre o app Palco em devices
+  // com dev mode (simulador/TV) via ares-launch. Best-effort: falha
+  // silenciosa — sem device, o receiver browser/simulador manual segue.
+  const wakeDebounce = { last: 0 }
+  ipcMain.handle('palco:wake', async () => {
+    const now = Date.now()
+    if (now - wakeDebounce.last < 30_000) return { ok: false, skipped: 'debounce' }
+    wakeDebounce.last = now
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const exec = promisify(execFile)
+    const npmBin = `${process.env.HOME}/.npm-global/bin`
+    const results = []
+    for (const dev of ['emulator', 'tv']) {
+      try {
+        await exec(`${npmBin}/ares-launch`, ['-d', dev, 'com.piano.louvorja.palco'], { timeout: 8000 })
+        results.push(`${dev}:ok`)
+      } catch {
+        results.push(`${dev}:skip`)
+      }
+    }
+    return { ok: results.some((r) => r.endsWith(':ok')), results }
+  })
+
   ipcMain.handle('projection:open-url', async (_event, payload) => {
     try {
       return await openWebProjectionWindows(payload ?? {})

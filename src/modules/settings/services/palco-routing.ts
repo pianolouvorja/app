@@ -24,6 +24,15 @@ export function getPalcoRoute(module: PalcoModule): PalcoRoute {
   return routes[module] ?? 'mirror'
 }
 
+/**
+ * Rota individual de TV: projeta só no slot Palco, sem abrir janela cabo.
+ * mirror mantém cabo + TVs; cable:* é reservado para monitor cabeado.
+ */
+export function isPalcoTvOnlyRoute(module: PalcoModule): boolean {
+  const route = getPalcoRoute(module)
+  return route !== 'mirror' && !route.startsWith('cable:')
+}
+
 export function setPalcoRoute(module: PalcoModule, route: PalcoRoute): void {
   routes[module] = route
   try { localStorage.setItem(KEY, JSON.stringify(routes)) } catch { /* ignore */ }

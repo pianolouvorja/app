@@ -16,11 +16,14 @@
   #veil{position:fixed;inset:0;background:rgba(0,0,0,.45)}
   #content{position:fixed;top:0;left:0;right:0;bottom:0;padding:6vh 8vw;
     box-sizing:border-box}
-  #text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    /* Caixa INLINE igual via cabo: encolhe até o texto (fit-content),
-       nunca passa de 86vw — padding abraça a palavra mais longa. */
-    display:inline-block;width:fit-content;max-width:86vw;
-    text-align:center;font-size:6.5vh;font-weight:700;line-height:1.35;
+  #text{position:absolute;top:50%;left:50%;
+    /* Caixa encolhe até o texto como via cabo. display:table = shrink-to-fit
+       compatível com Chromium antigo (webOS/Tizen) — fit-content em
+       position:absolute colapsava no simulador (26/08). margin auto centra. */
+    display:table;max-width:86vw;max-height:72vh;transform:translate(-50%,-50%);
+    overflow-wrap:break-word;
+    transform:translate(-50%,-50%);
+    text-align:center;font-size:3.65vw;font-weight:700;line-height:1.35;
     letter-spacing:.03em;text-transform:uppercase;
     text-shadow:0 2px 12px rgba(0,0,0,.8)}
   /* F3.3m: estilos dinâmicos da letra (sombra/caixinha) */
@@ -32,8 +35,8 @@
     /* Player: radius folha clamp(14px,2.4vmin,32px) 0, borda 0.2vmin e
        sombra suave. Padding mínimo — caixa abraça o texto (vmin). */
     padding:1.6vmin 1.8vmin;
-    border-radius:clamp(14px,2.4vmin,32px) 0 clamp(14px,2.4vmin,32px) 0;
-    border:var(--box-border,clamp(2px,.2vmin,4px) solid rgba(255,255,255,.25));
+    border-radius:2.4vmin 0 2.4vmin 0;
+    border:var(--box-border,.2vmin solid rgba(255,255,255,.25));
     box-shadow:0 10px 30px rgba(0,0,0,.4)}
   #text.shadow-off{text-shadow:none}
   /* Capa da música (isCover): título destaque amarelo, sem caixinha/borda —
@@ -92,8 +95,7 @@
 <!-- F3.3j: splash screen — some no WS OPEN ou 2.5s -->
 <div id="splash" style="position:fixed;inset:0;z-index:200;background:#0A0E1A;
   display:flex;align-items:center;justify-content:center;transition:opacity .6s">
-  <!-- Splash com arte oficial (JPG) — substitui SVG inline quebrado -->
-  <img src="splash-palco.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0A0E1A">
+  <img src="splash.jpg" alt="Palco Piano LouvorJA" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
 </div>
 <script>
 (function(){
@@ -184,7 +186,10 @@ let bgPalco='';  // BG personalizado do palco (idle) — persiste entre músicas
 
 function proxyUrl(original){
   if(!original)return original;
-  if(original.startsWith('http://'+host+':7080/'))return original; // ja local
+  // Qualquer porta do MESMO sender é local: 7080 (Principal), 7082 (TV 2),
+  // 7084... Antes só aceitava :7080; bg vindo de slot :7082 era proxyado
+  // de volta e falhava → receiver caía no bg-12 (caso real 26/08).
+  if(original.startsWith('http://'+host+':'))return original;
   if(original.startsWith('http://')||original.startsWith('https://')){
     return `http://${host}:7080/proxy?url=${encodeURIComponent(original)}`;
   }
@@ -497,7 +502,13 @@ function submitIp(){
     scanSubnet();
     return;
   }
-  host=v;localStorage.setItem('palcoHost',host);tries=0;
+  // Multi-palco: aceita IP ou IP:PORTA (ex: 192.168.1.50:7083).
+  var parts=v.split(':');
+  host=parts[0];localStorage.setItem('palcoHost',host);
+  if(parts[1]&&parseInt(parts[1],10)>0){
+    port=String(parseInt(parts[1],10));localStorage.setItem('palcoPort',port);
+  }
+  tries=0;
   closeIpEntry();
   try{if(ws)ws.close()}catch(e){}
   // IP manual conecta WS DIRETO — sem probeSender (fetch /status pode ser
@@ -557,7 +568,11 @@ function handle(m){
       const bgEl=$('bg');
       bgEl.onerror=()=>{bgEl.onerror=null;bgEl.src='bg-fallback.png'};
       if(m.background){bgEl.src=proxyUrl(m.background)}
-      else{bgEl.src='bg-fallback.png'} // F3.3j: BG padrão sem imagem
+      // Sem bg na mensagem: usa o BG configurado no app (bgPalco — enviado
+      // ao ligar o palco). Só se NÃO houver bg configurado cai no fallback
+      // fixo. Vale pra qualquer módulo (26/08 Rafael).
+      else if(bgPalco){bgEl.src=proxyUrl(bgPalco)}
+      else{bgEl.src='bg-fallback.png'}
       // Slide/PDF/PPT (text vazio) é mídia visual pura: sem véu de leitura,
       // preserva a tonalidade original do canvas do operador.
       $('veil').style.display=m.text?'':'none';
@@ -566,7 +581,7 @@ function handle(m){
       // F3.3o: fontSize/fontWeight dinâmicos (settings do operador).
       {const t=$('text');
         if(typeof m.fontSize==='number')
-          t.style.fontSize=(m.fontSize/10.8)+'vh'; // px@1080p -> vh
+          t.style.fontSize=(m.fontSize/10.8)+'vw'; // px@1080p -> vw (LARGURA): paridade com cqw do cabo
         if(typeof m.fontWeight==='number')
           t.style.fontWeight=m.fontWeight;
       }
@@ -652,7 +667,7 @@ function handle(m){
       if(m.action==='seek'){
         const target=(m.position||m.positionMs/1000||0);
         // só corrige se o desvio for perceptível — micro-sync causa stutter
-        if(Math.abs(a.currentTime-target)>0.3){try{a.currentTime=target}catch(e){}}
+        if(Math.abs(a.currentTime-target)>0.12){try{a.currentTime=target}catch(e){}}
         // sender mandou seek enquanto deveria tocar (play inicial pode ter
         // falhado por autoplay) → retoma; playWithFallback cuida do unlock
         if(a.paused&&target>0.2)playWithFallback();
@@ -681,7 +696,14 @@ function handle(m){
           sendEvent({v:2,type:'ended',media:'video'})}}
       if(m.action==='seek'){
         const target=(m.position||((m.positionMs||0)/1000)||0);
-        if(Math.abs(v.currentTime-target)>0.3){try{v.currentTime=target}catch(e){}}
+        // Spec multi-telas F4: tolerância 0.12s (era 0.3 — perceptível em
+        // lábio/voz). Drift pequeno = correção SUAVE via playbackRate
+        // (sem corte); grande (≥0.5s) = salto.
+        const drift=target-v.currentTime;
+        if(Math.abs(drift)>0.5){try{v.currentTime=target}catch(e){};v.playbackRate=1}
+        else if(drift>0.12)v.playbackRate=Math.min(1.05,1+drift*0.5);
+        else if(drift<-0.12)v.playbackRate=Math.max(0.95,1+drift*0.5);
+        else v.playbackRate=1;
         if(v.paused&&target>0.2)playVideoWithFallback();
       }
       if(m.action==='play'){

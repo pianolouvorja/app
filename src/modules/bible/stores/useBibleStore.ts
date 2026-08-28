@@ -1,3 +1,4 @@
+import { getPalcoRoute } from '../../settings/services/palco-routing'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -19,7 +20,7 @@ import {
   pickDefaultVersionId,
   resolveTestament,
 } from '../services/bible-catalog'
-import { publishBibleSelection } from '../services/bible-runtime'
+import { publishBibleSelection, publishBibleRuntimeOff } from '../services/bible-runtime'
 import {
   buildProjectionText,
   emptySelection,
@@ -70,9 +71,13 @@ export const useBibleStore = defineStore('bible', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('bible')) {
         isProjecting.value = false
         stopProjectionWatch()
+        // solta o runtime: sem isto o restore eterno mantinha a bíblia
+        // na TV mesmo com a projeção desligada (bug real 27/08)
+        publishBibleRuntimeOff()
       }
     }, 400)
   }
@@ -189,13 +194,24 @@ export const useBibleStore = defineStore('bible', () => {
     if (isProjecting.value) publishProjectionState(selection)
   }
 
-  async function openProjection() {
+  async function openProjection(opts?: { targets?: 'all' | 'tvs-only' }) {
     syncProjection()
     if (projection.value.verses.length === 0 || !projection.value.text) {
       return false
     }
 
     publishProjectionState(projection.value)
+    // Rota do Palco decide o destino (spec multi-telas 26/08): rota
+    // individual (um slot) publica SÓ na TV — sem janela no cabo.
+    // mirror/all mantém o comportamento cabo+TVs de sempre.
+    const route = getPalcoRoute('bible')
+    const tvsOnly = opts?.targets === 'tvs-only' || (route !== 'mirror' && !route.startsWith('cable'))
+    if (tvsOnly) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true // guard do watch: sem janela pra vigiar
+      startProjectionWatch()
+      return true
+    }
     const opened = await openProjectionModule('bible')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -203,19 +219,39 @@ export const useBibleStore = defineStore('bible', () => {
     return opened
   }
 
+  /** Projetando somente nas TVs (sem janela cabheada). */
+  const projectingTvsOnly = ref(false)
+
   function clearProjectionWindow() {
     closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
     publishProjectionState(emptySelection())
+    publishBibleRuntimeOff()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('bible')) {
+    if (isProjecting.value && (isProjectionModuleOpen('bible') || projectingTvsOnly.value)) {
       clearProjectionWindow()
       return false
     }
     return openProjection()
+  }
+
+  /** Projeta só nas TVs Palco (spec multi-telas F2). */
+  async function projectTvsOnly() {
+    if (isProjecting.value && projectingTvsOnly.value) {
+      clearProjectionWindow()
+      return false
+    }
+    if (isProjectionModuleOpen('bible')) {
+      // já projetando no cabo → migra para só-TVs fechando a janela
+      closeProjectionModule()
+    }
+    const ok = await openProjection({ targets: 'tvs-only' })
+    projectingTvsOnly.value = ok
+    return ok
   }
 
   async function refreshChapter() {
@@ -481,6 +517,8 @@ export const useBibleStore = defineStore('bible', () => {
     syncProjection,
     openProjection,
     toggleProjection,
+    projectTvsOnly,
+    projectingTvsOnly,
     clearProjectionWindow,
   }
 })

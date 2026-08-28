@@ -5,7 +5,6 @@ import type { StageSettings } from '../../settings/types/stage-settings'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import RandomAvailablePanel from '../components/RandomAvailablePanel.vue'
 import RandomConfigDialog from '../components/RandomConfigDialog.vue'
@@ -13,6 +12,7 @@ import RandomHistoryPanel from '../components/RandomHistoryPanel.vue'
 import RandomProjectFab from '../components/RandomProjectFab.vue'
 import RandomStage from '../components/RandomStage.vue'
 import { useRandomFeature } from '../composables/useRandom'
+import { appConfirm } from '@shared/composables/useAppConfirm'
 import type { RandomDrawMode } from '../types/random'
 
 const { t } = useI18n()
@@ -60,8 +60,14 @@ function onToggleProjection() {
   void toggleProjection()
 }
 
-function onResetAll() {
-  if (window.confirm(t('random.resetConfirm'))) {
+async function onResetAll() {
+  const confirmed = await appConfirm({
+    title: t('random.resetAll'),
+    message: t('random.resetConfirm'),
+    confirmLabel: t('random.resetAll'),
+    danger: true,
+  })
+  if (confirmed) {
     resetAll()
   }
 }
@@ -158,7 +164,6 @@ const effectiveConfig = computed(() => {
         {{ t('random.resetAll') }}
       </button>
     </header>
-    <StagePaletteButton scope="random" />
 
 
     <div class="random-view__content">

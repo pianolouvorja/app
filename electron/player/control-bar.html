@@ -539,7 +539,9 @@
         async function tvSyncPosition() {
           if (!window.louvorja || !window.louvorja.projection) return
           var now = Date.now()
-          if (now - lastTvSyncMs < 3000) return
+          // Spec multi-telas F4: 1s (era 3s) — drift corrigido antes de
+          // ser perceptível (~150ms); receiver faz correção suave.
+          if (now - lastTvSyncMs < 1000) return
           lastTvSyncMs = now
           var state = await window.louvorja.projection.getPlaybackState()
           if (!state || state.paused || !(state.currentTime > 0)) return

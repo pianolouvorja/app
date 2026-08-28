@@ -12,9 +12,6 @@ import StageCustomizationDialog from './StageCustomizationDialog.vue'
 const props = defineProps<{
   /** Escopo do módulo (ex.: 'bible', 'liturgy', 'hymns', 'random'). */
   scope: string
-  /** Deslocamento extra à direita (px) — módulos com botão de ação no
-   *  canto inferior direito (ex.: Bíblia "Projetar") empurram o FAB. */
-  rightOffset?: number
 }>()
 
 const { t } = useI18n()
@@ -22,11 +19,10 @@ const open = ref(false)
 </script>
 
 <template>
-  <Teleport to="body">
+  <div>
     <button
       type="button"
       class="stage-palette-fab"
-      :style="props.rightOffset ? { right: `calc(1.25rem + ${props.rightOffset}px)` } : undefined"
       :aria-label="t('settings.stage.title')"
       :title="t('settings.stage.title')"
       @click="open = true"
@@ -42,17 +38,14 @@ const open = ref(false)
       :scope="props.scope"
       @close="open = false"
     />
-  </Teleport>
+  </div>
 </template>
 
 <style scoped lang="scss">
 .stage-palette-fab {
-  position: fixed;
-  /* Acima do dock, canto inferior direito — não compete com headers,
-   * toolbars nem com o seletor de destino do palco de cada módulo. */
-  bottom: calc(var(--ds-dock-height, 4.5rem) + 1rem);
-  right: 1.25rem;
-  z-index: 40;
+  /* Estático: o pai (fab-bar no MediaView ou container do módulo) decide
+   * o lugar. Nada de fixed — não sobrepõe letra nem aside. */
+  position: static;
   display: inline-flex;
   width: 2.5rem;
   height: 2.5rem;

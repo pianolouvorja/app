@@ -21,6 +21,7 @@ export default {
     coverSlide: 'Cover / title',
     playlist: 'Slide list',
     ondemandDownload: 'On-demand download',
+    ondemandPreplay: 'Please wait — downloading the song...',
     ondemandDownloadSuccess: 'On-demand download completed successfully!',
     dismiss: 'Dismiss',
     closeConfirmTitle: 'Do you want to close this song?',

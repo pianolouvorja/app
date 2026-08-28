@@ -15,6 +15,8 @@ export interface RandomDisplayConfig {
 export interface RandomRuntimeState {
   currentDisplay: string
   isDrawing: boolean
+  /** Projeção ativa: palco assume com bg do escopo mesmo sem sorteio. */
+  projecting: boolean
 }
 
 /** Lista e histórico de um modo (nomes ou números). */
@@ -50,6 +52,7 @@ export const DEFAULT_RANDOM_DISPLAY_CONFIG: RandomDisplayConfig = {
 export const DEFAULT_RANDOM_RUNTIME: RandomRuntimeState = {
   currentDisplay: '',
   isDrawing: false,
+  projecting: false,
 }
 
 export const DEFAULT_RANDOM_MODE_POOL: RandomModePool = {

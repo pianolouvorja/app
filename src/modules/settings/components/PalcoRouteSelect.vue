@@ -5,9 +5,11 @@ import { getPalcoRoute, setPalcoRoute, type PalcoModule } from '../services/palc
 
 type Slot = { id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }
 type PalcoStatusLike = { running: boolean }
+type DisplayInfo = { id: number; bounds?: { width: number; height: number } }
 const props = defineProps<{ module: PalcoModule; compact?: boolean }>()
 const { t } = useI18n()
 const slots = ref<Slot[]>([])
+const displays = ref<DisplayInfo[]>([])
 const route = ref(getPalcoRoute(props.module))
 const senderOn = ref(false)
 const hasElectron = computed(() => Boolean((window as never as { louvorja?: { palco?: unknown } }).louvorja?.palco))
@@ -20,6 +22,10 @@ async function refresh() {
   senderOn.value = Boolean(st?.running)
   if (!senderOn.value) return
   slots.value = await api.slots().catch(() => [])
+  // Monitores cabeados como destino também (spec multi-telas):
+  // destinos unificados — TVs Palco + monitores no mesmo select.
+  const dispApi = (window as never as { louvorja: { displays?: { list?: () => Promise<DisplayInfo[]> } } }).louvorja?.displays
+  displays.value = dispApi?.list ? await dispApi.list().catch(() => []) : []
 }
 function update(value: string) {
   route.value = value
@@ -40,9 +46,16 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
     <span>{{ t('settings.palco.route') }}</span>
     <select :value="route" @change="update(($event.target as HTMLSelectElement).value)">
       <option value="mirror">{{ t('settings.palco.mirror') }}</option>
-      <option v-for="slot in slots" :key="slot.id" :value="slot.id">
-        {{ slot.label }}{{ slot.clients ? ` · ${slot.clients} ${t('settings.palco.connectedShort')}` : '' }}
-      </option>
+      <optgroup v-if="displays.length" :label="t('settings.palco.cableGroup')">
+        <option v-for="(d, i) in displays" :key="'cable-' + d.id" :value="'cable:' + d.id">
+          {{ t('settings.palco.monitor', { n: i + 1 }) }}{{ d.bounds ? ` · ${d.bounds.width}×${d.bounds.height}` : '' }}
+        </option>
+      </optgroup>
+      <optgroup v-if="slots.length" :label="t('settings.palco.tvGroup')">
+        <option v-for="slot in slots" :key="slot.id" :value="slot.id">
+          {{ slot.label }}{{ slot.clients ? ` · ${slot.clients} ${t('settings.palco.connectedShort')}` : '' }}
+        </option>
+      </optgroup>
     </select>
   </label>
 </template>
