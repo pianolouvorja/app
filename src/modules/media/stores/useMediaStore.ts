@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { loadProjectionSettings } from '@modules/settings/services/projection-preferences'
+import { isPalcoTvOnlyRoute } from '@modules/settings/services/palco-routing'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
   closeProjectionModule,
@@ -60,6 +61,8 @@ export const useMediaStore = defineStore('media', () => {
   const lastErrorKey = ref<string | null>(null)
   const minimized = ref(true)
   const isProjecting = ref(false)
+  /** Projetando somente nas TVs (sem janela cabeada). */
+  const projectingTvsOnly = ref(false)
   const showPlaylist = ref(true)
   const closeConfirmOpen = ref(false)
 
@@ -177,8 +180,10 @@ export const useMediaStore = defineStore('media', () => {
       window.addEventListener('louvorja:projection-reapplied', onProjectionReapplied)
     }
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('media')) {
         isProjecting.value = false
+        projectingTvsOnly.value = false
         stopProjectionWatch()
       }
     }, 400)
@@ -850,6 +855,16 @@ export const useMediaStore = defineStore('media', () => {
 
   async function startProjection(): Promise<boolean> {
     if (!session.value) return false
+    // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
+    // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
+    if (isPalcoTvOnlyRoute('hymns')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      publishProjectionState()
+      return true
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('media')
     isProjecting.value = opened
     if (opened) {
