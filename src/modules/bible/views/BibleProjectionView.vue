@@ -131,7 +131,7 @@ const verseBoxStyle = computed(() => {
     padding: '0.35em 0.75em',
     // Bíblia: caixa horizontal aproveita a projeção e reduz quebras de verso.
     width: '100%',
-    boxSizing: 'border-box',
+    boxSizing: 'border-box' as const,
     margin: '0 auto',
   }
 })
