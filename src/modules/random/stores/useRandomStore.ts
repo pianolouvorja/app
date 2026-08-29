@@ -193,7 +193,9 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function addName(raw?: string) {
-    const name = (raw ?? draftName.value).trim()
+    // NFC: acentos decompostos (colagem/Android) quebram uppercase na TV e
+    // permitem duplicatas invisíveis (José NFC ≠ José NFD).
+    const name = (raw ?? draftName.value).trim().normalize('NFC')
     if (!name) return false
     if (available.value.includes(name)) {
       draftName.value = ''
