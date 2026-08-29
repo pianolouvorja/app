@@ -144,6 +144,8 @@ export type ProjectionNavigationState = {
 export type ProjectionApi = {
   openUrl: (payload: OpenUrlProjectionPayload) => Promise<boolean>
   closeUrl: () => Promise<boolean>
+  /** Há projeção externa (video/pdf/ppt/site) com janela viva no main? */
+  externalAlive: () => Promise<boolean>
   getSourceMediaId?: () => Promise<string | null>
   publishPlaybackSync?: (payload: PlaybackSyncPayload) => void
   onPlaybackSync?: (callback: (payload: PlaybackSyncPayload) => void) => () => void

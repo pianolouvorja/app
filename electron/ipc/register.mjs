@@ -50,7 +50,7 @@ import {
   toggleSiteProjectionScreens,
   toggleVideoProjectionScreens,
   getSourceMediaInfo,
-} from './web-projection.mjs'
+  isExternalProjectionAlive, } from './web-projection.mjs'
 
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
@@ -115,6 +115,14 @@ export function registerWorkspaceIpc() {
       return true
     } catch (error) {
       console.error('[ipc] projection:close-url', error)
+      return false
+    }
+  })
+
+  ipcMain.handle('projection:external-alive', () => {
+    try {
+      return isExternalProjectionAlive()
+    } catch {
       return false
     }
   })

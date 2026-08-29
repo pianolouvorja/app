@@ -1339,6 +1339,14 @@ function stopPalcoMediaOnClose() {
   }
 }
 
+/** Há projeção externa (video/pdf/ppt/site) com janela viva? (bridge consulta) */
+export function isExternalProjectionAlive() {
+  try {
+    if (sourceWindow && !sourceWindow.isDestroyed()) return true
+  } catch { /* ignore */ }
+  return false
+}
+
 export function closeWebProjectionWindows() {
   closeMirrorWindowsOnly()
   detachControlBar()
