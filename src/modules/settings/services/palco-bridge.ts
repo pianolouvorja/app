@@ -126,7 +126,14 @@ async function renderAllSlots(): Promise<void> {
       // Mídia externa (vídeo/pdf/ppt da liturgia) vive fora da bridge e
       // manda direto nos slots; o owner NÃO pode renderizar por cima dela
       // (caso real 28/08: random tomou o slot onde o vídeo projetava).
-      const ext = await getDesktopBridge()?.projection?.externalAlive?.()
+      let ext = false
+      try {
+        ext = await getDesktopBridge()?.projection?.externalAlive?.() ?? false
+      } catch {
+        // main antigo sem o handler: assume SEM mídia externa (comportamento
+        // legado) em vez de quebrar o renderAllSlots inteiro.
+        ext = false
+      }
       if (ext) {
         debugPalco('slot', s.id, 'owner', owner, '→ PULADO (mídia externa viva)')
         continue
