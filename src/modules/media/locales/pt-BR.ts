@@ -7,7 +7,7 @@ export default {
     project: 'Projetar slides',
     audioOnTv: 'Tocar som na TV',
     audioOnTvOff: 'Som no computador',
-    clearProjection: 'Encerrar projeção',
+    clearProjection: 'Encerrar projeção (fecha a tela e volta ao fundo padrão)',
     maximize: 'Abrir player',
     minimize: 'Minimizar',
     close: 'Fechar',
