@@ -1339,10 +1339,18 @@ function stopPalcoMediaOnClose() {
   }
 }
 
-/** Há projeção externa (video/pdf/ppt/site) com janela viva? (bridge consulta) */
+/** Há projeção externa (video/pdf/ppt/site) com janela viva? (bridge consulta)
+ * Cobre TODAS as famílias: janela fonte + espelhos + shields — fecha só a
+ * fonte não significa que a projeção acabou (caso 28/08). */
 export function isExternalProjectionAlive() {
   try {
     if (sourceWindow && !sourceWindow.isDestroyed()) return true
+    for (const win of mirrorWindows) {
+      if (win && !win.isDestroyed()) return true
+    }
+    for (const shield of siteShieldWindows) {
+      if (shield && !shield.isDestroyed()) return true
+    }
   } catch { /* ignore */ }
   return false
 }
