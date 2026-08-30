@@ -490,6 +490,13 @@ app.on("second-instance", () => {
 });
 
 app.on("will-quit", () => {
+	// Hotkey global de projeção: libera Ctrl+Alt+P no encerrar (se registrada)
+	try {
+		const { globalShortcut } = require("electron");
+		globalShortcut.unregisterAll();
+	} catch {
+		/* ignore */
+	}
 	// Palco: app fechando → TVs param a mídia na hora (não toca até o fim).
 	try {
 		const { getPalcoManager } = require("./palco-server.mjs");

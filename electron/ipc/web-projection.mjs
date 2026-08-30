@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
 import { getPalcoManager } from '../palco-server.mjs'
+import { collectAliveProjectionWindows, createProjectionHotkeyController } from '../projection-hotkey.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -262,6 +263,87 @@ let siteSyncScrollX = -1
 let siteSyncScrollY = -1
 let siteSourceReloadPending = false
 let siteSyncBound = false
+
+/**
+ * Hotkey global Ctrl+Alt+P: alterna Operador ↔ Projeção (spec 30/08,
+ * monitor único). Importado sob demanda via dynamic import no primeiro uso
+ * para não atrasar o boot — na prática roda uma vez.
+ * @type {ReturnType<typeof createProjectionHotkeyController> | null}
+ */
+let hotkeyController = null
+
+async function getHotkeyController() {
+  if (hotkeyController) return hotkeyController
+  const { globalShortcut, BrowserWindow } = await import('electron')
+  hotkeyController = createProjectionHotkeyController({
+    globalShortcut,
+    BrowserWindow,
+    getSource: () => sourceWindow,
+    getMirrors: () => mirrorWindows,
+    getShields: () => siteShieldWindows,
+    getOperatorWindow: () => {
+      const all = BrowserWindow.getAllWindows()
+      // Operador = janela principal (não é nenhuma janela de projeção)
+      const alive = new Set(
+        collectAliveProjectionWindows({
+          getSource: () => sourceWindow,
+          getMirrors: () => mirrorWindows,
+          getShields: () => siteShieldWindows,
+        }),
+      )
+      return all.find((win) => !alive.has(win) && !win.isDestroyed()) ?? null
+    },
+  })
+  return hotkeyController
+}
+
+/** Registra a hotkey quando nasce a primeira janela de projeção. */
+function enableProjectionHotkey() {
+  void getHotkeyController().then((ctrl) => ctrl.ensureRegistered()).catch(() => {})
+}
+
+/** Libera a hotkey quando a projeção fecha (TODOS os caminhos passam aqui). */
+function disableProjectionHotkey() {
+  if (!hotkeyController) return
+  try {
+    hotkeyController.unregister()
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Hint de atalhos exibido nos primeiros 6s de cada load de janela de
+ * projeção (spec 30/08 — descoberta: ESC encerra, Ctrl+Alt+P alterna).
+ * JS puro no main: injeta DOM no documento da projeção via executeJavaScript.
+ */
+function injectShortcutHint(win) {
+  if (!win || win.isDestroyed()) return
+  const hintJs = `(() => {
+    try {
+      if (document.getElementById('__lj_hotkey_hint')) return
+      const el = document.createElement('div')
+      el.id = '__lj_hotkey_hint'
+      el.textContent = 'ESC encerra a projeção  ·  Ctrl+Alt+P alterna com a tela do operador'
+      el.style.cssText = 'position:fixed;right:2vmin;bottom:2vmin;z-index:2147483000;' +
+        'font:500 13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;' +
+        'background:rgba(10,14,26,0.72);padding:8px 14px;border-radius:10px;' +
+        'box-shadow:0 6px 20px rgba(0,0,0,0.4);opacity:0;transition:opacity .6s ease;' +
+        'pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis'
+      ;(document.body || document.documentElement).appendChild(el)
+      requestAnimationFrame(() => { el.style.opacity = '1' })
+      setTimeout(() => {
+        el.style.opacity = '0'
+        setTimeout(() => { el.remove() }, 800)
+      }, 6000)
+    } catch (_) {}
+  })()`
+  try {
+    void win.webContents.executeJavaScript(hintJs).catch(() => {})
+  } catch {
+    /* ignore */
+  }
+}
 
 const SITE_READ_SCROLL_SCRIPT = `
 (() => {
@@ -697,6 +779,7 @@ function createSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
+    injectShortcutHint(win)
   })
 
   // Impede redimensionar / maximizar por atalho ou SO
@@ -719,6 +802,7 @@ function createSourceWindow(loadUrl, title) {
   const onPageReady = () => {
     win.webContents.setAudioMuted(false)
     hideYoutubeSidebar(win)
+    injectShortcutHint(win)
     // YouTube é SPA: reaplica após hidratação
     setTimeout(() => hideYoutubeSidebar(win), 800)
     setTimeout(() => hideYoutubeSidebar(win), 2000)
@@ -784,6 +868,7 @@ function createSiteSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
+    injectShortcutHint(win)
   })
 
   win.on('resize', () => {
@@ -1092,6 +1177,7 @@ function createMirrorWindow(display) {
       win.setAlwaysOnTop(true, 'screen-saver')
     }
     win.showInactive()
+    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
@@ -1154,6 +1240,7 @@ function createImageProjectionWindow(display, loadUrl) {
     }
     win.setAlwaysOnTop(true, 'screen-saver')
     win.showInactive()
+    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
@@ -1369,6 +1456,8 @@ export function closeWebProjectionWindows() {
   // Import estático: require() de .mjs lança ERR_REQUIRE_ESM no Electron
   // ESM e o catch silencioso engolia o stop — TVs ficavam com mídia presa.
   stopPalcoMediaOnClose()
+  // Hotkey Ctrl+Alt+P: projeção acabou → libera o atalho global
+  disableProjectionHotkey()
   if (win && !win.isDestroyed()) {
     win.close()
   }
@@ -1638,6 +1727,9 @@ export async function openWebProjectionWindows(payload) {
     mode === 'site'
       ? createSiteSourceWindow(loadUrl, title)
       : createSourceWindow(loadUrl, title)
+
+  // Hotkey global de alternância disponível enquanto houver projeção
+  enableProjectionHotkey()
 
   if (!withScreens) {
     return true
