@@ -313,13 +313,18 @@ function attachProjectionWindowHandlers(parentWindow) {
       return null
     },
   })
+  // Janelas popup de projeção marcadas EM MEMÓRIA na criação (fix toggle):
+  // identificar por URL (webContents.getURL()) falha — em dev/hashes a URL
+  // nem sempre contém #/popup no momento da consulta, e o toggle decidia
+  // 'none' com projeção aberta. A marca é a fonte de verdade.
+  /** @type {Set<import('electron').BrowserWindow>} */
+  const projectionPopups = new Set()
+
   const popupProvider = () => {
-    const windows = []
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (win.isDestroyed()) continue
-      if (isProjectionPopupWindow(win.webContents.getURL())) windows.push(win)
+    for (const win of [...projectionPopups]) {
+      if (win.isDestroyed()) projectionPopups.delete(win)
     }
-    return windows
+    return [...projectionPopups]
   }
   addProjectionWindowProvider(popupProvider)
 
@@ -343,6 +348,14 @@ function attachProjectionWindowHandlers(parentWindow) {
 
     const childUrl = details?.url ?? ''
     const isProjection = isProjectionPopupUrl(childUrl)
+
+    // Marca a popup na criação (fonte de verdade do provider da hotkey —
+    // independe da URL em runtime, que em dev nem sempre contém #/popup)
+    if (isProjection) {
+      projectionPopups.add(childWindow)
+      ensureProjectionHotkey()
+    }
+
     const { fullscreen } = isProjection
       ? parseProjectionLaunchHints(childUrl, details?.features ?? '')
       : { fullscreen: !childWindow.isResizable() }

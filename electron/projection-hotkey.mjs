@@ -120,7 +120,10 @@ function toggle(deps) {
       }
     } else if (action === 'show-projection') {
       for (const win of alive) {
+        // moveTop: alguns WMs restauram sem reaplicar o nível de alwaysOnTop
+        // da criação — sem isso a projeção volta "abaixo" do que era.
         win.show()
+        win.moveTop()
         win.focus()
       }
     }

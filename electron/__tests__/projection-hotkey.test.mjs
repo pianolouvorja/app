@@ -118,14 +118,14 @@ describe('hotkey lifecycle (singleton)', () => {
 
   it('toggle de novo (projeção escondida) → mostra projeção', () => {
     const gs = makeGlobalShortcut()
-    const source = fakeWindow({ visible: false })
+    const source = { ...fakeWindow({ visible: false }), moveTop: vi.fn() }
     const operator = fakeWindow()
     addProjectionWindowProvider(() => [source])
     initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => operator })
     ensureProjectionHotkey()
     gs.cb()
     expect(source.show).toHaveBeenCalled()
-    expect(source.focus).toHaveBeenCalled()
+    expect(source.moveTop).toHaveBeenCalled()
   })
 
   it('toggle sem nenhuma projeção viva → não faz nada', () => {
