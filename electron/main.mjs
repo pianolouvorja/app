@@ -37,6 +37,22 @@ const PRELOAD_PATH = path.join(__dirname, "preload.mjs");
 
 registerLocalScheme();
 
+// Rede de segurança: exceção não tratada no main (ex.: porta EACCES/EADDRINUSE
+// de servidores WS — bug real do José 30/08 no Windows) NÃO PODE derrubar o
+// app sem explicação. Loga, mostra diálogo amigável e segue.
+process.on("uncaughtException", (error) => {
+  console.error("[main] uncaughtException:", error);
+  try {
+    const msg = error instanceof Error ? error.message : String(error ?? "erro desconhecido");
+    dialog.showErrorBox(
+      "LouvorJA - PIANO",
+      `Ocorreu um erro interno, mas o aplicativo continua rodando.\n\nDetalhe técnico: ${msg}`,
+    );
+  } catch {
+    /* diálogo falhou — segue */
+  }
+});
+
 /**
  * Linux: app name = WM_CLASS = StartupWMClass do .desktop (ícone na barra).
  * Título da janela continua sendo APP_PRODUCT_NAME.

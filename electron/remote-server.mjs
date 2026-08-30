@@ -255,10 +255,35 @@ export const REMOTE_PORT = PORT
 /** Conveniência para o main: sobe junto com o app em dev (devmode). */
 export function attachRemoteServer(getContents) {
   let stopped = false
+  const MAX_ATTEMPTS = 5
   const boot = async () => {
     if (stopped) return
     const { WebSocketServer } = await import('ws')
-    const wss = new WebSocketServer({ port: PORT })
+
+    // Tentativa por porta: EACCES (Windows reserva faixas — Hyper-V/WSL,
+    // bug real do José 30/08 que impedia o app de abrir) e EADDRINUSE
+    // (outra instância do PIANO rodando) NÃO PODEM derrubar o app.
+    let wss = null
+    let activePort = PORT
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        wss = new WebSocketServer({ port: activePort })
+        if (activePort !== PORT) {
+          console.warn(`[remote] porta ${PORT} indisponível — usando ${activePort} (QR/IP mudam junto)`)
+        }
+        break
+      } catch (err) {
+        const code = err?.code ?? ''
+        if (code !== 'EADDRINUSE' && code !== 'EACCES') throw err
+        console.warn(`[remote] porta ${activePort} falhou (${code}) — tentando próxima`)
+        activePort = PORT + attempt + 1
+      }
+    }
+    if (!wss) {
+      console.error(`[remote] nenhuma porta disponível (${PORT}..${PORT + MAX_ATTEMPTS}) — controle remoto DESLIGADO. O app segue sem ele.`)
+      return
+    }
+
     const handle = await startRemoteServer(wss, {
       // proxy mínimo de WebContents usado pelo servidor
       send: (channel, ...args) => getContents()?.send(channel, ...args),
