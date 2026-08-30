@@ -148,6 +148,8 @@ contextBridge.exposeInMainWorld('louvorja', {
       ipcRenderer.send('projection:playback-sync', payload)
     },
     onPlaybackSync: (callback) => subscribe('projection:playback-sync', callback),
+    // ESC pressionado na janela de projeção → operador decide no confirm
+    onCloseRequested: (callback) => subscribe('projection:close-requested', callback),
     remotePlay: () => ipcRenderer.invoke('projection:remote-play'),
     remotePause: () => ipcRenderer.invoke('projection:remote-pause'),
     remoteSeek: (seconds) => ipcRenderer.invoke('projection:remote-seek', seconds),

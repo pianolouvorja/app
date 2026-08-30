@@ -51,6 +51,7 @@ import {
   toggleVideoProjectionScreens,
   getSourceMediaInfo,
   isExternalProjectionAlive, } from './web-projection.mjs'
+import { collectAliveProjectionWindows, isProjectionPopupWindow } from '../projection-hotkey.mjs'
 
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
@@ -121,7 +122,9 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('projection:external-alive', () => {
     try {
-      return isExternalProjectionAlive()
+      // Fonte única: popups (hinos/slides) + web-projection (vídeo/pdf/site)
+      const hasPopup = collectAliveProjectionWindows().some((win) => isProjectionPopupWindow(win.webContents.getURL()))
+      return Boolean(hasPopup || isExternalProjectionAlive())
     } catch {
       return false
     }

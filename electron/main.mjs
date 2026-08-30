@@ -351,12 +351,16 @@ function attachProjectionWindowHandlers(parentWindow) {
       // Reforça sem chrome mesmo se o Chromium tiver mesclado opções
       childWindow.setMenuBarVisibility(false)
       fullscreenByWindow.set(childWindow, fullscreen)
-      // ESC na janela de projeção (popup hinos/slides) = FECHAR (spec 30/08,
-      // relato Caique: "sinto falta do ESC fechar as telas"). O popup não é
-      // destrutivo: fecha só a janela; estado do player fica no operador.
+      // ESC na projeção NÃO fecha direto (decisão Rafael 30/08): encaminha o
+      // pedido à janela do OPERADOR, que exibe o confirm. A projeção apenas
+      // sinaliza "querem me fechar" — a decisão é sempre do operador.
       childWindow.webContents.on('before-input-event', (_event, input) => {
         if (input.type === 'keyDown' && input.key === 'Escape') {
-          if (!childWindow.isDestroyed()) childWindow.close()
+          try {
+            if (parentWindow && !parentWindow.isDestroyed()) {
+              parentWindow.webContents.send('projection:close-requested')
+            }
+          } catch { /* ignore */ }
         }
       })
     }

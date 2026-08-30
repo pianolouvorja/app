@@ -16,6 +16,11 @@
  * vêm de providers registrados por cada fluxo.
  */
 
+import { appendFileSync } from 'node:fs'
+function hlog(msg) {
+  try { appendFileSync('/tmp/hotkey-debug.log', new Date().toISOString().slice(11,19) + ' ' + msg + '\n') } catch {}
+}
+
 export const PROJECTION_HOTKEY = 'Control+Alt+P'
 
 const windowProviders = new Set()
@@ -71,8 +76,8 @@ function getController(deps) {
       try {
         const ok = globalShortcut.register(PROJECTION_HOTKEY, () => toggle(deps))
         state.registered = ok
-        if (!ok) console.warn('[projection-hotkey] falha ao registrar', PROJECTION_HOTKEY, '(atalho em uso por outro app?)')
-        else console.info('[projection-hotkey] registrada:', PROJECTION_HOTKEY)
+        if (!ok) { hlog('FALHA register'); console.warn('[projection-hotkey] falha ao registrar', PROJECTION_HOTKEY, '(atalho em uso por outro app?)') }
+        else { hlog('REGISTRADA ok'); console.info('[projection-hotkey] registrada:', PROJECTION_HOTKEY) }
         return ok
       } catch (error) {
         console.error('[projection-hotkey] erro ao registrar', error)
@@ -84,7 +89,7 @@ function getController(deps) {
       try {
         globalShortcut.unregister(PROJECTION_HOTKEY)
         state.registered = false
-        console.info('[projection-hotkey] liberada:', PROJECTION_HOTKEY)
+        hlog('LIBERADA'); console.info('[projection-hotkey] liberada:', PROJECTION_HOTKEY)
       } catch (error) {
         console.error('[projection-hotkey] erro ao liberar', error)
       }
@@ -104,7 +109,7 @@ function toggle(deps) {
       operatorVisible: Boolean(operator && !operator.isDestroyed() && operator.isVisible()),
     }
     const action = decideToggleAction(snap)
-    console.info('[projection-hotkey] toggle →', action, JSON.stringify(snap))
+    hlog('TOGGLE ' + action); console.info('[projection-hotkey] toggle →', action, JSON.stringify(snap))
 
     if (action === 'show-operator') {
       for (const win of alive) win.hide()
@@ -129,11 +134,14 @@ function toggle(deps) {
  * @param {{ globalShortcut: import('electron').GlobalShortcut, getOperatorWindow: () => import('electron').BrowserWindow | null }} deps
  */
 export function initProjectionHotkey(deps) {
+  hlog('initProjectionHotkey chamado')
   getController(deps)
+  hlog('controller criado')
 }
 
 /** Registra a hotkey (idempotente). Chamar quando qualquer projeção nasce. */
 export function ensureProjectionHotkey() {
+  hlog('ensureProjectionHotkey chamado; state=' + (state ? 'ok' : 'NULL'))
   if (!state) {
     console.warn('[projection-hotkey] initProjectionHotkey() não chamado — ignorando')
     return

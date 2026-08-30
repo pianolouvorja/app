@@ -149,6 +149,8 @@ export type ProjectionApi = {
   getSourceMediaId?: () => Promise<string | null>
   publishPlaybackSync?: (payload: PlaybackSyncPayload) => void
   onPlaybackSync?: (callback: (payload: PlaybackSyncPayload) => void) => () => void
+  /** ESC pressionado na janela de projeção → operador exibe confirm. */
+  onCloseRequested?: (callback: () => void) => () => void
   remotePlay?: () => Promise<boolean>
   remotePause?: () => Promise<boolean>
   remoteSeek?: (seconds: number) => Promise<boolean>
