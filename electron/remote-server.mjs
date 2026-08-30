@@ -217,15 +217,17 @@ export async function startRemoteServer(wss, contents) {
   ipcMain.on('remote:ack', onAck)
   ipcMain.on('remote:state', onState)
 
-  console.info(`[remote] servidor WS na porta ${PORT} — token ${token}`)
+  // Porta real em uso (pode ser fallback 7072-7075)
+  const activePort = wss.address().port
+  console.info(`[remote] servidor WS na porta ${activePort} — token ${token}`)
 
   // Pairing: renderer pergunta host+token+QR (Configurações > Controle Remoto)
   const host = lanIp()
-  const connectUrl = `louvorja://connect?host=${host}:${PORT}&token=${token}`
+  const connectUrl = `louvorja://connect?host=${host}:${activePort}&token=${token}`
   const qrDataUrl = await QRCode.toDataURL(connectUrl, { margin: 1, width: 220 })
   ipcMain.handle('remote:pairing-info', () => ({
     host,
-    port: PORT,
+    port: activePort,
     token,
     connectUrl,
     qrDataUrl,
@@ -263,11 +265,26 @@ export function attachRemoteServer(getContents) {
     // Tentativa por porta: EACCES (Windows reserva faixas — Hyper-V/WSL,
     // bug real do José 30/08 que impedia o app de abrir) e EADDRINUSE
     // (outra instância do PIANO rodando) NÃO PODEM derrubar o app.
+    //
+    // ATENÇÃO: o listen() do 'ws' é ASSÍNCRONO — o construtor retorna antes
+    // do bind e o erro chega como evento 'error' re-throwado (uncaughtException).
+    // try/catch em volta do new NÃO pega (bug do fix 400475e, reproduzido
+    // 30/08 à noite). Por isso o handler de erro vai no evento, via promessa.
+    const tryListen = (port) =>
+      new Promise((resolve, reject) => {
+        const server = new WebSocketServer({ port })
+        server.once('error', (err) => {
+          try { server.close() } catch { /* já morto */ }
+          reject(err)
+        })
+        server.once('listening', () => resolve(server))
+      })
+
     let wss = null
     let activePort = PORT
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
-        wss = new WebSocketServer({ port: activePort })
+        wss = await tryListen(activePort)
         if (activePort !== PORT) {
           console.warn(`[remote] porta ${PORT} indisponível — usando ${activePort} (QR/IP mudam junto)`)
         }
