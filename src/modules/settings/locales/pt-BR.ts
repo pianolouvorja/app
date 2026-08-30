@@ -61,6 +61,20 @@ export default {
       media: 'Configurações de áudio, vídeo e player em breve.',
       projection: 'Configurações de projeção e telas em breve.',
     },
+    classo: {
+      title: 'LouvorJA Classo (Delphi)',
+      description:
+        'Detecta a instalação do LouvorJA Classo no computador para reutilizar as mídias e a liturgia já baixadas, sem baixar tudo de novo.',
+      detect: 'Detectar instalação do Classo',
+      detecting: 'Procurando instalação…',
+      notFound: 'Instalação do Classo não encontrada nos locais padrão.',
+      detectError: 'Erro ao procurar a instalação do Classo.',
+      desktopOnly: 'Disponível apenas no aplicativo desktop.',
+      albumsFound: '{count} álbum(ns) de mídia encontrados (~{mb} MB)',
+      liturgyFound: 'Liturgia (liturgia.ja) encontrada',
+      scheduledFound: 'Itens agendados (itensAgendados.xml) encontrados',
+      wip: 'Reutilização e migração de mídia em desenvolvimento.',
+    },
     projection: {
       monitors: {
         title: 'Arranjo de Monitores',

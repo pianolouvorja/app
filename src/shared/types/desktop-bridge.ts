@@ -20,6 +20,30 @@ export type CatalogApi = {
   onExtractProgress: (callback: (payload: ProgressPayload) => void) => () => void
 }
 
+/** Resultado do detector da instalação LouvorJA Classo/Delphi (issue #142). */
+export type ClassoAlbumInfo = {
+  name: string
+  dir: string
+  files: string[]
+  bytes: number
+}
+
+export type ClassoDetectionResult = {
+  found: boolean
+  root: string | null
+  media: { albums: ClassoAlbumInfo[]; totalBytes: number }
+  dataFiles: {
+    liturgiaJa: string | null
+    itensAgendados: string | null
+    itensAgendadosCategorias: string | null
+    configPt: string
+  } | null
+}
+
+export type ClassoApi = {
+  detect: () => Promise<ClassoDetectionResult>
+}
+
 export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
@@ -222,6 +246,7 @@ export type LouvorJaBridge = {
   zoom?: ZoomApi
   workspace: WorkspaceApi
   catalog: CatalogApi
+  classo?: ClassoApi
   media: MediaApi
   displays: DisplaysApi
   dialog: DialogApi

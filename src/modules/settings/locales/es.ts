@@ -56,6 +56,20 @@ export default {
       tipLight:
         'El Modo Claro ofrece mejor legibilidad en entornos muy iluminados durante cultos diurnos.',
     },
+    classo: {
+      title: 'LouvorJA Classo (Delphi)',
+      description:
+        'Detecta la instalación de LouvorJA Classo en la computadora para reutilizar las medias y la liturgia ya descargadas.',
+      detect: 'Detectar instalación del Classo',
+      detecting: 'Buscando instalación…',
+      notFound: 'Instalación del Classo no encontrada en los lugares predeterminados.',
+      detectError: 'Error al buscar la instalación del Classo.',
+      desktopOnly: 'Disponible solo en la aplicación de escritorio.',
+      albumsFound: '{count} álbum(es) de media encontrados (~{mb} MB)',
+      liturgyFound: 'Liturgia (liturgia.ja) encontrada',
+      scheduledFound: 'Ítems agendados (itensAgendados.xml) encontrados',
+      wip: 'Reutilización y migración de media en desarrollo.',
+    },
     placeholder: {
       general: 'Preferencias generales de la aplicación próximamente.',
       media: 'Configuraciones de audio, video y reproductor próximamente.',
