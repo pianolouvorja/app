@@ -17,6 +17,7 @@ import { attachRemoteServer } from "./remote-server.mjs";
 import { attachPalcoServer } from "./palco-server.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
+import { buildProjectionWindowBounds } from "./projection-display.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
@@ -240,26 +241,24 @@ function buildPopupWindowOptions(url, features = '') {
     },
   }
 
-  if (!fullscreen) {
+  const displays = screen.getAllDisplays()
+  const bounds = buildProjectionWindowBounds({
+    fullscreen,
+    monitorId,
+    displays,
+    primary: screen.getPrimaryDisplay(),
+  })
+
+  // Modo janela sem monitor explícito: posição livre (o WM decide).
+  if (!bounds) {
     windowConfig.skipTaskbar = true
     return windowConfig
   }
 
-  const displays = screen.getAllDisplays()
-  let targetDisplay = null
-  if (monitorId != null && Number.isFinite(monitorId)) {
-    targetDisplay = displays.find((display) => display.id === monitorId) ?? null
-  }
-
-  // Sem monitor explícito: primário (openFullscreenOnPrimary). Não assumir 1º estendido.
-  if (!targetDisplay) {
-    targetDisplay = screen.getPrimaryDisplay()
-  }
-
-  windowConfig.x = targetDisplay.bounds.x
-  windowConfig.y = targetDisplay.bounds.y
-  windowConfig.width = targetDisplay.bounds.width
-  windowConfig.height = targetDisplay.bounds.height
+  windowConfig.x = bounds.x
+  windowConfig.y = bounds.y
+  windowConfig.width = bounds.width
+  windowConfig.height = bounds.height
   windowConfig.resizable = false
   windowConfig.skipTaskbar = true
 
@@ -268,13 +267,18 @@ function buildPopupWindowOptions(url, features = '') {
 
 /**
  * Aplica fullscreen / bounds sem chrome após criar a janela (legado win32/linux/mac).
+ *
+ * Linux: NÃO usa setFullScreen — o fullscreen EWMH é decidido pelo window
+ * manager, que em vários WMs ignora o monitor da janela e joga no primário
+ * (bug "não projeta no segundo monitor"). Usa a mesma estratégia do win32:
+ * borderless + setBounds(display.bounds) + alwaysOnTop (fullscreen fake).
  * @param {import('electron').BrowserWindow} childWindow
  * @param {boolean} fullscreen
  */
 function applyProjectionDisplayMode(childWindow, fullscreen) {
-  if (!fullscreen || childWindow.isDestroyed()) return
+  if (childWindow.isDestroyed()) return
 
-  if (process.platform === 'win32') {
+  if (fullscreen && (process.platform === 'win32' || process.platform === 'linux')) {
     const bounds = childWindow.getBounds()
     const display = screen.getDisplayMatching(bounds)
     childWindow.setFullScreen(false)
@@ -282,6 +286,8 @@ function applyProjectionDisplayMode(childWindow, fullscreen) {
     childWindow.setAlwaysOnTop(true, 'screen-saver')
     return
   }
+
+  if (!fullscreen) return
 
   childWindow.setFullScreen(true)
   if (process.platform === 'darwin') {
