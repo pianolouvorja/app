@@ -117,6 +117,11 @@ contextBridge.exposeInMainWorld('louvorja', {
     onExtractProgress: (callback) => subscribe('catalog:extract-progress', callback),
   },
 
+  classo: {
+    // Detector da instalação LouvorJA Classo/Delphi (issue #142)
+    detect: () => ipcRenderer.invoke('classo:detect'),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),

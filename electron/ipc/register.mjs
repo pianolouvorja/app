@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 
+import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
+
 import {
   checkMediaFile,
   clearWorkspaceData,
@@ -444,6 +446,16 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] catalog:extract-database', error)
       throw error
+    }
+  })
+
+  // Detector da instalação do LouvorJA Classo (Delphi) — issue #142
+  ipcMain.handle('classo:detect', () => {
+    try {
+      return detectClassoInstallation({ registryProbe: probeClassoRegistry })
+    } catch (error) {
+      console.error('[ipc] classo:detect', error)
+      return { found: false, root: null, media: { albums: [], totalBytes: 0 }, dataFiles: null }
     }
   })
 
