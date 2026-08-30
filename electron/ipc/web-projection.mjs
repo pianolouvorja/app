@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
 import { getPalcoManager } from '../palco-server.mjs'
-import { collectAliveProjectionWindows, createProjectionHotkeyController } from '../projection-hotkey.mjs'
+import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey, injectProjectionShortcutHint as injectShortcutHint } from '../projection-hotkey.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -265,85 +265,50 @@ let siteSourceReloadPending = false
 let siteSyncBound = false
 
 /**
- * Hotkey global Ctrl+Alt+P: alterna Operador ↔ Projeção (spec 30/08,
- * monitor único). Importado sob demanda via dynamic import no primeiro uso
- * para não atrasar o boot — na prática roda uma vez.
- * @type {ReturnType<typeof createProjectionHotkeyController> | null}
+ * Hotkey global Ctrl+Alt+P (spec 30/08, monitor único): registro ÚNICO no
+ * singleton projection-hotkey.mjs. Este fluxo (video/pdf/ppt/site) registra
+ * um provider com suas janelas; o fluxo de hinos/slides (main.mjs,
+ * window.open) registra o dele. Vida da hotkey: nasce com a 1ª projeção de
+ * qualquer fluxo, morre quando não sobra nenhuma.
  */
-let hotkeyController = null
-
-async function getHotkeyController() {
-  if (hotkeyController) return hotkeyController
-  const { globalShortcut, BrowserWindow } = await import('electron')
-  hotkeyController = createProjectionHotkeyController({
-    globalShortcut,
-    BrowserWindow,
-    getSource: () => sourceWindow,
-    getMirrors: () => mirrorWindows,
-    getShields: () => siteShieldWindows,
-    getOperatorWindow: () => {
-      const all = BrowserWindow.getAllWindows()
-      // Operador = janela principal (não é nenhuma janela de projeção)
-      const alive = new Set(
-        collectAliveProjectionWindows({
-          getSource: () => sourceWindow,
-          getMirrors: () => mirrorWindows,
-          getShields: () => siteShieldWindows,
-        }),
-      )
-      return all.find((win) => !alive.has(win) && !win.isDestroyed()) ?? null
-    },
-  })
-  return hotkeyController
+function hasAnyExternalProjectionWindow() {
+  if (sourceWindow && !sourceWindow.isDestroyed()) return true
+  for (const win of mirrorWindows) {
+    if (win && !win.isDestroyed()) return true
+  }
+  for (const shield of siteShieldWindows) {
+    if (shield && !shield.isDestroyed()) return true
+  }
+  return false
 }
 
-/** Registra a hotkey quando nasce a primeira janela de projeção. */
+function syncExternalHotkeyState() {
+  if (hasAnyExternalProjectionWindow()) ensureProjectionHotkey()
+  else releaseProjectionHotkey()
+}
+
+let externalProviderAttached = false
+function attachExternalHotkeyProvider() {
+  if (externalProviderAttached) return
+  externalProviderAttached = true
+  addProjectionWindowProvider(() => [
+    ...(sourceWindow && !sourceWindow.isDestroyed() ? [sourceWindow] : []),
+    ...mirrorWindows.filter((win) => win && !win.isDestroyed()),
+    ...siteShieldWindows.filter((win) => win && !win.isDestroyed()),
+  ])
+}
+
+/** Registra o provider + hotkey quando nasce janela deste fluxo. */
 function enableProjectionHotkey() {
-  void getHotkeyController().then((ctrl) => ctrl.ensureRegistered()).catch(() => {})
+  attachExternalHotkeyProvider()
+  ensureProjectionHotkey()
 }
 
-/** Libera a hotkey quando a projeção fecha (TODOS os caminhos passam aqui). */
+/** Reavalia após fechar janelas deste fluxo (libera se não sobrou nada). */
 function disableProjectionHotkey() {
-  if (!hotkeyController) return
-  try {
-    hotkeyController.unregister()
-  } catch {
-    /* ignore */
-  }
+  syncExternalHotkeyState()
 }
 
-/**
- * Hint de atalhos exibido nos primeiros 6s de cada load de janela de
- * projeção (spec 30/08 — descoberta: ESC encerra, Ctrl+Alt+P alterna).
- * JS puro no main: injeta DOM no documento da projeção via executeJavaScript.
- */
-function injectShortcutHint(win) {
-  if (!win || win.isDestroyed()) return
-  const hintJs = `(() => {
-    try {
-      if (document.getElementById('__lj_hotkey_hint')) return
-      const el = document.createElement('div')
-      el.id = '__lj_hotkey_hint'
-      el.textContent = 'ESC encerra a projeção  ·  Ctrl+Alt+P alterna com a tela do operador'
-      el.style.cssText = 'position:fixed;right:2vmin;bottom:2vmin;z-index:2147483000;' +
-        'font:500 13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;' +
-        'background:rgba(10,14,26,0.72);padding:8px 14px;border-radius:10px;' +
-        'box-shadow:0 6px 20px rgba(0,0,0,0.4);opacity:0;transition:opacity .6s ease;' +
-        'pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis'
-      ;(document.body || document.documentElement).appendChild(el)
-      requestAnimationFrame(() => { el.style.opacity = '1' })
-      setTimeout(() => {
-        el.style.opacity = '0'
-        setTimeout(() => { el.remove() }, 800)
-      }, 6000)
-    } catch (_) {}
-  })()`
-  try {
-    void win.webContents.executeJavaScript(hintJs).catch(() => {})
-  } catch {
-    /* ignore */
-  }
-}
 
 const SITE_READ_SCROLL_SCRIPT = `
 (() => {

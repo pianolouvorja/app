@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, screen, shell } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from "electron";
 
 import {
 	APP_DESKTOP_ID,
@@ -20,6 +20,14 @@ import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
+import {
+  initProjectionHotkey,
+  addProjectionWindowProvider,
+  removeProjectionWindowProvider,
+  ensureProjectionHotkey,
+  releaseProjectionHotkey,
+  injectProjectionShortcutHint,
+} from "./projection-hotkey.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -294,8 +302,31 @@ function attachProjectionWindowHandlers(parentWindow) {
   /** @type {WeakMap<import('electron').BrowserWindow, boolean>} */
   const fullscreenByWindow = new WeakMap()
 
+  // Hotkey global Ctrl+Alt+P: provider das janelas popup (hinos/slides) +
+  // operador = janela principal. Init 1x por boot (idempotente).
+  initProjectionHotkey({
+    globalShortcut,
+    getOperatorWindow: () => {
+      try {
+        if (parentWindow && !parentWindow.isDestroyed()) return parentWindow
+      } catch { /* ignore */ }
+      return null
+    },
+  })
+  const popupProvider = () => {
+    const windows = []
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (win.isDestroyed()) continue
+      if (isProjectionPopupWindow(win.webContents.getURL())) windows.push(win)
+    }
+    return windows
+  }
+  addProjectionWindowProvider(popupProvider)
+
   parentWindow.webContents.setWindowOpenHandler(({ url, features }) => {
     if (isProjectionPopupUrl(url)) {
+      // Nasce popup de projeção → hotkey disponível
+      ensureProjectionHotkey()
       return {
         action: 'allow',
         overrideBrowserWindowOptions: buildPopupWindowOptions(url, features),
@@ -320,6 +351,14 @@ function attachProjectionWindowHandlers(parentWindow) {
       // Reforça sem chrome mesmo se o Chromium tiver mesclado opções
       childWindow.setMenuBarVisibility(false)
       fullscreenByWindow.set(childWindow, fullscreen)
+      // ESC na janela de projeção (popup hinos/slides) = FECHAR (spec 30/08,
+      // relato Caique: "sinto falta do ESC fechar as telas"). O popup não é
+      // destrutivo: fecha só a janela; estado do player fica no operador.
+      childWindow.webContents.on('before-input-event', (_event, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape') {
+          if (!childWindow.isDestroyed()) childWindow.close()
+        }
+      })
     }
 
     childWindow.once('ready-to-show', () => {
@@ -328,6 +367,19 @@ function attachProjectionWindowHandlers(parentWindow) {
       const shouldFullscreen = fullscreenByWindow.get(childWindow) ?? fullscreen
       applyProjectionDisplayMode(childWindow, shouldFullscreen)
       childWindow.show()
+      if (isProjection) {
+        ensureProjectionHotkey()
+        injectProjectionShortcutHint(childWindow)
+      }
+    })
+
+    childWindow.on('closed', () => {
+      // Sem popup de projeção vivo (e sem projeção externa) → libera a hotkey
+      setTimeout(() => {
+        try {
+          if (popupProvider().length === 0) releaseProjectionHotkey()
+        } catch { /* ignore */ }
+      }, 50)
     })
   })
 }

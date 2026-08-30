@@ -8,24 +8,38 @@
  *
  * ESC na janela de projeção continua encerrando (comportamento existente);
  * esta hotkey só alterna visibilidade operador↔projeção sem encerrar nada.
+ *
+ * SINGLETON com providers: há DOIS fluxos de janela de projeção —
+ * (a) video/pdf/ppt/site via web-projection.mjs e (b) hinos/slides via
+ * window.open no main.mjs. Só PODE existir UM globalShortcut.register por
+ * atalho (o segundo retorna false), então o registro é único e as janelas
+ * vêm de providers registrados por cada fluxo.
  */
 
-const HOTKEY = 'Control+Alt+P'
+export const PROJECTION_HOTKEY = 'Control+Alt+P'
 
-/**
- * Coleção as janelas de projeção vivas (fonte + espelhos + shields).
- * @param {{getSource: () => any, getMirrors: () => any[], getShields: () => any[]}} windows
- * @returns {any[]} janelas vivas (não destruídas)
- */
-export function collectAliveProjectionWindows(windows) {
+const windowProviders = new Set()
+
+/** Registra uma fonte de janelas de projeção (retorna array de BrowserWindow). */
+export function addProjectionWindowProvider(provider) {
+  windowProviders.add(provider)
+}
+
+export function removeProjectionWindowProvider(provider) {
+  windowProviders.delete(provider)
+}
+
+/** Todas as janelas de projeção vivas de todos os fluxos. */
+export function collectAliveProjectionWindows() {
   const alive = []
-  const source = windows.getSource()
-  if (source && !source.isDestroyed()) alive.push(source)
-  for (const win of windows.getMirrors()) {
-    if (win && !win.isDestroyed()) alive.push(win)
-  }
-  for (const shield of windows.getShields()) {
-    if (shield && !shield.isDestroyed()) alive.push(shield)
+  for (const provider of windowProviders) {
+    try {
+      for (const win of provider() ?? []) {
+        if (win && !win.isDestroyed()) alive.push(win)
+      }
+    } catch {
+      /* provider de fluxo não anexado */
+    }
   }
   return alive
 }
@@ -45,94 +59,149 @@ export function decideToggleAction({ anyAlive, anyVisible, operatorVisible }) {
   return 'show-projection'
 }
 
-/**
- * Registra/gerencia a hotkey global enquanto houver projeção viva.
- * Mantido num módulo próprio para poder unregister em TODOS os caminhos de
- * fechamento (closeWebProjectionWindows, will-quit) sem duplicar lógica.
- */
-export function createProjectionHotkeyController(deps) {
-  const {
-    globalShortcut,
-    BrowserWindow,
-    getSource,
-    getMirrors,
-    getShields,
-    getOperatorWindow,
-  } = deps
+let state = null
 
-  let registered = false
-
-  function hasLiveProjection() {
-    return collectAliveProjectionWindows({
-      getSource,
-      getMirrors,
-      getShields,
-    }).length > 0
-  }
-
-  function ensureRegistered() {
-    if (registered) return true
-    try {
-      const ok = globalShortcut.register(HOTKEY, () => toggle())
-      registered = ok
-      if (!ok) console.warn('[projection-hotkey] falha ao registrar', HOTKEY, '(atalho em uso por outro app?)')
-      else console.info('[projection-hotkey] registrada:', HOTKEY)
-      return ok
-    } catch (error) {
-      console.error('[projection-hotkey] erro ao registrar', error)
-      return false
-    }
-  }
-
-  function unregister() {
-    if (!registered) return
-    try {
-      globalShortcut.unregister(HOTKEY)
-      registered = false
-      console.info('[projection-hotkey] liberada:', HOTKEY)
-    } catch (error) {
-      console.error('[projection-hotkey] erro ao liberar', error)
-    }
-  }
-
-  function toggle() {
-    try {
-      const alive = collectAliveProjectionWindows({ getSource, getMirrors, getShields })
-      const operator = getOperatorWindow?.()
-      const state = {
-        anyAlive: alive.length > 0,
-        anyVisible: alive.some((win) => win.isVisible()),
-        operatorVisible: Boolean(operator && !operator.isDestroyed() && operator.isVisible()),
+function getController(deps) {
+  if (state) return state
+  const { globalShortcut } = deps
+  state = {
+    registered: false,
+    ensureRegistered() {
+      if (state.registered) return true
+      try {
+        const ok = globalShortcut.register(PROJECTION_HOTKEY, () => toggle(deps))
+        state.registered = ok
+        if (!ok) console.warn('[projection-hotkey] falha ao registrar', PROJECTION_HOTKEY, '(atalho em uso por outro app?)')
+        else console.info('[projection-hotkey] registrada:', PROJECTION_HOTKEY)
+        return ok
+      } catch (error) {
+        console.error('[projection-hotkey] erro ao registrar', error)
+        return false
       }
-      const action = decideToggleAction(state)
-      console.info('[projection-hotkey] toggle →', action, JSON.stringify(state))
-
-      if (action === 'show-operator') {
-        for (const win of alive) win.hide()
-        if (operator && !operator.isDestroyed()) {
-          if (operator.isMinimized?.()) operator.restore()
-          operator.show()
-          operator.focus()
-        }
-      } else if (action === 'show-projection') {
-        for (const win of alive) {
-          win.show()
-          win.focus()
-        }
+    },
+    unregister() {
+      if (!state.registered) return
+      try {
+        globalShortcut.unregister(PROJECTION_HOTKEY)
+        state.registered = false
+        console.info('[projection-hotkey] liberada:', PROJECTION_HOTKEY)
+      } catch (error) {
+        console.error('[projection-hotkey] erro ao liberar', error)
       }
-    } catch (error) {
-      console.error('[projection-hotkey] erro no toggle', error)
-    }
+    },
+    isRegistered: () => state.registered,
   }
-
-  return { ensureRegistered, unregister, toggle, isRegistered: () => registered, HOTKEY }
+  return state
 }
 
-/** Ação para o hint exibido na projeção. Função pura (testável). */
-export function buildShortcutHintLines(platform) {
-  const toggleKey = 'Ctrl+Alt+P'
+function toggle(deps) {
+  try {
+    const alive = collectAliveProjectionWindows()
+    const operator = deps.getOperatorWindow?.()
+    const snap = {
+      anyAlive: alive.length > 0,
+      anyVisible: alive.some((win) => win.isVisible()),
+      operatorVisible: Boolean(operator && !operator.isDestroyed() && operator.isVisible()),
+    }
+    const action = decideToggleAction(snap)
+    console.info('[projection-hotkey] toggle →', action, JSON.stringify(snap))
+
+    if (action === 'show-operator') {
+      for (const win of alive) win.hide()
+      if (operator && !operator.isDestroyed()) {
+        if (operator.isMinimized?.()) operator.restore()
+        operator.show()
+        operator.focus()
+      }
+    } else if (action === 'show-projection') {
+      for (const win of alive) {
+        win.show()
+        win.focus()
+      }
+    }
+  } catch (error) {
+    console.error('[projection-hotkey] erro no toggle', error)
+  }
+}
+
+/**
+ * Inicializa o singleton (uma única vez, no boot do main). Idempotente.
+ * @param {{ globalShortcut: import('electron').GlobalShortcut, getOperatorWindow: () => import('electron').BrowserWindow | null }} deps
+ */
+export function initProjectionHotkey(deps) {
+  getController(deps)
+}
+
+/** Registra a hotkey (idempotente). Chamar quando qualquer projeção nasce. */
+export function ensureProjectionHotkey() {
+  if (!state) {
+    console.warn('[projection-hotkey] initProjectionHotkey() não chamado — ignorando')
+    return
+  }
+  state.ensureRegistered()
+}
+
+/** Libera a hotkey (idempotente). Chamar quando TODA projeção fecha. */
+export function releaseProjectionHotkey() {
+  if (!state) return
+  state.unregister()
+}
+
+export function isProjectionHotkeyRegistered() {
+  return state?.isRegistered() ?? false
+}
+
+/** Hint de atalhos da projeção. Função pura (testável). */
+export function buildShortcutHintLines() {
   return [
     { key: 'ESC', label: 'encerra a projeção' },
-    { key: toggleKey, label: 'alterna com a tela do operador' },
+    { key: 'Ctrl+Alt+P', label: 'alterna com a tela do operador' },
   ]
 }
+
+/**
+ * Hint de atalhos exibido nos primeiros 6s de cada load de janela de
+ * projeção (spec 30/08 — descoberta). JS puro: injeta DOM no documento
+ * da projeção via executeJavaScript. Usado pelos DOIS fluxos de janela.
+ */
+export function injectProjectionShortcutHint(win) {
+  if (!win || win.isDestroyed()) return
+  const hintJs = `(() => {
+    try {
+      if (document.getElementById('__lj_hotkey_hint')) return
+      const el = document.createElement('div')
+      el.id = '__lj_hotkey_hint'
+      el.textContent = 'ESC encerra a projeção  ·  Ctrl+Alt+P alterna com a tela do operador'
+      el.style.cssText = 'position:fixed;right:2vmin;bottom:2vmin;z-index:2147483000;' +
+        'font:500 13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;' +
+        'background:rgba(10,14,26,0.72);padding:8px 14px;border-radius:10px;' +
+        'box-shadow:0 6px 20px rgba(0,0,0,0.4);opacity:0;transition:opacity .6s ease;' +
+        'pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis'
+      ;(document.body || document.documentElement).appendChild(el)
+      requestAnimationFrame(() => { el.style.opacity = '1' })
+      setTimeout(() => {
+        el.style.opacity = '0'
+        setTimeout(() => { el.remove() }, 800)
+      }, 6000)
+    } catch (_) {}
+  })()`
+  try {
+    void win.webContents.executeJavaScript(hintJs).catch(() => {})
+  } catch {
+    /* ignore */
+  }
+}
+
+/** A URL é de popup de projeção do app (hinos/slides via window.open)? */
+export function isProjectionPopupWindow(url) {
+  if (typeof url !== 'string') return false
+  return url.includes('#/popup') || /\/popup(\?|$)/.test(url)
+}
+
+/** Reset do singleton — SOMENTE para testes (módulo ESM é cacheado entre testes). */
+export function __resetProjectionHotkeyForTests() {
+  state = null
+  windowProviders.clear()
+}
+
+

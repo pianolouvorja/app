@@ -1,8 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import {
+  addProjectionWindowProvider,
+  removeProjectionWindowProvider,
   collectAliveProjectionWindows,
   decideToggleAction,
-  createProjectionHotkeyController,
+  initProjectionHotkey,
+  ensureProjectionHotkey,
+  releaseProjectionHotkey,
+  isProjectionHotkeyRegistered,
+  isProjectionPopupWindow,
+  buildShortcutHintLines,
+  __resetProjectionHotkeyForTests,
+  PROJECTION_HOTKEY,
 } from '../projection-hotkey.mjs'
 
 function fakeWindow({ destroyed = false, visible = true } = {}) {
@@ -12,29 +21,31 @@ function fakeWindow({ destroyed = false, visible = true } = {}) {
     hide: vi.fn(),
     show: vi.fn(),
     focus: vi.fn(),
+    isMinimized: () => false,
   }
 }
 
-describe('collectAliveProjectionWindows', () => {
-  it('coleta fonte + espelhos + shields vivos', () => {
-    const source = fakeWindow()
-    const mirror = fakeWindow()
-    const shield = fakeWindow()
-    const alive = collectAliveProjectionWindows({
-      getSource: () => source,
-      getMirrors: () => [mirror],
-      getShields: () => [shield],
-    })
-    expect(alive).toHaveLength(3)
+beforeEach(() => {
+  __resetProjectionHotkeyForTests()
+})
+
+describe('collectAliveProjectionWindows (providers)', () => {
+  it('coleta janelas vivas de múltiplos providers (2 fluxos)', () => {
+    const a = fakeWindow()
+    const b = fakeWindow({ destroyed: true })
+    const c = fakeWindow()
+    addProjectionWindowProvider(() => [a, b])
+    addProjectionWindowProvider(() => [c])
+    const alive = collectAliveProjectionWindows()
+    expect(alive).toHaveLength(2)
+    expect(alive).toContain(a)
+    expect(alive).toContain(c)
   })
 
-  it('descarta janelas destruídas', () => {
-    const alive = collectAliveProjectionWindows({
-      getSource: () => fakeWindow({ destroyed: true }),
-      getMirrors: () => [fakeWindow({ destroyed: true }), fakeWindow()],
-      getShields: () => [null],
-    })
-    expect(alive).toHaveLength(1)
+  it('provider que lança não quebra a coleta', () => {
+    addProjectionWindowProvider(() => { throw new Error('fluxo não anexado') })
+    addProjectionWindowProvider(() => [fakeWindow()])
+    expect(collectAliveProjectionWindows()).toHaveLength(1)
   })
 })
 
@@ -56,63 +67,91 @@ describe('decideToggleAction', () => {
   })
 })
 
-describe('createProjectionHotkeyController', () => {
-  function makeDeps({ registerOk = true } = {}) {
-    const source = fakeWindow()
-    const operator = fakeWindow()
-    const globalShortcut = {
+describe('hotkey lifecycle (singleton)', () => {
+  function makeGlobalShortcut() {
+    const gs = {
       register: vi.fn((_key, cb) => {
-        globalShortcut.__cb = cb
-        return registerOk
+        gs.cb = cb
+        return true
       }),
       unregister: vi.fn(),
     }
-    const deps = {
-      globalShortcut,
-      BrowserWindow: { getAllWindows: vi.fn(() => [operator, source]) },
-      getSource: () => source,
-      getMirrors: () => [],
-      getShields: () => [],
-      getOperatorWindow: () => operator,
-    }
-    return { deps, globalShortcut, source, operator }
+    return gs
   }
 
-  it('ensureRegistered registra e toggle show-operator esconde projeção e foca operador', async () => {
-    const { deps, globalShortcut, source, operator } = makeDeps()
-    const ctrl = createProjectionHotkeyController(deps)
-    expect(ctrl.ensureRegistered()).toBe(true)
-    expect(globalShortcut.register).toHaveBeenCalledWith('Control+Alt+P', expect.any(Function))
+  it('ensure sem init → warn e não registra', () => {
+    expect(ensureProjectionHotkey()).toBeUndefined()
+    expect(isProjectionHotkeyRegistered()).toBe(false)
+  })
 
-    globalShortcut.__cb()
+  it('init + ensure registra; ensure de novo é idempotente (1 register)', () => {
+    const gs = makeGlobalShortcut()
+    initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => null })
+    ensureProjectionHotkey()
+    ensureProjectionHotkey()
+    expect(gs.register).toHaveBeenCalledTimes(1)
+    expect(gs.register).toHaveBeenCalledWith(PROJECTION_HOTKEY, expect.any(Function))
+    expect(isProjectionHotkeyRegistered()).toBe(true)
+  })
+
+  it('release libera; release de novo é idempotente', () => {
+    const gs = makeGlobalShortcut()
+    initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => null })
+    ensureProjectionHotkey()
+    releaseProjectionHotkey()
+    releaseProjectionHotkey()
+    expect(gs.unregister).toHaveBeenCalledTimes(1)
+    expect(isProjectionHotkeyRegistered()).toBe(false)
+  })
+
+  it('toggle real: projeção visível → hide + foco no operador', () => {
+    const gs = makeGlobalShortcut()
+    const source = fakeWindow()
+    const operator = fakeWindow()
+    addProjectionWindowProvider(() => [source])
+    initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => operator })
+    ensureProjectionHotkey()
+    gs.cb()
     expect(source.hide).toHaveBeenCalled()
     expect(operator.focus).toHaveBeenCalled()
   })
 
   it('toggle de novo (projeção escondida) → mostra projeção', () => {
-    const { deps, globalShortcut, source } = makeDeps()
-    source.isVisible = () => false
-    const ctrl = createProjectionHotkeyController(deps)
-    ctrl.ensureRegistered()
-    globalShortcut.__cb()
+    const gs = makeGlobalShortcut()
+    const source = fakeWindow({ visible: false })
+    const operator = fakeWindow()
+    addProjectionWindowProvider(() => [source])
+    initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => operator })
+    ensureProjectionHotkey()
+    gs.cb()
     expect(source.show).toHaveBeenCalled()
     expect(source.focus).toHaveBeenCalled()
   })
 
-  it('unregister libera e é idempotente', () => {
-    const { deps, globalShortcut } = makeDeps()
-    const ctrl = createProjectionHotkeyController(deps)
-    ctrl.ensureRegistered()
-    ctrl.unregister()
-    ctrl.unregister()
-    expect(globalShortcut.unregister).toHaveBeenCalledTimes(1)
-    expect(ctrl.isRegistered()).toBe(false)
+  it('toggle sem nenhuma projeção viva → não faz nada', () => {
+    const gs = makeGlobalShortcut()
+    const operator = fakeWindow()
+    initProjectionHotkey({ globalShortcut: gs, getOperatorWindow: () => operator })
+    ensureProjectionHotkey()
+    gs.cb()
+    expect(operator.hide).not.toHaveBeenCalled()
+    expect(operator.show).not.toHaveBeenCalled()
   })
+})
 
-  it('falha de registro (atalho em uso) não quebra e registra estado falso', () => {
-    const { deps } = makeDeps({ registerOk: false })
-    const ctrl = createProjectionHotkeyController(deps)
-    expect(ctrl.ensureRegistered()).toBe(false)
-    expect(ctrl.isRegistered()).toBe(false)
+describe('isProjectionPopupWindow', () => {
+  it('reconhece hash route e path', () => {
+    expect(isProjectionPopupWindow('http://x/index.html#/popup?module=media')).toBe(true)
+    expect(isProjectionPopupWindow('http://x/popup?module=media')).toBe(true)
+    expect(isProjectionPopupWindow('http://x/')).toBe(false)
+    expect(isProjectionPopupWindow(undefined)).toBe(false)
+  })
+})
+
+describe('buildShortcutHintLines', () => {
+  it('lista ESC e Ctrl+Alt+P', () => {
+    const lines = buildShortcutHintLines()
+    expect(lines).toHaveLength(2)
+    expect(lines.map((l) => l.key)).toEqual(['ESC', 'Ctrl+Alt+P'])
   })
 })
