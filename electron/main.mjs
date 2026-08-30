@@ -17,6 +17,7 @@ import { attachRemoteServer } from "./remote-server.mjs";
 import { attachPalcoServer } from "./palco-server.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
+import { registerCloseProjectionPopups } from "./ipc/web-projection.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
@@ -327,6 +328,27 @@ function attachProjectionWindowHandlers(parentWindow) {
     return [...projectionPopups]
   }
   addProjectionWindowProvider(popupProvider)
+
+  // Confirm do operador fecha popups TAMBÉM (senão bíblia/hinos continuavam
+  // projetando com o botão da UI ativo). Inversão de dependência: main.mjs
+  // registra o "como fechar popups"; ipc/register.mjs chama closeAll.
+  registerCloseProjectionPopups(() => {
+    for (const win of popupProvider()) {
+      try {
+        win.close()
+      } catch {
+        /* ignore */
+      }
+    }
+    // Estado do renderer (isProjecting etc.) precisa saber que acabou
+    try {
+      if (parentWindow && !parentWindow.isDestroyed()) {
+        parentWindow.webContents.send('projection:popups-closed')
+      }
+    } catch {
+      /* ignore */
+    }
+  })
 
   parentWindow.webContents.setWindowOpenHandler(({ url, features }) => {
     if (isProjectionPopupUrl(url)) {

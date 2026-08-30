@@ -18,6 +18,7 @@ import {
 } from './presentation-convert.mjs'
 import {
   broadcastPlaybackSync,
+  closeAllProjectionWindows,
   closeWebProjectionWindows,
   getSourceMediaIdFor,
   getImageSlideState,
@@ -112,7 +113,7 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('projection:close-url', () => {
     try {
-      closeWebProjectionWindows()
+      closeAllProjectionWindows()
       return true
     } catch (error) {
       console.error('[ipc] projection:close-url', error)

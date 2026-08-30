@@ -1428,6 +1428,30 @@ export function closeWebProjectionWindows() {
   }
 }
 
+/**
+ * Fecha TODAS as projeções dos DOIS fluxos: web-projection (vídeo/pdf/ppt/site)
+ * E popups de hinos/bíblia/slides (window.open no main.mjs). Usado pelo
+ * confirm do operador — antes só o primeiro fluxo era fechado e a popup
+ * de bíblia/hinos continuava projetando com o botão da UI ativo.
+ * Chama o callback de fechamento de popups registrado pelo main.mjs
+ * (inversão de dependência — evita import circular main↔ipc).
+ * @type {(() => void) | null}
+ */
+let closeProjectionPopupsImpl = null
+
+export function registerCloseProjectionPopups(impl) {
+  closeProjectionPopupsImpl = impl
+}
+
+export function closeAllProjectionWindows() {
+  try {
+    closeProjectionPopupsImpl?.()
+  } catch {
+    /* ignore */
+  }
+  closeWebProjectionWindows()
+}
+
 function broadcastSiteTargetsChanged(ids) {
   const payload = Array.isArray(ids) ? [...ids] : []
   for (const win of BrowserWindow.getAllWindows()) {

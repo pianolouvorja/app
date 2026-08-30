@@ -27,6 +27,9 @@ export async function requestCloseProjectionWithConfirm(): Promise<void> {
     })
     if (ok) {
       await bridge?.projection?.closeUrl?.()
+      // Limpa o estado local da UI (isProjecting/botão) — o main fecha as
+      // janelas, mas o renderer precisa saber que acabou (botão travava ativo)
+      closeLocalProjectionState()
     }
   } catch {
     /* ignore */
@@ -75,4 +78,20 @@ export function useOperatorEscapeToCloseProjection(isProjectionWindow: () => boo
     window.removeEventListener('keydown', onKeyDown)
     unsubscribe?.()
   })
+}
+
+/**
+ * Fecha as popups de projeção do LADO DO RENDERER (estado da UI: isProjecting,
+ * botão Projetar, watch). Chamado quando o main avisa que as popups foram
+ * fechadas (confirm do operador ou fim da projeção pelo main).
+ */
+export function closeLocalProjectionState(): void {
+  try {
+    // import dinâmico: evita dependência cícula no boot do App.vue
+    void import('@shared/composables/useProjectionWindow').then((m) => {
+      m.closeProjectionModule()
+    })
+  } catch {
+    /* ignore */
+  }
 }
