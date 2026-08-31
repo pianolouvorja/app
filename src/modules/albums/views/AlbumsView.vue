@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import { useMediaStore } from '@modules/media/stores/useMediaStore'
 
 import { GlassCard } from '@design-system/index'
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import PalcoRouteSelect from '@modules/settings/components/PalcoRouteSelect.vue'
 import type { LibraryAlbum } from '@modules/sync/types/library'
 
@@ -258,7 +257,6 @@ async function runAction(
       </div>
 
       <div class="albums-view__header-actions">
-        <StagePaletteButton scope="hymns" />
         <PalcoRouteSelect module="hymns" compact />
         <button
           v-if="showDownloadControls && categories.length > 0 && !isDownloadingBatch"
