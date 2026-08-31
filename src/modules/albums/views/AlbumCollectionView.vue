@@ -6,7 +6,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { MediaCollectionList } from '@design-system/index'
 
 import AlbumLyricDialog from '../components/AlbumLyricDialog.vue'
-import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import AlbumTrackRow from '../components/AlbumTrackRow.vue'
 import { useAlbums } from '../composables/useAlbums'
 import {
@@ -124,10 +123,6 @@ async function runAction(
 
 <template>
   <section class="album-collection-view">
-    <div class="album-collection-view__palette-slot">
-      <StagePaletteButton scope="hymns" />
-    </div>
-
     <header class="album-collection-view__header">
       <div class="album-collection-view__brand">
         <button
@@ -659,10 +654,3 @@ async function runAction(
 .playlist-toast-enter-from, .playlist-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(0.6rem); }
 </style>
 
-/* FAB da paleta: canto superior direito da view de coletânea/hinário */
-.album-collection-view__palette-slot {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 30;
-}
