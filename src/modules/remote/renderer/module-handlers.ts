@@ -10,7 +10,8 @@
  */
 
 export interface ModuleHandlers {
-  execute(namespace: string, action: string, msg: Record<string, unknown>): Promise<boolean>
+  /** Retorna boolean ou `{ ok, data }` (ack estendido com payload p/ queries). */
+  execute(namespace: string, action: string, msg: Record<string, unknown>): Promise<boolean | { ok: boolean; data: unknown }>
   snapshot(namespace: string): Record<string, unknown> | null
 }
 
@@ -140,7 +141,8 @@ export interface ModuleHandlerDeps {
 
 /** Dependências do namespace palco (sender de cast para TV). */
 export interface PalcoDeps {
-  status(): Promise<{ running: boolean; clients: number } | null>
+  status(): Promise<{ running: boolean; clients: number; url: string | null; wsUrl: string | null } | null>
+  slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>>
   turnOn(): Promise<boolean>
   turnOff(): Promise<void>
   project(scope: string, input: { text: string; footerRef?: string }): void
@@ -552,13 +554,21 @@ async function executePalco(
   palco: PalcoDeps,
   action: string,
   msg: Record<string, unknown>,
-): Promise<boolean> {
+): Promise<boolean | { ok: boolean; data: unknown }> {
   switch (action) {
     case 'palco.on':
       return palco.turnOn()
     case 'palco.off': {
       await palco.turnOff()
       return true
+    }
+    case 'palco.status': {
+      const status = await palco.status()
+      return { ok: true, data: status }
+    }
+    case 'palco.slots': {
+      const slots = await palco.slots()
+      return { ok: true, data: slots }
     }
     case 'palco.project': {
       const text = typeof msg.text === 'string' ? msg.text : ''
