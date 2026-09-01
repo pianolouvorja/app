@@ -6,6 +6,8 @@ import {
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
+import { palcoClockOff, palcoClockOn } from '../../settings/services/palco-bridge'
 
 import {
   loadClockConfig,
@@ -20,6 +22,7 @@ import {
 export const useClockStore = defineStore('clock', () => {
   const config = ref<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG })
   const isProjecting = ref(false)
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -36,6 +39,7 @@ export const useClockStore = defineStore('clock', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('clock')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -94,6 +98,16 @@ export const useClockStore = defineStore('clock', () => {
   }
 
   async function syncProjection() {
+    // Relógio também segue a rota: slot individual = só TVs; Espelhar =
+    // monitores selecionados + TVs. Antes palcoClockOn nunca era chamado.
+    palcoClockOn()
+    if (isPalcoTvOnlyRoute('clock')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      return
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('clock')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -102,12 +116,14 @@ export const useClockStore = defineStore('clock', () => {
 
   function clearProjection() {
     closeProjectionModule()
+    palcoClockOff()
     isProjecting.value = false
+    projectingTvsOnly.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('clock')) {
+    if (isProjecting.value && (isProjectionModuleOpen('clock') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }

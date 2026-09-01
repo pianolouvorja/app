@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 
+import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
+
 import {
   checkMediaFile,
   clearWorkspaceData,
@@ -11,12 +13,14 @@ import {
   writeWorkspaceRecord,
 } from '../workspace.mjs'
 import { registerDisplayIpc } from './displays.mjs'
-import { registerDialogIpc } from './dialog.mjs'
+import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
+import { probeMediaDurationMsMain } from './media-probe.mjs'
 import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
 import {
   broadcastPlaybackSync,
+  closeAllProjectionWindows,
   closeWebProjectionWindows,
   getSourceMediaIdFor,
   getImageSlideState,
@@ -24,6 +28,7 @@ import {
   getPptSlideState,
   getSourceNavigationState,
   getSourcePlaybackState,
+  captureSourceFrameBase64,
   getVideoTargetMonitorIds,
   openWebProjectionWindows,
   registerProjectionCapturePermissions,
@@ -47,12 +52,39 @@ import {
   setVideoTargetMonitorIds,
   toggleSiteProjectionScreens,
   toggleVideoProjectionScreens,
-} from './web-projection.mjs'
+  getSourceMediaInfo,
+  isExternalProjectionAlive, } from './web-projection.mjs'
+import { collectAliveProjectionWindows, isProjectionPopupWindow } from '../projection-hotkey.mjs'
 
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
   registerDialogIpc()
+  registerReadBinaryFileIpc()
   registerProjectionCapturePermissions()
+
+  // Wakeup do receiver (spec multi-telas): abre o app Palco em devices
+  // com dev mode (simulador/TV) via ares-launch. Best-effort: falha
+  // silenciosa — sem device, o receiver browser/simulador manual segue.
+  const wakeDebounce = { last: 0 }
+  ipcMain.handle('palco:wake', async () => {
+    const now = Date.now()
+    if (now - wakeDebounce.last < 30_000) return { ok: false, skipped: 'debounce' }
+    wakeDebounce.last = now
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const exec = promisify(execFile)
+    const npmBin = `${process.env.HOME}/.npm-global/bin`
+    const results = []
+    for (const dev of ['emulator', 'tv']) {
+      try {
+        await exec(`${npmBin}/ares-launch`, ['-d', dev, 'com.piano.louvorja.palco'], { timeout: 8000 })
+        results.push(`${dev}:ok`)
+      } catch {
+        results.push(`${dev}:skip`)
+      }
+    }
+    return { ok: results.some((r) => r.endsWith(':ok')), results }
+  })
 
   ipcMain.handle('projection:open-url', async (_event, payload) => {
     try {
@@ -72,12 +104,31 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  ipcMain.handle('projection:close-url', () => {
+  // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
+  ipcMain.on('projection:video-ended', () => {
     try {
       closeWebProjectionWindows()
+    } catch (error) {
+      console.error('[ipc] projection:video-ended', error)
+    }
+  })
+
+  ipcMain.handle('projection:close-url', () => {
+    try {
+      closeAllProjectionWindows()
       return true
     } catch (error) {
       console.error('[ipc] projection:close-url', error)
+      return false
+    }
+  })
+
+  ipcMain.handle('projection:external-alive', () => {
+    try {
+      // Fonte única: popups (hinos/slides) + web-projection (vídeo/pdf/site)
+      const hasPopup = collectAliveProjectionWindows().some((win) => isProjectionPopupWindow(win.webContents.getURL()))
+      return Boolean(hasPopup || isExternalProjectionAlive())
+    } catch {
       return false
     }
   })
@@ -141,6 +192,15 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] projection:remote-set-volume', error)
       return null
+    }
+  })
+
+  ipcMain.handle('projection:get-source-media-info', () => {
+    try {
+      return getSourceMediaInfo()
+    } catch (error) {
+      console.error('[ipc] projection:get-source-media-info', error)
+      return { filePath: '', title: '' }
     }
   })
 
@@ -279,6 +339,15 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  ipcMain.handle('projection:capture-source-frame', async () => {
+    try {
+      return await captureSourceFrameBase64()
+    } catch (error) {
+      console.error('[ipc] projection:capture-source-frame', error)
+      return null
+    }
+  })
+
   ipcMain.handle('projection:get-ppt-slide-state', async () => {
     try {
       return await getPptSlideState()
@@ -380,6 +449,16 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  // Detector da instalação do LouvorJA Classo (Delphi) — issue #142
+  ipcMain.handle('classo:detect', () => {
+    try {
+      return detectClassoInstallation({ registryProbe: probeClassoRegistry })
+    } catch (error) {
+      console.error('[ipc] classo:detect', error)
+      return { found: false, root: null, media: { albums: [], totalBytes: 0 }, dataFiles: null }
+    }
+  })
+
   ipcMain.handle('media:download', async (_event, url, mediaType, filename) => {
     try {
       return await downloadMediaFile(url, mediaType, filename)
@@ -395,5 +474,14 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('media:delete', (_event, mediaType, filename) => {
     return deleteMediaFile(mediaType, filename)
+  })
+
+  ipcMain.handle('media:probe-duration', async (_event, path) => {
+    try {
+      return await probeMediaDurationMsMain(String(path ?? ''))
+    } catch (error) {
+      console.error('[ipc] media:probe-duration', error)
+      return 0
+    }
   })
 }

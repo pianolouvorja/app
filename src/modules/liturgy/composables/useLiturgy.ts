@@ -7,7 +7,11 @@ import { useAlbumsStore } from '@modules/albums/stores/useAlbumsStore'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 
 import { formatMomentDuration } from '../services/liturgy-item-helpers'
+import { decodeJaBytes, parseJaLiturgy } from '../services/liturgy-ja-import'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { useLiturgyStore } from '../stores/useLiturgyStore'
+import { useScheduledStore } from '../stores/useScheduledStore'
+import { appConfirm } from '@shared/composables/useAppConfirm'
 import type { LiturgyDayKey } from '../types/liturgy'
 import { useLiturgyClock } from './useLiturgyClock'
 
@@ -149,6 +153,158 @@ export function useLiturgy() {
     store.selectDay(day)
   }
 
+  /** Importa itens agendados (DATAPACKET XML) do Delphi: 2 arquivos. */
+  async function onImportScheduled() {
+    const scheduled = useScheduledStore()
+    const bridge = getDesktopBridge()
+    async function readXmlFile(): Promise<{ name: string; text: string } | null> {
+      if (bridge?.dialog?.openFile && bridge.workspace.readBinaryFile) {
+        const file = await bridge.dialog.openFile({
+          title: t('liturgy.scheduled.import'),
+          filters: [{ name: 'XML (Delphi)', extensions: ['xml'] }],
+        })
+        const path = Array.isArray(file) ? file[0] : file
+        if (!path) return null
+        try {
+          const bytes = await bridge.workspace.readBinaryFile(path)
+          if (!bytes) return null
+          return { name: path, text: new TextDecoder().decode(bytes) }
+        } catch {
+          return null
+        }
+      }
+      // Web: input file
+      return await new Promise((resolve) => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.xml'
+        input.onchange = () => {
+          const f = input.files?.[0]
+          if (!f) { resolve(null); return }
+          const reader = new FileReader()
+          reader.onload = () => resolve({ name: f.name, text: String(reader.result) })
+          reader.onerror = () => resolve(null)
+          reader.readAsText(f)
+        }
+        input.click()
+      })
+    }
+
+    const cats = await readXmlFile()
+    if (!cats) return
+    // Arquivos irmãos do Delphi ainda não portados — reconhece e avisa.
+    const notPorted = ['coletaneasusuario', 'favoritos', 'videosonusuario', 'configpt']
+    const firstName = cats.name.toLowerCase()
+    if (notPorted.some((n) => firstName.includes(n))) {
+      await appConfirm({
+        title: t('liturgy.scheduled.import'),
+        message: t('liturgy.scheduled.notPorted', { name: cats.name }),
+        confirmLabel: t('liturgy.ok'),
+      })
+      return
+    }
+    const items = await readXmlFile()
+    const n = scheduled.importFromDelphi(cats.text, items?.text ?? null)
+    lastActionMessageKey.value = null
+    await appConfirm({
+      title: t('liturgy.scheduled.import'),
+      message: t('liturgy.scheduled.imported', { count: n }),
+      confirmLabel: t('liturgy.ok'),
+    })
+  }
+
+  /** Importa liturgia .ja do LouvorJA Delphi (merge por dia). */
+  /**
+   * Importa liturgia .ja do LouvorJA Delphi (merge por dia).
+   * Desktop: file dialog nativo via IPC. Web: <input type="file">.
+   */
+  async function onImportJa() {
+    let bytes: Uint8Array | null = null
+    const bridge = getDesktopBridge()
+    if (bridge?.dialog?.openFile && bridge.workspace.readBinaryFile) {
+      // Desktop (Electron): diálogo nativo + leitura via IPC (decodifica
+      // UTF-8/ANSI no main).
+      const file = await bridge.dialog.openFile({
+        title: t('liturgy.importJa'),
+        filters: [{ name: 'LouvorJA (.ja)', extensions: ['ja'] }],
+      })
+      const path = Array.isArray(file) ? file[0] : file
+      if (!path) return
+      try {
+        bytes = await bridge.workspace.readBinaryFile(path)
+      } catch {
+        bytes = null
+      }
+    } else {
+      // Web: input file com FileReader (decodifica no renderer).
+      bytes = await pickJaFileWeb()
+    }
+    if (!bytes) {
+      await appConfirm({
+        title: t('liturgy.importJa'),
+        message: t('liturgy.importJaReadError'),
+        confirmLabel: t('liturgy.ok'),
+      })
+      return
+    }
+    let parsed
+    try {
+      parsed = parseJaLiturgy(decodeJaBytes(bytes))
+    } catch {
+      await appConfirm({
+        title: t('liturgy.importJa'),
+        message: t('liturgy.importJaInvalid'),
+        confirmLabel: t('liturgy.ok'),
+      })
+      return
+    }
+    // Duplicados detectados? Pergunta sobrescrever dias vs merge (pular dups).
+    const duplicates = store.countJaDuplicates(parsed)
+    let mode: 'merge' | 'overwrite' = 'merge'
+    if (duplicates > 0) {
+      mode = await appConfirm({
+        title: t('liturgy.importJaOverwriteTitle'),
+        message: t('liturgy.importJaOverwriteAsk', { count: duplicates }),
+        confirmLabel: t('liturgy.importJaOverwrite'),
+        cancelLabel: t('liturgy.importJaKeep'),
+        danger: true,
+      })
+        ? 'overwrite'
+        : 'merge'
+    }
+    const { added, skipped, days } = await store.importJaDays(parsed, mode)
+    lastActionMessageKey.value = null
+    await appConfirm({
+      title: t('liturgy.importJa'),
+      message:
+        mode === 'overwrite'
+          ? t('liturgy.importJaOverwritten', { added, days: days.length })
+          : t('liturgy.importJaDone', { added, skipped, days: days.length }),
+      confirmLabel: t('liturgy.ok'),
+    })
+  }
+
+  /** Abre seletor de arquivo .ja no browser e retorna os bytes. */
+  function pickJaFileWeb(): Promise<Uint8Array | null> {
+    return new Promise((resolve) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.ja,text/plain'
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) {
+          resolve(null)
+          return
+        }
+        file.arrayBuffer().then(
+          (buf) => resolve(new Uint8Array(buf)),
+          () => resolve(null),
+        )
+      }
+      input.click()
+    })
+  }
+
   function onManageTeam() {
     window.alert(t('liturgy.team.comingSoon'))
   }
@@ -255,6 +411,8 @@ export function useLiturgy() {
     deletionLocked,
     videoProjectionItemId,
     selectDay: onSelectDay,
+    importJa: onImportJa,
+    importScheduled: onImportScheduled,
     selectCustomLiturgy: store.selectCustomLiturgy,
     setSessionStartFromInput: store.setSessionStartFromInput,
     clearSessionStart: store.clearSessionStart,
@@ -289,6 +447,9 @@ export function useLiturgy() {
     onManageTeam,
     onMusicPick: store.onMusicPick,
     clearMusicPick: store.clearMusicPick,
+    onVideoFileSelected(itemId: string, durationSec: number) {
+      store.setItemDurationMs(itemId, Math.round(durationSec * 1000))
+    },
     onMusicSung,
     onMusicInstrumental,
     onMusicSlides,

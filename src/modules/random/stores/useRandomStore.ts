@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import {
-  closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
+import { isPalcoTvOnlyRoute } from '../../settings/services/palco-routing'
 
 import {
   buildNumberRange,
@@ -72,6 +72,9 @@ export const useRandomStore = defineStore('random', () => {
   const runtime = ref<RandomRuntimeState>({ ...DEFAULT_RANDOM_RUNTIME })
   const draftName = ref('')
   const isProjecting = ref(false)
+  // Rota individual do Palco não abre janela cabo; impede o watch de
+  // encerrar a projeção em 400ms por não encontrar janela.
+  const projectingTvsOnly = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
   const rangeError = ref<'invalid' | 'tooLarge' | null>(null)
@@ -112,6 +115,7 @@ export const useRandomStore = defineStore('random', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
+      if (projectingTvsOnly.value) return
       if (!isProjectionModuleOpen('random')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -139,6 +143,9 @@ export const useRandomStore = defineStore('random', () => {
     runtime.value = {
       currentDisplay: pool.currentDisplay,
       isDrawing: false,
+      // hydrate preserva a intenção de projeção (fix 27/08): reconstruir
+      // sem a flag derrubava 'projecting' e a TV perdia o dono no boot
+      projecting: runtime.value.projecting === true,
     }
     syncRuntime()
     isProjecting.value = isProjectionModuleOpen('random')
@@ -164,6 +171,7 @@ export const useRandomStore = defineStore('random', () => {
     runtime.value = {
       currentDisplay: nextPool.currentDisplay,
       isDrawing: false,
+      projecting: runtime.value.projecting,
     }
     draftName.value = ''
     rangeError.value = null
@@ -184,7 +192,9 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function addName(raw?: string) {
-    const name = (raw ?? draftName.value).trim()
+    // NFC: acentos decompostos (colagem/Android) quebram uppercase na TV e
+    // permitem duplicatas invisíveis (José NFC ≠ José NFD).
+    const name = (raw ?? draftName.value).trim().normalize('NFC')
     if (!name) return false
     if (available.value.includes(name)) {
       draftName.value = ''
@@ -298,6 +308,10 @@ export const useRandomStore = defineStore('random', () => {
     cancelAnimation = runDrawAnimation(pool, config.value.animationSpeed, {
       onTick: (candidate) => {
         runtime.value = {
+          // ...spread: sortear NUNCA derruba 'projecting' — objeto novo
+          // sem a flag soltava o claim e a TV congelava no último frame
+          // (bug real 27/08: número sorteado não aparecia na TV).
+          ...runtime.value,
           currentDisplay: candidate,
           isDrawing: true,
         }
@@ -306,6 +320,7 @@ export const useRandomStore = defineStore('random', () => {
       onFinish: (winner) => {
         cancelAnimation = null
         runtime.value = {
+          ...runtime.value,
           currentDisplay: winner,
           isDrawing: false,
         }
@@ -362,7 +377,17 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   async function syncProjection() {
+    runtime.value = { ...runtime.value, projecting: true }
     syncRuntime()
+    // Mesmo contrato da Bíblia: slot individual = só TV; Espelhar =
+    // janela nos monitores selecionados + TVs Palco.
+    if (isPalcoTvOnlyRoute('random')) {
+      isProjecting.value = true
+      projectingTvsOnly.value = true
+      startProjectionWatch()
+      return
+    }
+    projectingTvsOnly.value = false
     const opened = await openProjectionModule('random')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -370,13 +395,15 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function clearProjection() {
-    closeProjectionModule()
     isProjecting.value = false
+    projectingTvsOnly.value = false
+    runtime.value = { ...runtime.value, projecting: false }
     stopProjectionWatch()
+    syncRuntime()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && isProjectionModuleOpen('random')) {
+    if (isProjecting.value && (isProjectionModuleOpen('random') || projectingTvsOnly.value)) {
       clearProjection()
       return
     }

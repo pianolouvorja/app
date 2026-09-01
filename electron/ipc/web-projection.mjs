@@ -3,6 +3,8 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
+import { getPalcoManager } from '../palco-server.mjs'
+import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey, injectProjectionShortcutHint as injectShortcutHint } from '../projection-hotkey.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -261,6 +263,52 @@ let siteSyncScrollX = -1
 let siteSyncScrollY = -1
 let siteSourceReloadPending = false
 let siteSyncBound = false
+
+/**
+ * Hotkey global Ctrl+Alt+P (spec 30/08, monitor único): registro ÚNICO no
+ * singleton projection-hotkey.mjs. Este fluxo (video/pdf/ppt/site) registra
+ * um provider com suas janelas; o fluxo de hinos/slides (main.mjs,
+ * window.open) registra o dele. Vida da hotkey: nasce com a 1ª projeção de
+ * qualquer fluxo, morre quando não sobra nenhuma.
+ */
+function hasAnyExternalProjectionWindow() {
+  if (sourceWindow && !sourceWindow.isDestroyed()) return true
+  for (const win of mirrorWindows) {
+    if (win && !win.isDestroyed()) return true
+  }
+  for (const shield of siteShieldWindows) {
+    if (shield && !shield.isDestroyed()) return true
+  }
+  return false
+}
+
+function syncExternalHotkeyState() {
+  if (hasAnyExternalProjectionWindow()) ensureProjectionHotkey()
+  else releaseProjectionHotkey()
+}
+
+let externalProviderAttached = false
+function attachExternalHotkeyProvider() {
+  if (externalProviderAttached) return
+  externalProviderAttached = true
+  addProjectionWindowProvider(() => [
+    ...(sourceWindow && !sourceWindow.isDestroyed() ? [sourceWindow] : []),
+    ...mirrorWindows.filter((win) => win && !win.isDestroyed()),
+    ...siteShieldWindows.filter((win) => win && !win.isDestroyed()),
+  ])
+}
+
+/** Registra o provider + hotkey quando nasce janela deste fluxo. */
+function enableProjectionHotkey() {
+  attachExternalHotkeyProvider()
+  ensureProjectionHotkey()
+}
+
+/** Reavalia após fechar janelas deste fluxo (libera se não sobrou nada). */
+function disableProjectionHotkey() {
+  syncExternalHotkeyState()
+}
+
 
 const SITE_READ_SCROLL_SCRIPT = `
 (() => {
@@ -696,6 +744,7 @@ function createSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
+    injectShortcutHint(win)
   })
 
   // Impede redimensionar / maximizar por atalho ou SO
@@ -718,6 +767,7 @@ function createSourceWindow(loadUrl, title) {
   const onPageReady = () => {
     win.webContents.setAudioMuted(false)
     hideYoutubeSidebar(win)
+    injectShortcutHint(win)
     // YouTube é SPA: reaplica após hidratação
     setTimeout(() => hideYoutubeSidebar(win), 800)
     setTimeout(() => hideYoutubeSidebar(win), 2000)
@@ -734,7 +784,7 @@ function createSourceWindow(loadUrl, title) {
   })
 
   win.on('closed', () => {
-    detachControlBar()
+    detachControlBar(); stopPalcoMediaOnClose()
     if (sourceWindow === win) {
       sourceWindow = null
       closeMirrorWindowsOnly()
@@ -783,6 +833,7 @@ function createSiteSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
+    injectShortcutHint(win)
   })
 
   win.on('resize', () => {
@@ -796,7 +847,7 @@ function createSiteSourceWindow(loadUrl, title) {
   })
 
   win.on('closed', () => {
-    detachControlBar()
+    detachControlBar(); stopPalcoMediaOnClose()
     if (sourceWindow === win) {
       sourceWindow = null
       closeMirrorWindowsOnly()
@@ -1091,6 +1142,7 @@ function createMirrorWindow(display) {
       win.setAlwaysOnTop(true, 'screen-saver')
     }
     win.showInactive()
+    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
@@ -1101,6 +1153,7 @@ function createMirrorWindow(display) {
 
   win.on('closed', () => {
     mirrorWindows = mirrorWindows.filter((item) => item !== win)
+    stopPalcoMediaOnClose()
   })
 
   const mirrorUrl = `${pathToFileURL(MIRROR_HTML).href}?mode=video`
@@ -1152,6 +1205,7 @@ function createImageProjectionWindow(display, loadUrl) {
     }
     win.setAlwaysOnTop(true, 'screen-saver')
     win.showInactive()
+    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
@@ -1170,6 +1224,7 @@ function createImageProjectionWindow(display, loadUrl) {
 
   win.on('closed', () => {
     mirrorWindows = mirrorWindows.filter((item) => item !== win)
+    stopPalcoMediaOnClose()
   })
 
   void win.loadURL(loadUrl)
@@ -1321,6 +1376,37 @@ function closeMirrorWindowsOnly() {
   stopSiteProjectionSync()
 }
 
+/** X da janela de projeção = mesma limpeza do Escape (fix 27/08):
+ * o handler 'closed' só fazia detachControlBar — nenhum audio/video stop
+ * saía pras TVs e o MP3 ficava tocando após fechar o popup pelo X. */
+function stopPalcoMediaOnClose() {
+  try {
+    const manager = getPalcoManager()
+    if (manager) {
+      manager.broadcastAll({ v: 2, type: 'video', action: 'stop' })
+      manager.broadcastAll({ v: 2, type: 'audio', action: 'stop' })
+    }
+  } catch {
+    /* palco não anexado */
+  }
+}
+
+/** Há projeção externa (video/pdf/ppt/site) com janela viva? (bridge consulta)
+ * Cobre TODAS as famílias: janela fonte + espelhos + shields — fecha só a
+ * fonte não significa que a projeção acabou (caso 28/08). */
+export function isExternalProjectionAlive() {
+  try {
+    if (sourceWindow && !sourceWindow.isDestroyed()) return true
+    for (const win of mirrorWindows) {
+      if (win && !win.isDestroyed()) return true
+    }
+    for (const shield of siteShieldWindows) {
+      if (shield && !shield.isDestroyed()) return true
+    }
+  } catch { /* ignore */ }
+  return false
+}
+
 export function closeWebProjectionWindows() {
   closeMirrorWindowsOnly()
   detachControlBar()
@@ -1330,9 +1416,40 @@ export function closeWebProjectionWindows() {
   lastSiteMonitorIds = []
   lastVideoMonitorIds = []
   siteControlPanelOpen = false
+  // Palco (TVs): projeção fechou (ended OU manual) → todas as TVs voltam
+  // ao idle. Sem isso o último frame ficava congelado na TV.
+  // Import estático: require() de .mjs lança ERR_REQUIRE_ESM no Electron
+  // ESM e o catch silencioso engolia o stop — TVs ficavam com mídia presa.
+  stopPalcoMediaOnClose()
+  // Hotkey Ctrl+Alt+P: projeção acabou → libera o atalho global
+  disableProjectionHotkey()
   if (win && !win.isDestroyed()) {
     win.close()
   }
+}
+
+/**
+ * Fecha TODAS as projeções dos DOIS fluxos: web-projection (vídeo/pdf/ppt/site)
+ * E popups de hinos/bíblia/slides (window.open no main.mjs). Usado pelo
+ * confirm do operador — antes só o primeiro fluxo era fechado e a popup
+ * de bíblia/hinos continuava projetando com o botão da UI ativo.
+ * Chama o callback de fechamento de popups registrado pelo main.mjs
+ * (inversão de dependência — evita import circular main↔ipc).
+ * @type {(() => void) | null}
+ */
+let closeProjectionPopupsImpl = null
+
+export function registerCloseProjectionPopups(impl) {
+  closeProjectionPopupsImpl = impl
+}
+
+export function closeAllProjectionWindows() {
+  try {
+    closeProjectionPopupsImpl?.()
+  } catch {
+    /* ignore */
+  }
+  closeWebProjectionWindows()
 }
 
 function broadcastSiteTargetsChanged(ids) {
@@ -1490,9 +1607,17 @@ function openSiteScreensOnTargets(loadUrl, targets) {
   return targets.length > 0
 }
 
+let currentSourceFilePath = ''
+let currentSourceTitle = ''
+
 export async function openWebProjectionWindows(payload) {
   const input = payload ?? {}
   let effective = input
+
+  currentSourceFilePath =
+    typeof effective.filePath === 'string' ? effective.filePath.trim() : ''
+  currentSourceTitle =
+    typeof effective.title === 'string' ? effective.title.trim() : ''
 
   if (input.mode === 'presentation') {
     const filePath =
@@ -1591,6 +1716,9 @@ export async function openWebProjectionWindows(payload) {
     mode === 'site'
       ? createSiteSourceWindow(loadUrl, title)
       : createSourceWindow(loadUrl, title)
+
+  // Hotkey global de alternância disponível enquanto houver projeção
+  enableProjectionHotkey()
 
   if (!withScreens) {
     return true
@@ -1921,6 +2049,11 @@ export async function remoteSetVolumeSource(volume) {
   }
 }
 
+/** FilePath/título da mídia corrente (para o popup espelhar no Palco). */
+export function getSourceMediaInfo() {
+  return { filePath: currentSourceFilePath, title: currentSourceTitle }
+}
+
 /** Estado de playback do vídeo no popup (para a barra do operador). */
 export async function getSourcePlaybackState() {
   if (!sourceWindow || sourceWindow.isDestroyed()) return null
@@ -2068,6 +2201,27 @@ export async function getPdfPageState() {
       total: Number(state.total) || 0,
       projecting: isVideoProjectingToScreens(),
     }
+  } catch {
+    return null
+  }
+}
+
+/** Rasteriza o slide/página atual do popup para o Palco (TV/browser).
+ * Controle fica fora do sourceWindow, então a imagem contém só conteúdo. */
+export async function captureSourceFrameBase64() {
+  if (!sourceWindow || sourceWindow.isDestroyed()) return null
+  try {
+    // PDF/PPT convertido: canvas PDF.js é fonte real do slide. capturePage
+    // pegava o frame cinza de loading antes do render/GPU finalizar.
+    const canvasPng = await sourceWindow.webContents.executeJavaScript(
+      "window.__liturgyPdf && window.__liturgyPdf.capturePng ? window.__liturgyPdf.capturePng() : null",
+      true,
+    )
+    if (typeof canvasPng === 'string' && canvasPng.length > 32) return canvasPng
+    const image = await sourceWindow.webContents.capturePage()
+    const png = image.toPNG()
+    if (!png?.length) return null
+    return png.toString('base64')
   } catch {
     return null
   }

@@ -1,58 +1,35 @@
-name: Bug Report
-description: Reporta um bug no PIANO (Desktop)
-labels: ["bug", "triage"]
+name: Bug report
+description: Reporte algo que não funciona
+labels: [bug]
 body:
   - type: textarea
-    id: descricao
+    id: problem
     attributes:
-      label: Descrição do bug
-      description: O que aconteceu? Seja específico.
+      label: Problema
+      description: O que aconteceu?
     validations:
       required: true
   - type: textarea
-    id: reproducao
+    id: reproduce
     attributes:
-      label: Passos para reproduzir
+      label: Como reproduzir
       placeholder: |
-        1. Abri o app em...
-        2. Cliquei em...
-        3. Vi que...
-    validations:
-      required: true
-  - type: dropdown
-    id: prioridade
-    attributes:
-      label: Prioridade
-      options:
-        - P0 — Crítico (não funciona)
-        - P1 — Alto (funciona mas quebra UX)
-        - P2 — Médio (workaround existe)
-        - P3 — Baixo (cosmético)
+        1. ...
+        2. ...
     validations:
       required: true
   - type: textarea
-    id: ambiente
+    id: expected
     attributes:
-      label: Ambiente
-      placeholder: Sistema operacional, navegador, versão, etc
+      label: Resultado esperado
     validations:
       required: true
-  - type: dropdown
-    id: modulo
+  - type: input
+    id: version
     attributes:
-      label: Módulo afetado
-      options:
-        - Router / Navegação
-        - Liturgia
-        - Bíblia
-        - Álbuns / Hinos
-        - Mídia / Player
-        - Settings / Aparência
-        - Design System
-        - Desktop (Electron)
-        - Updater
-        - Splash/EULA
-        - Infra / Deploy
-        - Outro
-    validations:
-      required: false
+      label: Versão / commit / ambiente
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidência
+      description: Logs, screenshots ou vídeo.

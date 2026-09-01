@@ -9,6 +9,7 @@ import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import { useThemeManager } from '@design-system/composables'
 import AppTitlebar from '@layouts/AppTitlebar.vue'
 import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
+import { useOperatorEscapeToCloseProjection } from '@shared/composables/useOperatorEscapeToCloseProjection'
 import UpdateBanner from '@shared/components/UpdateBanner.vue'
 import UpdateDialog from '@shared/components/UpdateDialog.vue'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
@@ -34,6 +35,10 @@ if (isProjectionPopupLocation()) {
 const updateChecker = useUpdateChecker()
 const showUpdateDialog = ref(false)
 
+// ESC no operador com projeção ativa → confirma encerrar (spec 30/08,
+// monitor único: sem isso o operador não saía da projeção sem fechar o app).
+useOperatorEscapeToCloseProjection(() => isProjectionWindow.value)
+
 watch(
   () => currentTheme.value.mode,
   (mode) => {
@@ -53,6 +58,17 @@ watch(
 
 onMounted(() => {
   updateChecker.init()
+  // Palco (cast TV): a bridge sobe no BOOT da janela principal — não só
+  // quando o PalcoCard monta. Sem isso, hino/bíblia/timer só espelhavam
+  // se o operador tivesse visitado Configurações → Projeção antes.
+  if (!isProjectionWindow.value) {
+    import('@modules/settings/services/palco-bridge')
+      .then((m) => {
+        m.startPalcoBridge()
+        console.info('[palco-bridge] subiu no boot')
+      })
+      .catch((e) => console.error('[palco-bridge] FALHOU ao subir no boot:', e))
+  }
 })
 
 function handleViewNotes() {

@@ -11,9 +11,16 @@ import {
   readBibleRuntimeFromStorage,
   type BibleProjectionRuntime,
 } from '../services/bible-runtime'
+import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
+import type { StageSettings } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage } from '../../settings/types/stage-settings'
 
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
 let runtimeChannel: BroadcastChannel | null = null
+
+// Personalização do Palco (escopo bible)
+const stage = ref<StageSettings>(readEffectiveStageSettings('bible'))
+let unsubStage: (() => void) | null = null
 
 function refreshRuntime() {
   runtime.value = readBibleRuntimeFromStorage()
@@ -33,6 +40,10 @@ onMounted(() => {
   refreshRuntime()
   window.addEventListener('storage', onStorage)
 
+  unsubStage = subscribeStageSettings(() => {
+    stage.value = readEffectiveStageSettings('bible')
+  })
+
   try {
     runtimeChannel = new BroadcastChannel(BIBLE_RUNTIME_CHANNEL)
     runtimeChannel.addEventListener('message', onRuntimeMessage)
@@ -43,6 +54,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('storage', onStorage)
+  unsubStage?.()
   runtimeChannel?.removeEventListener('message', onRuntimeMessage)
   runtimeChannel?.close()
   runtimeChannel = null
@@ -55,11 +67,90 @@ const showContent = computed(
 const contentKey = computed(
   () => `${runtime.value.text}|${runtime.value.reference}`,
 )
+
+const stageStyle = computed(() => ({
+  backgroundColor: stage.value.backgroundColor,
+  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
+    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
+    : undefined,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+}))
+
+const stageAlign = computed(() => ({
+  alignItems:
+    stage.value.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : stage.value.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center',
+  justifyContent:
+    stage.value.textAlign === 'left'
+      ? 'flex-start'
+      : stage.value.textAlign === 'right'
+        ? 'flex-end'
+        : 'center',
+}))
+
+/**
+ * Texto bíblico longo precisa ceder tamanho para preservar leitura sem estourar
+ * a área. O slider continua sendo o tamanho-base; a escala só reduz versos
+ * maiores e o clamp impede tanto gigantismo quanto texto minúsculo.
+ */
+const adaptiveBibleFontScale = computed(() => {
+  const length = runtime.value.text.replace(/\s+/g, ' ').trim().length
+  if (length > 360) return 0.66
+  if (length > 260) return 0.76
+  if (length > 170) return 0.86
+  return 1
+})
+
+const verseStyle = computed(() => {
+  const baseCqw = (stage.value.bibleFontSize / 1920) * 100
+  const responsiveCqw = baseCqw * adaptiveBibleFontScale.value
+  return {
+    color: stage.value.bibleTextColor,
+    // 1.5rem protege texto curto em tela pequena; 5rem evita gigantismo.
+    fontSize: `clamp(1.5rem, ${responsiveCqw}cqw, 5rem)`,
+  fontWeight: String(stage.value.bibleFontWeight),
+  textAlign: stage.value.textAlign,
+  textShadow: stage.value.textShadow
+    ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
+    : 'none',
+  }
+})
+
+const verseBoxStyle = computed(() => {
+  if (!stage.value.textBox) return {}
+  return {
+    backgroundColor: `rgba(0,0,0,${stage.value.boxOpacity})`,
+    border: stage.value.boxBorder ? '1px solid rgba(255,255,255,0.25)' : 'none',
+    // Padrão folha característico do design (como o media-projection)
+    borderRadius: 'clamp(14px, 2.4vmin, 32px) 0 clamp(14px, 2.4vmin, 32px) 0',
+    // caixinha só no versículo: padding para respirar dentro da caixa
+    padding: '0.35em 0.75em',
+    // Bíblia: caixa horizontal aproveita a projeção e reduz quebras de verso.
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    margin: '0 auto',
+  }
+})
+
+const referenceStyle = computed(() => ({
+  color: stage.value.footerRefColor,
+  fontWeight: String(stage.value.footerRefWeight),
+}))
 </script>
 
 <template>
-  <ProjectionBackground class="bible-projection">
-    <div class="bible-projection__stage">
+  <ProjectionBackground
+    class="bible-projection"
+    :style="stageStyle"
+  >
+    <div
+      class="bible-projection__stage"
+      :style="stageAlign"
+    >
       <Transition
         name="bible-fade"
         mode="out-in"
@@ -72,12 +163,14 @@ const contentKey = computed(
           <p
             v-if="runtime.text"
             class="bible-projection__text"
+            :style="[verseStyle, verseBoxStyle]"
           >
             {{ runtime.text }}
           </p>
           <p
-            v-if="runtime.reference"
+            v-if="runtime.reference && stage.showBibleVersion"
             class="bible-projection__reference"
+            :style="referenceStyle"
           >
             {{ runtime.reference }}
           </p>
@@ -97,6 +190,8 @@ const contentKey = computed(
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  /* container p/ unidades cqw do stage-settings (font-size proporcional) */
+  container-type: size;
 }
 
 .bible-projection__stage {
@@ -114,7 +209,8 @@ const contentKey = computed(
   flex-direction: column;
   gap: 0.6em;
   width: 100%;
-  max-width: 56rem;
+  // Bíblia pede linha mais longa que hinos: retangular, não quadrada.
+  max-width: min(92rem, 92%);
 }
 
 .bible-projection__text {

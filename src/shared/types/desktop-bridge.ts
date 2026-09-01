@@ -6,6 +6,8 @@ export type ProgressPayload = {
 }
 
 export type WorkspaceApi = {
+  /** Lê bytes de arquivo escolhido via openFile (decode fica no caller). */
+  readBinaryFile?: (path: string) => Promise<Uint8Array | null>
   getRecord: <T = unknown>(filename: string) => Promise<T | null>
   saveRecord: (filename: string, data: unknown) => Promise<boolean>
   clear: () => Promise<boolean>
@@ -18,10 +20,65 @@ export type CatalogApi = {
   onExtractProgress: (callback: (payload: ProgressPayload) => void) => () => void
 }
 
+/** Resultado do detector da instalação LouvorJA Classo/Delphi (issue #142). */
+export type ClassoAlbumInfo = {
+  name: string
+  dir: string
+  files: string[]
+  bytes: number
+}
+
+export type ClassoDetectionResult = {
+  found: boolean
+  root: string | null
+  media: { albums: ClassoAlbumInfo[]; totalBytes: number }
+  dataFiles: {
+    liturgiaJa: string | null
+    itensAgendados: string | null
+    itensAgendadosCategorias: string | null
+    configPt: string
+  } | null
+}
+
+export type ClassoApi = {
+  detect: () => Promise<ClassoDetectionResult>
+}
+
 export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
   delete: (mediaType: MediaFolderType, filename: string) => Promise<boolean>
+  /** Duração de mídia local em ms via ffprobe (main process). */
+  probeDuration?: (path: string) => Promise<number>
+}
+
+/** Mensagem de comando vinda do controle remoto (APK via WS). */
+export type RemoteBridgeMessage = {
+  id?: string | number
+  action: string
+  value?: unknown
+  [key: string]: unknown
+}
+
+export type RemotePairingInfo = {
+  host: string
+  port: number
+  token: string
+  connectUrl: string
+  qrDataUrl: string
+  clientCount: number
+  clientAddress?: string | null
+}
+
+export type RemoteApi = {
+  onCommand: (callback: (msg: RemoteBridgeMessage) => void) => () => void
+  onStateRequest: (callback: () => void) => () => void
+  sendAck: (ack: { id?: string | number; ok: boolean }) => void
+  sendState: (state: Record<string, unknown>) => void
+  pairingInfo: () => Promise<RemotePairingInfo>
+  onClients?: (
+    callback: (payload: { count: number; address?: string | null }) => void,
+  ) => () => void
 }
 
 export type DisplayBounds = {
@@ -111,9 +168,13 @@ export type ProjectionNavigationState = {
 export type ProjectionApi = {
   openUrl: (payload: OpenUrlProjectionPayload) => Promise<boolean>
   closeUrl: () => Promise<boolean>
+  /** Há projeção externa (video/pdf/ppt/site) com janela viva no main? */
+  externalAlive: () => Promise<boolean>
   getSourceMediaId?: () => Promise<string | null>
   publishPlaybackSync?: (payload: PlaybackSyncPayload) => void
   onPlaybackSync?: (callback: (payload: PlaybackSyncPayload) => void) => () => void
+  /** ESC pressionado na janela de projeção → operador exibe confirm. */
+  onCloseRequested?: (callback: () => void) => () => void
   remotePlay?: () => Promise<boolean>
   remotePause?: () => Promise<boolean>
   remoteSeek?: (seconds: number) => Promise<boolean>
@@ -185,9 +246,11 @@ export type LouvorJaBridge = {
   zoom?: ZoomApi
   workspace: WorkspaceApi
   catalog: CatalogApi
+  classo?: ClassoApi
   media: MediaApi
   displays: DisplaysApi
   dialog: DialogApi
   presentation?: PresentationApi
   projection: ProjectionApi
+  remote?: RemoteApi
 }

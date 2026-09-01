@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
 import BibleNavPanel from '../components/BibleNavPanel.vue'
 import BibleProjectFab from '../components/BibleProjectFab.vue'
 import BibleToolbar from '../components/BibleToolbar.vue'
@@ -77,6 +78,7 @@ function onNextVerse() {
       @toggle-nav="toggleNavPanel"
       @update:bible-search-query="globalSearchQuery = $event"
     />
+    <PalcoRouteSelect module="bible" />
 
     <div
       v-if="lastErrorKey"
@@ -160,7 +162,7 @@ function onNextVerse() {
       :disabled="!hasProjection"
       :projecting="isProjecting"
       @project="onProject"
-      @clear="onClearProjection"
+          @clear="onClearProjection"
     />
   </section>
 </template>

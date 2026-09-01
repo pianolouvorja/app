@@ -17,6 +17,7 @@ import {
   type LiturgyItemType,
   type LiturgyMusicOption,
 } from '../types/liturgy'
+import { probeMediaDurationMs } from '../services/media-probe'
 import { formatMomentDuration, isValidLiturgyUrl } from '../services/liturgy-item-helpers'
 import { normalizeLiturgyTimeHHmm } from '../services/liturgy-format'
 
@@ -92,6 +93,11 @@ const fileButtonLabel = computed(() => {
     return hasFile
       ? t('liturgy.fields.changeFilesButton')
       : t('liturgy.fields.selectFilesButton')
+  }
+  if (type === 'audio') {
+    return hasFile
+      ? t('liturgy.fields.changeAudioButton')
+      : t('liturgy.fields.selectAudioButton')
   }
   if (type === 'video') {
     return hasFile
@@ -282,6 +288,11 @@ function onUrlInput(event: Event) {
 
 function fileFiltersForType(type: LiturgyItemType | null): FileDialogFilter[] {
   switch (type) {
+    case 'audio':
+      return [
+        { name: 'Áudios', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'wma'] },
+        { name: 'Todos', extensions: ['*'] },
+      ]
     case 'video':
       return [
         { name: 'Vídeos', extensions: ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm'] },
@@ -363,6 +374,11 @@ async function selectLocalFile() {
     const next: Partial<LiturgyItemDraft> = {
       filePath: paths[0] ?? '',
       filePaths: multiple ? paths : [],
+    }
+    // Duração automática de mídia local (vídeo/áudio) via ffprobe.
+    if (!multiple && paths[0]) {
+      const probed = await probeMediaDurationMs(paths[0]!)
+      if (probed > 0) next.durationMs = probed
     }
     if (!props.draft.name.trim()) {
       if (multiple && paths.length > 1) {

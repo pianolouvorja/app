@@ -14,6 +14,8 @@ export interface TimerDisplayConfig {
 
 export interface TimerRuntimeState {
   status: TimerStatus
+  /** Owner explícito da projeção; timer 00:00 ainda pode estar no Palco. */
+  projecting?: boolean
   /** Epoch ms when the current running segment started. */
   segmentStartedAt: number | null
   /** Milliseconds accumulated before the current segment. */

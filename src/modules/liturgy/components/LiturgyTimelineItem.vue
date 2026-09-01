@@ -2,6 +2,13 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isElectronShell } from '@shared/services/desktop-bridge'
+import {
+  readAudioDuration,
+  readVideoDuration,
+  setLiturgyVideoFile,
+} from '../services/liturgy-local-video'
+
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 
 import { getItemTypeIcon, isExecutableItem } from '../services/liturgy-item-helpers'
@@ -49,6 +56,7 @@ const emit = defineEmits<{
   musicInstrumental: []
   musicSlides: []
   musicLyric: []
+  videoFileSelected: [durationSec: number]
   dragStart: [index: number]
   dragEnd: []
   drop: [index: number]
@@ -73,7 +81,30 @@ const categoryTimeRange = computed(() => {
   return '—'
 })
 const isStreamVideo = computed(() => props.item.type === 'online_video')
-const isLocalVideo = computed(() => props.item.type === 'video')
+const isLocalMediaUpload = computed(
+  () =>
+    (props.item.type === 'video' || props.item.type === 'audio') &&
+    !isElectronShell() &&
+    Boolean(props.item.id),
+)
+const videoFileInput = ref<HTMLInputElement | null>(null)
+const videoFileName = ref('')
+
+async function onVideoFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  videoFileName.value = file.name
+  setLiturgyVideoFile(props.item.id, file)
+  const duration =
+    props.item.type === 'audio'
+      ? await readAudioDuration(file)
+      : await readVideoDuration(file)
+  emit('videoFileSelected', duration)
+}
+const isLocalVideo = computed(
+  () => props.item.type === 'video' || props.item.type === 'audio',
+)
 const isLocalImages = computed(() => props.item.type === 'images')
 const isLocalPdf = computed(() => props.item.type === 'pdf')
 const isLocalPresentation = computed(() => props.item.type === 'presentation')
@@ -333,10 +364,30 @@ const rowHovered = ref(false)
           class="liturgy-item__actions"
           :class="{
             'liturgy-item__actions--visible':
-              isCategory || isVideoRemote || isSiteItem || isMusicItem,
+              isCategory ||
+              isVideoRemote ||
+              isSiteItem ||
+              isMusicItem ||
+              isLocalMediaUpload,
           }"
           @click.stop
         >
+          <input
+            ref="videoFileInput"
+            type="file"
+            :accept="item.type === 'audio' ? 'audio/*' : 'video/*'" 
+            class="liturgy-item__file-input"
+            @change="onVideoFileChange"
+          >
+          <button
+            v-if="isLocalMediaUpload"
+            type="button"
+            class="liturgy-item__action-btn"
+            :title="t('liturgy.videoSelectFile')"
+            @click="videoFileInput?.click()"
+          >
+            {{ videoFileName || t('liturgy.videoSelectFile') }}
+          </button>
           <button
             v-if="isCategory"
             type="button"
@@ -1037,6 +1088,10 @@ const rowHovered = ref(false)
   .liturgy-item--done & {
     color: color-mix(in srgb, var(--ds-color-on-surface) 32%, transparent);
   }
+}
+
+.liturgy-item__file-input {
+  display: none;
 }
 
 .liturgy-item__duration {

@@ -24,7 +24,10 @@ export const USER_PREFERENCE_KEYS = {
   randomConfig: 'random.config',
   randomSession: 'random.session',
   liturgyState: 'liturgy.state',
+  scheduledState: 'scheduled.state',
   language: 'language',
+  /** Prefixo das personalizações do Palco por escopo (stage.settings.global|hymns|bible|...). */
+  stageSettingsPrefix: 'stage.settings.',
 } as const
 
 /** Registros do workspace em disco (`.sysdata/*.bin`). */

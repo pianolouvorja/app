@@ -19,6 +19,7 @@ const props = defineProps<{
   volume: number
   projecting: boolean
   playlistOpen: boolean
+  audioOnTv: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   'update:volume': [value: number]
   'update:mode': [mode: MediaPlaybackMode]
   toggleProjection: []
+  toggleAudioOnTv: []
   togglePlaylist: []
   toggleFullscreen: []
 }>()
@@ -226,6 +228,21 @@ function selectMode(mode: MediaPlaybackMode) {
         dense
         persist
       />
+
+      <button
+        type="button"
+        class="media-player-pill__icon-btn"
+        :class="{ 'is-on': audioOnTv }"
+        :aria-label="audioOnTv ? t('media.audioOnTvOff') : t('media.audioOnTv')"
+        :title="audioOnTv ? t('media.audioOnTvOff') : t('media.audioOnTv')"
+        @click="emit('toggleAudioOnTv')"
+      >
+        <i
+          class="ti"
+          :class="audioOnTv ? 'ti-speakerphone' : 'ti-device-speaker'"
+          aria-hidden="true"
+        />
+      </button>
 
       <button
         type="button"
