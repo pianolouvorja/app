@@ -1,0 +1,55 @@
+name: Build Flatpak
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão da release (ex: 1.22.1)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:gnome-46
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      # Atualiza URL e sha256 do tar.gz para a versão da tag atual,
+      # evitando edição manual do manifest a cada release.
+      - name: Update manifest version + sha256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -z "$VERSION" ] && VERSION="${{ github.event.inputs.version }}"
+          [ -z "$VERSION" ] && { echo "no version"; exit 1; }
+          SHA="$(gh release view "v$VERSION" -R pianolouvorja/app --json assets \
+            -q '.assets[] | select(.name=="LouvorJA-PIANO-'$VERSION'-x64.tar.gz") | .digest[7:]')"
+          echo "version=$VERSION sha256=$SHA"
+          MANIFEST=packaging/flatpak/com.pianolouvorja.piano.yaml
+          sed -i "s|url: .*/releases/download/.*|url: https://github.com/pianolouvorja/app/releases/download/v$VERSION/LouvorJA-PIANO-$VERSION-x64.tar.gz|" "$MANIFEST"
+          sed -i "s|sha256: [a-f0-9]\{64\}|sha256: $SHA|" "$MANIFEST"
+          grep -E 'url:|sha256:' "$MANIFEST"
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: louvorja-piano.flatpak
+          manifest-path: packaging/flatpak/com.pianolouvorja.piano.yaml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release upload "v$VERSION" louvorja-piano.flatpak \
+            "LouvorJA-PIANO-$VERSION-x64.flatpak#louvorja-piano.flatpak" --clobber -R pianolouvorja/app \
+            || echo "upload skipped (run manually or via workflow_dispatch)"
