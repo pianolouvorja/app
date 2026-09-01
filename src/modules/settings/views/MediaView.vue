@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import SettingsPlaceholder from '../components/SettingsPlaceholder.vue'
+import ClassoDetectCard from '../components/ClassoDetectCard.vue'
 </script>
 
 <template>
-  <SettingsPlaceholder message-key="settings.placeholder.media" />
+  <div class="media-view">
+    <ClassoDetectCard />
+  </div>
 </template>
+
+<style scoped>
+.media-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+</style>

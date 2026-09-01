@@ -211,7 +211,7 @@ class PalcoSlot {
         // o HTML resolve via fetch. NÃO usar a versão do app desktop aqui.
         res.setHeader('Content-Type', 'text/html; charset=utf-8')
         // Receiver sempre revalida — evita browser preso em HTML antigo
-        res.setHeader('Cache-Control', 'no-cache')
+        res.setHeader('Cache-Control', 'no-store')
         res.end(page)
       } catch {
         res.statusCode = 404

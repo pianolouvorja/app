@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PalcoRouteSelect from '../../settings/components/PalcoRouteSelect.vue'
+import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 import AlbumLyricDialog from '@modules/albums/components/AlbumLyricDialog.vue'
 
 import LiturgyCloneDialog from '../components/LiturgyCloneDialog.vue'
@@ -111,7 +112,10 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
 <template>
   <section class="liturgy-view">
     <header class="liturgy-view__header">
-      <PalcoRouteSelect module="liturgy" />
+      <div class="liturgy-view__header-start">
+        <StagePaletteButton scope="liturgy" />
+        <PalcoRouteSelect module="liturgy" />
+      </div>
       <div class="liturgy-view__brand">
         <i
           class="ti ti-clipboard-text liturgy-view__brand-icon"
@@ -371,6 +375,12 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
   justify-content: space-between;
   gap: 1.5rem;
   flex-wrap: wrap;
+}
+
+.liturgy-view__header-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .liturgy-view__brand {

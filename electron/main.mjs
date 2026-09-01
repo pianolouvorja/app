@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, screen, shell } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, screen, shell } from "electron";
 
 import {
 	APP_DESKTOP_ID,
@@ -17,10 +17,19 @@ import { attachRemoteServer } from "./remote-server.mjs";
 import { attachPalcoServer } from "./palco-server.mjs";
 import { ensureWorkspaceDirectories } from "./paths.mjs";
 import { registerLocalFileProtocol, registerLocalScheme } from "./protocol.mjs";
+import { registerCloseProjectionPopups } from "./ipc/web-projection.mjs";
 import { buildProjectionWindowBounds } from "./projection-display.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
+import {
+  initProjectionHotkey,
+  addProjectionWindowProvider,
+  removeProjectionWindowProvider,
+  ensureProjectionHotkey,
+  releaseProjectionHotkey,
+  injectProjectionShortcutHint,
+} from "./projection-hotkey.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -28,6 +37,22 @@ const isDev = Boolean(VITE_DEV_SERVER_URL);
 const PRELOAD_PATH = path.join(__dirname, "preload.mjs");
 
 registerLocalScheme();
+
+// Rede de segurança: exceção não tratada no main (ex.: porta EACCES/EADDRINUSE
+// de servidores WS — bug real do José 30/08 no Windows) NÃO PODE derrubar o
+// app sem explicação. Loga, mostra diálogo amigável e segue.
+process.on("uncaughtException", (error) => {
+  console.error("[main] uncaughtException:", error);
+  try {
+    const msg = error instanceof Error ? error.message : String(error ?? "erro desconhecido");
+    dialog.showErrorBox(
+      "LouvorJA - PIANO",
+      `Ocorreu um erro interno, mas o aplicativo continua rodando.\n\nDetalhe técnico: ${msg}`,
+    );
+  } catch {
+    /* diálogo falhou — segue */
+  }
+});
 
 /**
  * Linux: app name = WM_CLASS = StartupWMClass do .desktop (ícone na barra).
@@ -300,8 +325,57 @@ function attachProjectionWindowHandlers(parentWindow) {
   /** @type {WeakMap<import('electron').BrowserWindow, boolean>} */
   const fullscreenByWindow = new WeakMap()
 
+  // Hotkey global Ctrl+Alt+P: provider das janelas popup (hinos/slides) +
+  // operador = janela principal. Init 1x por boot (idempotente).
+  initProjectionHotkey({
+    globalShortcut,
+    getOperatorWindow: () => {
+      try {
+        if (parentWindow && !parentWindow.isDestroyed()) return parentWindow
+      } catch { /* ignore */ }
+      return null
+    },
+  })
+  // Janelas popup de projeção marcadas EM MEMÓRIA na criação (fix toggle):
+  // identificar por URL (webContents.getURL()) falha — em dev/hashes a URL
+  // nem sempre contém #/popup no momento da consulta, e o toggle decidia
+  // 'none' com projeção aberta. A marca é a fonte de verdade.
+  /** @type {Set<import('electron').BrowserWindow>} */
+  const projectionPopups = new Set()
+
+  const popupProvider = () => {
+    for (const win of [...projectionPopups]) {
+      if (win.isDestroyed()) projectionPopups.delete(win)
+    }
+    return [...projectionPopups]
+  }
+  addProjectionWindowProvider(popupProvider)
+
+  // Confirm do operador fecha popups TAMBÉM (senão bíblia/hinos continuavam
+  // projetando com o botão da UI ativo). Inversão de dependência: main.mjs
+  // registra o "como fechar popups"; ipc/register.mjs chama closeAll.
+  registerCloseProjectionPopups(() => {
+    for (const win of popupProvider()) {
+      try {
+        win.close()
+      } catch {
+        /* ignore */
+      }
+    }
+    // Estado do renderer (isProjecting etc.) precisa saber que acabou
+    try {
+      if (parentWindow && !parentWindow.isDestroyed()) {
+        parentWindow.webContents.send('projection:popups-closed')
+      }
+    } catch {
+      /* ignore */
+    }
+  })
+
   parentWindow.webContents.setWindowOpenHandler(({ url, features }) => {
     if (isProjectionPopupUrl(url)) {
+      // Nasce popup de projeção → hotkey disponível
+      ensureProjectionHotkey()
       return {
         action: 'allow',
         overrideBrowserWindowOptions: buildPopupWindowOptions(url, features),
@@ -318,6 +392,14 @@ function attachProjectionWindowHandlers(parentWindow) {
 
     const childUrl = details?.url ?? ''
     const isProjection = isProjectionPopupUrl(childUrl)
+
+    // Marca a popup na criação (fonte de verdade do provider da hotkey —
+    // independe da URL em runtime, que em dev nem sempre contém #/popup)
+    if (isProjection) {
+      projectionPopups.add(childWindow)
+      ensureProjectionHotkey()
+    }
+
     const { fullscreen } = isProjection
       ? parseProjectionLaunchHints(childUrl, details?.features ?? '')
       : { fullscreen: !childWindow.isResizable() }
@@ -326,6 +408,18 @@ function attachProjectionWindowHandlers(parentWindow) {
       // Reforça sem chrome mesmo se o Chromium tiver mesclado opções
       childWindow.setMenuBarVisibility(false)
       fullscreenByWindow.set(childWindow, fullscreen)
+      // ESC na projeção NÃO fecha direto (decisão Rafael 30/08): encaminha o
+      // pedido à janela do OPERADOR, que exibe o confirm. A projeção apenas
+      // sinaliza "querem me fechar" — a decisão é sempre do operador.
+      childWindow.webContents.on('before-input-event', (_event, input) => {
+        if (input.type === 'keyDown' && input.key === 'Escape') {
+          try {
+            if (parentWindow && !parentWindow.isDestroyed()) {
+              parentWindow.webContents.send('projection:close-requested')
+            }
+          } catch { /* ignore */ }
+        }
+      })
     }
 
     childWindow.once('ready-to-show', () => {
@@ -334,6 +428,19 @@ function attachProjectionWindowHandlers(parentWindow) {
       const shouldFullscreen = fullscreenByWindow.get(childWindow) ?? fullscreen
       applyProjectionDisplayMode(childWindow, shouldFullscreen)
       childWindow.show()
+      if (isProjection) {
+        ensureProjectionHotkey()
+        injectProjectionShortcutHint(childWindow)
+      }
+    })
+
+    childWindow.on('closed', () => {
+      // Sem popup de projeção vivo (e sem projeção externa) → libera a hotkey
+      setTimeout(() => {
+        try {
+          if (popupProvider().length === 0) releaseProjectionHotkey()
+        } catch { /* ignore */ }
+      }, 50)
     })
   })
 }
@@ -496,6 +603,13 @@ app.on("second-instance", () => {
 });
 
 app.on("will-quit", () => {
+	// Hotkey global de projeção: libera Ctrl+Alt+P no encerrar (se registrada)
+	try {
+		const { globalShortcut } = require("electron");
+		globalShortcut.unregisterAll();
+	} catch {
+		/* ignore */
+	}
 	// Palco: app fechando → TVs param a mídia na hora (não toca até o fim).
 	try {
 		const { getPalcoManager } = require("./palco-server.mjs");

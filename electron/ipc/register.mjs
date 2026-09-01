@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 
+import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
+
 import {
   checkMediaFile,
   clearWorkspaceData,
@@ -18,6 +20,7 @@ import {
 } from './presentation-convert.mjs'
 import {
   broadcastPlaybackSync,
+  closeAllProjectionWindows,
   closeWebProjectionWindows,
   getSourceMediaIdFor,
   getImageSlideState,
@@ -50,7 +53,8 @@ import {
   toggleSiteProjectionScreens,
   toggleVideoProjectionScreens,
   getSourceMediaInfo,
-} from './web-projection.mjs'
+  isExternalProjectionAlive, } from './web-projection.mjs'
+import { collectAliveProjectionWindows, isProjectionPopupWindow } from '../projection-hotkey.mjs'
 
 export function registerWorkspaceIpc() {
   registerDisplayIpc()
@@ -111,10 +115,20 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('projection:close-url', () => {
     try {
-      closeWebProjectionWindows()
+      closeAllProjectionWindows()
       return true
     } catch (error) {
       console.error('[ipc] projection:close-url', error)
+      return false
+    }
+  })
+
+  ipcMain.handle('projection:external-alive', () => {
+    try {
+      // Fonte única: popups (hinos/slides) + web-projection (vídeo/pdf/site)
+      const hasPopup = collectAliveProjectionWindows().some((win) => isProjectionPopupWindow(win.webContents.getURL()))
+      return Boolean(hasPopup || isExternalProjectionAlive())
+    } catch {
       return false
     }
   })
@@ -432,6 +446,16 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] catalog:extract-database', error)
       throw error
+    }
+  })
+
+  // Detector da instalação do LouvorJA Classo (Delphi) — issue #142
+  ipcMain.handle('classo:detect', () => {
+    try {
+      return detectClassoInstallation({ registryProbe: probeClassoRegistry })
+    } catch (error) {
+      console.error('[ipc] classo:detect', error)
+      return { found: false, root: null, media: { albums: [], totalBytes: 0 }, dataFiles: null }
     }
   })
 

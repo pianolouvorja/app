@@ -117,6 +117,11 @@ contextBridge.exposeInMainWorld('louvorja', {
     onExtractProgress: (callback) => subscribe('catalog:extract-progress', callback),
   },
 
+  classo: {
+    // Detector da instalação LouvorJA Classo/Delphi (issue #142)
+    detect: () => ipcRenderer.invoke('classo:detect'),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),
@@ -142,11 +147,14 @@ contextBridge.exposeInMainWorld('louvorja', {
   projection: {
     openUrl: (payload) => ipcRenderer.invoke('projection:open-url', payload),
     closeUrl: () => ipcRenderer.invoke('projection:close-url'),
+    externalAlive: () => ipcRenderer.invoke('projection:external-alive'),
     getSourceMediaId: () => ipcRenderer.invoke('projection:get-source-media-id'),
     publishPlaybackSync: (payload) => {
       ipcRenderer.send('projection:playback-sync', payload)
     },
     onPlaybackSync: (callback) => subscribe('projection:playback-sync', callback),
+    // ESC pressionado na janela de projeção → operador decide no confirm
+    onCloseRequested: (callback) => subscribe('projection:close-requested', callback),
     remotePlay: () => ipcRenderer.invoke('projection:remote-play'),
     remotePause: () => ipcRenderer.invoke('projection:remote-pause'),
     remoteSeek: (seconds) => ipcRenderer.invoke('projection:remote-seek', seconds),

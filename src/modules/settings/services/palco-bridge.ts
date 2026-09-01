@@ -11,6 +11,7 @@
  */
 
 import { palcoSession } from './palco-session'
+import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { publishBibleRuntimeOff } from '../../bible/services/bible-runtime'
 import { publishRandomRuntime, readRandomRuntimeFromStorage } from '../../random/services/random-runtime'
 import { publishTimerRuntime } from '../../timer/services/timer-runtime'
@@ -122,6 +123,21 @@ async function renderAllSlots(): Promise<void> {
     })
     debugPalco('slot', s.id, 'plan=', JSON.stringify(plan), 'owner=', owner)
     if (plan.render === 'owner') {
+      // Mídia externa (vídeo/pdf/ppt da liturgia) vive fora da bridge e
+      // manda direto nos slots; o owner NÃO pode renderizar por cima dela
+      // (caso real 28/08: random tomou o slot onde o vídeo projetava).
+      let ext = false
+      try {
+        ext = await getDesktopBridge()?.projection?.externalAlive?.() ?? false
+      } catch {
+        // main antigo sem o handler: assume SEM mídia externa (comportamento
+        // legado) em vez de quebrar o renderAllSlots inteiro.
+        ext = false
+      }
+      if (ext) {
+        debugPalco('slot', s.id, 'owner', owner, '→ PULADO (mídia externa viva)')
+        continue
+      }
       await renderOwnerTo(s.id)
     } else if (plan.render === 'assigned') {
       // video/pdf/ppt: runtime vive nos popups (não na bridge) — não tocar.
@@ -353,7 +369,8 @@ function syncAudio() {
   // play/pause do operador NA UI comanda a TV (watcher de isPlaying chama
   // syncAudio). Sem isso o pause nunca chegava: URL não muda ao pausar.
   if (route === 'tv') {
-    if (key !== lastAudioKey) {
+    // Entrar na rota TV com a mesma faixa também exige enviar o play inicial.
+    if (key !== lastAudioKey || routeChanged) {
       lastAudioKey = key
       lastTvPlayState = null
       if (audioUrl) {

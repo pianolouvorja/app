@@ -11,6 +11,7 @@ import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/pa
 import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
+  closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -576,10 +577,13 @@ export const useMediaStore = defineStore('media', () => {
     const seq = ++playPauseSeq
     const audio = getMediaAudioElement()
 
-    // Modo TV: a TV é a caixa. O elemento local permanece pausado/mudo —
-    // apenas o status muda (a palco-bridge observa e comanda a TV).
+    // Modo TV: áudio local fica MUTED, mas toca como relógio da letra.
+    // Sem esse clock, timeupdate não dispara e os slides atrasam/congelam.
     if (audioOnTv.value) {
-      status.value = 'playing'
+      audio.volume = 0
+      const played = await playMediaAudio(audio)
+      if (seq !== playPauseSeq) return
+      status.value = played ? 'playing' : 'paused'
       return
     }
 
@@ -603,8 +607,11 @@ export const useMediaStore = defineStore('media', () => {
     const audio = getMediaAudioElement()
     status.value = 'paused'
 
-    // Modo TV: elemento local já está mudo — status acima já sinaliza a TV.
+    // Modo TV: status acima sinaliza a TV; o elemento local também pausa
+    // (pode estar tocando se o open() rodou antes da rota mudar, ex.:
+    // localStorage 'tv' + abertura de faixa nova).
     if (audioOnTv.value) {
+      pauseMediaAudio(audio)
       return
     }
 
@@ -648,11 +655,11 @@ export const useMediaStore = defineStore('media', () => {
     audioRoute.value = route
     persistRoute()
     if (route === 'tv') {
-      // local silencia e pausa na posição atual — a TV assume daí
+      // TV recebe o som; local continua muted como clock de letras/slides.
       const audio = getMediaAudioElement()
       audio.volume = 0
-      pauseMediaAudio(audio)
-      status.value = 'paused'
+      // Se já tocava no PC, preserva a timeline; a bridge espelha na TV.
+      status.value = audio.paused ? 'paused' : 'playing'
     } else if (wasTv) {
       // saiu do modo TV → local retoma de onde parou
       await play()
@@ -1085,10 +1092,18 @@ export const useMediaStore = defineStore('media', () => {
       // ignore
     }
 
+    const shouldCloseCableWindow = isProjectionModuleOpen('media')
+
     if (isProjecting.value) {
       clearProjection()
     } else {
       clearMediaRuntime()
+    }
+
+    // Fim da faixa / fechar player: clearProjection só limpa o runtime;
+    // a janela cabeada precisa fechar de verdade (paridade clock/bíblia).
+    if (shouldCloseCableWindow) {
+      closeProjectionModule()
     }
 
     session.value = null

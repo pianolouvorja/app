@@ -7,7 +7,7 @@ export default {
     project: 'Proyectar diapositivas',
     audioOnTv: 'Reproducir sonido en la TV',
     audioOnTvOff: 'Sonido en la computadora',
-    clearProjection: 'Cerrar proyección',
+    clearProjection: 'Cerrar proyección (cierra la pantalla y vuelve al fondo predeterminado)',
     maximize: 'Abrir reproductor',
     minimize: 'Minimizar',
     close: 'Cerrar',
