@@ -33,7 +33,6 @@ const emit = defineEmits<{
   toggleAudioOnTv: []
   togglePlaylist: []
   toggleFullscreen: []
-  close: []
 }>()
 
 const { t } = useI18n()
@@ -262,19 +261,6 @@ function selectMode(mode: MediaPlaybackMode) {
 
       <button
         type="button"
-        class="media-player-pill__icon-btn media-player-pill__icon-btn--close"
-        :aria-label="t('media.close')"
-        :title="t('media.close')"
-        @click="emit('close')"
-      >
-        <i
-          class="ti ti-x"
-          aria-hidden="true"
-        />
-      </button>
-
-      <button
-        type="button"
         class="media-player-pill__icon-btn"
         :aria-label="t('media.fullscreen')"
         :title="t('media.fullscreen')"
@@ -402,10 +388,6 @@ function selectMode(mode: MediaPlaybackMode) {
 
   &:hover:not(:disabled) {
     background: rgb(255 255 255 / 0.1);
-  }
-
-  &--close:hover:not(:disabled) {
-    background: rgb(255 80 80 / 0.18);
   }
 }
 

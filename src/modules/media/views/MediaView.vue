@@ -187,6 +187,18 @@ async function onToggleFullscreen() {
           aria-hidden="true"
         />
       </button>
+      <button
+        type="button"
+        class="media-window__tool-btn"
+        :aria-label="t('media.close')"
+        :title="t('media.close')"
+        @click="requestClose"
+      >
+        <i
+          class="ti ti-x"
+          aria-hidden="true"
+        />
+      </button>
     </header>
 
     <div
@@ -304,7 +316,6 @@ async function onToggleFullscreen() {
             @toggle-audio-on-tv="onToggleAudioOnTv"
             @toggle-playlist="togglePlaylist"
             @toggle-fullscreen="onToggleFullscreen"
-            @close="requestClose"
           />
           <div
             v-if="showOndemandNotice"

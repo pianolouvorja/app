@@ -138,19 +138,6 @@ function onVolumeInput(event: Event) {
 
       <button
         type="button"
-        class="media-player-controls__btn media-player-controls__btn--danger"
-        :aria-label="t('media.close')"
-        :title="t('media.close')"
-        @click="emit('close')"
-      >
-        <i
-          class="ti ti-x"
-          aria-hidden="true"
-        />
-      </button>
-
-      <button
-        type="button"
         class="media-player-controls__btn"
         :aria-label="t('media.minimize')"
         :title="t('media.minimize')"
@@ -158,6 +145,19 @@ function onVolumeInput(event: Event) {
       >
         <i
           class="ti ti-arrows-minimize"
+          aria-hidden="true"
+        />
+      </button>
+
+      <button
+        type="button"
+        class="media-player-controls__btn media-player-controls__btn--danger"
+        :aria-label="t('media.close')"
+        :title="t('media.close')"
+        @click="emit('close')"
+      >
+        <i
+          class="ti ti-x"
           aria-hidden="true"
         />
       </button>
