@@ -9,6 +9,8 @@ export type MediaOpenParams = {
   minimized?: boolean
   /** Quando true, abre projeção nas telas configuradas após carregar. */
   project?: boolean
+  /** Avanço automático da fila: não zera queue/queueIndex no open(). */
+  keepQueue?: boolean
 }
 
 export type MediaLyricSlide = {

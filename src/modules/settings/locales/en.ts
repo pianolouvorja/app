@@ -56,6 +56,20 @@ export default {
       tipLight:
         'Light Mode offers better readability in brightly lit environments during daytime services.',
     },
+    classo: {
+      title: 'LouvorJA Classo (Delphi)',
+      description:
+        'Detects the LouvorJA Classo installation on this computer to reuse already-downloaded media and liturgy instead of downloading everything again.',
+      detect: 'Detect Classo installation',
+      detecting: 'Searching installation…',
+      notFound: 'Classo installation not found in default locations.',
+      detectError: 'Error while searching for the Classo installation.',
+      desktopOnly: 'Available on the desktop application only.',
+      albumsFound: '{count} media album(s) found (~{mb} MB)',
+      liturgyFound: 'Liturgy (liturgia.ja) found',
+      scheduledFound: 'Scheduled items (itensAgendados.xml) found',
+      wip: 'Media reuse and migration under development.',
+    },
     placeholder: {
       general: 'General app preferences coming soon.',
       media: 'Audio, video and player settings coming soon.',

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { GlassCard } from '@design-system/index'
+import StagePaletteButton from '../../settings/components/StagePaletteButton.vue'
 
 import BibleVersionSelect from './BibleVersionSelect.vue'
 import type { BibleVersion } from '../types/bible'
@@ -64,6 +65,7 @@ const browseIcon = computed(() =>
     </div>
 
     <div class="bible-toolbar__actions">
+      <StagePaletteButton scope="bible" />
       <div class="bible-toolbar__search">
         <i
           class="ti ti-search bible-toolbar__search-icon"
