@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import {
-  closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -396,7 +395,6 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function clearProjection() {
-    closeProjectionModule()
     isProjecting.value = false
     projectingTvsOnly.value = false
     runtime.value = { ...runtime.value, projecting: false }
