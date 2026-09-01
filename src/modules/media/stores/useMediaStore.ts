@@ -99,6 +99,8 @@ export const useMediaStore = defineStore('media', () => {
   const ondemandDownloadDone = ref(false)
 
   let projectionWatchTimer: ReturnType<typeof setInterval> | null = null
+  /** Avanço automático da fila: bloqueia close() e o watch que derruba isProjecting. */
+  let queueAdvanceInProgress = 0
   let boundAudioElement: HTMLAudioElement | null = null
   let playPauseSeq = 0
   let ondemandGen = 0
@@ -200,6 +202,7 @@ export const useMediaStore = defineStore('media', () => {
       window.addEventListener('louvorja:projection-reapplied', onProjectionReapplied)
     }
     projectionWatchTimer = setInterval(() => {
+      if (queueAdvanceInProgress > 0) return
       if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
       if (!isProjectionModuleOpen('media')) {
         isProjecting.value = false
@@ -410,6 +413,9 @@ export const useMediaStore = defineStore('media', () => {
         // Fila (spec playlist RF-03): acabou a faixa, vem a próxima.
         const nextItem = resolveNext({ items: queue.value, index: queueIndex.value })
         if (nextItem) {
+          // Desanexa já: open() demora (loadMediaTrack) e antes zerava a fila
+          // com o listener ainda ativo — 2º ended via stop/load chamava close().
+          unbindAudio()
           void playQueueItem(nextItem)
           return
         }
@@ -444,10 +450,11 @@ export const useMediaStore = defineStore('media', () => {
 
     const requestedMode: MediaPlaybackMode = params.mode ?? 'audio'
 
-    // Música avulsa (fora da fila): zera a fila para restaurar o padrão de
-    // exibição normal (slides) no painel do player. playQueueItem repovoa depois.
-    queue.value = []
-    queueIndex.value = -1
+    // Música avulsa (fora da fila): zera a fila. Avanço automático mantém estado.
+    if (!params.keepQueue) {
+      queue.value = []
+      queueIndex.value = -1
+    }
 
     // Mesma faixa: troca de modo sem reset (legado Media.open + isSameSong).
     if (session.value?.musicId === musicId) {
@@ -566,7 +573,16 @@ export const useMediaStore = defineStore('media', () => {
     // do seletor na biblioteca (Espelhar/TV individual). Antes: minimizado
     // não projetava — operador tinha que clicar Projetar a cada hino.
     if (params.project !== false) {
-      await startProjection()
+      const retainProjection = params.keepQueue && isProjecting.value
+      if (retainProjection) {
+        // Fila: janela já está aberta — não chamar startProjection de novo
+        // (window.open sem gesto do usuário falha e zera isProjecting).
+        isProjecting.value = true
+        publishProjectionState()
+        if (!projectionWatchTimer) startProjectionWatch()
+      } else {
+        await startProjection()
+      }
     }
 
     return { ok: true, warningKey }
@@ -706,22 +722,29 @@ export const useMediaStore = defineStore('media', () => {
   /** Toca um item da fila pelo fluxo completo (open → auto-projeção). */
   async function playQueueItem(item: QueueItem, mode?: MediaPlaybackMode): Promise<void> {
     const target = mode ?? session.value?.mode ?? 'audio'
-    const currentQueue = queue.value
-    const currentIndex = queueIndex.value
-    await open({
-      musicId: item.musicId,
-      mode: target,
-      albumId: item.albumId,
-      // project undefined = contrato 27/08 (projeta se houver destino ativo)
-      project: undefined,
-    })
-    // open() zera a fila (música avulsa); restaura se ainda somos fila.
-    if (queue.value.length === 0 && currentQueue.length > 0) {
-      queue.value = currentQueue
-      queueIndex.value = currentIndex
+    const keepProjecting = isProjecting.value
+    if (keepProjecting) {
+      queueAdvanceInProgress += 1
     }
-    queueIndex.value = queue.value.findIndex((q) => q.musicId === item.musicId)
-    publishProjectionState()
+    try {
+      await open({
+        musicId: item.musicId,
+        mode: target,
+        albumId: item.albumId,
+        // undefined = contrato 27/08; keepQueue + isProjecting evita reabrir janela
+        project: undefined,
+        keepQueue: true,
+      })
+      queueIndex.value = queue.value.findIndex((q) => q.musicId === item.musicId)
+      if (keepProjecting) {
+        isProjecting.value = true
+      }
+      publishProjectionState()
+    } finally {
+      if (keepProjecting) {
+        queueAdvanceInProgress = Math.max(0, queueAdvanceInProgress - 1)
+      }
+    }
   }
 
   /** Substitui a fila e toca a partir de startIndex. */
@@ -1083,6 +1106,8 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function close(): void {
+    if (queueAdvanceInProgress > 0) return
+
     closeConfirmOpen.value = false
     cancelOndemandDownload()
     unbindAudio()
