@@ -11,6 +11,7 @@ import { getPalcoRoute, isPalcoTvOnlyRoute } from '@modules/settings/services/pa
 import { palcoSession } from '@modules/settings/services/palco-session'
 import { useLocalLibraryStore } from '@modules/sync/stores/useLocalLibraryStore'
 import {
+  closeProjectionModule,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -1091,10 +1092,18 @@ export const useMediaStore = defineStore('media', () => {
       // ignore
     }
 
+    const shouldCloseCableWindow = isProjectionModuleOpen('media')
+
     if (isProjecting.value) {
       clearProjection()
     } else {
       clearMediaRuntime()
+    }
+
+    // Fim da faixa / fechar player: clearProjection só limpa o runtime;
+    // a janela cabeada precisa fechar de verdade (paridade clock/bíblia).
+    if (shouldCloseCableWindow) {
+      closeProjectionModule()
     }
 
     session.value = null
