@@ -110,6 +110,10 @@ export function installRemoteLiturgyBridge({ router }: { router: Router }) {
     palco: {
       status: () => palcoSession.status(),
       slots: () => palcoSession.slots(),
+      createSlot: (label) => palcoSession.createSlot(label),
+      removeSlot: (id) => palcoSession.removeSlot(id),
+      startSlot: (id) => palcoSession.startSlot(id),
+      stopSlot: (id) => palcoSession.stopSlot(id),
       turnOn: () => palcoSession.turnOn(),
       turnOff: () => palcoSession.turnOff(),
       project: (scope, input) => palcoSession.project(scope, input),

@@ -65,6 +65,26 @@ class PalcoSession {
     return (window as never as { louvorja: { palco: { slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>> } } }).louvorja.palco.slots()
   }
 
+  async createSlot(label: string): Promise<{ id: string; label: string; httpPort: number; wsPort: number } | null> {
+    if (!this.isElectron) return null
+    return (window as never as { louvorja: { palco: { createSlot(label: string): Promise<{ id: string; label: string; httpPort: number; wsPort: number }> } } }).louvorja.palco.createSlot(label)
+  }
+
+  async removeSlot(id: string): Promise<boolean> {
+    if (!this.isElectron) return false
+    return (window as never as { louvorja: { palco: { removeSlot(id: string): Promise<boolean> } } }).louvorja.palco.removeSlot(id)
+  }
+
+  async startSlot(id: string): Promise<boolean> {
+    if (!this.isElectron) return false
+    return (window as never as { louvorja: { palco: { start(id: string): Promise<boolean> } } }).louvorja.palco.start(id)
+  }
+
+  async stopSlot(id: string): Promise<void> {
+    if (!this.isElectron) return
+    await (window as never as { louvorja: { palco: { stop(id: string): Promise<void> } } }).louvorja.palco.stop(id)
+  }
+
   get isElectron(): boolean {
     return (
       typeof window !== 'undefined' &&

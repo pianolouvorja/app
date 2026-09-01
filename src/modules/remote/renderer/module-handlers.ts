@@ -143,6 +143,10 @@ export interface ModuleHandlerDeps {
 export interface PalcoDeps {
   status(): Promise<{ running: boolean; clients: number; url: string | null; wsUrl: string | null } | null>
   slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>>
+  createSlot(label: string): Promise<{ id: string; label: string; httpPort: number; wsPort: number } | null>
+  removeSlot(id: string): Promise<boolean>
+  startSlot(id: string): Promise<boolean>
+  stopSlot(id: string): Promise<void>
   turnOn(): Promise<boolean>
   turnOff(): Promise<void>
   project(scope: string, input: { text: string; footerRef?: string }): void
@@ -569,6 +573,28 @@ async function executePalco(
     case 'palco.slots': {
       const slots = await palco.slots()
       return { ok: true, data: slots }
+    }
+    case 'palco.slot-add': {
+      const label = typeof msg.label === 'string' && msg.label.trim() ? msg.label.trim() : 'TV'
+      const slot = await palco.createSlot(label)
+      return slot ? { ok: true, data: slot } : { ok: false, data: null }
+    }
+    case 'palco.slot-remove': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id || id === '0') return false
+      await palco.removeSlot(id)
+      return { ok: true, data: null }
+    }
+    case 'palco.slot-start': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id) return false
+      return palco.startSlot(id)
+    }
+    case 'palco.slot-stop': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id) return false
+      await palco.stopSlot(id)
+      return { ok: true, data: null }
     }
     case 'palco.project': {
       const text = typeof msg.text === 'string' ? msg.text : ''
