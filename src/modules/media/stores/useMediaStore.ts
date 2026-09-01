@@ -1069,7 +1069,6 @@ export const useMediaStore = defineStore('media', () => {
   }
 
   function clearProjection(): void {
-    closeProjectionModule()
     isProjecting.value = false
     stopProjectionWatch()
     publishProjectionState()
@@ -1093,10 +1092,18 @@ export const useMediaStore = defineStore('media', () => {
       // ignore
     }
 
+    const shouldCloseCableWindow = isProjectionModuleOpen('media')
+
     if (isProjecting.value) {
       clearProjection()
     } else {
       clearMediaRuntime()
+    }
+
+    // Fim da faixa / fechar player: clearProjection só limpa o runtime;
+    // a janela cabeada precisa fechar de verdade (paridade clock/bíblia).
+    if (shouldCloseCableWindow) {
+      closeProjectionModule()
     }
 
     session.value = null

@@ -146,6 +146,7 @@ const effectiveConfig = computed(() => {
     :style="stageStyle"
   >
     <div
+      v-if="runtime.projecting !== false"
       class="countdown-projection__stage"
       :style="stageAlign"
     >
