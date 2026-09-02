@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   renameSync: vi.fn(),
   cpSync: vi.fn(),
   writeFileSync: vi.fn(),
+  unlinkSync: vi.fn(),
   rmSync: vi.fn(),
   platform: 'linux',
 }))
@@ -20,6 +21,7 @@ vi.mock('../windows-shared-acl.mjs', () => ({
 
 vi.mock('../linux-shared-permissions.mjs', () => ({
   ensureLinuxSharedFolderPermissions: vi.fn(),
+  ensureLinuxSharedFolderAvailable: vi.fn(() => true),
 }))
 
 vi.mock('../macos-shared-permissions.mjs', () => ({
@@ -47,14 +49,19 @@ vi.mock('node:fs', async (importOriginal) => {
     renameSync: (...args) => mocks.renameSync(...args),
     cpSync: (...args) => mocks.cpSync(...args),
     writeFileSync: (...args) => mocks.writeFileSync(...args),
+    unlinkSync: (...args) => mocks.unlinkSync(...args),
     rmSync: (...args) => mocks.rmSync(...args),
   }
 })
 
-import { ensureLinuxSharedFolderPermissions } from '../linux-shared-permissions.mjs'
+import {
+  ensureLinuxSharedFolderAvailable,
+  ensureLinuxSharedFolderPermissions,
+} from '../linux-shared-permissions.mjs'
 import { ensureMacSharedFolderPermissions } from '../macos-shared-permissions.mjs'
 import { ensureWindowsSharedFolderAcl } from '../windows-shared-acl.mjs'
 import {
+  canUseAsUserDataRoot,
   configureUserDataPath,
   migrateLegacyUserDataIfNeeded,
   resolveLegacyLinuxElectronUserDataPaths,
@@ -75,6 +82,9 @@ describe('user-data-path', () => {
     vi.clearAllMocks()
     mocks.existsSync.mockReturnValue(false)
     mocks.readdirSync.mockReturnValue([])
+    mocks.mkdirSync.mockImplementation(() => undefined)
+    mocks.writeFileSync.mockImplementation(() => undefined)
+    mocks.unlinkSync.mockImplementation(() => undefined)
     platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue(mocks.platform)
   })
 
@@ -108,12 +118,37 @@ describe('user-data-path', () => {
     )
   })
 
-  it('resolveUserDataPath no Linux empacotado usa /var/lib', () => {
+  it('resolveUserDataPath no Linux empacotado usa /var/lib quando gravável', () => {
     mocks.platform = 'linux'
     platformSpy.mockReturnValue('linux')
 
     expect(resolveUserDataPath({ isDev: false })).toBe('/var/lib/LouvorJA-PIANO')
     expect(resolveLinuxSharedUserDataPath()).toBe('/var/lib/LouvorJA-PIANO')
+  })
+
+  it('resolveUserDataPath no Linux cai para per-user se /var/lib for inacessível', () => {
+    mocks.platform = 'linux'
+    platformSpy.mockReturnValue('linux')
+    mocks.appData = '/home/user/.config'
+    mocks.mkdirSync.mockImplementation(() => {
+      const error = new Error('EACCES')
+      error.code = 'EACCES'
+      throw error
+    })
+
+    expect(resolveUserDataPath({ isDev: false })).toBe(
+      path.join(mocks.appData, 'LouvorJA-PIANO'),
+    )
+  })
+
+  it('canUseAsUserDataRoot retorna false em EACCES', () => {
+    mocks.mkdirSync.mockImplementation(() => {
+      const error = new Error('EACCES')
+      error.code = 'EACCES'
+      throw error
+    })
+
+    expect(canUseAsUserDataRoot('/var/lib/LouvorJA-PIANO')).toBe(false)
   })
 
   it('resolveUserDataPath no Linux em dev mantém appData per-user', () => {
@@ -261,10 +296,32 @@ describe('user-data-path', () => {
 
     configureUserDataPath({ isDev: false })
 
+    expect(ensureLinuxSharedFolderAvailable).toHaveBeenCalledWith('/var/lib/LouvorJA-PIANO')
     expect(ensureLinuxSharedFolderPermissions).toHaveBeenCalledWith('/var/lib/LouvorJA-PIANO')
     expect(app.setPath).toHaveBeenCalledWith('userData', '/var/lib/LouvorJA-PIANO')
     expect(ensureWindowsSharedFolderAcl).not.toHaveBeenCalled()
     expect(ensureMacSharedFolderPermissions).not.toHaveBeenCalled()
+  })
+
+  it('configureUserDataPath no Linux AppImage cai para per-user se /var/lib falhar', () => {
+    mocks.platform = 'linux'
+    platformSpy.mockReturnValue('linux')
+    mocks.appData = '/home/user/.config'
+    ensureLinuxSharedFolderAvailable.mockReturnValueOnce(false)
+    mocks.mkdirSync.mockImplementation(() => {
+      const error = new Error('EACCES')
+      error.code = 'EACCES'
+      throw error
+    })
+
+    configureUserDataPath({ isDev: false })
+
+    expect(ensureLinuxSharedFolderAvailable).toHaveBeenCalledWith('/var/lib/LouvorJA-PIANO')
+    expect(app.setPath).toHaveBeenCalledWith(
+      'userData',
+      path.join(mocks.appData, 'LouvorJA-PIANO'),
+    )
+    expect(ensureLinuxSharedFolderPermissions).not.toHaveBeenCalled()
   })
 
   it('configureUserDataPath no macOS empacotado aplica permissões e migração', () => {

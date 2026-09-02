@@ -27,14 +27,15 @@ if hash update-desktop-database 2>/dev/null; then
 fi
 
 # Dados compartilhados (mídias, catálogo) entre usuários do mesmo PC.
+# 1777 sticky: no Ubuntu o usuário comum muitas vezes NÃO está no grupo "users",
+# então 2775 root:users impede escrita mesmo após instalação como root.
 LOUVORJA_DATA_DIR="/var/lib/LouvorJA-PIANO"
-install -d -m 2775 "$LOUVORJA_DATA_DIR" || mkdir -p "$LOUVORJA_DATA_DIR"
-if getent group users >/dev/null 2>&1; then
-  chown root:users "$LOUVORJA_DATA_DIR" || true
-elif getent group nogroup >/dev/null 2>&1; then
-  chown root:nogroup "$LOUVORJA_DATA_DIR" || true
+install -d -m 1777 "$LOUVORJA_DATA_DIR" || mkdir -p "$LOUVORJA_DATA_DIR"
+chmod 1777 "$LOUVORJA_DATA_DIR" || true
+if command -v setfacl >/dev/null 2>&1; then
+  setfacl -m u::rwx,g::rwx,o::rwx "$LOUVORJA_DATA_DIR" || true
+  setfacl -d -m u::rwx,g::rwx,o::rwx "$LOUVORJA_DATA_DIR" || true
 fi
-chmod 2775 "$LOUVORJA_DATA_DIR" || true
 
 # Install apparmor profile. (Ubuntu 24+)
 # First check if the version of AppArmor running on the device supports our profile.

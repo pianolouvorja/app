@@ -1,10 +1,22 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 
 import { APP_DESKTOP_ID } from './app-icon.mjs'
 import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from './constants.mjs'
-import { ensureLinuxSharedFolderPermissions } from './linux-shared-permissions.mjs'
+import {
+  ensureLinuxSharedFolderAvailable,
+  ensureLinuxSharedFolderPermissions,
+} from './linux-shared-permissions.mjs'
 import { ensureMacSharedFolderPermissions } from './macos-shared-permissions.mjs'
 import { ensureWindowsSharedFolderAcl } from './windows-shared-acl.mjs'
 
@@ -12,6 +24,7 @@ import { ensureWindowsSharedFolderAcl } from './windows-shared-acl.mjs'
 export const LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR = 'Data'
 
 const MIGRATION_FLAG = '.migrated-from-roaming'
+const WRITE_PROBE = '.write-probe'
 
 /**
  * @param {{ isDev?: boolean }} [options]
@@ -20,6 +33,37 @@ const MIGRATION_FLAG = '.migrated-from-roaming'
 function shouldUseSharedUserData({ isDev = false } = {}) {
   if (isDev) return false
   return process.platform === 'win32' || process.platform === 'linux' || process.platform === 'darwin'
+}
+
+/**
+ * Testa se o diretório pode ser criado e gravado pelo usuário atual.
+ * AppImage/deb sem after-install: /var/lib/... costuma falhar sem root.
+ *
+ * @param {string} dir
+ * @returns {boolean}
+ */
+export function canUseAsUserDataRoot(dir) {
+  try {
+    mkdirSync(dir, { recursive: true })
+    const probe = path.join(dir, WRITE_PROBE)
+    writeFileSync(probe, 'ok', 'utf8')
+    try {
+      unlinkSync(probe)
+    } catch {
+      /* ignore */
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Caminho per-user padrão do Electron.
+ * @returns {string}
+ */
+export function resolvePerUserDataPath() {
+  return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
 }
 
 /**
@@ -51,6 +95,17 @@ export function resolveMacSharedUserDataPath() {
 }
 
 /**
+ * Preferência de pasta compartilhada para a plataforma atual (sem fallback).
+ * @returns {string | null}
+ */
+export function resolvePreferredSharedUserDataPath() {
+  if (process.platform === 'win32') return resolveWindowsSharedUserDataPath()
+  if (process.platform === 'linux') return resolveLinuxSharedUserDataPath()
+  if (process.platform === 'darwin') return resolveMacSharedUserDataPath()
+  return null
+}
+
+/**
  * Caminho legado por usuário (%APPDATA%\\LouvorJA-PIANO no Windows;
  * ~/.config/... no Linux; ~/Library/Application Support/... no macOS).
  * @returns {string | null}
@@ -61,7 +116,7 @@ export function resolveLegacyPerUserRoamingPath() {
     return roaming ? path.win32.join(roaming, APP_USER_DATA_DIR) : null
   }
 
-  return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
+  return resolvePerUserDataPath()
 }
 
 /**
@@ -118,7 +173,8 @@ export function resolveLegacyDataPaths() {
 /**
  * Resolve o diretório de dados do app.
  * Windows (empacotado): %ProgramData%\\LouvorJA-PIANO — compartilhado entre perfis.
- * Linux (empacotado): /var/lib/LouvorJA-PIANO — compartilhado entre perfis.
+ * Linux (empacotado): /var/lib/LouvorJA-PIANO — compartilhado; AppImage pode pedir
+ *   senha de root (pkexec) para criar a pasta; se cancelar, cai para per-user.
  * macOS (empacotado): /Users/Shared/LouvorJA-PIANO — compartilhado entre perfis.
  * Demais casos: comportamento per-user padrão.
  *
@@ -126,21 +182,22 @@ export function resolveLegacyDataPaths() {
  * @returns {string}
  */
 export function resolveUserDataPath({ isDev = false } = {}) {
-  if (shouldUseSharedUserData({ isDev })) {
-    if (process.platform === 'win32') {
-      return resolveWindowsSharedUserDataPath()
-    }
-
-    if (process.platform === 'linux') {
-      return resolveLinuxSharedUserDataPath()
-    }
-
-    if (process.platform === 'darwin') {
-      return resolveMacSharedUserDataPath()
-    }
+  if (!shouldUseSharedUserData({ isDev })) {
+    return resolvePerUserDataPath()
   }
 
-  return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
+  const shared = resolvePreferredSharedUserDataPath()
+  if (shared && canUseAsUserDataRoot(shared)) {
+    return shared
+  }
+
+  if (shared) {
+    console.warn(
+      `[userData] pasta compartilhada inacessível (${shared}); usando pasta por usuário`,
+    )
+  }
+
+  return resolvePerUserDataPath()
 }
 
 /**
@@ -185,7 +242,7 @@ function safeReaddir(dir) {
 function directoryHasUserContent(dir) {
   if (!existsSync(dir)) return false
 
-  return safeReaddir(dir).some((entry) => entry !== MIGRATION_FLAG)
+  return safeReaddir(dir).some((entry) => entry !== MIGRATION_FLAG && entry !== WRITE_PROBE)
 }
 
 /**
@@ -244,12 +301,29 @@ export function migrateLegacyUserDataIfNeeded(targetRoot) {
  * @param {{ isDev?: boolean }} [options]
  */
 export function configureUserDataPath({ isDev = false } = {}) {
-  const targetRoot = resolveUserDataPath({ isDev })
+  if (process.platform === 'linux' && shouldUseSharedUserData({ isDev })) {
+    // AppImage (e similares): se /var/lib/... não existir, pede senha via pkexec.
+    ensureLinuxSharedFolderAvailable(resolveLinuxSharedUserDataPath())
+  }
 
-  if (shouldUseSharedUserData({ isDev })) {
-    ensureSharedFolderAccess(targetRoot)
-    migrateLegacyUserDataIfNeeded(targetRoot)
-    ensureSharedFolderAccess(targetRoot)
+  let targetRoot = resolveUserDataPath({ isDev })
+  const preferredShared = shouldUseSharedUserData({ isDev })
+    ? resolvePreferredSharedUserDataPath()
+    : null
+  const usingShared = Boolean(preferredShared && targetRoot === preferredShared)
+
+  if (usingShared) {
+    try {
+      ensureSharedFolderAccess(targetRoot)
+      migrateLegacyUserDataIfNeeded(targetRoot)
+      ensureSharedFolderAccess(targetRoot)
+    } catch (error) {
+      console.warn(
+        '[userData] falha ao preparar pasta compartilhada; usando pasta por usuário',
+        error,
+      )
+      targetRoot = resolvePerUserDataPath()
+    }
   }
 
   app.setPath('userData', targetRoot)
