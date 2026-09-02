@@ -40,11 +40,12 @@ vi.mock('node:fs', async (importOriginal) => {
 })
 
 import {
-  WINDOWS_SHARED_DATA_DIR,
   configureUserDataPath,
   migrateLegacyUserDataIfNeeded,
   resolveLegacyPerUserRoamingPath,
+  resolveLegacyProgramFilesDataPath,
   resolveUserDataPath,
+  resolveWindowsSharedUserDataPath,
 } from '../user-data-path.mjs'
 import { app } from 'electron'
 
@@ -61,15 +62,22 @@ describe('user-data-path', () => {
   afterEach(() => {
     platformSpy.mockRestore()
     delete process.env.APPDATA
+    delete process.env.ProgramData
   })
 
-  it('resolveUserDataPath no Windows empacotado usa installDir/Data', () => {
+  it('resolveUserDataPath no Windows empacotado usa ProgramData', () => {
     mocks.platform = 'win32'
     platformSpy.mockReturnValue('win32')
+    process.env.ProgramData = 'C:\\ProgramData'
 
     expect(resolveUserDataPath({ isDev: false })).toBe(
-      path.win32.join('C:\\Program Files\\louvorja-piano', WINDOWS_SHARED_DATA_DIR),
+      path.win32.join('C:\\ProgramData', 'LouvorJA-PIANO'),
     )
+  })
+
+  it('resolveWindowsSharedUserDataPath usa ProgramData', () => {
+    process.env.ProgramData = 'D:\\ProgramData'
+    expect(resolveWindowsSharedUserDataPath()).toBe('D:\\ProgramData\\LouvorJA-PIANO')
   })
 
   it('resolveUserDataPath no Windows em dev mantém appData per-user', () => {
@@ -100,13 +108,23 @@ describe('user-data-path', () => {
     )
   })
 
+  it('resolveLegacyProgramFilesDataPath aponta para installDir/Data', () => {
+    mocks.platform = 'win32'
+    platformSpy.mockReturnValue('win32')
+
+    expect(resolveLegacyProgramFilesDataPath()).toBe(
+      'C:\\Program Files\\louvorja-piano\\Data',
+    )
+  })
+
   it('migra pasta legada por rename quando destino está vazio', () => {
     mocks.platform = 'win32'
     platformSpy.mockReturnValue('win32')
     process.env.APPDATA = 'C:\\Users\\alice\\AppData\\Roaming'
+    process.env.ProgramData = 'C:\\ProgramData'
 
     const legacy = path.win32.join(process.env.APPDATA, 'LouvorJA-PIANO')
-    const target = path.win32.join('C:\\Program Files\\louvorja-piano', WINDOWS_SHARED_DATA_DIR)
+    const target = path.win32.join('C:\\ProgramData', 'LouvorJA-PIANO')
 
     mocks.existsSync.mockImplementation((p) => p === legacy)
 
@@ -121,8 +139,9 @@ describe('user-data-path', () => {
     mocks.platform = 'win32'
     platformSpy.mockReturnValue('win32')
     process.env.APPDATA = 'C:\\Users\\alice\\AppData\\Roaming'
+    process.env.ProgramData = 'C:\\ProgramData'
 
-    const target = path.win32.join('C:\\Program Files\\louvorja-piano', WINDOWS_SHARED_DATA_DIR)
+    const target = path.win32.join('C:\\ProgramData', 'LouvorJA-PIANO')
     const legacy = path.win32.join(process.env.APPDATA, 'LouvorJA-PIANO')
 
     mocks.existsSync.mockImplementation((p) => p === legacy || p === target)

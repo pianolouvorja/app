@@ -4,10 +4,20 @@ import { app } from 'electron'
 
 import { APP_USER_DATA_DIR } from './constants.mjs'
 
-/** Subpasta gravável dentro do diretório de instalação (Windows). */
-export const WINDOWS_SHARED_DATA_DIR = 'Data'
+/** Subpasta legada (build anterior) dentro de Program Files — somente para migração. */
+export const LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR = 'Data'
 
 const MIGRATION_FLAG = '.migrated-from-roaming'
+
+/**
+ * Caminho compartilhado no Windows: C:\ProgramData\LouvorJA-PIANO
+ * (gravável por todos os usuários; Program Files é somente leitura).
+ * @returns {string}
+ */
+export function resolveWindowsSharedUserDataPath() {
+  const programData = process.env.ProgramData || 'C:\\ProgramData'
+  return path.win32.join(programData, APP_USER_DATA_DIR)
+}
 
 /**
  * Caminho legado por usuário (%APPDATA%\\LouvorJA-PIANO no Windows).
@@ -23,8 +33,32 @@ export function resolveLegacyPerUserRoamingPath() {
 }
 
 /**
+ * Caminho legado da tentativa anterior (Program Files\\...\\Data).
+ * @returns {string | null}
+ */
+export function resolveLegacyProgramFilesDataPath() {
+  if (process.platform !== 'win32') return null
+
+  const installDir = path.win32.dirname(app.getPath('exe'))
+  return path.win32.join(installDir, LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR)
+}
+
+/**
+ * Origens legadas em ordem de prioridade para migração.
+ * @returns {string[]}
+ */
+export function resolveLegacyDataPaths() {
+  const candidates = [
+    resolveLegacyPerUserRoamingPath(),
+    resolveLegacyProgramFilesDataPath(),
+  ]
+
+  return [...new Set(candidates.filter(Boolean))]
+}
+
+/**
  * Resolve o diretório de dados do app.
- * Windows (empacotado): {installDir}\\Data — compartilhado entre perfis do SO.
+ * Windows (empacotado): %ProgramData%\\LouvorJA-PIANO — compartilhado entre perfis.
  * Demais casos: comportamento per-user padrão.
  *
  * @param {{ isDev?: boolean }} [options]
@@ -32,8 +66,7 @@ export function resolveLegacyPerUserRoamingPath() {
  */
 export function resolveUserDataPath({ isDev = false } = {}) {
   if (process.platform === 'win32' && !isDev) {
-    const installDir = path.win32.dirname(app.getPath('exe'))
-    return path.win32.join(installDir, WINDOWS_SHARED_DATA_DIR)
+    return resolveWindowsSharedUserDataPath()
   }
 
   return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
@@ -50,19 +83,20 @@ function directoryHasUserContent(dir) {
 }
 
 /**
- * Move ou copia dados do Roaming legado para o destino compartilhado (uma vez).
+ * Move ou copia dados legados para o destino compartilhado (uma vez).
  *
  * @param {string} targetRoot
  */
 export function migrateLegacyUserDataIfNeeded(targetRoot) {
   const pathApi = process.platform === 'win32' ? path.win32 : path
-  const legacyRoot = resolveLegacyPerUserRoamingPath()
-  if (!legacyRoot || legacyRoot === targetRoot) return
-
   const migrationFlagPath = pathApi.join(targetRoot, MIGRATION_FLAG)
   if (existsSync(migrationFlagPath)) return
 
-  if (!existsSync(legacyRoot)) {
+  const legacyRoot = resolveLegacyDataPaths().find(
+    (candidate) => candidate !== targetRoot && existsSync(candidate) && directoryHasUserContent(candidate),
+  )
+
+  if (!legacyRoot) {
     mkdirSync(targetRoot, { recursive: true })
     writeFileSync(migrationFlagPath, 'no-legacy', 'utf8')
     return

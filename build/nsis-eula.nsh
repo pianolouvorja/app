@@ -25,8 +25,10 @@ LicenseLangString LicenseFile ${LANG_SPANISH_ES} "${LICENSE_ES}"
 !macroend
 
 ; Dados compartilhados (mídias, catálogo) entre perfis do Windows.
+; Program Files é somente leitura — dados ficam em ProgramData.
 ; S-1-5-32-545 = grupo Users (funciona em qualquer idioma do SO).
 !macro customInstall
-  CreateDirectory "$INSTDIR\Data"
-  nsExec::ExecToLog 'icacls "$INSTDIR\Data" /grant *S-1-5-32-545:(OI)(CI)M /T'
+  ReadEnvStr $0 PROGRAMDATA
+  CreateDirectory "$0/LouvorJA-PIANO"
+  nsExec::ExecToLog 'icacls "$0/LouvorJA-PIANO" /grant *S-1-5-32-545:(OI)(CI)M /T'
 !macroend

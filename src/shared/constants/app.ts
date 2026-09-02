@@ -5,7 +5,7 @@ export const APP_VERSION = `v${__APP_VERSION__}`
 export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
 /**
- * Nome da pasta de dados legada (per-user).
- * No Windows empacotado os dados ficam em {installDir}/Data (compartilhado).
+ * Nome da pasta de dados.
+ * No Windows empacotado os dados ficam em %ProgramData%\\LouvorJA-PIANO (compartilhado).
  */
 export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'
