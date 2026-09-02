@@ -178,7 +178,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": true,
+      "perMachine": false,
+      "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
       "license": "electron/legal/eula/pt-BR.txt",
       "include": "build/nsis-eula.nsh",

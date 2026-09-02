@@ -17,15 +17,12 @@ LicenseLangString LicenseFile ${LANG_PORTUGUESE_BR} "${LICENSE_PTBR}"
 LicenseLangString LicenseFile ${LANG_ENGLISH_US} "${LICENSE_EN}"
 LicenseLangString LicenseFile ${LANG_SPANISH_ES} "${LICENSE_ES}"
 
-; Instalação padrão em C:\Program Files\louvorja-piano (perMachine).
+; Instalação per-user (sem UAC): %LOCALAPPDATA%\Programs\louvorja-piano
 !macro preInit
-  SetRegView 64
-  WriteRegExpandStr HKLM "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES64\louvorja-piano"
-  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES64\louvorja-piano"
+  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "$LOCALAPPDATA/louvorja-piano"
 !macroend
 
-; Dados compartilhados (mídias, catálogo) entre perfis do Windows.
-; Program Files é somente leitura — dados ficam em ProgramData.
+; Dados compartilhados (mídias, catálogo) entre perfis do Windows em ProgramData.
 ; S-1-5-32-545 = grupo Users (funciona em qualquer idioma do SO).
 !macro customInstall
   ReadEnvStr $0 PROGRAMDATA
