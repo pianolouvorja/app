@@ -3,6 +3,7 @@ import path from 'node:path'
 import { app } from 'electron'
 
 import { APP_USER_DATA_DIR } from './constants.mjs'
+import { ensureWindowsSharedFolderAcl } from './windows-shared-acl.mjs'
 
 /** Subpasta legada (build anterior) dentro de Program Files — somente para migração. */
 export const LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR = 'Data'
@@ -74,12 +75,28 @@ export function resolveUserDataPath({ isDev = false } = {}) {
 
 /**
  * @param {string} dir
+ * @returns {string[]}
+ */
+function safeReaddir(dir) {
+  try {
+    return readdirSync(dir)
+  } catch (error) {
+    if (error?.code === 'EPERM' || error?.code === 'EACCES') {
+      ensureWindowsSharedFolderAcl(dir)
+      return readdirSync(dir)
+    }
+    throw error
+  }
+}
+
+/**
+ * @param {string} dir
  * @returns {boolean}
  */
 function directoryHasUserContent(dir) {
   if (!existsSync(dir)) return false
 
-  return readdirSync(dir).some((entry) => entry !== MIGRATION_FLAG)
+  return safeReaddir(dir).some((entry) => entry !== MIGRATION_FLAG)
 }
 
 /**
@@ -141,7 +158,9 @@ export function configureUserDataPath({ isDev = false } = {}) {
   const targetRoot = resolveUserDataPath({ isDev })
 
   if (process.platform === 'win32' && !isDev) {
+    ensureWindowsSharedFolderAcl(targetRoot)
     migrateLegacyUserDataIfNeeded(targetRoot)
+    ensureWindowsSharedFolderAcl(targetRoot)
   }
 
   app.setPath('userData', targetRoot)

@@ -14,6 +14,10 @@ const mocks = vi.hoisted(() => ({
   platform: 'linux',
 }))
 
+vi.mock('../windows-shared-acl.mjs', () => ({
+  ensureWindowsSharedFolderAcl: vi.fn(),
+}))
+
 vi.mock('electron', () => ({
   app: {
     getPath: (name) => {

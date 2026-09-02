@@ -30,5 +30,5 @@ LicenseLangString LicenseFile ${LANG_SPANISH_ES} "${LICENSE_ES}"
 !macro customInstall
   ReadEnvStr $0 PROGRAMDATA
   CreateDirectory "$0/LouvorJA-PIANO"
-  nsExec::ExecToLog 'icacls "$0/LouvorJA-PIANO" /grant *S-1-5-32-545:(OI)(CI)M /T'
+  ExecWait '"$WINDIR\System32\icacls.exe" "$0/LouvorJA-PIANO" /grant *S-1-5-32-545:(OI)(CI)M /T' $1
 !macroend
