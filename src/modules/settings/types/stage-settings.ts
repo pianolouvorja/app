@@ -15,6 +15,7 @@
  *
  * Mapeamento nome-da-view → scope:
  *   MediaProjectionView → hymns (projeção de hinos/mídia)
+ *   MediaReturnProjectionView → (ignorado; reusa hymns)
  *   LiturgyWebProjectionView → liturgy
  *   <X>ProjectionView → <x> (bible, timer, random, clock, countdown…)
  */
@@ -26,6 +27,8 @@ function viewNameToScope(fileName: string): string | null {
   const name = m[1]
   if (name === 'Media') return 'hymns'
   if (name === 'LiturgyWeb') return 'liturgy'
+  // Tela de retorno reusa o palco de hinos — não cria aba própria.
+  if (name === 'MediaReturn') return null
   return name.charAt(0).toLowerCase() + name.slice(1)
 }
 

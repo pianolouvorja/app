@@ -99,6 +99,12 @@ export default {
           'Disable main screen when an extended monitor is available',
         autoMinimizePlayer: 'Minimize the player automatically',
       },
+      returnScreen: {
+        title: 'Return screen',
+        enable: 'Return screen',
+        selectMonitor: 'Select the monitor for the return screen',
+        empty: 'No monitors detected.',
+      },
       lyrics: {
         title: 'Lyrics Customization',
         align: 'Lyrics alignment',

@@ -67,7 +67,7 @@ function asFontWeight(value: unknown): LyricFontWeight {
   return DEFAULT_PROJECTION_SETTINGS.fontWeight
 }
 
-function normalizeSettings(raw: unknown): ProjectionSettings {
+export function normalizeProjectionSettings(raw: unknown): ProjectionSettings {
   if (!raw || typeof raw !== 'object') {
     return { ...DEFAULT_PROJECTION_SETTINGS }
   }
@@ -90,6 +90,14 @@ function normalizeSettings(raw: unknown): ProjectionSettings {
       source.autoMinimizePlayer,
       DEFAULT_PROJECTION_SETTINGS.autoMinimizePlayer,
     ),
+    openReturnScreen: asBoolean(
+      source.openReturnScreen,
+      DEFAULT_PROJECTION_SETTINGS.openReturnScreen,
+    ),
+    returnDisplayId:
+      typeof source.returnDisplayId === 'number' && Number.isFinite(source.returnDisplayId)
+        ? source.returnDisplayId
+        : null,
     lyricAlign: asAlign(source.lyricAlign),
     showSongTitle: asBoolean(
       source.showSongTitle,
@@ -136,7 +144,7 @@ export function loadProjectionSettings(): ProjectionSettings {
     USER_PREFERENCE_KEYS.projectionSettings,
     null,
   )
-  return normalizeSettings(stored)
+  return normalizeProjectionSettings(stored)
 }
 
 export function saveProjectionSettings(settings: ProjectionSettings): void {
@@ -202,6 +210,97 @@ export function toggleTargetDisplay(
     ...settings,
     targetDisplayIds: [...settings.targetDisplayIds, displayId],
     declinedDisplayIds: settings.declinedDisplayIds.filter((id) => id !== displayId),
+  }
+}
+
+export function setReturnDisplayId(
+  settings: ProjectionSettings,
+  displayId: number | null,
+): ProjectionSettings {
+  if (displayId == null) {
+    return { ...settings, returnDisplayId: null }
+  }
+
+  return {
+    ...settings,
+    returnDisplayId: displayId,
+    targetDisplayIds: settings.targetDisplayIds.includes(displayId)
+      ? settings.targetDisplayIds
+      : [...settings.targetDisplayIds, displayId],
+    declinedDisplayIds: settings.declinedDisplayIds.filter((id) => id !== displayId),
+  }
+}
+
+export function pickDefaultReturnDisplayId(
+  settings: ProjectionSettings,
+  displays: ReadonlyArray<{ id: number; isPrimary: boolean }>,
+): number | null {
+  if (displays.length === 0) return null
+
+  const audience = new Set(settings.targetDisplayIds)
+  const extended = displays.filter((display) => !display.isPrimary)
+  const freeExtended = extended.find((display) => !audience.has(display.id))
+  if (freeExtended) return freeExtended.id
+  if (extended[0]) return extended[0].id
+
+  const primary = displays.find((display) => display.isPrimary)
+  return primary?.id ?? displays[0]?.id ?? null
+}
+
+/** Liga o retorno e escolhe um monitor se ainda não houver um válido. */
+export function enableReturnScreen(
+  settings: ProjectionSettings,
+  displays: ReadonlyArray<{ id: number; isPrimary: boolean }>,
+): ProjectionSettings {
+  const next = { ...settings, openReturnScreen: true }
+  const currentId = next.returnDisplayId
+  if (currentId != null && displays.some((display) => display.id === currentId)) {
+    return setReturnDisplayId(next, currentId)
+  }
+
+  const picked = pickDefaultReturnDisplayId(next, displays)
+  if (picked == null) {
+    return { ...next, returnDisplayId: null }
+  }
+
+  return setReturnDisplayId(next, picked)
+}
+
+export function resolveReturnMonitorId(
+  settings: ProjectionSettings,
+  displayIds: number[],
+): number | null {
+  if (!settings.openReturnScreen) return null
+  const id = settings.returnDisplayId
+  if (id == null) return null
+  return displayIds.includes(id) ? id : null
+}
+
+/**
+ * Retorno só fica aberto se o monitor estiver marcado na seleção atual.
+ * Desmarcar em "Selecionar telas" fecha a janela.
+ */
+export function resolveSelectedReturnMonitorId(
+  settings: ProjectionSettings,
+  displayIds: number[],
+  selectedIds: number[],
+): number | null {
+  const returnId = resolveReturnMonitorId(settings, displayIds)
+  if (returnId == null) return null
+  return selectedIds.includes(returnId) ? returnId : null
+}
+
+/** Remove o monitor de retorno se ele não existir mais. */
+export function pruneReturnDisplay(
+  settings: ProjectionSettings,
+  displayIds: number[],
+): ProjectionSettings {
+  if (settings.returnDisplayId == null) return settings
+  if (displayIds.includes(settings.returnDisplayId)) return settings
+  return {
+    ...settings,
+    returnDisplayId: null,
+    openReturnScreen: false,
   }
 }
 

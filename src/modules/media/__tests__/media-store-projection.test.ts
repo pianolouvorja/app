@@ -12,10 +12,11 @@ vi.mock('@shared/services/desktop-bridge', () => ({
 
 const closeProjectionModule = vi.fn()
 const openProjectionModule = vi.fn().mockResolvedValue(true)
+const isProjectionModuleOpen = vi.fn(() => false)
 
 vi.mock('@shared/composables/useProjectionWindow', () => ({
   openProjectionModule: (...args: unknown[]) => openProjectionModule(...args),
-  isProjectionModuleOpen: vi.fn(() => true),
+  isProjectionModuleOpen: (...args: unknown[]) => isProjectionModuleOpen(...args),
   closeProjectionModule: (...args: unknown[]) => closeProjectionModule(...args),
 }))
 
@@ -90,6 +91,8 @@ describe('useMediaStore — controle de projeção e ocultação de conteúdo', 
     localStorage.clear()
     closeProjectionModule.mockClear()
     openProjectionModule.mockClear()
+    isProjectionModuleOpen.mockReset()
+    isProjectionModuleOpen.mockReturnValue(false)
   })
 
   it('clearProjection define isProjecting como falso e publica runtime inativo sem fechar a janela', () => {
@@ -128,7 +131,49 @@ describe('useMediaStore — controle de projeção e ocultação de conteúdo', 
     expect(runtime.title).toBe('Hino Teste')
   })
 
+  it('toggleProjection após ocultar volta a mostrar o conteúdo sem reabrir a janela', async () => {
+    isProjectionModuleOpen.mockReturnValue(true)
+    const store = useMediaStore()
+    store.session = {
+      musicId: 10,
+      albumId: 1,
+      mode: 'audio',
+      title: 'Hino Teste',
+      subtitle: 'Álbum Teste',
+      coverUrl: null,
+      audioUrl: 'https://example.com/audio.mp3',
+      hasInstrumental: false,
+      slides: [
+        {
+          order: 0,
+          lyric: 'Linha 1',
+          showSlide: true,
+          time: '00:00',
+          instrumentalTime: '00:00',
+          imageUrl: 'https://example.com/slide1.jpg',
+          imagePosition: null,
+          isCover: false,
+        },
+      ],
+      slideTimesSec: [0],
+    }
+    store.isProjecting = true
+    store.clearProjection()
+    expect(store.isProjecting).toBe(false)
+    expect(readMediaRuntimeFromStorage().active).toBe(false)
+
+    await store.toggleProjection()
+
+    expect(openProjectionModule).not.toHaveBeenCalled()
+    expect(closeProjectionModule).not.toHaveBeenCalled()
+    expect(store.isProjecting).toBe(true)
+    const runtime = readMediaRuntimeFromStorage()
+    expect(runtime.active).toBe(true)
+    expect(runtime.lyric).toBe('Linha 1')
+  })
+
   it('close fecha a janela cabeada quando o player encerra com projeção ativa', () => {
+    isProjectionModuleOpen.mockReturnValue(true)
     const store = useMediaStore()
     store.session = {
       musicId: 10,
@@ -163,6 +208,7 @@ describe('useMediaStore — controle de projeção e ocultação de conteúdo', 
   })
 
   it('playQueueItem mantém a fila e não fecha a janela de projeção', async () => {
+    isProjectionModuleOpen.mockReturnValue(true)
     const store = useMediaStore()
     const queue = [
       { musicId: 1, albumId: 1, title: 'Faixa 1' },
@@ -218,5 +264,53 @@ describe('useMediaStore — controle de projeção e ocultação de conteúdo', 
     expect(store.isProjecting).toBe(true)
     expect(store.queue).toHaveLength(2)
     expect(store.session?.musicId).toBe(1)
+  })
+
+  it('publica a próxima frase e o progresso no runtime de projeção', () => {
+    const store = useMediaStore()
+    store.session = {
+      musicId: 10,
+      albumId: 1,
+      mode: 'audio',
+      title: 'Hino Teste',
+      subtitle: 'Álbum Teste',
+      coverUrl: null,
+      audioUrl: 'https://example.com/audio.mp3',
+      hasInstrumental: false,
+      slides: [
+        {
+          order: 0,
+          lyric: 'Frase atual',
+          showSlide: true,
+          time: '00:00',
+          instrumentalTime: '00:00',
+          imageUrl: null,
+          imagePosition: null,
+          isCover: false,
+        },
+        {
+          order: 1,
+          lyric: 'Frase seguinte',
+          showSlide: true,
+          time: '00:10',
+          instrumentalTime: '00:10',
+          imageUrl: null,
+          imagePosition: null,
+          isCover: false,
+        },
+      ],
+      slideTimesSec: [0, 10],
+    }
+    store.isProjecting = true
+    store.slideIndex = 0
+    store.currentTimeSec = 5
+    store.durationSec = 20
+    store.publishProjectionState()
+
+    const runtime = readMediaRuntimeFromStorage()
+    expect(runtime.lyric).toBe('Frase atual')
+    expect(runtime.nextLyric).toBe('Frase seguinte')
+    expect(runtime.slideProgressRatio).toBeCloseTo(0.5)
+    expect(runtime.progressRatio).toBeCloseTo(0.25)
   })
 })

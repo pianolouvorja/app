@@ -18,6 +18,7 @@ export default {
     loading: 'Detecting monitors…',
     empty: 'No extended monitors found.',
     primary: 'Primary',
+    returnScreen: 'Return screen',
     selectedCount: '{count} selected',
   },
   popupCount: {

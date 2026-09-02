@@ -17,6 +17,7 @@ export default {
     fullscreen: 'Pantalla completa',
     previousSlide: 'Anterior',
     nextSlide: 'Siguiente',
+    returnNext: 'Siguiente',
     slideOf: 'Diapositiva {current} de {total}',
     coverSlide: 'Portada / título',
     playlist: 'Lista de diapositivas',
