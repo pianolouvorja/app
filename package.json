@@ -178,6 +178,8 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": true,
+      "installDir": "louvorja-piano",
       "allowToChangeInstallationDirectory": true,
       "license": "electron/legal/eula/pt-BR.txt",
       "include": "build/nsis-eula.nsh",

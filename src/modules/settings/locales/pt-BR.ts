@@ -138,7 +138,7 @@ export default {
       languageSpanish: 'Español',
       dataTitle: 'Dados locais',
       dataHint:
-        'Remove o catálogo, mídias baixadas e preferências salvas na pasta {product}. O app reinicia o setup na próxima abertura.',
+        'Remove o catálogo, mídias baixadas e preferências salvas na pasta de dados do app (no Windows: pasta Data dentro da instalação, compartilhada entre usuários). O app reinicia o setup na próxima abertura.',
       clearData: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',

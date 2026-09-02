@@ -137,7 +137,7 @@ export default {
       languageSpanish: 'Español',
       dataTitle: 'Local Data',
       dataHint:
-        'Removes the catalog, downloaded media and saved preferences in the {product} folder. The app will restart setup on next launch.',
+        'Removes the catalog, downloaded media and saved preferences in the app data folder (on Windows: the Data folder inside the install directory, shared across users). The app will restart setup on next launch.',
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',
