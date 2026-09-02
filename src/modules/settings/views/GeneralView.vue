@@ -10,7 +10,7 @@ import {
   removeBrowserItemsByPrefix,
 } from '@shared/services/browser-storage'
 import { BROWSER_STORAGE_KEYS, USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import { APP_USER_DATA_DIR, APP_VERSION } from '@shared/constants/app'
+import { APP_VERSION } from '@shared/constants/app'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
 import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 import {
@@ -305,7 +305,7 @@ async function clearAllLocalData() {
       </div>
 
       <p class="general-settings__hint">
-        {{ t('settings.general.dataHint', { product: APP_USER_DATA_DIR }) }}
+        {{ t('settings.general.dataHint') }}
       </p>
 
       <button

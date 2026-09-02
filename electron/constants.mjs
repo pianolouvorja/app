@@ -1,7 +1,13 @@
 /** Nome do produto no SO (janela, atalhos, productName do build). */
 export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
-/** Pasta userData no ambiente do cliente (ex.: ~/.config/LouvorJA-PIANO). */
+/**
+ * Nome da pasta de dados.
+ * Windows empacotado: %ProgramData%\\LouvorJA-PIANO (compartilhado entre perfis).
+ * Linux empacotado: /var/lib/LouvorJA-PIANO (compartilhado entre perfis).
+ * macOS empacotado: /Users/Shared/LouvorJA-PIANO (compartilhado entre perfis).
+ * Dev: pasta per-user padrão do Electron.
+ */
 export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'
 
 export const WORKSPACE_DIRS = {
