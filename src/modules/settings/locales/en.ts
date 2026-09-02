@@ -137,7 +137,7 @@ export default {
       languageSpanish: 'Español',
       dataTitle: 'Local Data',
       dataHint:
-        'Removes the catalog, downloaded media and saved preferences in the app data folder (on Windows: C:\\ProgramData\\LouvorJA-PIANO, shared across users). The app will restart setup on next launch.',
+        'Removes the catalog, downloaded media and saved preferences in the app data folder (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO — shared across users). The app will restart setup on next launch.',
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',

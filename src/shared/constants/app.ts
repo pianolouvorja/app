@@ -6,6 +6,8 @@ export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
 /**
  * Nome da pasta de dados.
- * No Windows empacotado os dados ficam em %ProgramData%\\LouvorJA-PIANO (compartilhado).
+ * Windows empacotado: %ProgramData%\\LouvorJA-PIANO (compartilhado).
+ * Linux empacotado: /var/lib/LouvorJA-PIANO (compartilhado).
+ * macOS empacotado: /Users/Shared/LouvorJA-PIANO (compartilhado).
  */
 export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'

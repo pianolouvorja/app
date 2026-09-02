@@ -2,13 +2,25 @@ import { cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFi
 import path from 'node:path'
 import { app } from 'electron'
 
-import { APP_USER_DATA_DIR } from './constants.mjs'
+import { APP_DESKTOP_ID } from './app-icon.mjs'
+import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from './constants.mjs'
+import { ensureLinuxSharedFolderPermissions } from './linux-shared-permissions.mjs'
+import { ensureMacSharedFolderPermissions } from './macos-shared-permissions.mjs'
 import { ensureWindowsSharedFolderAcl } from './windows-shared-acl.mjs'
 
 /** Subpasta legada (build anterior) dentro de Program Files — somente para migração. */
 export const LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR = 'Data'
 
 const MIGRATION_FLAG = '.migrated-from-roaming'
+
+/**
+ * @param {{ isDev?: boolean }} [options]
+ * @returns {boolean}
+ */
+function shouldUseSharedUserData({ isDev = false } = {}) {
+  if (isDev) return false
+  return process.platform === 'win32' || process.platform === 'linux' || process.platform === 'darwin'
+}
 
 /**
  * Caminho compartilhado no Windows: C:\ProgramData\LouvorJA-PIANO
@@ -21,7 +33,26 @@ export function resolveWindowsSharedUserDataPath() {
 }
 
 /**
- * Caminho legado por usuário (%APPDATA%\\LouvorJA-PIANO no Windows).
+ * Caminho compartilhado no Linux: /var/lib/LouvorJA-PIANO
+ * (equivalente ao ProgramData do Windows).
+ * @returns {string}
+ */
+export function resolveLinuxSharedUserDataPath() {
+  return path.posix.join('/var/lib', APP_USER_DATA_DIR)
+}
+
+/**
+ * Caminho compartilhado no macOS: /Users/Shared/LouvorJA-PIANO
+ * (acessível a todos os usuários locais sem exigir instalador elevado).
+ * @returns {string}
+ */
+export function resolveMacSharedUserDataPath() {
+  return path.posix.join('/Users/Shared', APP_USER_DATA_DIR)
+}
+
+/**
+ * Caminho legado por usuário (%APPDATA%\\LouvorJA-PIANO no Windows;
+ * ~/.config/... no Linux; ~/Library/Application Support/... no macOS).
  * @returns {string | null}
  */
 export function resolveLegacyPerUserRoamingPath() {
@@ -31,6 +62,31 @@ export function resolveLegacyPerUserRoamingPath() {
   }
 
   return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
+}
+
+/**
+ * Caminhos legados do Electron no Linux (~/.config/louvorja-piano).
+ * @returns {string[]}
+ */
+export function resolveLegacyLinuxElectronUserDataPaths() {
+  if (process.platform !== 'linux') return []
+
+  const configDir = app.getPath('appData')
+  return [path.join(configDir, APP_DESKTOP_ID)]
+}
+
+/**
+ * Caminhos legados do Electron no macOS (~/Library/Application Support/...).
+ * @returns {string[]}
+ */
+export function resolveLegacyMacElectronUserDataPaths() {
+  if (process.platform !== 'darwin') return []
+
+  const supportDir = app.getPath('appData')
+  return [
+    path.join(supportDir, APP_DESKTOP_ID),
+    path.join(supportDir, APP_PRODUCT_NAME),
+  ]
 }
 
 /**
@@ -52,6 +108,8 @@ export function resolveLegacyDataPaths() {
   const candidates = [
     resolveLegacyPerUserRoamingPath(),
     resolveLegacyProgramFilesDataPath(),
+    ...resolveLegacyLinuxElectronUserDataPaths(),
+    ...resolveLegacyMacElectronUserDataPaths(),
   ]
 
   return [...new Set(candidates.filter(Boolean))]
@@ -60,17 +118,48 @@ export function resolveLegacyDataPaths() {
 /**
  * Resolve o diretório de dados do app.
  * Windows (empacotado): %ProgramData%\\LouvorJA-PIANO — compartilhado entre perfis.
+ * Linux (empacotado): /var/lib/LouvorJA-PIANO — compartilhado entre perfis.
+ * macOS (empacotado): /Users/Shared/LouvorJA-PIANO — compartilhado entre perfis.
  * Demais casos: comportamento per-user padrão.
  *
  * @param {{ isDev?: boolean }} [options]
  * @returns {string}
  */
 export function resolveUserDataPath({ isDev = false } = {}) {
-  if (process.platform === 'win32' && !isDev) {
-    return resolveWindowsSharedUserDataPath()
+  if (shouldUseSharedUserData({ isDev })) {
+    if (process.platform === 'win32') {
+      return resolveWindowsSharedUserDataPath()
+    }
+
+    if (process.platform === 'linux') {
+      return resolveLinuxSharedUserDataPath()
+    }
+
+    if (process.platform === 'darwin') {
+      return resolveMacSharedUserDataPath()
+    }
   }
 
   return path.join(app.getPath('appData'), APP_USER_DATA_DIR)
+}
+
+/**
+ * @param {string} targetRoot
+ */
+function ensureSharedFolderAccess(targetRoot) {
+  if (process.platform === 'win32') {
+    ensureWindowsSharedFolderAcl(targetRoot)
+    return
+  }
+
+  if (process.platform === 'linux') {
+    ensureLinuxSharedFolderPermissions(targetRoot)
+    return
+  }
+
+  if (process.platform === 'darwin') {
+    ensureMacSharedFolderPermissions(targetRoot)
+  }
 }
 
 /**
@@ -82,7 +171,7 @@ function safeReaddir(dir) {
     return readdirSync(dir)
   } catch (error) {
     if (error?.code === 'EPERM' || error?.code === 'EACCES') {
-      ensureWindowsSharedFolderAcl(dir)
+      ensureSharedFolderAccess(dir)
       return readdirSync(dir)
     }
     throw error
@@ -157,10 +246,10 @@ export function migrateLegacyUserDataIfNeeded(targetRoot) {
 export function configureUserDataPath({ isDev = false } = {}) {
   const targetRoot = resolveUserDataPath({ isDev })
 
-  if (process.platform === 'win32' && !isDev) {
-    ensureWindowsSharedFolderAcl(targetRoot)
+  if (shouldUseSharedUserData({ isDev })) {
+    ensureSharedFolderAccess(targetRoot)
     migrateLegacyUserDataIfNeeded(targetRoot)
-    ensureWindowsSharedFolderAcl(targetRoot)
+    ensureSharedFolderAccess(targetRoot)
   }
 
   app.setPath('userData', targetRoot)

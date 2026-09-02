@@ -153,6 +153,15 @@
         "application/x-louvorja-liturgy"
       ]
     },
+    "deb": {
+      "afterInstall": "build/linux-after-install.tpl"
+    },
+    "rpm": {
+      "afterInstall": "build/linux-after-install.tpl"
+    },
+    "pacman": {
+      "afterInstall": "build/linux-after-install.tpl"
+    },
     "win": {
       "target": [
         {
