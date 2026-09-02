@@ -181,7 +181,7 @@
       "perMachine": false,
       "selectPerMachineByDefault": true,
       "allowElevation": true,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
       "license": "electron/legal/eula/pt-BR.txt",
       "include": "build/nsis-eula.nsh",
       "installerLanguages": [
