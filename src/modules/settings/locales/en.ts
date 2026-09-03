@@ -99,6 +99,12 @@ export default {
           'Disable main screen when an extended monitor is available',
         autoMinimizePlayer: 'Minimize the player automatically',
       },
+      returnScreen: {
+        title: 'Return screen',
+        enable: 'Return screen',
+        selectMonitor: 'Select the monitor for the return screen',
+        empty: 'No monitors detected.',
+      },
       lyrics: {
         title: 'Lyrics Customization',
         align: 'Lyrics alignment',
@@ -137,7 +143,7 @@ export default {
       languageSpanish: 'Español',
       dataTitle: 'Local Data',
       dataHint:
-        'Removes the catalog, downloaded media and saved preferences in the {product} folder. The app will restart setup on next launch.',
+        'Removes the catalog, downloaded media and saved preferences in the app data folder (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO — shared across users). The app will restart setup on next launch.',
       clearData: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',
@@ -159,6 +165,25 @@ export default {
       syncNothingToApply: 'Nothing to import — local data is already up to date.',
       syncInvalid: 'Invalid or incompatible .louvorja file.',
       syncCancelled: 'Operation cancelled.',
+      legacyMediaTitle: 'Media import',
+      legacyMediaHint:
+        'Finds the legacy Louvor JA folder on Windows (config/capas, imagens and musicas) and copies into this app only files that are not here yet.',
+      legacyMediaAction: 'Check and import media',
+      legacyMediaAnalyzing: 'Analyzing…',
+      legacyMediaAnalyzingHint: 'Looking for the legacy install and comparing files…',
+      legacyMediaImporting: 'Importing…',
+      legacyMediaProgress: 'Importing {current} of {total}',
+      legacyMediaScanSummary:
+        '{scanned} files found · {missing} new (~{mb} MB) · {present} already present',
+      legacyMediaUpToDate: 'No new media to import — everything is already synced.',
+      legacyMediaImported:
+        'Import finished: {imported} new, {skipped} already present, {failed} failed.',
+      legacyMediaReconciling: 'Updating Media Center…',
+      legacyMediaReconcileProgress: 'Checking collection {current} of {total}',
+      legacyMediaReconciled: ' {marked} collection(s) marked as downloaded.',
+      legacyMediaNotFound:
+        'Legacy Louvor JA folder not found. Check Program Files (x86)\\Louvor JA\\config.',
+      legacyMediaError: 'Could not import media. Try again.',
     },
 
     remote: {

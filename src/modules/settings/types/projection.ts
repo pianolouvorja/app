@@ -38,6 +38,10 @@ export type ProjectionSettings = {
   openFullscreenOnPrimary: boolean
   disablePrimaryWhenExtended: boolean
   autoMinimizePlayer: boolean
+  /** Abre janela de retorno (confiança) com próxima frase + barra de tempo. */
+  openReturnScreen: boolean
+  /** Monitor da tela de retorno (um único ID). */
+  returnDisplayId: number | null
   lyricAlign: LyricVerticalAlign
   showSongTitle: boolean
   customTextFormat: boolean
@@ -66,6 +70,8 @@ export const DEFAULT_PROJECTION_SETTINGS: ProjectionSettings = {
   openFullscreenOnPrimary: true,
   disablePrimaryWhenExtended: true,
   autoMinimizePlayer: false,
+  openReturnScreen: false,
+  returnDisplayId: null,
   lyricAlign: 'center',
   showSongTitle: true,
   customTextFormat: false,

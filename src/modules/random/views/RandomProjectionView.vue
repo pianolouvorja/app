@@ -4,10 +4,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ProjectionBackground } from '@design-system/index'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
 
-import RandomPreview from '../components/RandomPreview.vue'
+import RandomStage from '../components/RandomStage.vue'
 import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
 import type { StageSettings } from '../../settings/types/stage-settings'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 import {
   RANDOM_CONFIG_CHANNEL,
   loadRandomDisplayConfig,
@@ -97,34 +97,23 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
-const stageStyle = computed(() => ({
-  backgroundColor: stage.value.backgroundColor,
-  backgroundImage: resolveBackgroundImage(stage.value.backgroundImage)
-    ? `url(${resolveBackgroundImage(stage.value.backgroundImage)})`
-    : undefined,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-}))
+const stageStyle = computed(() => {
+  const bgImage = resolveBackgroundImage(stage.value.backgroundImage)
+  return {
+    // Sem imagem do Palco, usa a cor do diálogo "Personalização da Projeção".
+    backgroundColor: bgImage ? stage.value.backgroundColor : config.value.bgColor,
+    backgroundImage: bgImage ? `url(${bgImage})` : undefined,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  }
+})
 
-const stageAlign = computed(() => ({
-  alignItems:
-    stage.value.textVerticalAlign === 'top'
-      ? 'flex-start'
-      : stage.value.textVerticalAlign === 'bottom'
-        ? 'flex-end'
-        : 'center',
-  justifyContent:
-    stage.value.textAlign === 'left'
-      ? 'flex-start'
-      : stage.value.textAlign === 'right'
-        ? 'flex-end'
-        : 'center',
-}))
+const stageAlign = computed(() => stageFlexAlign(stage.value))
 
-// Características do módulo vindas do StageSettings (fonte única).
+// Personalização do diálogo do sorteio tem prioridade sobre o sub-bloco do Palco.
 const effectiveConfig = computed(() => {
   const mod = stage.value.random
-  return mod ? { ...config.value, ...mod } : { ...config.value }
+  return mod ? { ...mod, ...config.value } : { ...config.value }
 })
 </script>
 
@@ -138,7 +127,8 @@ const effectiveConfig = computed(() => {
       class="random-projection__stage"
       :style="stageAlign"
     >
-      <RandomPreview
+      <RandomStage
+        projection
         :config="effectiveConfig"
         :runtime="runtime"
         :stage="stage"
@@ -157,7 +147,10 @@ const effectiveConfig = computed(() => {
 }
 
 .random-projection__stage {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 </style>

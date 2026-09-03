@@ -10,7 +10,7 @@ import {
 import { stripHtmlBreaks } from '../services/media-slides'
 import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
 import type { StageSettings } from '../../settings/types/stage-settings'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 import type { MediaProjectionRuntime } from '../types/media'
 import { DEFAULT_MEDIA_PROJECTION } from '../types/media'
 
@@ -75,20 +75,7 @@ const bgImage = computed(
   () => resolveBackgroundImage(stage.value.backgroundImage) ?? runtime.value.imageUrl,
 )
 
-const contentStyle = computed(() => ({
-  alignItems:
-    stage.value.textVerticalAlign === 'top'
-      ? 'flex-start'
-      : stage.value.textVerticalAlign === 'bottom'
-        ? 'flex-end'
-        : 'center',
-  justifyContent:
-    stage.value.textAlign === 'left'
-      ? 'flex-start'
-      : stage.value.textAlign === 'right'
-        ? 'flex-end'
-        : 'center',
-}))
+const contentStyle = computed(() => stageFlexAlign(stage.value))
 
 const textStyle = computed(() => ({
   color: stage.value.textColor,
@@ -140,7 +127,7 @@ const boxStyle = computed(() =>
       <p
         v-if="lyric && !runtime.isCover"
         class="media-projection__lyric"
-        :style="boxStyle"
+        :style="[textStyle, boxStyle]"
       >
         {{ lyric }}
       </p>

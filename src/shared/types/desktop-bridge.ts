@@ -44,6 +44,49 @@ export type ClassoApi = {
   detect: () => Promise<ClassoDetectionResult>
 }
 
+export type LegacyMediaCounts = {
+  covers: number
+  music: number
+  slides: number
+}
+
+export type LegacyMediaAnalyzeResult = {
+  found: boolean
+  configDir: string | null
+  /** Idioma injetado no path de músicas (pt|es). */
+  lang?: 'pt' | 'es'
+  scanned: number
+  missing: number
+  present: number
+  totalBytes: number
+  missingBytes: number
+  counts: LegacyMediaCounts
+}
+
+export type LegacyMediaImportProgress = {
+  current: number
+  total: number
+  relativePath: string
+  mediaType: MediaFolderType
+}
+
+export type LegacyMediaImportResult = {
+  ok: boolean
+  imported: number
+  skipped: number
+  failed: number
+  total: number
+  reason?: string
+}
+
+export type LegacyMediaApi = {
+  analyze: () => Promise<LegacyMediaAnalyzeResult>
+  import: () => Promise<LegacyMediaImportResult>
+  onImportProgress: (
+    callback: (progress: LegacyMediaImportProgress) => void,
+  ) => () => void
+}
+
 export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
@@ -247,6 +290,7 @@ export type LouvorJaBridge = {
   workspace: WorkspaceApi
   catalog: CatalogApi
   classo?: ClassoApi
+  legacyMedia?: LegacyMediaApi
   media: MediaApi
   displays: DisplaysApi
   dialog: DialogApi

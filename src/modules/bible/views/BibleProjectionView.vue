@@ -13,7 +13,7 @@ import {
 } from '../services/bible-runtime'
 import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
 import type { StageSettings } from '../../settings/types/stage-settings'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
 let runtimeChannel: BroadcastChannel | null = null
@@ -77,25 +77,12 @@ const stageStyle = computed(() => ({
   backgroundPosition: 'center',
 }))
 
-const stageAlign = computed(() => ({
-  alignItems:
-    stage.value.textVerticalAlign === 'top'
-      ? 'flex-start'
-      : stage.value.textVerticalAlign === 'bottom'
-        ? 'flex-end'
-        : 'center',
-  justifyContent:
-    stage.value.textAlign === 'left'
-      ? 'flex-start'
-      : stage.value.textAlign === 'right'
-        ? 'flex-end'
-        : 'center',
-}))
+const stageAlign = computed(() => stageFlexAlign(stage.value, 'row'))
 
 /**
- * Texto bíblico longo precisa ceder tamanho para preservar leitura sem estourar
- * a área. O slider continua sendo o tamanho-base; a escala só reduz versos
- * maiores e o clamp impede tanto gigantismo quanto texto minúsculo.
+ * Texto bíblico longo cede um pouco de tamanho para caber na área.
+ * O slider (bibleFontSize) é a base — sem teto artificial em rem que
+ * anulava a personalização do Palco.
  */
 const adaptiveBibleFontScale = computed(() => {
   const length = runtime.value.text.replace(/\s+/g, ' ').trim().length
@@ -106,18 +93,25 @@ const adaptiveBibleFontScale = computed(() => {
 })
 
 const verseStyle = computed(() => {
-  const baseCqw = (stage.value.bibleFontSize / 1920) * 100
-  const responsiveCqw = baseCqw * adaptiveBibleFontScale.value
+  const cqw =
+    (stage.value.bibleFontSize / 1920) * 100 * adaptiveBibleFontScale.value
   return {
     color: stage.value.bibleTextColor,
-    // 1.5rem protege texto curto em tela pequena; 5rem evita gigantismo.
-    fontSize: `clamp(1.5rem, ${responsiveCqw}cqw, 5rem)`,
-  fontWeight: String(stage.value.bibleFontWeight),
-  textAlign: stage.value.textAlign,
-  textShadow: stage.value.textShadow
-    ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
-    : 'none',
+    fontSize: `${cqw}cqw`,
+    fontWeight: String(stage.value.bibleFontWeight),
+    textAlign: stage.value.textAlign,
+    textShadow: stage.value.textShadow
+      ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
+      : 'none',
   }
+})
+
+/** Referência sem o sufixo " (versão)" quando o toggle do Palco está off. */
+const displayReference = computed(() => {
+  const ref = runtime.value.reference.trim()
+  if (!ref) return ''
+  if (stage.value.showBibleVersion) return ref
+  return ref.replace(/\s*\([^)]*\)\s*$/, '').trim()
 })
 
 const verseBoxStyle = computed(() => {
@@ -168,11 +162,11 @@ const referenceStyle = computed(() => ({
             {{ runtime.text }}
           </p>
           <p
-            v-if="runtime.reference && stage.showBibleVersion"
+            v-if="displayReference"
             class="bible-projection__reference"
             :style="referenceStyle"
           >
-            {{ runtime.reference }}
+            {{ displayReference }}
           </p>
         </div>
         <div
@@ -216,8 +210,7 @@ const referenceStyle = computed(() => ({
 .bible-projection__text {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.75rem, 5.2vmin, 3.75rem);
-  font-weight: 500;
+  /* tamanho/peso/cor vêm do Palco via verseStyle (inline) */
   line-height: 1.45;
   text-align: center;
   text-shadow: 0 1px 4px rgb(0 0 0 / 0.7);

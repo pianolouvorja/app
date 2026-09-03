@@ -311,64 +311,67 @@ const confirmReset = ref(false)
       </div>
     </div>
 
-    <div class="stage-custom__section">
-      <p class="stage-custom__label">{{ t('settings.stage.textColor') }}</p>
-      <div class="stage-custom__swatches">
-        <button
-          v-for="preset in STAGE_FG_PRESETS"
-          :key="preset.color"
-          type="button"
-          class="stage-custom__swatch"
-          :class="{ 'stage-custom__swatch--active': settings.textColor === preset.color }"
-          :style="{ '--swatch': preset.color }"
-          :aria-label="preset.label"
-          @click="patch({ textColor: preset.color })"
-        />
-        <label class="stage-custom__picker">
-          <i class="ti ti-color-picker" aria-hidden="true" />
-          <input
-            type="color"
-            :value="settings.textColor"
-            :aria-label="t('settings.stage.textColor')"
-            @input="patch({ textColor: ($event.target as HTMLInputElement).value })"
-          >
-        </label>
+    <!-- Tipografia geral não vale na Bíblia (usa aparência própria abaixo). -->
+    <template v-if="activeScope !== 'bible'">
+      <div class="stage-custom__section">
+        <p class="stage-custom__label">{{ t('settings.stage.textColor') }}</p>
+        <div class="stage-custom__swatches">
+          <button
+            v-for="preset in STAGE_FG_PRESETS"
+            :key="preset.color"
+            type="button"
+            class="stage-custom__swatch"
+            :class="{ 'stage-custom__swatch--active': settings.textColor === preset.color }"
+            :style="{ '--swatch': preset.color }"
+            :aria-label="preset.label"
+            @click="patch({ textColor: preset.color })"
+          />
+          <label class="stage-custom__picker">
+            <i class="ti ti-color-picker" aria-hidden="true" />
+            <input
+              type="color"
+              :value="settings.textColor"
+              :aria-label="t('settings.stage.textColor')"
+              @input="patch({ textColor: ($event.target as HTMLInputElement).value })"
+            >
+          </label>
+        </div>
       </div>
-    </div>
 
-    <div class="stage-custom__section">
-      <div class="stage-custom__row-head">
-        <span>{{ t('settings.stage.fontSize') }}</span>
-        <span class="stage-custom__chip">{{ Math.round(settings.fontSize) }}px</span>
-      </div>
-      <input
-        type="range"
-        min="60"
-        max="160"
-        step="2"
-        :value="settings.fontSize"
-        :aria-label="t('settings.stage.fontSize')"
-        @input="patch({ fontSize: Number(($event.target as HTMLInputElement).value) })"
-      >
-    </div>
-
-    <div class="stage-custom__section">
-      <p class="stage-custom__label">{{ t('settings.stage.fontWeight') }}</p>
-      <div class="stage-custom__segment" role="radiogroup">
-        <button
-          v-for="opt in weightOptions"
-          :key="opt.value"
-          type="button"
-          role="radio"
-          :aria-checked="settings.fontWeight === opt.value"
-          class="stage-custom__segment-btn"
-          :class="{ 'stage-custom__segment-btn--active': settings.fontWeight === opt.value }"
-          @click="patch({ fontWeight: opt.value })"
+      <div class="stage-custom__section">
+        <div class="stage-custom__row-head">
+          <span>{{ t('settings.stage.fontSize') }}</span>
+          <span class="stage-custom__chip">{{ Math.round(settings.fontSize) }}px</span>
+        </div>
+        <input
+          type="range"
+          min="60"
+          max="160"
+          step="2"
+          :value="settings.fontSize"
+          :aria-label="t('settings.stage.fontSize')"
+          @input="patch({ fontSize: Number(($event.target as HTMLInputElement).value) })"
         >
-          {{ opt.label }}
-        </button>
       </div>
-    </div>
+
+      <div class="stage-custom__section">
+        <p class="stage-custom__label">{{ t('settings.stage.fontWeight') }}</p>
+        <div class="stage-custom__segment" role="radiogroup">
+          <button
+            v-for="opt in weightOptions"
+            :key="opt.value"
+            type="button"
+            role="radio"
+            :aria-checked="settings.fontWeight === opt.value"
+            class="stage-custom__segment-btn"
+            :class="{ 'stage-custom__segment-btn--active': settings.fontWeight === opt.value }"
+            @click="patch({ fontWeight: opt.value })"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+    </template>
 
     <!-- Bíblia: tipografia própria (F3.3o) -->
     <template v-if="activeScope === 'bible'">

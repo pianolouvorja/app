@@ -21,7 +21,9 @@ import type { OutputModule } from './output-registry'
 import { planForSlot, OWNER_TO_PALCO_MODULE } from './output-plan'
 import { getPalcoRoute } from './palco-routing'
 import type { ProjectionInput } from './palco-session'
-import { readEffectiveStageSettings } from './stage-settings-runtime'
+import {
+  subscribeStageSettings,
+} from './stage-settings-runtime'
 import {
   MEDIA_RUNTIME_CHANNEL,
   MEDIA_RUNTIME_STORAGE_KEY,
@@ -659,6 +661,15 @@ export function startPalcoBridge() {
     )
   }
   window.setInterval(syncAudio, 3000)
+
+  // Personalização do Palco em tempo real: reenvia a projeção ativa na TV
+  // (ex.: tipografia própria da Bíblia) sem precisar trocar o versículo.
+  unwatchers.push(
+    subscribeStageSettings(() => {
+      void renderAllSlots()
+    }),
+  )
+
   void projectOwner()
 }
 

@@ -100,6 +100,12 @@ export default {
           'Desativar tela principal caso haja monitor estendido',
         autoMinimizePlayer: 'Minimizar o player automaticamente',
       },
+      returnScreen: {
+        title: 'Tela de retorno',
+        enable: 'Tela de retorno',
+        selectMonitor: 'Selecionar o monitor para tela de retorno',
+        empty: 'Nenhum monitor detectado.',
+      },
       lyrics: {
         title: 'Personalização da Letra',
         align: 'Alinhamento da letra',
@@ -138,7 +144,7 @@ export default {
       languageSpanish: 'Español',
       dataTitle: 'Dados locais',
       dataHint:
-        'Remove o catálogo, mídias baixadas e preferências salvas na pasta {product}. O app reinicia o setup na próxima abertura.',
+        'Remove o catálogo, mídias baixadas e preferências salvas na pasta de dados do app (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO — compartilhada entre usuários). O app reinicia o setup na próxima abertura.',
       clearData: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
@@ -164,6 +170,25 @@ export default {
       syncNothingToApply: 'Nada para importar — dados locais já estão atualizados.',
       syncInvalid: 'Arquivo .louvorja inválido ou de versão incompatível.',
       syncCancelled: 'Operação cancelada.',
+      legacyMediaTitle: 'Importação de mídia',
+      legacyMediaHint:
+        'Localiza a pasta do Louvor JA legado no Windows (config/capas, imagens e musicas) e copia para este app apenas os arquivos que ainda não existem aqui.',
+      legacyMediaAction: 'Verificar e importar mídia',
+      legacyMediaAnalyzing: 'Analisando…',
+      legacyMediaAnalyzingHint: 'Procurando a instalação legada e comparando arquivos…',
+      legacyMediaImporting: 'Importando…',
+      legacyMediaProgress: 'Importando {current} de {total}',
+      legacyMediaScanSummary:
+        '{scanned} arquivos encontrados · {missing} novos (~{mb} MB) · {present} já presentes',
+      legacyMediaUpToDate: 'Nenhuma mídia nova para importar — tudo já está sincronizado.',
+      legacyMediaImported:
+        'Importação concluída: {imported} novos, {skipped} já existiam, {failed} falhas.',
+      legacyMediaReconciling: 'Atualizando Central de Mídia…',
+      legacyMediaReconcileProgress: 'Verificando coletânea {current} de {total}',
+      legacyMediaReconciled: ' {marked} coletânea(s) marcadas como baixadas.',
+      legacyMediaNotFound:
+        'Pasta do Louvor JA legado não encontrada. Verifique se existe em Program Files (x86)\\Louvor JA\\config.',
+      legacyMediaError: 'Não foi possível importar as mídias. Tente novamente.',
     },
 
     remote: {

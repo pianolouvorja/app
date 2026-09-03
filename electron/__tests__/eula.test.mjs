@@ -121,6 +121,9 @@ describe("NSIS multilingual EULA configuration", () => {
     expect(script).toContain("LicenseLangString LicenseFile ${LANG_ENGLISH_US}");
     expect(script).toContain("LicenseLangString LicenseFile ${LANG_SPANISH_ES}");
     expect(script).not.toMatch(/LicenseLangString LicenseFile \$\{LANG_(ENGLISH|SPANISH)\}/);
+    expect(script).toContain('!define INSTALL_FOLDER_NAME "Louvor JA PIANO"');
+    expect(script).toContain("customInstallmode");
+    expect(script).toContain("customInit");
   });
 });
 

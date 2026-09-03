@@ -8,7 +8,8 @@ import {
 	loadAppIconImage,
 	resolveAppIconPath,
 } from "./app-icon.mjs";
-import { APP_PRODUCT_NAME, APP_USER_DATA_DIR } from "./constants.mjs";
+import { APP_PRODUCT_NAME } from "./constants.mjs";
+import { configureUserDataPath } from "./user-data-path.mjs";
 import { checkEulaAcceptance } from "./eula.mjs";
 import { resolveAppLocale } from "./locale.mjs";
 import { registerWorkspaceIpc } from "./ipc/register.mjs";
@@ -65,7 +66,7 @@ if (process.platform === "linux") {
 	app.setName(APP_PRODUCT_NAME);
 }
 
-app.setPath("userData", path.join(app.getPath("appData"), APP_USER_DATA_DIR));
+configureUserDataPath({ isDev });
 
 if (process.platform === "win32") {
 	app.setAppUserModelId("com.louvorja.piano");

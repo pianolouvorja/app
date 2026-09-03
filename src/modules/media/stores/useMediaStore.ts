@@ -173,6 +173,9 @@ export const useMediaStore = defineStore('media', () => {
 
   const slideCount = computed(() => session.value?.slides.length ?? 0)
 
+  let lastRuntimePublishAt = 0
+  const RUNTIME_PUBLISH_MIN_MS = 80
+
   function stopProjectionWatch() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('louvorja:projection-reapplied', onProjectionReapplied)
@@ -219,6 +222,8 @@ export const useMediaStore = defineStore('media', () => {
       return { ...DEFAULT_MEDIA_PROJECTION, active: false }
     }
 
+    const nextSlide = session.value.slides[slideIndex.value + 1] ?? null
+
     return {
       active,
       title: session.value.title,
@@ -229,6 +234,10 @@ export const useMediaStore = defineStore('media', () => {
       isCover: slide.isCover,
       slideIndex: slideIndex.value,
       slideCount: session.value.slides.length,
+      nextLyric: nextSlide ? stripHtmlBreaks(nextSlide.lyric) : '',
+      nextIsCover: nextSlide?.isCover === true,
+      progressRatio: progressRatio.value,
+      slideProgressRatio: slideProgressRatio.value,
     }
   }
 
@@ -396,8 +405,15 @@ export const useMediaStore = defineStore('media', () => {
           if (nextIndex !== slideIndex.value) {
             slideIndex.value = nextIndex
             void refreshResolvedSlideImage()
+            return
           }
         }
+        if (!isProjecting.value) return
+        const now =
+          typeof performance !== 'undefined' ? performance.now() : Date.now()
+        if (now - lastRuntimePublishAt < RUNTIME_PUBLISH_MIN_MS) return
+        lastRuntimePublishAt = now
+        publishProjectionState()
       },
       onLoadedMetadata: () => {
         durationSec.value = Number.isFinite(audio.duration) ? audio.duration : 0
@@ -1056,6 +1072,18 @@ export const useMediaStore = defineStore('media', () => {
 
   async function startProjection(): Promise<boolean> {
     if (!session.value) return false
+
+    // Ocultar conteúdo deixa as janelas abertas com runtime inativo.
+    // Reprojetar só republica o slide — reabrir chama closeUrl e fecha tudo.
+    const windowsOpen = isProjectionModuleOpen('media')
+    if (windowsOpen || projectingTvsOnly.value) {
+      isProjecting.value = true
+      if (windowsOpen) projectingTvsOnly.value = false
+      startProjectionWatch()
+      publishProjectionState()
+      return true
+    }
+
     // Sem NENHUM destino (sem monitor estendido e sem TV Palco conectada)
     // a projeção não liga — não há pra onde projetar. TV viva = tela ativa
     // (decisão Rafael/Elias 27/08: mecanismo ligava só com múltiplas telas
@@ -1065,6 +1093,12 @@ export const useMediaStore = defineStore('media', () => {
     // Rota individual de TV (spec multi-telas): só TV, sem janela no cabo
     // — paridade com Bíblia/Sorteio. Espelhar mantém cabo + TVs.
     if (isPalcoTvOnlyRoute('hymns')) {
+      const settings = loadProjectionSettings()
+      const returnOnly =
+        settings.openReturnScreen && settings.returnDisplayId != null
+          ? [settings.returnDisplayId]
+          : []
+      await openProjectionModule('media', returnOnly)
       isProjecting.value = true
       projectingTvsOnly.value = true
       startProjectionWatch()

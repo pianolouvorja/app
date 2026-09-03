@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { reapplyProjectionTargets } from '@shared/composables/useProjectionWindow'
+
 import {
   formatDisplayResolution,
   identifySystemDisplays,
@@ -12,10 +14,13 @@ import {
   upsertArrangementSlot,
 } from '../services/monitor-layout'
 import {
+  enableReturnScreen,
   loadProjectionSettings,
+  pruneReturnDisplay,
   readImageAsDataUrl,
   reconcileTargetDisplays,
   saveProjectionSettings,
+  setReturnDisplayId,
   toggleTargetDisplay,
 } from '../services/projection-preferences'
 import type {
@@ -63,6 +68,11 @@ export const useProjectionStore = defineStore('settings-projection', () => {
     saveProjectionSettings(next)
   }
 
+  function persistAndReapply(next: ProjectionSettings) {
+    persist(next)
+    void reapplyProjectionTargets()
+  }
+
   function patch(partial: Partial<ProjectionSettings>) {
     persist({ ...settings.value, ...partial })
   }
@@ -81,12 +91,16 @@ export const useProjectionStore = defineStore('settings-projection', () => {
       const displayIds = displays.value.map((d) => d.id)
       const extendedIds = listExtendedDisplays(displays.value).map((d) => d.id)
       let next = reconcileTargetDisplays(settings.value, extendedIds)
+      next = pruneReturnDisplay(next, displayIds)
+      if (next.openReturnScreen && next.returnDisplayId == null && displays.value.length > 0) {
+        next = enableReturnScreen(next, displays.value)
+      }
       const pruned = pruneArrangement(next.monitorArrangement, displayIds)
       if (pruned.length !== next.monitorArrangement.length) {
         next = { ...next, monitorArrangement: pruned }
       }
       if (next !== settings.value) {
-        persist(next)
+        persistAndReapply(next)
       }
     } catch (error) {
       console.error('[projection] refreshDisplays', error)
@@ -138,7 +152,22 @@ export const useProjectionStore = defineStore('settings-projection', () => {
   }
 
   function toggleExtendedMonitor(displayId: number) {
-    persist(toggleTargetDisplay(settings.value, displayId))
+    persistAndReapply(toggleTargetDisplay(settings.value, displayId))
+  }
+
+  function setOpenReturnScreen(value: boolean) {
+    if (!value) {
+      persistAndReapply({ ...settings.value, openReturnScreen: false })
+      return
+    }
+    persistAndReapply(enableReturnScreen(settings.value, displays.value))
+  }
+
+  function selectReturnDisplay(displayId: number) {
+    persistAndReapply({
+      ...setReturnDisplayId(settings.value, displayId),
+      openReturnScreen: true,
+    })
   }
 
   function setOpenFullscreenOnPrimary(value: boolean) {
@@ -211,7 +240,7 @@ export const useProjectionStore = defineStore('settings-projection', () => {
   function resetToDefaults() {
     persist({ ...DEFAULT_PROJECTION_SETTINGS })
     const extendedIds = listExtendedDisplays(displays.value).map((d) => d.id)
-    persist(reconcileTargetDisplays(settings.value, extendedIds))
+    persistAndReapply(reconcileTargetDisplays(settings.value, extendedIds))
   }
 
   return {
@@ -232,6 +261,8 @@ export const useProjectionStore = defineStore('settings-projection', () => {
     moveMonitorInArrangement,
     resetMonitorArrangement,
     toggleExtendedMonitor,
+    setOpenReturnScreen,
+    selectReturnDisplay,
     setOpenFullscreenOnPrimary,
     setDisablePrimaryWhenExtended,
     setAutoMinimizePlayer,

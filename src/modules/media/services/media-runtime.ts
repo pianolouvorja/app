@@ -19,6 +19,11 @@ function asNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback
 }
 
+function asRatio(value: unknown, fallback: number): number {
+  const n = asNumber(value, fallback)
+  return Math.min(1, Math.max(0, n))
+}
+
 export function normalizeMediaRuntime(raw: unknown): MediaProjectionRuntime {
   if (!raw || typeof raw !== 'object') {
     return { ...DEFAULT_MEDIA_PROJECTION }
@@ -35,6 +40,10 @@ export function normalizeMediaRuntime(raw: unknown): MediaProjectionRuntime {
     isCover: source.isCover === true,
     slideIndex: asNumber(source.slideIndex, 0),
     slideCount: asNumber(source.slideCount, 0),
+    nextLyric: asString(source.nextLyric, ''),
+    nextIsCover: source.nextIsCover === true,
+    progressRatio: asRatio(source.progressRatio, 0),
+    slideProgressRatio: asRatio(source.slideProgressRatio, 0),
   }
 }
 

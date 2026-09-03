@@ -9,7 +9,7 @@ import {
   readEffectiveStageSettings,
   subscribeStageSettings,
 } from '../../settings/services/stage-settings-runtime'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 
 import TimerPreview from '../components/TimerPreview.vue'
 import {
@@ -113,20 +113,7 @@ const stageStyle = computed(() => ({
   backgroundPosition: 'center',
 }))
 
-const stageAlign = computed(() => ({
-  alignItems:
-    stage.value.textVerticalAlign === 'top'
-      ? 'flex-start'
-      : stage.value.textVerticalAlign === 'bottom'
-        ? 'flex-end'
-        : 'center',
-  justifyContent:
-    stage.value.textAlign === 'left'
-      ? 'flex-start'
-      : stage.value.textAlign === 'right'
-        ? 'flex-end'
-        : 'center',
-}))
+const stageAlign = computed(() => stageFlexAlign(stage.value))
 
 // Características do módulo vindas do StageSettings (fonte única).
 const effectiveConfig = computed(() => {
@@ -161,6 +148,8 @@ const effectiveConfig = computed(() => {
 }
 
 .timer-projection__stage {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
 }
