@@ -13,6 +13,7 @@ import RandomProjectFab from '../components/RandomProjectFab.vue'
 import RandomStage from '../components/RandomStage.vue'
 import { useRandomFeature } from '../composables/useRandom'
 import { appConfirm } from '@shared/composables/useAppConfirm'
+import { decodeTextFileBytes } from '@shared/services/text-encoding'
 import type { RandomDrawMode } from '../types/random'
 
 const { t } = useI18n()
@@ -78,7 +79,8 @@ function onModeChange(mode: RandomDrawMode) {
 
 async function onImportFile(file: File) {
   try {
-    const text = await file.text()
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const text = decodeTextFileBytes(bytes)
     importNamesFromText(text)
   } catch {
     // falha de leitura: mantém lista atual
