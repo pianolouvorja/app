@@ -239,6 +239,9 @@ async function onToggleFullscreen() {
     >
       <div class="media-window__stage">
         <div class="media-window__stage-palette">
+          <p class="media-window__hotkey-hint">
+            {{ t('media.projectionHotkeyHint') }}
+          </p>
           <StagePaletteButton scope="hymns" />
         </div>
         <MediaSlideStage
@@ -464,6 +467,27 @@ async function onToggleFullscreen() {
   top: 0.75rem;
   right: 0.75rem;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: calc(100% - 5.5rem);
+}
+
+.media-window__hotkey-hint {
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: 10px;
+  background: rgb(10 14 26 / 0.72);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .media-window__playlist {

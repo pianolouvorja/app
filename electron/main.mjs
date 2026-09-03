@@ -29,7 +29,6 @@ import {
   removeProjectionWindowProvider,
   ensureProjectionHotkey,
   releaseProjectionHotkey,
-  injectProjectionShortcutHint,
 } from "./projection-hotkey.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -445,7 +444,7 @@ function attachProjectionWindowHandlers(parentWindow) {
       childWindow.show()
       if (isProjection) {
         ensureProjectionHotkey()
-        injectProjectionShortcutHint(childWindow)
+        // Hint de atalhos ficou no player do operador (não na projeção).
         // Teclado volta ao operador (player ←/→) sem esconder a projeção.
         if (parentWindow && !parentWindow.isDestroyed()) {
           setTimeout(() => {
