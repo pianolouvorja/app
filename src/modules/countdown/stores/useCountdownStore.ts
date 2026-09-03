@@ -45,8 +45,9 @@ export const useCountdownStore = defineStore('countdown', () => {
 
   const isRunning = computed(() => runtime.value.status === 'running')
   const isPaused = computed(() => runtime.value.status === 'paused')
+  /** Pode iniciar/retomar — inclusive em overtime pausado. */
   const canStart = computed(
-    () => runtime.value.durationMs > 0 && !runtime.value.finished,
+    () => runtime.value.durationMs > 0 && runtime.value.status !== 'running',
   )
 
   function stopProjectionWatch() {
@@ -72,6 +73,7 @@ export const useCountdownStore = defineStore('countdown', () => {
     finishWatchTimer = null
   }
 
+  /** Marca esgotado ao cruzar zero, mas segue rodando em negativo. */
   function checkFinished() {
     if (runtime.value.status !== 'running' || runtime.value.finished) return
 
@@ -85,22 +87,11 @@ export const useCountdownStore = defineStore('countdown', () => {
 
     if (remaining > 0) return
 
-    const elapsed = computeElapsedMs(
-      runtime.value.accumulatedMs,
-      runtime.value.segmentStartedAt,
-      'running',
-      Date.now(),
-    )
-
     runtime.value = {
       ...runtime.value,
-      status: 'paused',
-      segmentStartedAt: null,
-      accumulatedMs: Math.min(elapsed, runtime.value.durationMs),
       finished: true,
     }
     syncRuntime()
-    stopFinishWatch()
   }
 
   function startFinishWatch() {
@@ -171,26 +162,12 @@ export const useCountdownStore = defineStore('countdown', () => {
 
   function start() {
     if (runtime.value.status === 'running') return
-    if (runtime.value.durationMs <= 0 || runtime.value.finished) return
-
-    const remaining = computeRemainingMs(
-      runtime.value.durationMs,
-      runtime.value.accumulatedMs,
-      null,
-      'paused',
-      Date.now(),
-    )
-    if (remaining <= 0) {
-      runtime.value = { ...runtime.value, finished: true, status: 'idle' }
-      syncRuntime()
-      return
-    }
+    if (runtime.value.durationMs <= 0) return
 
     runtime.value = {
       ...runtime.value,
       status: 'running',
       segmentStartedAt: Date.now(),
-      finished: false,
     }
     syncRuntime()
     startFinishWatch()
@@ -212,7 +189,8 @@ export const useCountdownStore = defineStore('countdown', () => {
       ...runtime.value,
       status: 'paused',
       segmentStartedAt: null,
-      accumulatedMs: Math.min(elapsed, runtime.value.durationMs),
+      // Não limita à duração: preserva overtime negativo ao retomar.
+      accumulatedMs: elapsed,
     }
     syncRuntime()
     stopFinishWatch()

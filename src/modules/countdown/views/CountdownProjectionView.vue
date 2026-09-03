@@ -140,6 +140,7 @@ const effectiveConfig = computed(() => {
       <CountdownPreview
         :config="effectiveConfig"
         :runtime="runtime"
+        :stage="stage"
       />
     </div>
   </ProjectionBackground>

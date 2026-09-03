@@ -21,6 +21,8 @@ export default {
     slideOf: 'Diapositiva {current} de {total}',
     coverSlide: 'Portada / título',
     playlist: 'Lista de diapositivas',
+    projectionHotkeyHint:
+      'ESC cierra la proyección  ·  Ctrl+Alt+P alterna con la pantalla del operador',
     ondemandDownload: 'Descarga bajo demanda',
     ondemandPreplay: 'Espera — descargando la canción...',
     ondemandDownloadSuccess: '¡Descarga bajo demanda completada con éxito!',

@@ -141,6 +141,7 @@ const effectiveConfig = computed(() => {
             <CountdownPreview
               :config="effectiveConfig"
               :runtime="runtime"
+              :stage="stage"
               preview
             />
           </div>

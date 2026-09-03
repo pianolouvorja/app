@@ -884,7 +884,9 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     }
 
     const result = await openLiturgyMusicPlayer(item, mode, {
-      project: mode === 'no_audio',
+      // Cantado / instrumental / slides: abre o player já projetando
+      // (antes só `no_audio` projetava e o operador precisava clicar em Projetar).
+      project: true,
     })
     lastActionMessageKey.value = result.messageKey ?? null
     if (!result.ok) return false

@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
 import { getPalcoManager } from '../palco-server.mjs'
-import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey, injectProjectionShortcutHint as injectShortcutHint } from '../projection-hotkey.mjs'
+import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey } from '../projection-hotkey.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PRELOAD_PATH = path.join(__dirname, '../preload.mjs')
@@ -744,7 +744,6 @@ function createSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
-    injectShortcutHint(win)
   })
 
   // Impede redimensionar / maximizar por atalho ou SO
@@ -767,7 +766,6 @@ function createSourceWindow(loadUrl, title) {
   const onPageReady = () => {
     win.webContents.setAudioMuted(false)
     hideYoutubeSidebar(win)
-    injectShortcutHint(win)
     // YouTube é SPA: reaplica após hidratação
     setTimeout(() => hideYoutubeSidebar(win), 800)
     setTimeout(() => hideYoutubeSidebar(win), 2000)
@@ -833,7 +831,6 @@ function createSiteSourceWindow(loadUrl, title) {
     layoutControlBar(win)
     win.show()
     win.focus()
-    injectShortcutHint(win)
   })
 
   win.on('resize', () => {
@@ -1142,7 +1139,6 @@ function createMirrorWindow(display) {
       win.setAlwaysOnTop(true, 'screen-saver')
     }
     win.showInactive()
-    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
@@ -1205,7 +1201,6 @@ function createImageProjectionWindow(display, loadUrl) {
     }
     win.setAlwaysOnTop(true, 'screen-saver')
     win.showInactive()
-    injectShortcutHint(win)
   })
 
   win.webContents.on('before-input-event', (_event, input) => {

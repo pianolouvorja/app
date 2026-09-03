@@ -268,6 +268,12 @@ export async function openProjectionModule(
   openWindows = nextWindows
   activeModule = nextWindows.length > 0 ? moduleId : null
   lastProjectedModule = activeModule
+  // Projeção (window.open) rouba o teclado — devolve ao operador.
+  try {
+    window.focus()
+  } catch {
+    /* ignore */
+  }
   return nextWindows.length > 0
 }
 

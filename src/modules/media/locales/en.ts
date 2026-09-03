@@ -21,6 +21,8 @@ export default {
     slideOf: 'Slide {current} of {total}',
     coverSlide: 'Cover / title',
     playlist: 'Slide list',
+    projectionHotkeyHint:
+      'ESC ends projection  ·  Ctrl+Alt+P switches to the operator screen',
     ondemandDownload: 'On-demand download',
     ondemandPreplay: 'Please wait — downloading the song...',
     ondemandDownloadSuccess: 'On-demand download completed successfully!',

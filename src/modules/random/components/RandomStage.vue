@@ -109,6 +109,18 @@ const hasResult = computed(
   () => props.runtime.currentDisplay.length > 0 && !props.runtime.isDrawing,
 )
 
+/** Histórico na ordem do sorteio (1º → último). */
+const drawnList = computed(() =>
+  Array.isArray(props.runtime.drawn) ? props.runtime.drawn : [],
+)
+
+const showDrawnList = computed(
+  () => props.projection && drawnList.value.length > 0,
+)
+
+const isNamesMode = computed(() => props.runtime.mode !== 'numbers')
+
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -165,22 +177,21 @@ const displayText = computed(() => {
 const displayStyle = computed(() => {
   const drawing = props.runtime.isDrawing
   const cfg = props.config
+  const names = props.runtime.mode !== 'numbers'
+  // Nomes usam escala menor: vw alto estourava nomes longos.
+  const sizeVw = names ? cfg.fontSizePc * 0.72 : cfg.fontSizePc
   return {
     color: drawing ? 'var(--ds-color-on-surface-variant)' : cfg.textColor,
     fontSize: props.projection
-      ? `${drawing ? cfg.fontSizePc * 0.82 : cfg.fontSizePc}vw`
+      ? `${drawing ? sizeVw * 0.82 : sizeVw}vw`
       : props.preview
-        ? `${Math.min(2.6, Math.max(1.35, cfg.fontSizePc * 0.28))}rem`
+        ? `${Math.min(2.2, Math.max(1.1, cfg.fontSizePc * 0.22))}rem`
         : undefined,
     textTransform: cfg.textTransform,
     textShadow: drawing ? 'none' : `0 10px 40px ${cfg.textColor}60`,
     opacity: props.runtime.currentDisplay || props.preview ? 1 : 0.55,
   }
 })
-
-const winnerLabelStyle = computed(() => ({
-  color: props.config.textColor,
-}))
 
 const projectionSurfaceStyle = computed(() => {
   if (!props.projection) return undefined
@@ -261,6 +272,7 @@ onUnmounted(() => {
     :class="{
       'random-stage--projection': projection,
       'random-stage--celebrate': celebrating,
+      'random-stage--names': isNamesMode,
     }"
     :style="projectionSurfaceStyle"
   >
@@ -335,7 +347,6 @@ onUnmounted(() => {
               v-if="hasResult"
               class="random-stage__winner-label"
               :class="{ 'random-stage__winner-label--pop': celebrating }"
-              :style="winnerLabelStyle"
             >
               {{ t('random.winner') }}
             </span>
@@ -400,6 +411,42 @@ onUnmounted(() => {
       />
       {{ t('random.projecting') }}
     </p>
+
+    <aside
+      v-if="showDrawnList"
+      class="random-stage__drawn"
+      :aria-label="t('random.drawn')"
+    >
+      <header class="random-stage__drawn-head">
+        <span class="random-stage__drawn-title">
+          {{ t('random.drawn') }}
+        </span>
+        <span class="random-stage__drawn-count">
+          {{ drawnList.length }}
+        </span>
+      </header>
+      <ul class="random-stage__drawn-list">
+        <li
+          v-for="(item, index) in drawnList"
+          :key="`${item}-${index}`"
+          class="random-stage__drawn-item"
+          :class="{
+            'random-stage__drawn-item--latest':
+              !runtime.isDrawing && index === drawnList.length - 1,
+          }"
+        >
+          <span class="random-stage__drawn-rank">
+            {{ index + 1 }}
+          </span>
+          <span
+            class="random-stage__drawn-name"
+            :style="{ textTransform: config.textTransform }"
+          >
+            {{ item }}
+          </span>
+        </li>
+      </ul>
+    </aside>
   </div>
 </template>
 
@@ -467,8 +514,21 @@ onUnmounted(() => {
   overflow: visible;
 
   .random-stage--projection & {
-    width: min(72vmin, 42rem);
-    height: min(72vmin, 42rem);
+    width: min(56vmin, 32rem);
+    height: min(56vmin, 32rem);
+  }
+
+  /* Nomes: caixa cresce com o texto (sem teto em rem que força quebra). */
+  .random-stage--names & {
+    width: max-content;
+    height: max-content;
+    max-width: none;
+    min-width: min(10rem, 50vw);
+  }
+
+  .random-stage--projection.random-stage--names & {
+    max-width: none;
+    min-width: min(24vmin, 16rem);
   }
 }
 
@@ -488,9 +548,13 @@ onUnmounted(() => {
     border: 2px dashed color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
 
     .random-stage--projection & {
-      width: min(94vmin, 56rem);
-      height: min(94vmin, 56rem);
+      width: min(70vmin, 40rem);
+      height: min(70vmin, 40rem);
       display: block;
+    }
+
+    .random-stage--names & {
+      display: none;
     }
   }
 
@@ -502,9 +566,13 @@ onUnmounted(() => {
     animation-duration: 15s;
 
     .random-stage--projection & {
-      width: min(82vmin, 48rem);
-      height: min(82vmin, 48rem);
+      width: min(62vmin, 36rem);
+      height: min(62vmin, 36rem);
       display: block;
+    }
+
+    .random-stage--names & {
+      display: none;
     }
   }
 }
@@ -525,6 +593,19 @@ onUnmounted(() => {
   box-shadow:
     0 0 80px 20px color-mix(in srgb, var(--ds-color-primary) 15%, transparent),
     inset 0 0 40px color-mix(in srgb, var(--ds-color-primary) 10%, transparent);
+
+  .random-stage--names & {
+    width: max-content;
+    height: max-content;
+    max-width: none;
+    border-radius: 1.5rem 0 1.5rem 0;
+    overflow: visible;
+    padding: 2rem 3rem;
+  }
+
+  .random-stage--projection.random-stage--names & {
+    padding: 4vmin 6.5vmin;
+  }
 }
 
 .random-stage__particles {
@@ -650,14 +731,21 @@ onUnmounted(() => {
   justify-content: center;
   gap: 0.5rem;
   text-align: center;
+
+  .random-stage--names & {
+    width: max-content;
+    max-width: none;
+    padding: 0;
+  }
 }
 
 .random-stage__winner-label {
-  color: var(--ds-color-primary);
+  color: #f6c32a;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  text-shadow: 0 0 18px color-mix(in srgb, #f6c32a 45%, transparent);
 
   .random-stage--projection & {
     font-size: clamp(1rem, 2.8vmin, 1.85rem);
@@ -678,6 +766,12 @@ onUnmounted(() => {
   transition:
     color 300ms ease,
     opacity 200ms ease;
+
+  .random-stage--names & {
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
 
   &--drawing {
     opacity: 0.55;
@@ -791,6 +885,108 @@ onUnmounted(() => {
   .ti {
     font-size: 0.95rem;
   }
+}
+
+.random-stage__drawn {
+  position: absolute;
+  right: 4vmin;
+  bottom: 3vmin;
+  left: 4vmin;
+  z-index: 3;
+  display: flex;
+  max-height: 26vmin;
+  flex-direction: column;
+  margin: 0;
+  padding: 1.4cqh 1.8cqw;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+  border-radius: 1.6cqw 0 1.6cqw 0;
+  background: color-mix(in srgb, #000 42%, transparent);
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.random-stage__drawn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1cqh;
+  flex-shrink: 0;
+}
+
+.random-stage__drawn-title {
+  color: color-mix(in srgb, #fff 82%, transparent);
+  font-size: 1.6cqh;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.random-stage__drawn-count {
+  display: inline-flex;
+  min-width: 2.2cqh;
+  height: 2.2cqh;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.7cqw;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-primary, #f6a623) 28%, transparent);
+  color: #fff;
+  font-size: 1.4cqh;
+  font-weight: 700;
+}
+
+.random-stage__drawn-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.8cqh 1cqw;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.random-stage__drawn-item {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.6cqw;
+  padding: 0.55cqh 1cqw;
+  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, #fff 8%, transparent);
+  color: #fff;
+
+  &--latest {
+    border-color: color-mix(in srgb, var(--ds-color-primary, #f6a623) 55%, transparent);
+    background: color-mix(in srgb, var(--ds-color-primary, #f6a623) 22%, transparent);
+    box-shadow: 0 0 1.5cqh color-mix(in srgb, var(--ds-color-primary, #f6a623) 35%, transparent);
+  }
+}
+
+.random-stage__drawn-rank {
+  display: inline-flex;
+  width: 2cqh;
+  height: 2cqh;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: color-mix(in srgb, #000 35%, transparent);
+  font-size: 1.2cqh;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.random-stage__drawn-name {
+  overflow: hidden;
+  font-size: 1.8cqh;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes random-orbital {
@@ -934,7 +1130,7 @@ onUnmounted(() => {
     padding: 0.5rem;
   }
 
-  .random-stage__focal {
+  .random-stage:not(.random-stage--names) .random-stage__focal {
     width: min(14rem, 45vw);
     height: min(14rem, 45vw);
   }

@@ -29,7 +29,6 @@ import {
   removeProjectionWindowProvider,
   ensureProjectionHotkey,
   releaseProjectionHotkey,
-  injectProjectionShortcutHint,
 } from "./projection-hotkey.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -409,17 +408,31 @@ function attachProjectionWindowHandlers(parentWindow) {
       // Reforça sem chrome mesmo se o Chromium tiver mesclado opções
       childWindow.setMenuBarVisibility(false)
       fullscreenByWindow.set(childWindow, fullscreen)
-      // ESC na projeção NÃO fecha direto (decisão Rafael 30/08): encaminha o
-      // pedido à janela do OPERADOR, que exibe o confirm. A projeção apenas
-      // sinaliza "querem me fechar" — a decisão é sempre do operador.
-      childWindow.webContents.on('before-input-event', (_event, input) => {
-        if (input.type === 'keyDown' && input.key === 'Escape') {
-          try {
-            if (parentWindow && !parentWindow.isDestroyed()) {
-              parentWindow.webContents.send('projection:close-requested')
-            }
-          } catch { /* ignore */ }
-        }
+      // ESC / setas na projeção: encaminha ao operador (a projeção rouba o foco
+      // ao abrir — sem isso ←/→ do player de mídia só funcionam após clicar).
+      childWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.type !== 'keyDown') return
+        try {
+          if (!parentWindow || parentWindow.isDestroyed()) return
+          if (input.key === 'Escape') {
+            parentWindow.webContents.send('projection:close-requested')
+            return
+          }
+          const childUrl = childWindow.webContents.getURL()
+          const isMediaProjection =
+            /[?&#]module=media(?:&|$)/.test(childUrl) ||
+            childUrl.includes('module=media')
+          if (!isMediaProjection) return
+          if (input.key === 'ArrowLeft' || input.key === 'Left') {
+            event.preventDefault()
+            parentWindow.webContents.send('projection:media-navigate', 'previous')
+            return
+          }
+          if (input.key === 'ArrowRight' || input.key === 'Right') {
+            event.preventDefault()
+            parentWindow.webContents.send('projection:media-navigate', 'next')
+          }
+        } catch { /* ignore */ }
       })
     }
 
@@ -431,7 +444,20 @@ function attachProjectionWindowHandlers(parentWindow) {
       childWindow.show()
       if (isProjection) {
         ensureProjectionHotkey()
-        injectProjectionShortcutHint(childWindow)
+        // Hint de atalhos ficou no player do operador (não na projeção).
+        // Teclado volta ao operador (player ←/→) sem esconder a projeção.
+        if (parentWindow && !parentWindow.isDestroyed()) {
+          setTimeout(() => {
+            try {
+              if (!parentWindow.isDestroyed()) parentWindow.focus()
+            } catch { /* ignore */ }
+          }, 0)
+          setTimeout(() => {
+            try {
+              if (!parentWindow.isDestroyed()) parentWindow.focus()
+            } catch { /* ignore */ }
+          }, 250)
+        }
       }
     })
 

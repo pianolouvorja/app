@@ -170,6 +170,11 @@ export default {
       legacyMediaHint:
         'Localiza la carpeta del Louvor JA legado en Windows (config/capas, imagenes y musicas) y copia a esta app solo los archivos que aún no existen aquí.',
       legacyMediaAction: 'Verificar e importar medios',
+      legacyMediaPickFolder: 'Seleccionar carpeta manualmente',
+      legacyMediaPickHint:
+        'Seleccione la carpeta raíz del otro aplicativo (p. ej. …\\Louvor JA) o la carpeta de medios (config). La app revisa esa carpeta y las subcarpetas capas, imagens y musicas.',
+      legacyMediaInvalidFolder:
+        'Esa carpeta no parece la raíz de Louvor JA ni la carpeta de medios. Elija la carpeta del otro app o config (con capas, imagens o musicas).',
       legacyMediaAnalyzing: 'Analizando…',
       legacyMediaAnalyzingHint: 'Buscando la instalación legada y comparando archivos…',
       legacyMediaImporting: 'Importando…',
