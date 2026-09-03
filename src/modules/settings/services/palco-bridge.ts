@@ -43,6 +43,7 @@ import {
   normalizeRandomRuntime,
   type RandomRuntimeState,
 } from '../../random/services/random-runtime'
+import { DEFAULT_RANDOM_RUNTIME } from '../../random/types/random'
 import {
   TIMER_RUNTIME_CHANNEL,
   TIMER_RUNTIME_STORAGE_KEY,
@@ -65,7 +66,7 @@ let owner: Owner = null
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
   bible: { active: false, text: '', reference: '', projecting: false },
-  random: { currentDisplay: '', isDrawing: false, projecting: false, drawn: [], mode: 'names' },
+  random: { ...DEFAULT_RANDOM_RUNTIME },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
 }
