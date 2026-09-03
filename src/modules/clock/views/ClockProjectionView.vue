@@ -92,7 +92,10 @@ const effectiveConfig = computed(() => {
       class="clock-projection__stage"
       :style="stageAlign"
     >
-      <ClockPreview :config="effectiveConfig" />
+      <ClockPreview
+        :config="effectiveConfig"
+        :stage="stage"
+      />
     </div>
   </ProjectionBackground>
 </template>
