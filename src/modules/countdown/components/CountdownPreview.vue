@@ -37,12 +37,12 @@ const surfaceStyle = computed(() => ({
   background: 'transparent',
   color: props.preview
     ? isFinished.value
-      ? 'var(--ds-color-error, #ffb4ab)'
+      ? 'var(--ds-color-error, #ff5252)'
       : isUrgent.value
         ? '#ffa726'
         : 'var(--ds-color-on-surface)'
     : isFinished.value
-      ? '#ff6b6b'
+      ? '#ff3b30'
       : isUrgent.value
         ? '#ffa726'
         : props.config.textColor,
@@ -125,11 +125,19 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .countdown-preview--urgent .countdown-preview__digital {
   animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+.countdown-preview--finished .countdown-preview__digital {
+  animation: countdown-overtime-pulse 0.85s ease-in-out infinite;
+}
+
+.countdown-preview--finished .countdown-preview__finished {
+  animation: countdown-overtime-pulse 0.85s ease-in-out infinite;
 }
 
 @keyframes countdown-pulse {
@@ -140,6 +148,19 @@ onUnmounted(() => {
 
   50% {
     opacity: 0.72;
+  }
+}
+
+@keyframes countdown-overtime-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.04);
   }
 }
 </style>
