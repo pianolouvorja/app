@@ -8,8 +8,33 @@
 
 import { useOutputRegistry } from './output-registry'
 import { readEffectiveStageSettings } from '../../settings/services/stage-settings-runtime'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import {
+  resolveBackgroundImage,
+  type StageSettings,
+} from '../../settings/types/stage-settings'
 import { getPalcoRoute, type PalcoModule } from './palco-routing'
+
+/** Envolve o HTML do texto em cor (receiver não lê textColor separado). */
+function colorizeProjectionText(text: string, color: string): string {
+  if (!text || !color) return text
+  // Já colorizado (reprojeção / caller explícito): não aninha.
+  if (/^<span\s+style=["']color:/i.test(text.trim())) return text
+  return `<span style="color:${color}">${text}</span>`
+}
+
+/**
+ * Rodapé da Bíblia: a referência desktop já inclui a versão em " (ABR)".
+ * Com showBibleVersion off, remove só o sufixo da versão (paridade APK).
+ */
+function resolveProjectionFooterRef(
+  scope: string,
+  settings: StageSettings,
+  footerRef: string | undefined,
+): string {
+  const ref = footerRef ?? ''
+  if (scope !== 'bible' || settings.showBibleVersion) return ref
+  return ref.replace(/\s*\([^)]*\)\s*$/, '').trim()
+}
 
 type PalcoStatus = {
   running: boolean
@@ -143,14 +168,20 @@ class PalcoSession {
         ? resolveBackgroundImage(s.backgroundImage)
         : input.background ?? resolveBackgroundImage(s.backgroundImage),
     )
+    // Bíblia tem tipografia própria (paridade APK StageSession / PalcoOrchestrator).
+    const isBible = scope === 'bible'
+    const sizeAt1920 = isBible ? s.bibleFontSize : s.fontSize
+    const fontWeight = isBible ? s.bibleFontWeight : s.fontWeight
+    const textColor = isBible ? s.bibleTextColor : s.textColor
+    const footerRef = resolveProjectionFooterRef(scope, s, input.footerRef)
     await palcoApi().send({
       v: 2,
       type: 'projection',
       background: bg,
-      text: input.text,
-      // px@1920 → o receiver divide por 10.8 (px@1080p → vh)
-      fontSize: (s.fontSize / 1920) * 1080,
-      fontWeight: s.fontWeight,
+      text: colorizeProjectionText(input.text, textColor),
+      // px@1920 → o receiver divide por 10.8 (px@1080p → vw)
+      fontSize: (sizeAt1920 / 1920) * 1080,
+      fontWeight,
       textShadow: s.textShadow,
       shadowBlur: s.shadowBlur,
       shadowIntensity: s.shadowIntensity,
@@ -159,10 +190,12 @@ class PalcoSession {
       boxBorder: s.boxBorder
         ? { width: 0.4, color: 'rgba(255,255,255,.25)' }
         : undefined,
-      footerRef: input.footerRef ?? '',
+      footerRef,
       footerColor: s.footerRefColor,
       footerWeight: s.footerRefWeight,
-      footerVersion: input.footerVersion,
+      // Versão já vem embutida em footerRef (formato desktop); não duplicar.
+      footerVersion:
+        isBible && !s.showBibleVersion ? undefined : input.footerVersion,
       isCover: input.isCover === true,
     }, this.activeSlotId)
   }
