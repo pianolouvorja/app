@@ -25,6 +25,8 @@ const props = withDefaults(
     trackName?: string
     /** Controla a visibilidade do botão excluir (hover da linha). */
     rowHovered?: boolean
+    /** Exibe o botão de apagar mídia offline (Álbuns sim; Liturgia não). */
+    allowOfflineRemove?: boolean
   }>(),
   {
     busy: false,
@@ -32,6 +34,7 @@ const props = withDefaults(
     musicId: null,
     trackName: '',
     rowHovered: false,
+    allowOfflineRemove: true,
   },
 )
 
@@ -251,7 +254,7 @@ watch(
       </span>
 
       <button
-        v-if="offlineStatus === 'downloaded'"
+        v-if="offlineStatus === 'downloaded' && allowOfflineRemove"
         type="button"
         class="music-track-actions__btn music-track-actions__btn--danger music-track-actions__btn--remove"
         :class="{ 'music-track-actions__btn--remove-visible': rowHovered }"
@@ -267,7 +270,7 @@ watch(
       </button>
 
       <button
-        v-else
+        v-else-if="offlineStatus !== 'downloaded'"
         type="button"
         class="music-track-actions__btn"
         :class="{
