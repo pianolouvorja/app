@@ -570,12 +570,12 @@ const confirmReset = ref(false)
 
         <div class="stage-custom__row-head">
           <span>{{ t('settings.stage.randomFontSize') }}</span>
-          <span class="stage-custom__chip">{{ Math.round(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS ? (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).fontSizePc : 15) }}%</span>
+          <span class="stage-custom__chip">{{ Math.round(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS ? (settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).fontSizePc : 8) }}%</span>
         </div>
         <input
           type="range"
-          min="5"
-          max="50"
+          min="4"
+          max="14"
           step="1"
           :value="(settings.random ?? DEFAULT_RANDOM_MODULE_SETTINGS).fontSizePc"
           :aria-label="t('settings.stage.randomFontSize')"

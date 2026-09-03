@@ -121,6 +121,7 @@ const effectiveConfig = computed(() => {
         >
           <ClockPreview
             :config="effectiveConfig"
+            :stage="stage"
             preview
           />
         </div>

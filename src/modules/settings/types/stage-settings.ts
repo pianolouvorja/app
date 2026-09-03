@@ -103,7 +103,7 @@ export const DEFAULT_COUNTDOWN_MODULE_SETTINGS: NonNullable<StageSettings['count
 }
 
 export const DEFAULT_RANDOM_MODULE_SETTINGS: NonNullable<StageSettings['random']> = {
-  fontSizePc: 15,
+  fontSizePc: 8,
   textTransform: 'none',
   animationSpeed: 'normal',
 }
@@ -338,9 +338,9 @@ export function parseStageSettings(raw: unknown): StageSettings {
       ? {
           random: {
             fontSizePc: clamp(
-              asNumber((s['random'] as Record<string, unknown>)['fontSizePc'], 15),
-              5,
-              50,
+              asNumber((s['random'] as Record<string, unknown>)['fontSizePc'], 8),
+              4,
+              14,
             ),
             textTransform: RANDOM_TEXT_TRANSFORM_OPTIONS.includes(
               (s['random'] as Record<string, unknown>)['textTransform'] as NonNullable<StageSettings['random']>['textTransform'],

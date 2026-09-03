@@ -174,6 +174,11 @@ export default {
       legacyMediaHint:
         'Localiza a pasta do Louvor JA legado no Windows (config/capas, imagens e musicas) e copia para este app apenas os arquivos que ainda não existem aqui.',
       legacyMediaAction: 'Verificar e importar mídia',
+      legacyMediaPickFolder: 'Selecionar pasta manualmente',
+      legacyMediaPickHint:
+        'Selecione a pasta raiz do outro aplicativo (ex.: …\\Louvor JA) ou a pasta de mídia (config). O app verifica essa pasta e as subpastas capas, imagens e musicas.',
+      legacyMediaInvalidFolder:
+        'Essa pasta não parece ser a raiz do Louvor JA nem a pasta de mídia. Escolha a pasta do outro app ou a pasta config (com capas, imagens ou musicas).',
       legacyMediaAnalyzing: 'Analisando…',
       legacyMediaAnalyzingHint: 'Procurando a instalação legada e comparando arquivos…',
       legacyMediaImporting: 'Importando…',

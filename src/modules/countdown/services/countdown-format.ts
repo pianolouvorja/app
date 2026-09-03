@@ -23,7 +23,8 @@ export function formatElapsedMs(
   elapsedMs: number,
   timeFormat: CountdownTimeFormat,
 ): string {
-  const safe = Math.max(0, Math.floor(elapsedMs))
+  const negative = elapsedMs < 0
+  const safe = Math.floor(Math.abs(elapsedMs))
   const hours = Math.floor(safe / 3_600_000)
   const minutes = Math.floor((safe % 3_600_000) / 60_000)
   const seconds = Math.floor((safe % 60_000) / 1000)
@@ -37,7 +38,11 @@ export function formatElapsedMs(
   }
 
   const effectiveFormat = resolveDisplayFormat(hours, timeFormat)
-  return effectiveFormat.replace(/hh|mm|ss|ms/g, (match) => tokens[match] ?? match)
+  const formatted = effectiveFormat.replace(
+    /hh|mm|ss|ms/g,
+    (match) => tokens[match] ?? match,
+  )
+  return negative ? `-${formatted}` : formatted
 }
 
 export function computeElapsedMs(
@@ -60,7 +65,8 @@ export function computeRemainingMs(
   nowMs: number,
 ): number {
   const elapsed = computeElapsedMs(accumulatedMs, segmentStartedAt, status, nowMs)
-  return Math.max(0, durationMs - elapsed)
+  // Permite negativo após zerar (tempo ultrapassado / overtime).
+  return durationMs - elapsed
 }
 
 export function durationPartsFromMs(ms: number): CountdownDurationParts {

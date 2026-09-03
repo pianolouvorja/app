@@ -84,9 +84,14 @@ async function reconcileLibraryListing() {
   }
 }
 
-async function runImport() {
+async function runImport(selectedPath?: string) {
   const bridge = getDesktopBridge()
   if (!bridge?.legacyMedia || !isWindows.value || busy.value) return
+
+  const sourcePath = selectedPath?.trim() || undefined
+  const invalidKey = sourcePath
+    ? 'settings.general.legacyMediaInvalidFolder'
+    : 'settings.general.legacyMediaNotFound'
 
   phase.value = 'analyzing'
   errorKey.value = null
@@ -96,12 +101,12 @@ async function runImport() {
   reconcileMarked.value = 0
 
   try {
-    const report = await bridge.legacyMedia.analyze()
+    const report = await bridge.legacyMedia.analyze(sourcePath)
     analysis.value = report
 
     if (!report.found) {
       phase.value = 'error'
-      errorKey.value = 'settings.general.legacyMediaNotFound'
+      errorKey.value = invalidKey
       return
     }
 
@@ -125,16 +130,14 @@ async function runImport() {
       progress.value = payload
     })
 
-    const result = await bridge.legacyMedia.import()
+    const result = await bridge.legacyMedia.import(sourcePath)
     importResult.value = result
     clearProgressSub()
 
     if (!result.ok) {
       phase.value = 'error'
       errorKey.value =
-        result.reason === 'not-found'
-          ? 'settings.general.legacyMediaNotFound'
-          : 'settings.general.legacyMediaError'
+        result.reason === 'not-found' ? invalidKey : 'settings.general.legacyMediaError'
       return
     }
 
@@ -147,6 +150,15 @@ async function runImport() {
   } finally {
     clearProgressSub()
   }
+}
+
+async function runManualImport() {
+  const bridge = getDesktopBridge()
+  if (!bridge?.legacyMedia?.pickFolder || !isWindows.value || busy.value) return
+
+  const selected = await bridge.legacyMedia.pickFolder()
+  if (!selected) return
+  await runImport(selected)
 }
 </script>
 
@@ -179,28 +191,48 @@ async function runImport() {
       {{ t('settings.general.legacyMediaHint') }}
     </p>
 
-    <button
-      type="button"
-      class="general-settings__btn general-settings__btn--primary"
-      data-test="legacy-media-import-button"
-      :disabled="busy || !canImport"
-      @click="runImport"
-    >
-      <i
-        class="ti"
-        :class="busy ? 'ti-loader-2 general-settings__spin' : 'ti-download'"
-        aria-hidden="true"
-      />
-      {{
-        phase === 'analyzing'
-          ? t('settings.general.legacyMediaAnalyzing')
-          : phase === 'importing'
-            ? t('settings.general.legacyMediaImporting')
-            : phase === 'reconciling'
-              ? t('settings.general.legacyMediaReconciling')
-              : t('settings.general.legacyMediaAction')
-      }}
-    </button>
+    <div class="legacy-media__actions">
+      <button
+        type="button"
+        class="general-settings__btn general-settings__btn--primary"
+        data-test="legacy-media-import-button"
+        :disabled="busy || !canImport"
+        @click="runImport()"
+      >
+        <i
+          class="ti"
+          :class="busy ? 'ti-loader-2 general-settings__spin' : 'ti-download'"
+          aria-hidden="true"
+        />
+        {{
+          phase === 'analyzing'
+            ? t('settings.general.legacyMediaAnalyzing')
+            : phase === 'importing'
+              ? t('settings.general.legacyMediaImporting')
+              : phase === 'reconciling'
+                ? t('settings.general.legacyMediaReconciling')
+                : t('settings.general.legacyMediaAction')
+        }}
+      </button>
+
+      <button
+        type="button"
+        class="general-settings__btn general-settings__btn--secondary"
+        data-test="legacy-media-pick-folder-button"
+        :disabled="busy || !canImport"
+        @click="runManualImport"
+      >
+        <i
+          class="ti ti-folder-open"
+          aria-hidden="true"
+        />
+        {{ t('settings.general.legacyMediaPickFolder') }}
+      </button>
+    </div>
+
+    <p class="general-settings__hint general-settings__hint--sub">
+      {{ t('settings.general.legacyMediaPickHint') }}
+    </p>
 
     <div
       v-if="(phase === 'importing' || phase === 'reconciling') && progress"
@@ -364,6 +396,16 @@ async function runImport() {
   opacity: 0.85;
 }
 
+.general-settings__hint--sub {
+  margin: 0.75rem 0 0;
+}
+
+.legacy-media__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .general-settings__btn {
   display: inline-flex;
   align-items: center;
@@ -402,6 +444,16 @@ async function runImport() {
 
   &:hover:not(:disabled) {
     background: color-mix(in srgb, var(--ds-color-primary) 22%, transparent);
+  }
+}
+
+.general-settings__btn--secondary {
+  border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 18%, transparent);
+  background: color-mix(in srgb, var(--ds-color-on-surface) 8%, transparent);
+  color: var(--ds-color-on-surface);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ds-color-on-surface) 14%, transparent);
   }
 }
 

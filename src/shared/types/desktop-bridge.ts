@@ -80,8 +80,9 @@ export type LegacyMediaImportResult = {
 }
 
 export type LegacyMediaApi = {
-  analyze: () => Promise<LegacyMediaAnalyzeResult>
-  import: () => Promise<LegacyMediaImportResult>
+  analyze: (selectedPath?: string) => Promise<LegacyMediaAnalyzeResult>
+  import: (selectedPath?: string) => Promise<LegacyMediaImportResult>
+  pickFolder: () => Promise<string | null>
   onImportProgress: (
     callback: (progress: LegacyMediaImportProgress) => void,
   ) => () => void
@@ -218,6 +219,8 @@ export type ProjectionApi = {
   onPlaybackSync?: (callback: (payload: PlaybackSyncPayload) => void) => () => void
   /** ESC pressionado na janela de projeção → operador exibe confirm. */
   onCloseRequested?: (callback: () => void) => () => void
+  /** ←/→ na projeção de mídia → operador navega slides. */
+  onMediaNavigate?: (callback: (direction: 'previous' | 'next') => void) => () => void
   remotePlay?: () => Promise<boolean>
   remotePause?: () => Promise<boolean>
   remoteSeek?: (seconds: number) => Promise<boolean>
