@@ -92,10 +92,10 @@ let unsubStage: (() => void) | null = null
 onMounted(() => { unsubStage = subscribeStageSettings(() => { stage.value = readEffectiveStageSettings('random') }) })
 onUnmounted(() => unsubStage?.())
 
-// Características do módulo vindas do StageSettings (fonte única).
+// Personalização do diálogo do sorteio tem prioridade sobre o sub-bloco do Palco.
 const effectiveConfig = computed(() => {
   const mod = stage.value.random
-  return mod ? { ...config.value, ...mod } : { ...config.value }
+  return mod ? { ...mod, ...config.value } : { ...config.value }
 })
 </script>
 
