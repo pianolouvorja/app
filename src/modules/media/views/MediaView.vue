@@ -106,24 +106,33 @@ onMounted(() => {
   maximize()
   setPlaylistOpen(true)
   syncProjectionFlag()
-  window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('keydown', onGlobalKeydown, true)
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('media-player-open')
-  window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('keydown', onGlobalKeydown, true)
   // Dock / back / qualquer saída da rota: mesmo efeito do botão minimizar
   if (hasSession.value) {
     minimize()
   }
 })
 
-/** ESC abre a confirmação de fechar (nunca fecha direto). */
+/** ESC fecha o player (←/→ ficam em useMediaPlayerHotkeys no App). */
 function onGlobalKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
   const target = event.target as HTMLElement | null
-  // Não sequestrar ESC de inputs/dialogos abertos (ex.: confirmação já aberta)
-  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (target?.isContentEditable || target?.tagName === 'TEXTAREA') return
+  if (target?.tagName === 'INPUT') {
+    const type = ((target as HTMLInputElement).type || 'text').toLowerCase()
+    if (
+      !['button', 'checkbox', 'radio', 'range', 'file', 'reset', 'submit', 'color', 'hidden'].includes(
+        type,
+      )
+    ) {
+      return
+    }
+  }
   if (closeConfirmOpen.value) return
   event.preventDefault()
   requestClose()
@@ -173,6 +182,7 @@ async function onToggleFullscreen() {
     <section
       ref="stageRoot"
       class="media-window"
+      tabindex="-1"
     >
     <header class="media-window__toolbar">
       <button
@@ -384,6 +394,7 @@ async function onToggleFullscreen() {
   display: flex;
   flex-direction: column;
   flex: 1;
+  outline: none;
   min-height: 0;
   border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;

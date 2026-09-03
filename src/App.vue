@@ -10,6 +10,7 @@ import { useThemeManager } from '@design-system/composables'
 import AppTitlebar from '@layouts/AppTitlebar.vue'
 import { isProjectionPopupLocation } from '@shared/services/projection-window-location'
 import { useOperatorEscapeToCloseProjection } from '@shared/composables/useOperatorEscapeToCloseProjection'
+import { useMediaPlayerHotkeys } from '@modules/media/composables/useMediaPlayerHotkeys'
 import UpdateBanner from '@shared/components/UpdateBanner.vue'
 import UpdateDialog from '@shared/components/UpdateDialog.vue'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
@@ -38,6 +39,8 @@ const showUpdateDialog = ref(false)
 // ESC no operador com projeção ativa → confirma encerrar (spec 30/08,
 // monitor único: sem isso o operador não saía da projeção sem fechar o app).
 useOperatorEscapeToCloseProjection(() => isProjectionWindow.value)
+// ←/→ do player assim que a sessão maximiza (não depende do foco da MediaView).
+useMediaPlayerHotkeys(() => isProjectionWindow.value)
 
 watch(
   () => currentTheme.value.mode,
