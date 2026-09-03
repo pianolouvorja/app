@@ -124,6 +124,11 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function syncRuntime() {
+    // Sempre reenvia o histórico do modo ativo (a projeção só vê o runtime).
+    runtime.value = {
+      ...runtime.value,
+      drawn: [...drawn.value],
+    }
     publishRandomRuntime(runtime.value)
   }
 
@@ -146,6 +151,7 @@ export const useRandomStore = defineStore('random', () => {
       // hydrate preserva a intenção de projeção (fix 27/08): reconstruir
       // sem a flag derrubava 'projecting' e a TV perdia o dono no boot
       projecting: runtime.value.projecting === true,
+      drawn: [...pool.drawn],
     }
     syncRuntime()
     isProjecting.value = isProjectionModuleOpen('random')
@@ -172,6 +178,7 @@ export const useRandomStore = defineStore('random', () => {
       currentDisplay: nextPool.currentDisplay,
       isDrawing: false,
       projecting: runtime.value.projecting,
+      drawn: [...nextPool.drawn],
     }
     draftName.value = ''
     rangeError.value = null
@@ -228,6 +235,7 @@ export const useRandomStore = defineStore('random', () => {
     next.splice(index, 1)
     session.value = patchActivePool(session.value, { drawn: next })
     persistSession()
+    syncRuntime()
   }
 
   function clearHistory() {
@@ -239,6 +247,7 @@ export const useRandomStore = defineStore('random', () => {
       ...runtime.value,
       currentDisplay: '',
       isDrawing: false,
+      drawn: [],
     }
     persistSession()
     syncRuntime()
@@ -319,15 +328,17 @@ export const useRandomStore = defineStore('random', () => {
       },
       onFinish: (winner) => {
         cancelAnimation = null
+        const nextDrawn = [...drawn.value, winner]
+        session.value = patchActivePool(session.value, {
+          drawn: nextDrawn,
+          currentDisplay: winner,
+        })
         runtime.value = {
           ...runtime.value,
           currentDisplay: winner,
           isDrawing: false,
+          drawn: nextDrawn,
         }
-        session.value = patchActivePool(session.value, {
-          drawn: [...drawn.value, winner],
-          currentDisplay: winner,
-        })
         persistSession()
         syncRuntime()
       },

@@ -65,7 +65,7 @@ let owner: Owner = null
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
   bible: { active: false, text: '', reference: '', projecting: false },
-  random: { currentDisplay: '', isDrawing: false, projecting: false },
+  random: { currentDisplay: '', isDrawing: false, projecting: false, drawn: [] },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
 }

@@ -109,6 +109,15 @@ const hasResult = computed(
   () => props.runtime.currentDisplay.length > 0 && !props.runtime.isDrawing,
 )
 
+/** Histórico na ordem do sorteio (1º → último). */
+const drawnList = computed(() =>
+  Array.isArray(props.runtime.drawn) ? props.runtime.drawn : [],
+)
+
+const showDrawnList = computed(
+  () => props.projection && drawnList.value.length > 0,
+)
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -400,6 +409,42 @@ onUnmounted(() => {
       />
       {{ t('random.projecting') }}
     </p>
+
+    <aside
+      v-if="showDrawnList"
+      class="random-stage__drawn"
+      :aria-label="t('random.drawn')"
+    >
+      <header class="random-stage__drawn-head">
+        <span class="random-stage__drawn-title">
+          {{ t('random.drawn') }}
+        </span>
+        <span class="random-stage__drawn-count">
+          {{ drawnList.length }}
+        </span>
+      </header>
+      <ul class="random-stage__drawn-list">
+        <li
+          v-for="(item, index) in drawnList"
+          :key="`${item}-${index}`"
+          class="random-stage__drawn-item"
+          :class="{
+            'random-stage__drawn-item--latest':
+              !runtime.isDrawing && index === drawnList.length - 1,
+          }"
+        >
+          <span class="random-stage__drawn-rank">
+            {{ index + 1 }}
+          </span>
+          <span
+            class="random-stage__drawn-name"
+            :style="{ textTransform: config.textTransform }"
+          >
+            {{ item }}
+          </span>
+        </li>
+      </ul>
+    </aside>
   </div>
 </template>
 
@@ -467,8 +512,8 @@ onUnmounted(() => {
   overflow: visible;
 
   .random-stage--projection & {
-    width: min(72vmin, 42rem);
-    height: min(72vmin, 42rem);
+    width: min(56vmin, 32rem);
+    height: min(56vmin, 32rem);
   }
 }
 
@@ -488,8 +533,8 @@ onUnmounted(() => {
     border: 2px dashed color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
 
     .random-stage--projection & {
-      width: min(94vmin, 56rem);
-      height: min(94vmin, 56rem);
+      width: min(70vmin, 40rem);
+      height: min(70vmin, 40rem);
       display: block;
     }
   }
@@ -502,8 +547,8 @@ onUnmounted(() => {
     animation-duration: 15s;
 
     .random-stage--projection & {
-      width: min(82vmin, 48rem);
-      height: min(82vmin, 48rem);
+      width: min(62vmin, 36rem);
+      height: min(62vmin, 36rem);
       display: block;
     }
   }
@@ -791,6 +836,108 @@ onUnmounted(() => {
   .ti {
     font-size: 0.95rem;
   }
+}
+
+.random-stage__drawn {
+  position: absolute;
+  right: 4vmin;
+  bottom: 3vmin;
+  left: 4vmin;
+  z-index: 3;
+  display: flex;
+  max-height: 26vmin;
+  flex-direction: column;
+  margin: 0;
+  padding: 1.4cqh 1.8cqw;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+  border-radius: 1.6cqw 0 1.6cqw 0;
+  background: color-mix(in srgb, #000 42%, transparent);
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.random-stage__drawn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1cqh;
+  flex-shrink: 0;
+}
+
+.random-stage__drawn-title {
+  color: color-mix(in srgb, #fff 82%, transparent);
+  font-size: 1.6cqh;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.random-stage__drawn-count {
+  display: inline-flex;
+  min-width: 2.2cqh;
+  height: 2.2cqh;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.7cqw;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-primary, #f6a623) 28%, transparent);
+  color: #fff;
+  font-size: 1.4cqh;
+  font-weight: 700;
+}
+
+.random-stage__drawn-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.8cqh 1cqw;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.random-stage__drawn-item {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.6cqw;
+  padding: 0.55cqh 1cqw;
+  border: 1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, #fff 8%, transparent);
+  color: #fff;
+
+  &--latest {
+    border-color: color-mix(in srgb, var(--ds-color-primary, #f6a623) 55%, transparent);
+    background: color-mix(in srgb, var(--ds-color-primary, #f6a623) 22%, transparent);
+    box-shadow: 0 0 1.5cqh color-mix(in srgb, var(--ds-color-primary, #f6a623) 35%, transparent);
+  }
+}
+
+.random-stage__drawn-rank {
+  display: inline-flex;
+  width: 2cqh;
+  height: 2cqh;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: color-mix(in srgb, #000 35%, transparent);
+  font-size: 1.2cqh;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.random-stage__drawn-name {
+  overflow: hidden;
+  font-size: 1.8cqh;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes random-orbital {

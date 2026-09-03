@@ -12,9 +12,14 @@ function asString(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string')
+}
+
 export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
   if (!raw || typeof raw !== 'object') {
-    return { ...DEFAULT_RANDOM_RUNTIME }
+    return { ...DEFAULT_RANDOM_RUNTIME, drawn: [] }
   }
 
   const source = raw as Record<string, unknown>
@@ -23,6 +28,7 @@ export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
     currentDisplay: asString(source.currentDisplay, ''),
     isDrawing: source.isDrawing === true,
     projecting: source.projecting === true,
+    drawn: asStringArray(source.drawn),
   }
 }
 
