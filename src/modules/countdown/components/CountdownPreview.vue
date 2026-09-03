@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { StageSettings } from '../../settings/types/stage-settings'
 import type { CountdownDisplayConfig, CountdownRuntimeState } from '../types/countdown'
 import { useCountdownDisplay } from '../composables/useCountdown'
 
@@ -9,6 +10,8 @@ const props = withDefaults(
   defineProps<{
     config: CountdownDisplayConfig
     runtime: CountdownRuntimeState
+    /** Personalização Palco do escopo countdown — mesma fonte da projeção. */
+    stage?: StageSettings
     preview?: boolean
   }>(),
   {
@@ -27,26 +30,79 @@ const { formattedTime, isUrgent, isFinished } = useCountdownDisplay(
 )
 
 const digitalFontSize = computed(() => {
+  const st = props.stage
+  if (st && sizeWidth.value > 0) {
+    return Math.max(16, (st.fontSize / 1920) * sizeWidth.value)
+  }
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   const hasMs = props.config.timeFormat.includes('ms')
   const ratio = hasMs ? 0.28 : 0.36
   return Math.max(v * ratio, 20)
 })
 
+const baseTextColor = computed(() => {
+  if (isFinished.value) {
+    return props.preview ? 'var(--ds-color-error, #ff5252)' : '#ff3b30'
+  }
+  if (isUrgent.value) return '#ffa726'
+  if (props.stage) return props.stage.textColor
+  if (props.preview) return 'var(--ds-color-on-surface)'
+  return props.config.textColor
+})
+
+const digitalStyle = computed(() => {
+  const st = props.stage
+  const color = baseTextColor.value
+  return {
+    fontSize: `${digitalFontSize.value}px`,
+    fontWeight: st ? String(st.fontWeight) : '800',
+    color,
+    textAlign: st?.textAlign ?? 'center',
+    textShadow:
+      isFinished.value || isUrgent.value
+        ? `0 0 1.2vh rgba(0,0,0,0.45)`
+        : st?.textShadow
+          ? `0 0 ${st.shadowBlur}vh rgba(0,0,0,${st.shadowIntensity})`
+          : st
+            ? 'none'
+            : props.preview
+              ? 'none'
+              : '0 4px 30px rgba(0, 0, 0, 0.35)',
+    background: st?.textBox && !isFinished.value ? `rgba(0,0,0,${st.boxOpacity})` : 'transparent',
+    border:
+      st?.textBox && st.boxBorder && !isFinished.value
+        ? '1px solid rgba(255,255,255,0.25)'
+        : 'none',
+    borderRadius: st?.textBox ? '1.4cqw 0 1.4cqw 0' : '0',
+    padding: st?.textBox ? '2.5vmin 1.8vmin' : '0',
+  } as Record<string, string>
+})
+
 const surfaceStyle = computed(() => ({
   background: 'transparent',
-  color: props.preview
-    ? isFinished.value
-      ? 'var(--ds-color-error, #ff5252)'
-      : isUrgent.value
-        ? '#ffa726'
-        : 'var(--ds-color-on-surface)'
-    : isFinished.value
-      ? '#ff3b30'
-      : isUrgent.value
-        ? '#ffa726'
-        : props.config.textColor,
+  color: baseTextColor.value,
+  ...stageFlexColumn(props.stage),
 }))
+
+/** Container em coluna: alinhamento vertical = justify, horizontal = align. */
+function stageFlexColumn(st?: StageSettings): Record<string, string> {
+  if (!st) {
+    return { alignItems: 'center', justifyContent: 'center' }
+  }
+  const justifyContent =
+    st.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : st.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center'
+  const alignItems =
+    st.textAlign === 'left'
+      ? 'flex-start'
+      : st.textAlign === 'right'
+        ? 'flex-end'
+        : 'center'
+  return { alignItems, justifyContent }
+}
 
 function measure() {
   const el = containerRef.value
@@ -81,10 +137,7 @@ onUnmounted(() => {
   >
     <div
       class="countdown-preview__digital"
-      :style="{
-        fontSize: `${digitalFontSize}px`,
-        textShadow: preview ? 'none' : '0 4px 30px rgba(0, 0, 0, 0.35)',
-      }"
+      :style="digitalStyle"
     >
       {{ formattedTime }}
     </div>
@@ -104,19 +157,15 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
   gap: 0.5rem;
 }
 
 .countdown-preview__digital {
-  width: 100%;
+  max-width: 100%;
   font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', monospace;
-  font-weight: 800;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  text-align: center;
   line-height: 1;
 }
 
