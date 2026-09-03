@@ -155,6 +155,33 @@ export const DEFAULT_STAGE_SETTINGS: StageSettings = {
   backgroundImage: null,
 }
 
+/**
+ * Alinhamento do Palco → flexbox.
+ * Em coluna (padrão das telas de palco) o eixo principal é o vertical:
+ * Esquerda/Direita = align-items, Em cima/Em baixo = justify-content.
+ */
+export function stageFlexAlign(
+  settings: Pick<StageSettings, 'textAlign' | 'textVerticalAlign'>,
+  direction: 'row' | 'column' = 'column',
+): { alignItems: string; justifyContent: string } {
+  const horizontal =
+    settings.textAlign === 'left'
+      ? 'flex-start'
+      : settings.textAlign === 'right'
+        ? 'flex-end'
+        : 'center'
+  const vertical =
+    settings.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : settings.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center'
+  if (direction === 'row') {
+    return { alignItems: vertical, justifyContent: horizontal }
+  }
+  return { alignItems: horizontal, justifyContent: vertical }
+}
+
 /** Presets de fundo — mesmos do APK. */
 export const STAGE_BG_PRESETS = [
   { color: '#0A0E1A', label: 'Azul-noite' },
@@ -176,11 +203,17 @@ const officialBgModules = import.meta.glob('../../../assets/backgrounds/bg-*.png
   import: 'default',
 }) as Record<string, string>
 
-/** IDs dos bgs oficiais (ex.: 'bg-01'), ordenados. */
+/** IDs dos bgs oficiais (ex.: 'bg-01'), ordenados. Piano (bg-11) vai primeiro na galeria. */
+const GALLERY_LEAD_BACKGROUND = 'bg-11'
+
 export const STAGE_OFFICIAL_BACKGROUNDS: readonly string[] = Object.keys(officialBgModules)
   .map((path) => path.match(/(bg-[\w-]+)\.png$/)?.[1])
   .filter((id): id is string => Boolean(id))
-  .sort()
+  .sort((a, b) => {
+    if (a === GALLERY_LEAD_BACKGROUND) return -1
+    if (b === GALLERY_LEAD_BACKGROUND) return 1
+    return a.localeCompare(b, undefined, { numeric: true })
+  })
 
 /** Prefixo que marca um bg oficial (vs dataURL do usuário). */
 export const OFFICIAL_BG_PREFIX = 'official:'

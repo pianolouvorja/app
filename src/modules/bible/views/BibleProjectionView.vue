@@ -13,7 +13,7 @@ import {
 } from '../services/bible-runtime'
 import { readEffectiveStageSettings, subscribeStageSettings } from '../../settings/services/stage-settings-runtime'
 import type { StageSettings } from '../../settings/types/stage-settings'
-import { resolveBackgroundImage } from '../../settings/types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
 let runtimeChannel: BroadcastChannel | null = null
@@ -77,20 +77,7 @@ const stageStyle = computed(() => ({
   backgroundPosition: 'center',
 }))
 
-const stageAlign = computed(() => ({
-  alignItems:
-    stage.value.textVerticalAlign === 'top'
-      ? 'flex-start'
-      : stage.value.textVerticalAlign === 'bottom'
-        ? 'flex-end'
-        : 'center',
-  justifyContent:
-    stage.value.textAlign === 'left'
-      ? 'flex-start'
-      : stage.value.textAlign === 'right'
-        ? 'flex-end'
-        : 'center',
-}))
+const stageAlign = computed(() => stageFlexAlign(stage.value, 'row'))
 
 /**
  * Texto bíblico longo precisa ceder tamanho para preservar leitura sem estourar

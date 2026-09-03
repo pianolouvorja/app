@@ -334,6 +334,21 @@ const barColor = computed(() => stage.value.footerRefColor || '#FCCE02')
 const showNext = computed(() => Boolean(shownNext.value) || shownNextCover.value)
 const progressPct = computed(() => Math.round(barDisplay.value * 100))
 
+const textStyle = computed(() => ({
+  color: stage.value.textColor,
+  fontSize: `${(stage.value.fontSize / 1920) * 100}cqw`,
+  fontWeight: String(stage.value.fontWeight),
+  textAlign: stage.value.textAlign,
+  textShadow: stage.value.textShadow
+    ? `0 0 ${(stage.value.shadowBlur / 108) * 100}cqw rgba(0,0,0,${stage.value.shadowIntensity})`
+    : 'none',
+}))
+
+const nextTextStyle = computed(() => ({
+  ...textStyle.value,
+  fontSize: `${(stage.value.fontSize / 1920) * 58}cqw`,
+}))
+
 watch(barFillRef, (el) => {
   if (el) el.style.transform = `scaleX(${barDisplay.value})`
 })
@@ -359,6 +374,7 @@ watch(barFillRef, (el) => {
         <p
           v-if="shownCover"
           class="media-return__title media-return__title--cover"
+          :style="textStyle"
         >
           {{ shownCurrent }}
         </p>
@@ -371,6 +387,7 @@ watch(barFillRef, (el) => {
               v-if="outgoingText"
               class="media-return__lyric media-return__lyric--ghost"
               :class="{ 'media-return__lyric--out': exiting }"
+              :style="textStyle"
             >
               {{ outgoingText }}
             </p>
@@ -378,6 +395,7 @@ watch(barFillRef, (el) => {
               ref="lyricRef"
               class="media-return__lyric"
               :class="{ 'media-return__lyric--wait': lyricWait }"
+              :style="textStyle"
             >
               {{ shownCurrent }}
             </p>
@@ -411,6 +429,7 @@ watch(barFillRef, (el) => {
             'media-return__next-lyric--out': exiting,
             'media-return__next-lyric--enter': nextEnter,
           }"
+          :style="nextTextStyle"
         >
           {{ shownNext }}
         </p>
@@ -422,6 +441,7 @@ watch(barFillRef, (el) => {
       ref="flyerRef"
       class="media-return__lyric media-return__flyer"
       aria-hidden="true"
+      :style="textStyle"
     >
       {{ flyerText }}
     </p>
