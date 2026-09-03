@@ -123,8 +123,11 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   legacyMedia: {
-    analyze: () => ipcRenderer.invoke('legacy-media:analyze'),
-    import: () => ipcRenderer.invoke('legacy-media:import'),
+    analyze: (selectedPath) =>
+      ipcRenderer.invoke('legacy-media:analyze', selectedPath ?? ''),
+    import: (selectedPath) =>
+      ipcRenderer.invoke('legacy-media:import', selectedPath ?? ''),
+    pickFolder: () => ipcRenderer.invoke('legacy-media:pick-folder'),
     onImportProgress: (callback) => subscribe('legacy-media:import-progress', callback),
   },
 

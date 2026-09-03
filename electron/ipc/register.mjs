@@ -1,9 +1,10 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 
 import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
 import {
   analyzeLegacyMediaImport,
   importLegacyMediaItems,
+  resolveLegacyMediaConfigFromSelection,
 } from '../legacy-media-import.mjs'
 
 import {
@@ -463,16 +464,47 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  // Importação de mídia do Louvor JA legado (Windows: config/capas|imagens|musicas)
-  ipcMain.handle('legacy-media:analyze', () => {
+  function legacyMediaAnalyzeOpts(selectedPath) {
+    const picked =
+      typeof selectedPath === 'string' && selectedPath.trim()
+        ? selectedPath.trim()
+        : ''
+    if (picked) {
+      const resolved = resolveLegacyMediaConfigFromSelection(picked)
+      return {
+        candidates: resolved ? [resolved] : [],
+        registryConfigProbe: () => null,
+      }
+    }
+    return {
+      registryConfigProbe: () => {
+        const root = probeClassoRegistry()
+        if (!root) return null
+        return root.replace(/[\\/]+$/, '') + '\\config'
+      },
+    }
+  }
+
+  ipcMain.handle('legacy-media:pick-folder', async (event) => {
     try {
-      const analysis = analyzeLegacyMediaImport({
-        registryConfigProbe: () => {
-          const root = probeClassoRegistry()
-          if (!root) return null
-          return root.replace(/[\\/]+$/, '') + '\\config'
-        },
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title:
+          'Selecione a pasta raiz do Louvor JA legado ou a pasta de mídia (config)',
+        properties: ['openDirectory'],
       })
+      if (result.canceled || !result.filePaths?.[0]) return null
+      return result.filePaths[0]
+    } catch (error) {
+      console.error('[ipc] legacy-media:pick-folder', error)
+      return null
+    }
+  })
+
+  // Importação de mídia do Louvor JA legado (Windows: config/capas|imagens|musicas)
+  ipcMain.handle('legacy-media:analyze', (_event, selectedPath) => {
+    try {
+      const analysis = analyzeLegacyMediaImport(legacyMediaAnalyzeOpts(selectedPath))
       // Não serializa absolutePath de todos os itens na resposta leve — só
       // contagens. O import reanalisa no main.
       return {
@@ -502,15 +534,9 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  ipcMain.handle('legacy-media:import', async (event) => {
+  ipcMain.handle('legacy-media:import', async (event, selectedPath) => {
     try {
-      const analysis = analyzeLegacyMediaImport({
-        registryConfigProbe: () => {
-          const root = probeClassoRegistry()
-          if (!root) return null
-          return root.replace(/[\\/]+$/, '') + '\\config'
-        },
-      })
+      const analysis = analyzeLegacyMediaImport(legacyMediaAnalyzeOpts(selectedPath))
       if (!analysis.found) {
         return { ok: false, imported: 0, skipped: 0, failed: 0, total: 0, reason: 'not-found' }
       }

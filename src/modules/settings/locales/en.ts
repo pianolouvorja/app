@@ -169,6 +169,11 @@ export default {
       legacyMediaHint:
         'Finds the legacy Louvor JA folder on Windows (config/capas, imagens and musicas) and copies into this app only files that are not here yet.',
       legacyMediaAction: 'Check and import media',
+      legacyMediaPickFolder: 'Choose folder manually',
+      legacyMediaPickHint:
+        'Select the other app’s root folder (e.g. …\\Louvor JA) or the media folder (config). This app checks that folder and the capas, imagens and musicas subfolders.',
+      legacyMediaInvalidFolder:
+        'That folder does not look like the Louvor JA root or the media folder. Pick the other app’s folder or config (with capas, imagens or musicas).',
       legacyMediaAnalyzing: 'Analyzing…',
       legacyMediaAnalyzingHint: 'Looking for the legacy install and comparing files…',
       legacyMediaImporting: 'Importing…',

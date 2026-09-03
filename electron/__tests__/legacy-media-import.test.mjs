@@ -8,6 +8,7 @@ import {
   detectLegacyMediaConfig,
   detectLegacyLanguage,
   analyzeLegacyMediaImport,
+  resolveLegacyMediaConfigFromSelection,
   IMAGE_EXTS,
   AUDIO_EXTS,
 } from '../legacy-media-import.mjs'
@@ -242,6 +243,70 @@ describe('legacy-media-import', () => {
 
   it('detect retorna not found fora do Windows sem candidates', () => {
     expect(detectLegacyMediaConfig({ platform: 'linux' }).found).toBe(false)
+  })
+
+  it('resolve seleção: pasta config, raiz do app, subpasta de mídia e aninhada', () => {
+    const io = fakeIo({
+      'Program Files (x86)': {
+        dirs: {
+          'Louvor JA': {
+            dirs: {
+              config: {
+                dirs: {
+                  capas: { dirs: {}, files: { 'a.bmp': 1 } },
+                  imagens: { dirs: {}, files: {} },
+                  musicas: { dirs: {}, files: {} },
+                },
+                files: {},
+              },
+            },
+            files: {},
+          },
+        },
+        files: {},
+      },
+      backup: {
+        dirs: {
+          copia: {
+            dirs: {
+              config: {
+                dirs: {
+                  musicas: {
+                    dirs: { A: { dirs: {}, files: { 'a.mp3': 1 } } },
+                    files: {},
+                  },
+                },
+                files: {},
+              },
+            },
+            files: {},
+          },
+        },
+        files: {},
+      },
+    })
+
+    expect(
+      resolveLegacyMediaConfigFromSelection(
+        '/Program Files (x86)/Louvor JA/config',
+        io,
+      ),
+    ).toBe('/Program Files (x86)/Louvor JA/config')
+    expect(
+      resolveLegacyMediaConfigFromSelection('/Program Files (x86)/Louvor JA', io),
+    ).toBe('/Program Files (x86)/Louvor JA/config')
+    expect(
+      resolveLegacyMediaConfigFromSelection(
+        '/Program Files (x86)/Louvor JA/config/capas',
+        io,
+      ),
+    ).toBe('/Program Files (x86)/Louvor JA/config')
+    expect(resolveLegacyMediaConfigFromSelection('/backup', io)).toBe(
+      '/backup/copia/config',
+    )
+    expect(resolveLegacyMediaConfigFromSelection('/backup/inexistente', io)).toBe(
+      null,
+    )
   })
 
   it('listMediaFilesUnder filtra por conjunto de extensões', () => {

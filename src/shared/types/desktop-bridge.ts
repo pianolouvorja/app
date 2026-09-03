@@ -80,8 +80,9 @@ export type LegacyMediaImportResult = {
 }
 
 export type LegacyMediaApi = {
-  analyze: () => Promise<LegacyMediaAnalyzeResult>
-  import: () => Promise<LegacyMediaImportResult>
+  analyze: (selectedPath?: string) => Promise<LegacyMediaAnalyzeResult>
+  import: (selectedPath?: string) => Promise<LegacyMediaImportResult>
+  pickFolder: () => Promise<string | null>
   onImportProgress: (
     callback: (progress: LegacyMediaImportProgress) => void,
   ) => () => void

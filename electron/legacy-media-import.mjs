@@ -17,7 +17,7 @@
  */
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join, relative, win32 } from 'node:path'
+import { basename, dirname, join, relative, win32 } from 'node:path'
 
 import { resolveMediaDirectory } from './paths.mjs'
 
@@ -116,6 +116,94 @@ export function looksLikeLegacyMediaConfig(
     }
   }
   return false
+}
+
+const MEDIA_SUBFOLDER_NAMES = new Set(['capas', 'imagens', 'musicas'])
+const MAX_MANUAL_WALK_DEPTH = 3
+const MAX_MANUAL_WALK_DIRS = 80
+
+/**
+ * Resolve a pasta `config` (capas/imagens/musicas) a partir da escolha do
+ * usuário: raiz do Louvor JA legado, a própria `config`, uma subpasta de
+ * mídia, ou uma cópia com essas pastas aninhadas.
+ *
+ * @param {string} selectedPath
+ * @param {{
+ *   exists?: (p: string) => boolean,
+ *   stat?: (p: string) => { isDirectory(): boolean },
+ *   readdir?: (p: string) => string[],
+ *   join?: (...a: string[]) => string,
+ *   dirname?: (p: string) => string,
+ *   basename?: (p: string) => string,
+ * }} [io]
+ * @returns {string | null}
+ */
+export function resolveLegacyMediaConfigFromSelection(selectedPath, io = {}) {
+  if (!selectedPath || typeof selectedPath !== 'string') return null
+
+  const exists = io.exists ?? existsSync
+  const stat = io.stat ?? statSync
+  const readdir = io.readdir ?? readdirSync
+  const joinPath = io.join ?? join
+  const dirnameFn = io.dirname ?? dirname
+  const basenameFn = io.basename ?? basename
+
+  const trimmed = selectedPath.replace(/[\\/]+$/, '') || selectedPath
+  if (!exists(trimmed)) return null
+
+  /** @type {string[]} */
+  const ordered = []
+  const seen = new Set()
+  const add = (dir) => {
+    if (!dir) return
+    const key = dir.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+    if (!key || seen.has(key)) return
+    seen.add(key)
+    ordered.push(dir)
+  }
+
+  const name = basenameFn(trimmed).toLowerCase()
+  if (MEDIA_SUBFOLDER_NAMES.has(name)) add(dirnameFn(trimmed))
+  add(trimmed)
+  add(joinPath(trimmed, 'config'))
+
+  let visited = 0
+  const walk = (dir, depthLeft) => {
+    if (depthLeft < 0 || visited >= MAX_MANUAL_WALK_DIRS) return
+    visited += 1
+    let entries
+    try {
+      entries = readdir(dir)
+    } catch {
+      return
+    }
+    for (const entry of entries) {
+      if (!entry || entry.startsWith('.')) continue
+      const full = joinPath(dir, entry)
+      let st
+      try {
+        st = stat(full)
+      } catch {
+        continue
+      }
+      if (!st.isDirectory()) continue
+      add(full)
+      walk(full, depthLeft - 1)
+    }
+  }
+  walk(trimmed, MAX_MANUAL_WALK_DEPTH)
+
+  for (const dir of ordered) {
+    if (!exists(dir)) continue
+    try {
+      if (!stat(dir).isDirectory()) continue
+    } catch {
+      continue
+    }
+    if (looksLikeLegacyMediaConfig(dir, exists, stat, joinPath)) return dir
+  }
+
+  return null
 }
 
 /**
