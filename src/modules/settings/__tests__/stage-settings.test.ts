@@ -5,6 +5,8 @@ import {
   parseStageSettings,
   resolveBackgroundImage,
   serializeStageSettings,
+  STAGE_OFFICIAL_BACKGROUNDS,
+  stageFlexAlign,
 } from '../types/stage-settings'
 
 describe('stage-settings (paridade APK)', () => {
@@ -106,5 +108,28 @@ describe('stage-settings (paridade APK)', () => {
     // No APK o path do asset é salvo; convertemos para o formato web
     const s = parseStageSettings({ bgImg: 'official:bg-01' })
     expect(s.backgroundImage).toBe('official:bg-01')
+  })
+
+  it('galeria oficial começa pelo fundo do piano (bg-11)', () => {
+    expect(STAGE_OFFICIAL_BACKGROUNDS[0]).toBe('bg-11')
+  })
+
+  it('stageFlexAlign: horizontal no eixo cruzado, vertical no eixo principal (coluna)', () => {
+    const leftBottom = stageFlexAlign({ textAlign: 'left', textVerticalAlign: 'bottom' })
+    expect(leftBottom.alignItems).toBe('flex-start')
+    expect(leftBottom.justifyContent).toBe('flex-end')
+
+    const rightTop = stageFlexAlign({ textAlign: 'right', textVerticalAlign: 'top' })
+    expect(rightTop.alignItems).toBe('flex-end')
+    expect(rightTop.justifyContent).toBe('flex-start')
+  })
+
+  it('stageFlexAlign: em linha os eixos não invertem', () => {
+    const leftBottom = stageFlexAlign(
+      { textAlign: 'left', textVerticalAlign: 'bottom' },
+      'row',
+    )
+    expect(leftBottom.alignItems).toBe('flex-end')
+    expect(leftBottom.justifyContent).toBe('flex-start')
   })
 })

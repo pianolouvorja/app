@@ -17,6 +17,7 @@ export default {
     fullscreen: 'Fullscreen',
     previousSlide: 'Previous',
     nextSlide: 'Next',
+    returnNext: 'Next',
     slideOf: 'Slide {current} of {total}',
     coverSlide: 'Cover / title',
     playlist: 'Slide list',

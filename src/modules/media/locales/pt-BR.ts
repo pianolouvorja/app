@@ -17,6 +17,7 @@ export default {
     fullscreen: 'Tela cheia',
     previousSlide: 'Anterior',
     nextSlide: 'Próxima',
+    returnNext: 'Próximo',
     slideOf: 'Slide {current} de {total}',
     coverSlide: 'Capa / título',
     playlist: 'Lista de slides',

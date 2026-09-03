@@ -99,6 +99,12 @@ export default {
           'Desactivar pantalla principal cuando haya un monitor extendido',
         autoMinimizePlayer: 'Minimizar el reproductor automáticamente',
       },
+      returnScreen: {
+        title: 'Pantalla de retorno',
+        enable: 'Pantalla de retorno',
+        selectMonitor: 'Seleccionar el monitor para la pantalla de retorno',
+        empty: 'Ningún monitor detectado.',
+      },
       lyrics: {
         title: 'Personalización de la Letra',
         align: 'Alineación de la letra',

@@ -100,6 +100,12 @@ export default {
           'Desativar tela principal caso haja monitor estendido',
         autoMinimizePlayer: 'Minimizar o player automaticamente',
       },
+      returnScreen: {
+        title: 'Tela de retorno',
+        enable: 'Tela de retorno',
+        selectMonitor: 'Selecionar o monitor para tela de retorno',
+        empty: 'Nenhum monitor detectado.',
+      },
       lyrics: {
         title: 'Personalização da Letra',
         align: 'Alinhamento da letra',

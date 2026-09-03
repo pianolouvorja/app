@@ -75,6 +75,10 @@ export type MediaProjectionRuntime = {
   isCover: boolean
   slideIndex: number
   slideCount: number
+  nextLyric: string
+  nextIsCover: boolean
+  progressRatio: number
+  slideProgressRatio: number
 }
 
 export type MediaOpenResult =
@@ -91,4 +95,8 @@ export const DEFAULT_MEDIA_PROJECTION: MediaProjectionRuntime = {
   isCover: false,
   slideIndex: 0,
   slideCount: 0,
+  nextLyric: '',
+  nextIsCover: false,
+  progressRatio: 0,
+  slideProgressRatio: 0,
 }
