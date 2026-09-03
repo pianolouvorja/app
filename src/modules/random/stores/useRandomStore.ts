@@ -124,10 +124,11 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function syncRuntime() {
-    // Sempre reenvia o histórico do modo ativo (a projeção só vê o runtime).
+    // Sempre reenvia o histórico/modo ativos (a projeção só vê o runtime).
     runtime.value = {
       ...runtime.value,
       drawn: [...drawn.value],
+      mode: session.value.mode,
     }
     publishRandomRuntime(runtime.value)
   }
@@ -152,6 +153,7 @@ export const useRandomStore = defineStore('random', () => {
       // sem a flag derrubava 'projecting' e a TV perdia o dono no boot
       projecting: runtime.value.projecting === true,
       drawn: [...pool.drawn],
+      mode: session.value.mode,
     }
     syncRuntime()
     isProjecting.value = isProjectionModuleOpen('random')
@@ -179,6 +181,7 @@ export const useRandomStore = defineStore('random', () => {
       isDrawing: false,
       projecting: runtime.value.projecting,
       drawn: [...nextPool.drawn],
+      mode: mode,
     }
     draftName.value = ''
     rangeError.value = null

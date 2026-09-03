@@ -19,6 +19,8 @@ export interface RandomRuntimeState {
   projecting: boolean
   /** Histórico do modo ativo — espelhado na projeção. */
   drawn: string[]
+  /** Modo ativo (nomes → enquadramento retangular). */
+  mode: RandomDrawMode
 }
 
 /** Lista e histórico de um modo (nomes ou números). */
@@ -46,7 +48,7 @@ export interface RandomAnimationProfile {
 export const DEFAULT_RANDOM_DISPLAY_CONFIG: RandomDisplayConfig = {
   bgColor: '#000000',
   textColor: '#FFFFFF',
-  fontSizePc: 15,
+  fontSizePc: 8,
   textTransform: 'none',
   animationSpeed: 'normal',
 }
@@ -56,6 +58,7 @@ export const DEFAULT_RANDOM_RUNTIME: RandomRuntimeState = {
   isDrawing: false,
   projecting: false,
   drawn: [],
+  mode: 'names',
 }
 
 export const DEFAULT_RANDOM_MODE_POOL: RandomModePool = {
@@ -133,8 +136,8 @@ export const RANDOM_TEXT_PRESETS = [
 /** Limite de nomes gerados por intervalo numérico. */
 export const RANDOM_MAX_RANGE_SIZE = 100_000
 
-export const RANDOM_FONT_SIZE_MIN = 5
-export const RANDOM_FONT_SIZE_MAX = 30
+export const RANDOM_FONT_SIZE_MIN = 4
+export const RANDOM_FONT_SIZE_MAX = 14
 
 export function emptyModePool(): RandomModePool {
   return {

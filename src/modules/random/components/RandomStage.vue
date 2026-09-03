@@ -118,6 +118,9 @@ const showDrawnList = computed(
   () => props.projection && drawnList.value.length > 0,
 )
 
+const isNamesMode = computed(() => props.runtime.mode !== 'numbers')
+
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -174,22 +177,21 @@ const displayText = computed(() => {
 const displayStyle = computed(() => {
   const drawing = props.runtime.isDrawing
   const cfg = props.config
+  const names = props.runtime.mode !== 'numbers'
+  // Nomes usam escala menor: vw alto estourava nomes longos.
+  const sizeVw = names ? cfg.fontSizePc * 0.72 : cfg.fontSizePc
   return {
     color: drawing ? 'var(--ds-color-on-surface-variant)' : cfg.textColor,
     fontSize: props.projection
-      ? `${drawing ? cfg.fontSizePc * 0.82 : cfg.fontSizePc}vw`
+      ? `${drawing ? sizeVw * 0.82 : sizeVw}vw`
       : props.preview
-        ? `${Math.min(2.6, Math.max(1.35, cfg.fontSizePc * 0.28))}rem`
+        ? `${Math.min(2.2, Math.max(1.1, cfg.fontSizePc * 0.22))}rem`
         : undefined,
     textTransform: cfg.textTransform,
     textShadow: drawing ? 'none' : `0 10px 40px ${cfg.textColor}60`,
     opacity: props.runtime.currentDisplay || props.preview ? 1 : 0.55,
   }
 })
-
-const winnerLabelStyle = computed(() => ({
-  color: props.config.textColor,
-}))
 
 const projectionSurfaceStyle = computed(() => {
   if (!props.projection) return undefined
@@ -270,6 +272,7 @@ onUnmounted(() => {
     :class="{
       'random-stage--projection': projection,
       'random-stage--celebrate': celebrating,
+      'random-stage--names': isNamesMode,
     }"
     :style="projectionSurfaceStyle"
   >
@@ -344,7 +347,6 @@ onUnmounted(() => {
               v-if="hasResult"
               class="random-stage__winner-label"
               :class="{ 'random-stage__winner-label--pop': celebrating }"
-              :style="winnerLabelStyle"
             >
               {{ t('random.winner') }}
             </span>
@@ -515,6 +517,19 @@ onUnmounted(() => {
     width: min(56vmin, 32rem);
     height: min(56vmin, 32rem);
   }
+
+  /* Nomes: caixa cresce com o texto (sem teto em rem que força quebra). */
+  .random-stage--names & {
+    width: max-content;
+    height: max-content;
+    max-width: none;
+    min-width: min(10rem, 50vw);
+  }
+
+  .random-stage--projection.random-stage--names & {
+    max-width: none;
+    min-width: min(24vmin, 16rem);
+  }
 }
 
 .random-stage__orbit {
@@ -537,6 +552,10 @@ onUnmounted(() => {
       height: min(70vmin, 40rem);
       display: block;
     }
+
+    .random-stage--names & {
+      display: none;
+    }
   }
 
   &--inner {
@@ -550,6 +569,10 @@ onUnmounted(() => {
       width: min(62vmin, 36rem);
       height: min(62vmin, 36rem);
       display: block;
+    }
+
+    .random-stage--names & {
+      display: none;
     }
   }
 }
@@ -570,6 +593,19 @@ onUnmounted(() => {
   box-shadow:
     0 0 80px 20px color-mix(in srgb, var(--ds-color-primary) 15%, transparent),
     inset 0 0 40px color-mix(in srgb, var(--ds-color-primary) 10%, transparent);
+
+  .random-stage--names & {
+    width: max-content;
+    height: max-content;
+    max-width: none;
+    border-radius: 1.5rem 0 1.5rem 0;
+    overflow: visible;
+    padding: 2rem 3rem;
+  }
+
+  .random-stage--projection.random-stage--names & {
+    padding: 4vmin 6.5vmin;
+  }
 }
 
 .random-stage__particles {
@@ -695,14 +731,21 @@ onUnmounted(() => {
   justify-content: center;
   gap: 0.5rem;
   text-align: center;
+
+  .random-stage--names & {
+    width: max-content;
+    max-width: none;
+    padding: 0;
+  }
 }
 
 .random-stage__winner-label {
-  color: var(--ds-color-primary);
+  color: #f6c32a;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  text-shadow: 0 0 18px color-mix(in srgb, #f6c32a 45%, transparent);
 
   .random-stage--projection & {
     font-size: clamp(1rem, 2.8vmin, 1.85rem);
@@ -723,6 +766,12 @@ onUnmounted(() => {
   transition:
     color 300ms ease,
     opacity 200ms ease;
+
+  .random-stage--names & {
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
 
   &--drawing {
     opacity: 0.55;
@@ -1081,7 +1130,7 @@ onUnmounted(() => {
     padding: 0.5rem;
   }
 
-  .random-stage__focal {
+  .random-stage:not(.random-stage--names) .random-stage__focal {
     width: min(14rem, 45vw);
     height: min(14rem, 45vw);
   }

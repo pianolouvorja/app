@@ -1,5 +1,6 @@
 import {
   DEFAULT_RANDOM_RUNTIME,
+  type RandomDrawMode,
   type RandomRuntimeState,
 } from '../types/random'
 
@@ -17,6 +18,10 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string')
 }
 
+function asMode(value: unknown): RandomDrawMode {
+  return value === 'numbers' ? 'numbers' : 'names'
+}
+
 export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
   if (!raw || typeof raw !== 'object') {
     return { ...DEFAULT_RANDOM_RUNTIME, drawn: [] }
@@ -29,6 +34,7 @@ export function normalizeRandomRuntime(raw: unknown): RandomRuntimeState {
     isDrawing: source.isDrawing === true,
     projecting: source.projecting === true,
     drawn: asStringArray(source.drawn),
+    mode: asMode(source.mode),
   }
 }
 
