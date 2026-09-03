@@ -166,6 +166,25 @@ export default {
       syncNothingToApply: 'Nada que importar — los datos locales ya están actualizados.',
       syncInvalid: 'Archivo .louvorja inválido o de versión incompatible.',
       syncCancelled: 'Operación cancelada.',
+      legacyMediaTitle: 'Importación de medios',
+      legacyMediaHint:
+        'Localiza la carpeta del Louvor JA legado en Windows (config/capas, imagenes y musicas) y copia a esta app solo los archivos que aún no existen aquí.',
+      legacyMediaAction: 'Verificar e importar medios',
+      legacyMediaAnalyzing: 'Analizando…',
+      legacyMediaAnalyzingHint: 'Buscando la instalación legada y comparando archivos…',
+      legacyMediaImporting: 'Importando…',
+      legacyMediaProgress: 'Importando {current} de {total}',
+      legacyMediaScanSummary:
+        '{scanned} archivos encontrados · {missing} nuevos (~{mb} MB) · {present} ya presentes',
+      legacyMediaUpToDate: 'No hay medios nuevos para importar — todo ya está sincronizado.',
+      legacyMediaImported:
+        'Importación terminada: {imported} nuevos, {skipped} ya existían, {failed} fallos.',
+      legacyMediaReconciling: 'Actualizando Central de Medios…',
+      legacyMediaReconcileProgress: 'Verificando colección {current} de {total}',
+      legacyMediaReconciled: ' {marked} colección(es) marcadas como descargadas.',
+      legacyMediaNotFound:
+        'No se encontró la carpeta del Louvor JA legado. Revise Program Files (x86)\\Louvor JA\\config.',
+      legacyMediaError: 'No se pudieron importar los medios. Intente de nuevo.',
     },
 
     remote: {

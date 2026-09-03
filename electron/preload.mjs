@@ -122,6 +122,12 @@ contextBridge.exposeInMainWorld('louvorja', {
     detect: () => ipcRenderer.invoke('classo:detect'),
   },
 
+  legacyMedia: {
+    analyze: () => ipcRenderer.invoke('legacy-media:analyze'),
+    import: () => ipcRenderer.invoke('legacy-media:import'),
+    onImportProgress: (callback) => subscribe('legacy-media:import-progress', callback),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),

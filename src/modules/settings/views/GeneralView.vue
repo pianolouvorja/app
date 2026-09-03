@@ -26,6 +26,7 @@ import {
   encodeLouvorjaPackage,
   isValidLouvorjaContent,
 } from '@modules/sync/services/louvorja-package'
+import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
@@ -290,6 +291,9 @@ async function clearAllLocalData() {
         {{ t(syncStatus.messageKey) }}
       </p>
     </GlassCard>
+
+    <!-- Importação de mídia do Louvor JA legado (somente Windows) -->
+    <LegacyMediaImportCard />
 
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>

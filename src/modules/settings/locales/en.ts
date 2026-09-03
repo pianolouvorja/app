@@ -165,6 +165,25 @@ export default {
       syncNothingToApply: 'Nothing to import — local data is already up to date.',
       syncInvalid: 'Invalid or incompatible .louvorja file.',
       syncCancelled: 'Operation cancelled.',
+      legacyMediaTitle: 'Media import',
+      legacyMediaHint:
+        'Finds the legacy Louvor JA folder on Windows (config/capas, imagens and musicas) and copies into this app only files that are not here yet.',
+      legacyMediaAction: 'Check and import media',
+      legacyMediaAnalyzing: 'Analyzing…',
+      legacyMediaAnalyzingHint: 'Looking for the legacy install and comparing files…',
+      legacyMediaImporting: 'Importing…',
+      legacyMediaProgress: 'Importing {current} of {total}',
+      legacyMediaScanSummary:
+        '{scanned} files found · {missing} new (~{mb} MB) · {present} already present',
+      legacyMediaUpToDate: 'No new media to import — everything is already synced.',
+      legacyMediaImported:
+        'Import finished: {imported} new, {skipped} already present, {failed} failed.',
+      legacyMediaReconciling: 'Updating Media Center…',
+      legacyMediaReconcileProgress: 'Checking collection {current} of {total}',
+      legacyMediaReconciled: ' {marked} collection(s) marked as downloaded.',
+      legacyMediaNotFound:
+        'Legacy Louvor JA folder not found. Check Program Files (x86)\\Louvor JA\\config.',
+      legacyMediaError: 'Could not import media. Try again.',
     },
 
     remote: {
