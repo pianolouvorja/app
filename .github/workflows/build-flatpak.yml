@@ -24,9 +24,11 @@ jobs:
       # Atualiza URL e sha256 do tar.gz para a versão da tag atual.
       # O container Flatpak não traz `gh`; usa curl + sha256sum.
       # Aguarda o Release Linux publicar o tarball (corrida com workflow na mesma tag).
+      #
+      # Importante: NÃO envie Authorization em /releases/download/... —
+      # o Bearer do GITHUB_TOKEN quebra o redirect GitHub→S3 e devolve 404
+      # mesmo com o asset já publicado (falha da v1.24.0).
       - name: Update manifest version + sha256
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -36,7 +38,7 @@ jobs:
           URL="https://github.com/pianolouvorja/app/releases/download/v${VERSION}/${ASSET}"
           SHA=""
           for attempt in $(seq 1 45); do
-            if curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -o /tmp/src.tar.gz "$URL"; then
+            if curl -fsSL -o /tmp/src.tar.gz "$URL"; then
               SHA="$(sha256sum /tmp/src.tar.gz | awk '{print $1}')"
               break
             fi
