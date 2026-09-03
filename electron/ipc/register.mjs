@@ -1,6 +1,10 @@
 import { ipcMain } from 'electron'
 
 import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
+import {
+  analyzeLegacyMediaImport,
+  importLegacyMediaItems,
+} from '../legacy-media-import.mjs'
 
 import {
   checkMediaFile,
@@ -456,6 +460,71 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] classo:detect', error)
       return { found: false, root: null, media: { albums: [], totalBytes: 0 }, dataFiles: null }
+    }
+  })
+
+  // Importação de mídia do Louvor JA legado (Windows: config/capas|imagens|musicas)
+  ipcMain.handle('legacy-media:analyze', () => {
+    try {
+      const analysis = analyzeLegacyMediaImport({
+        registryConfigProbe: () => {
+          const root = probeClassoRegistry()
+          if (!root) return null
+          return root.replace(/[\\/]+$/, '') + '\\config'
+        },
+      })
+      // Não serializa absolutePath de todos os itens na resposta leve — só
+      // contagens. O import reanalisa no main.
+      return {
+        found: analysis.found,
+        configDir: analysis.configDir,
+        lang: analysis.lang,
+        scanned: analysis.scanned,
+        missing: analysis.missing,
+        present: analysis.present,
+        totalBytes: analysis.totalBytes,
+        missingBytes: analysis.missingBytes,
+        counts: analysis.counts,
+      }
+    } catch (error) {
+      console.error('[ipc] legacy-media:analyze', error)
+      return {
+        found: false,
+        configDir: null,
+        lang: 'pt',
+        scanned: 0,
+        missing: 0,
+        present: 0,
+        totalBytes: 0,
+        missingBytes: 0,
+        counts: { covers: 0, music: 0, slides: 0 },
+      }
+    }
+  })
+
+  ipcMain.handle('legacy-media:import', async (event) => {
+    try {
+      const analysis = analyzeLegacyMediaImport({
+        registryConfigProbe: () => {
+          const root = probeClassoRegistry()
+          if (!root) return null
+          return root.replace(/[\\/]+$/, '') + '\\config'
+        },
+      })
+      if (!analysis.found) {
+        return { ok: false, imported: 0, skipped: 0, failed: 0, total: 0, reason: 'not-found' }
+      }
+      if (analysis.itemsToImport.length === 0) {
+        return { ok: true, imported: 0, skipped: analysis.present, failed: 0, total: 0, reason: 'nothing-to-import' }
+      }
+
+      const result = importLegacyMediaItems(analysis.itemsToImport, (progress) => {
+        event.sender.send('legacy-media:import-progress', progress)
+      })
+      return { ok: true, ...result, reason: 'done' }
+    } catch (error) {
+      console.error('[ipc] legacy-media:import', error)
+      return { ok: false, imported: 0, skipped: 0, failed: 0, total: 0, reason: 'error' }
     }
   })
 
