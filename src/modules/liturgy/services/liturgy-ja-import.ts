@@ -7,6 +7,7 @@
  * IDs de música Delphi são compatíveis com a API louvorja.com.br.
  */
 import type { LiturgyItem, LiturgyItemType, LiturgyWeekday } from '../types/liturgy'
+import { decodeTextFileBytes } from '@shared/services/text-encoding'
 
 export type JaLiturgy = Partial<Record<LiturgyWeekday, LiturgyItem[]>>
 
@@ -154,9 +155,5 @@ export function parseJaLiturgy(raw: string): JaLiturgy {
  * novas/convertidas vêm em UTF-8. Tenta UTF-8 estrito, cai pro Latin-1.
  */
 export function decodeJaBytes(bytes: Uint8Array): string {
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-  } catch {
-    return new TextDecoder('windows-1252').decode(bytes)
-  }
+  return decodeTextFileBytes(bytes)
 }
