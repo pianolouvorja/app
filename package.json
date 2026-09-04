@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "host": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
-    "build-only": "vite build",
+    "build-only": "vite build --base=./",
     "type-check": "vue-tsc --build",
     "test": "vitest run",
     "git:tag": "git tag -a \"v$npm_package_version\" -m \"Versão $npm_package_version\" && git push origin \"v$npm_package_version\"",
