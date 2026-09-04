@@ -161,10 +161,26 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$TAG"
-          mapfile -t assets < <(find dist-electron -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pacman' -o -name '*.tar.gz' -o -name 'SHA256SUMS-*' \) -print)
+          mapfile -t assets < <(find dist-electron -maxdepth 1 -type f \( \
+            -name '*.AppImage' -o \
+            -name '*.AppImage.blockmap' -o \
+            -name '*.deb' -o \
+            -name '*.rpm' -o \
+            -name '*.pacman' -o \
+            -name '*.tar.gz' -o \
+            -name 'latest*.yml' -o \
+            -name 'SHA256SUMS-*' \
+          \) -print)
           test "${#assets[@]}" -ge 10
+          # Garante que o YAML do updater (sha/size) corresponde aos AppImages desta build.
+          if ! printf '%s\n' "${assets[@]}" | grep -qE 'latest-linux(-arm64)?\.yml$'; then
+            echo "Faltam latest-linux.yml / latest-linux-arm64.yml (metadados do auto-update)" >&2
+            exit 1
+          fi
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
           gh release upload "$TAG" "${assets[@]}" --clobber
+          echo "Publicados:"
+          printf '  %s\n' "${assets[@]}"
 
   downstream:
     name: Trigger downstream package updates
@@ -212,7 +228,9 @@ jobs:
           gh release view "$TAG" --json assets --jq '.assets[].name' | tee /tmp/assets
           test "$(grep -cE '\.(AppImage|deb|rpm|pacman|tar\.gz)$' /tmp/assets)" -ge 10
           test "$(grep -c 'SHA256SUMS-' /tmp/assets)" -eq 2
-          echo "Release $TAG valid: x64 + arm64 Linux assets present."
+          test "$(grep -cE '^latest-linux\.yml$' /tmp/assets)" -eq 1
+          test "$(grep -cE '^latest-linux-arm64\.yml$' /tmp/assets)" -eq 1
+          echo "Release $TAG valid: x64 + arm64 Linux assets + updater YAML present."
 
   # Required branch protection target: this job is the release health check.
   # External stores must be monitored separately; they cannot block GitHub Release.
