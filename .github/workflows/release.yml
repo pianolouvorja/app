@@ -161,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$TAG"
-          mapfile -t assets < <(find dist-electron -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pacman' -o -name '*.tar.gz' -o -name 'SHA256SUMS-*' \) -print)
+          mapfile -t assets < <(find dist-electron -maxdepth 1 -type f \( -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.pacman' -o -name '*.tar.gz' -o -name '*.blockmap' -o -name 'latest*.yml' -o -name 'SHA256SUMS-*' \) -print)
           test "${#assets[@]}" -ge 10
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --generate-notes
           gh release upload "$TAG" "${assets[@]}" --clobber
@@ -211,6 +211,8 @@ jobs:
           set -euo pipefail
           gh release view "$TAG" --json assets --jq '.assets[].name' | tee /tmp/assets
           test "$(grep -cE '\.(AppImage|deb|rpm|pacman|tar\.gz)$' /tmp/assets)" -ge 10
+          test "$(grep -cE '\.blockmap$' /tmp/assets)" -ge 1
+          test "$(grep -c 'latest-linux' /tmp/assets)" -ge 1
           test "$(grep -c 'SHA256SUMS-' /tmp/assets)" -eq 2
           echo "Release $TAG valid: x64 + arm64 Linux assets present."
 
