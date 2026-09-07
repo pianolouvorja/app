@@ -23,8 +23,8 @@ const CATEGORY_ORDER: Record<string, number> = {
   hymnals: 1,
   Hinários: 1,
   'CDs Oficiais/Ano': 2,
-  Infantis: 98,
-  Doxologia: 99,
+  Infantis: 3,
+  Doxologia: 4,
 }
 
 /**
