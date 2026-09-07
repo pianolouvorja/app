@@ -144,6 +144,26 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
     }
   }
 
+  // Ordem de exibição na Central — mesma hierarquia da biblioteca local:
+  // hinários primeiro, CDs oficiais, Infantis/Doxologia logo após, demais coletâneas em seguida.
+  const CATEGORY_ORDER: Record<string, number> = {
+    Hinários: 1,
+    hymnals: 1,
+    'CDs Oficiais/Ano': 2,
+    Infantis: 3,
+    Doxologia: 4,
+    Adoradores: 10,
+    Cantores: 11,
+    'Celebra SP': 12,
+    Diversas: 13,
+  }
+  result.sort((a, b) => {
+    const orderA = CATEGORY_ORDER[String(a.id)] ?? CATEGORY_ORDER[a.name] ?? 50
+    const orderB = CATEGORY_ORDER[String(b.id)] ?? CATEGORY_ORDER[b.name] ?? 50
+    if (orderA !== orderB) return orderA - orderB
+    return a.name.localeCompare(b.name)
+  })
+
   return result
 }
 
