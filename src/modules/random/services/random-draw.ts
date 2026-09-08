@@ -15,7 +15,9 @@ export function parseNameListFromText(text: string): string[] {
   const result: string[] = []
 
   for (const line of text.split(/\r?\n/)) {
-    const name = line.trim()
+    // NFC: acentos decompostos (colagem/Android/ANSI) quebram uppercase na TV
+    // e permitem duplicatas invisíveis (José NFC ≠ José NFD).
+    const name = line.trim().normalize('NFC')
     if (!name || seen.has(name)) continue
     seen.add(name)
     result.push(name)
@@ -33,7 +35,7 @@ export function mergeUniqueNames(
   let addedCount = 0
 
   for (const name of incoming) {
-    const trimmed = name.trim()
+    const trimmed = name.trim().normalize('NFC')
     if (!trimmed || seen.has(trimmed)) continue
     seen.add(trimmed)
     next.push(trimmed)

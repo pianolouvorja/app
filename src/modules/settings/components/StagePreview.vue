@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { resolveBackgroundImage, type StageSettings } from '../types/stage-settings'
+import { resolveBackgroundImage, stageFlexAlign, type StageSettings } from '../types/stage-settings'
 
 const props = defineProps<{
   settings: StageSettings
@@ -33,18 +33,7 @@ const containerStyle = computed(() => {
       : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
-    alignItems:
-      s.textVerticalAlign === 'top'
-        ? 'flex-start'
-        : s.textVerticalAlign === 'bottom'
-          ? 'flex-end'
-          : 'center',
-    justifyContent:
-      s.textAlign === 'left'
-        ? 'flex-start'
-        : s.textAlign === 'right'
-          ? 'flex-end'
-          : 'center',
+    ...stageFlexAlign(s),
   } as Record<string, string>
 })
 
@@ -110,7 +99,8 @@ const footerStyle = computed(() => ({
 .stage-preview {
   position: relative;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  width: 100%;
   container-type: inline-size;
   aspect-ratio: 16 / 9;
   overflow: hidden;

@@ -4,5 +4,10 @@ export const APP_VERSION = `v${__APP_VERSION__}`
 /** Nome do produto no Electron (productName / título da janela). */
 export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 
-/** Pasta userData no ambiente do cliente. */
+/**
+ * Nome da pasta de dados.
+ * Windows empacotado: %ProgramData%\\LouvorJA-PIANO (compartilhado).
+ * Linux empacotado: /var/lib/LouvorJA-PIANO (compartilhado).
+ * macOS empacotado: /Users/Shared/LouvorJA-PIANO (compartilhado).
+ */
 export const APP_USER_DATA_DIR = 'LouvorJA-PIANO'

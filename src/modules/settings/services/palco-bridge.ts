@@ -21,7 +21,9 @@ import type { OutputModule } from './output-registry'
 import { planForSlot, OWNER_TO_PALCO_MODULE } from './output-plan'
 import { getPalcoRoute } from './palco-routing'
 import type { ProjectionInput } from './palco-session'
-import { readEffectiveStageSettings } from './stage-settings-runtime'
+import {
+  subscribeStageSettings,
+} from './stage-settings-runtime'
 import {
   MEDIA_RUNTIME_CHANNEL,
   MEDIA_RUNTIME_STORAGE_KEY,
@@ -41,6 +43,7 @@ import {
   normalizeRandomRuntime,
   type RandomRuntimeState,
 } from '../../random/services/random-runtime'
+import { DEFAULT_RANDOM_RUNTIME } from '../../random/types/random'
 import {
   TIMER_RUNTIME_CHANNEL,
   TIMER_RUNTIME_STORAGE_KEY,
@@ -63,7 +66,7 @@ let owner: Owner = null
 const runtimes = {
   media: { ...DEFAULT_MEDIA_PROJECTION },
   bible: { active: false, text: '', reference: '', projecting: false },
-  random: { currentDisplay: '', isDrawing: false, projecting: false },
+  random: { ...DEFAULT_RANDOM_RUNTIME },
   timer: null as TimerRuntimeState | null,
   countdown: null as CountdownRuntimeState | null,
 }
@@ -659,6 +662,15 @@ export function startPalcoBridge() {
     )
   }
   window.setInterval(syncAudio, 3000)
+
+  // Personalização do Palco em tempo real: reenvia a projeção ativa na TV
+  // (ex.: tipografia própria da Bíblia) sem precisar trocar o versículo.
+  unwatchers.push(
+    subscribeStageSettings(() => {
+      void renderAllSlots()
+    }),
+  )
+
   void projectOwner()
 }
 

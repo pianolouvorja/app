@@ -106,24 +106,33 @@ onMounted(() => {
   maximize()
   setPlaylistOpen(true)
   syncProjectionFlag()
-  window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('keydown', onGlobalKeydown, true)
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('media-player-open')
-  window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('keydown', onGlobalKeydown, true)
   // Dock / back / qualquer saída da rota: mesmo efeito do botão minimizar
   if (hasSession.value) {
     minimize()
   }
 })
 
-/** ESC abre a confirmação de fechar (nunca fecha direto). */
+/** ESC fecha o player (←/→ ficam em useMediaPlayerHotkeys no App). */
 function onGlobalKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
   const target = event.target as HTMLElement | null
-  // Não sequestrar ESC de inputs/dialogos abertos (ex.: confirmação já aberta)
-  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
+  if (target?.isContentEditable || target?.tagName === 'TEXTAREA') return
+  if (target?.tagName === 'INPUT') {
+    const type = ((target as HTMLInputElement).type || 'text').toLowerCase()
+    if (
+      !['button', 'checkbox', 'radio', 'range', 'file', 'reset', 'submit', 'color', 'hidden'].includes(
+        type,
+      )
+    ) {
+      return
+    }
+  }
   if (closeConfirmOpen.value) return
   event.preventDefault()
   requestClose()
@@ -173,6 +182,7 @@ async function onToggleFullscreen() {
     <section
       ref="stageRoot"
       class="media-window"
+      tabindex="-1"
     >
     <header class="media-window__toolbar">
       <button
@@ -229,6 +239,9 @@ async function onToggleFullscreen() {
     >
       <div class="media-window__stage">
         <div class="media-window__stage-palette">
+          <p class="media-window__hotkey-hint">
+            {{ t('media.projectionHotkeyHint') }}
+          </p>
           <StagePaletteButton scope="hymns" />
         </div>
         <MediaSlideStage
@@ -384,6 +397,7 @@ async function onToggleFullscreen() {
   display: flex;
   flex-direction: column;
   flex: 1;
+  outline: none;
   min-height: 0;
   border-radius: var(--ds-radius-lg, 1rem 0 1rem 0);
   overflow: hidden;
@@ -453,6 +467,27 @@ async function onToggleFullscreen() {
   top: 0.75rem;
   right: 0.75rem;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: calc(100% - 5.5rem);
+}
+
+.media-window__hotkey-hint {
+  margin: 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: 10px;
+  background: rgb(10 14 26 / 0.72);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 .media-window__playlist {

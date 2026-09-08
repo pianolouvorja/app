@@ -1,0 +1,33 @@
+name: louvorja-piano
+version: 0.0.0
+summary: LouvorJA - PIANO — aplicativo desktop para gerenciamento de culto
+description: |
+  LouvorJA - PIANO é um aplicativo desktop para gerenciamento de culto.
+  Com hinos, coletâneas, projeção de slides, e integração com dispositivos de palco.
+grade: stable
+confinement: strict
+base: core24
+plugs:
+  - desktop
+  - desktop-legacy
+  - wayland
+  - x11
+  - opengl
+  - audio-playback
+  - network
+  - home
+  - removable-media
+apps:
+  louvorja-piano:
+    command: louvorja-piano --no-sandbox
+    extensions: [gnome]
+    plugs:
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+      - audio-playback
+      - network
+      - home
+      - removable-media

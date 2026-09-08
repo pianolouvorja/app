@@ -7,6 +7,7 @@ import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
 import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
 import LiturgyWebProjectionView from '@modules/liturgy/views/LiturgyWebProjectionView.vue'
 import MediaProjectionView from '@modules/media/views/MediaProjectionView.vue'
+import MediaReturnProjectionView from '@modules/media/views/MediaReturnProjectionView.vue'
 import RandomProjectionView from '@modules/random/views/RandomProjectionView.vue'
 import TimerProjectionView from '@modules/timer/views/TimerProjectionView.vue'
 
@@ -14,6 +15,11 @@ const route = useRoute()
 
 const moduleId = computed(() => {
   const value = route.query.module
+  return typeof value === 'string' ? value : ''
+})
+
+const layout = computed(() => {
+  const value = route.query.layout
   return typeof value === 'string' ? value : ''
 })
 </script>
@@ -24,6 +30,7 @@ const moduleId = computed(() => {
   <CountdownProjectionView v-else-if="moduleId === 'countdown'" />
   <RandomProjectionView v-else-if="moduleId === 'random'" />
   <BibleProjectionView v-else-if="moduleId === 'bible'" />
+  <MediaReturnProjectionView v-else-if="moduleId === 'media' && layout === 'return'" />
   <MediaProjectionView v-else-if="moduleId === 'media'" />
   <LiturgyWebProjectionView v-else-if="moduleId === 'liturgy-web'" />
   <div

@@ -34,6 +34,8 @@ export function useProjectionSettings() {
     moveMonitorInArrangement: store.moveMonitorInArrangement,
     resetMonitorArrangement: store.resetMonitorArrangement,
     toggleExtendedMonitor: store.toggleExtendedMonitor,
+    setOpenReturnScreen: store.setOpenReturnScreen,
+    selectReturnDisplay: store.selectReturnDisplay,
     setOpenFullscreenOnPrimary: store.setOpenFullscreenOnPrimary,
     setDisablePrimaryWhenExtended: store.setDisablePrimaryWhenExtended,
     setAutoMinimizePlayer: store.setAutoMinimizePlayer,

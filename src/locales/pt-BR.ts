@@ -18,6 +18,7 @@ export default {
     loading: 'Detectando monitores…',
     empty: 'Nenhum monitor estendido encontrado.',
     primary: 'Principal',
+    returnScreen: 'Tela retorno',
     selectedCount: '{count} selecionada(s)',
   },
   popupCount: {

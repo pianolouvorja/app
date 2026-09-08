@@ -22,6 +22,7 @@ export type MonitorTargetOption = {
   resolutionLabel: string
   isPrimary: boolean
   isSelected: boolean
+  isReturn: boolean
 }
 
 export type UseMonitorTargetSelectOptions = {
@@ -53,6 +54,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
 
   const displays = ref<SystemDisplay[]>([])
   const selectedIds = ref<number[]>([])
+  const returnDisplayId = ref<number | null>(null)
   const loading = ref(false)
   const identifying = ref(false)
   const open = ref(false)
@@ -62,25 +64,38 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   let unsubscribeTargets: (() => void) | undefined
   let unsubscribeDisplays: (() => void) | undefined
 
+  function rememberReturnDisplay(settings = loadProjectionSettings()) {
+    returnDisplayId.value =
+      settings.openReturnScreen && settings.returnDisplayId != null
+        ? settings.returnDisplayId
+        : null
+  }
+
   const optionsList = computed<MonitorTargetOption[]>(() => {
     const all = displays.value
     const source = extendedOnly
       ? listExtendedDisplays(all)
       : all
+    const visibleIds = new Set(source.map((display) => display.id))
+    if (returnDisplayId.value != null) visibleIds.add(returnDisplayId.value)
 
-    return source.map((display) => {
-      // Mesmo número do overlay "Identificar monitores" (índice na lista completa).
-      const globalIndex = all.findIndex((item) => item.id === display.id)
-      const index = globalIndex >= 0 ? globalIndex + 1 : 0
-      return {
-        id: display.id,
-        index,
-        label: `Monitor ${index}`,
-        resolutionLabel: formatDisplayResolution(display),
-        isPrimary: display.isPrimary,
-        isSelected: selectedIds.value.includes(display.id),
-      }
-    })
+    return all
+      .filter((display) => visibleIds.has(display.id))
+      .map((display) => {
+        // Mesmo número do overlay "Identificar monitores" (índice na lista completa).
+        const globalIndex = all.findIndex((item) => item.id === display.id)
+        const index = globalIndex >= 0 ? globalIndex + 1 : 0
+        const isReturn = returnDisplayId.value === display.id
+        return {
+          id: display.id,
+          index,
+          label: `Monitor ${index}`,
+          resolutionLabel: formatDisplayResolution(display),
+          isPrimary: display.isPrimary,
+          isSelected: selectedIds.value.includes(display.id),
+          isReturn,
+        }
+      })
   })
 
   const selectedCount = computed(() => selectedIds.value.length)
@@ -118,9 +133,13 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
   }
 
   function allowedDisplayIds(nextDisplays: SystemDisplay[]): number[] {
-    return (extendedOnly ? listExtendedDisplays(nextDisplays) : nextDisplays).map(
+    const ids = (extendedOnly ? listExtendedDisplays(nextDisplays) : nextDisplays).map(
       (item) => item.id,
     )
+    if (returnDisplayId.value != null && !ids.includes(returnDisplayId.value)) {
+      ids.push(returnDisplayId.value)
+    }
+    return ids
   }
 
   function applySelectionFromSettings(nextDisplays: SystemDisplay[]) {
@@ -128,19 +147,25 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
     let settings = loadProjectionSettings()
     settings = reconcileTargetDisplays(settings, extendedIds)
     // Nunca persiste/seleciona o monitor principal
+    const reservedReturn =
+      settings.openReturnScreen && settings.returnDisplayId != null
+        ? settings.returnDisplayId
+        : null
     settings = {
       ...settings,
-      targetDisplayIds: settings.targetDisplayIds.filter((id) =>
-        extendedIds.includes(id),
+      targetDisplayIds: settings.targetDisplayIds.filter(
+        (id) => extendedIds.includes(id) || id === reservedReturn,
       ),
     }
     saveProjectionSettings(settings)
+    rememberReturnDisplay(settings)
     selectedIds.value = [...settings.targetDisplayIds]
   }
 
   function applySelectionFromModel(ids: number[] | undefined, nextDisplays: SystemDisplay[]) {
     const allowed = new Set(allowedDisplayIds(nextDisplays))
     if (ids && ids.length > 0) {
+      rememberReturnDisplay()
       selectedIds.value = ids.filter((id) => allowed.has(id))
       return
     }
@@ -148,6 +173,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       applySelectionFromSettings(nextDisplays)
       return
     }
+    rememberReturnDisplay()
     selectedIds.value = [...allowed]
   }
 
@@ -168,11 +194,13 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       if (persist && displays.value.length) {
         const settings = loadProjectionSettings()
         const extendedIds = listExtendedDisplays(displays.value).map((item) => item.id)
-        saveProjectionSettings({
+        const nextSettings = {
           ...settings,
           targetDisplayIds: next,
           declinedDisplayIds: extendedIds.filter((id) => !next.includes(id)),
-        })
+        }
+        saveProjectionSettings(nextSettings)
+        rememberReturnDisplay(nextSettings)
       }
       emitUpdate([...next])
     } finally {
@@ -186,6 +214,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       const next = await listSystemDisplays()
       displays.value = next
       applySelectionFromModel(readModel(options.modelValue), next)
+      rememberReturnDisplay()
     } finally {
       loading.value = false
     }
@@ -199,11 +228,13 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       const settings = loadProjectionSettings()
       const extendedIds = listExtendedDisplays(displays.value).map((item) => item.id)
       const declined = extendedIds.filter((id) => !nextIds.includes(id))
-      saveProjectionSettings({
+      const nextSettings = {
         ...settings,
         targetDisplayIds: nextIds,
         declinedDisplayIds: declined,
-      })
+      }
+      saveProjectionSettings(nextSettings)
+      rememberReturnDisplay(nextSettings)
     }
     emitUpdate([...selectedIds.value])
     void syncToMain([...selectedIds.value])

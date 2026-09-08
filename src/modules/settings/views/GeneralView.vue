@@ -10,7 +10,7 @@ import {
   removeBrowserItemsByPrefix,
 } from '@shared/services/browser-storage'
 import { BROWSER_STORAGE_KEYS, USER_PREFERENCE_KEYS } from '@shared/constants/storage-keys'
-import { APP_USER_DATA_DIR, APP_VERSION } from '@shared/constants/app'
+import { APP_VERSION } from '@shared/constants/app'
 import { useUpdateChecker } from '@shared/composables/useUpdateChecker'
 import { getUserPreference, setUserPreference } from '@shared/services/user-preferences'
 import {
@@ -26,6 +26,7 @@ import {
   encodeLouvorjaPackage,
   isValidLouvorjaContent,
 } from '@modules/sync/services/louvorja-package'
+import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
@@ -291,6 +292,9 @@ async function clearAllLocalData() {
       </p>
     </GlassCard>
 
+    <!-- Importação de mídia do Louvor JA legado (somente Windows) -->
+    <LegacyMediaImportCard />
+
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>
       <div class="general-settings__accent general-settings__accent--danger" aria-hidden="true" />
@@ -305,7 +309,7 @@ async function clearAllLocalData() {
       </div>
 
       <p class="general-settings__hint">
-        {{ t('settings.general.dataHint', { product: APP_USER_DATA_DIR }) }}
+        {{ t('settings.general.dataHint') }}
       </p>
 
       <button

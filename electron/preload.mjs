@@ -122,6 +122,15 @@ contextBridge.exposeInMainWorld('louvorja', {
     detect: () => ipcRenderer.invoke('classo:detect'),
   },
 
+  legacyMedia: {
+    analyze: (selectedPath) =>
+      ipcRenderer.invoke('legacy-media:analyze', selectedPath ?? ''),
+    import: (selectedPath) =>
+      ipcRenderer.invoke('legacy-media:import', selectedPath ?? ''),
+    pickFolder: () => ipcRenderer.invoke('legacy-media:pick-folder'),
+    onImportProgress: (callback) => subscribe('legacy-media:import-progress', callback),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),
@@ -155,6 +164,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     onPlaybackSync: (callback) => subscribe('projection:playback-sync', callback),
     // ESC pressionado na janela de projeção → operador decide no confirm
     onCloseRequested: (callback) => subscribe('projection:close-requested', callback),
+    // ←/→ na projeção de mídia → operador avança/volta slide
+    onMediaNavigate: (callback) => subscribe('projection:media-navigate', callback),
     remotePlay: () => ipcRenderer.invoke('projection:remote-play'),
     remotePause: () => ipcRenderer.invoke('projection:remote-pause'),
     remoteSeek: (seconds) => ipcRenderer.invoke('projection:remote-seek', seconds),

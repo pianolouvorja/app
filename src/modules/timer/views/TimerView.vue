@@ -130,6 +130,7 @@ const effectiveConfig = computed(() => {
             <TimerPreview
               :config="effectiveConfig"
               :runtime="runtime"
+              :stage="stage"
               preview
             />
           </div>

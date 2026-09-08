@@ -426,6 +426,7 @@ const rowHovered = ref(false)
             :has-instrumental="Boolean(hasInstrumental)"
             :busy="Boolean(musicBusy || item.done)"
             :row-hovered="rowHovered"
+            :allow-offline-remove="false"
             variant="contained"
             @sung="emit('musicSung')"
             @instrumental="emit('musicInstrumental')"

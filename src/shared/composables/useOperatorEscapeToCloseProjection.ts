@@ -84,12 +84,21 @@ export function useOperatorEscapeToCloseProjection(isProjectionWindow: () => boo
  * Fecha as popups de projeção do LADO DO RENDERER (estado da UI: isProjecting,
  * botão Projetar, watch). Chamado quando o main avisa que as popups foram
  * fechadas (confirm do operador ou fim da projeção pelo main).
+ *
+ * Também encerra o áudio/sessão da Central de Mídia: o ESC do operador
+ * fechava só as janelas e o player continuava tocando.
  */
 export function closeLocalProjectionState(): void {
   try {
-    // import dinâmico: evita dependência cícula no boot do App.vue
+    // import dinâmico: evita dependência cíclica no boot do App.vue
     void import('@shared/composables/useProjectionWindow').then((m) => {
       m.closeProjectionModule()
+    })
+    void import('@modules/media/stores/useMediaStore').then(({ useMediaStore }) => {
+      const media = useMediaStore()
+      if (media.session || media.isPlaying || media.isProjecting) {
+        media.close()
+      }
     })
   } catch {
     /* ignore */

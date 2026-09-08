@@ -1,12 +1,12 @@
-# Build Linux AppImage — gera instalador x64 + latest-linux.yml
-# Roda manualmente (workflow_dispatch) ou em push de tags v*
+# Build Linux AppImage (backup / dispatch manual).
+# Em tags v*, o publisher canônico é "Release Linux" (release.yml): ele gera
+# AppImage + latest-linux*.yml na mesma build. Este workflow NÃO deve usar
+# --publish always em tags — senão sobe um YAML com sha de OUTRA build e o
+# Release Linux sobrescreve só o AppImage → auto-update falha no checksum.
 name: Build Linux
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
@@ -26,15 +26,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite + Electron AppImage (x64) + publish
-        run: npm run electron:build -- --linux AppImage --publish always
+      - name: Build Vite + Electron AppImage (x64)
+        run: npm run electron:build -- --linux AppImage --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload AppImage (artifact backup)
+      - name: Upload AppImage + updater metadata (artifact backup)
         uses: actions/upload-artifact@v4
         with:
           name: LouvorJA-PIANO-Linux-x64-AppImage
-          path: dist-electron/*.AppImage
+          path: |
+            dist-electron/*.AppImage
+            dist-electron/*.AppImage.blockmap
+            dist-electron/latest*.yml
           if-no-files-found: warn
           retention-days: 30

@@ -9,6 +9,8 @@ export type MediaOpenParams = {
   minimized?: boolean
   /** Quando true, abre projeção nas telas configuradas após carregar. */
   project?: boolean
+  /** Avanço automático da fila: não zera queue/queueIndex no open(). */
+  keepQueue?: boolean
 }
 
 export type MediaLyricSlide = {
@@ -73,6 +75,10 @@ export type MediaProjectionRuntime = {
   isCover: boolean
   slideIndex: number
   slideCount: number
+  nextLyric: string
+  nextIsCover: boolean
+  progressRatio: number
+  slideProgressRatio: number
 }
 
 export type MediaOpenResult =
@@ -89,4 +95,8 @@ export const DEFAULT_MEDIA_PROJECTION: MediaProjectionRuntime = {
   isCover: false,
   slideIndex: 0,
   slideCount: 0,
+  nextLyric: '',
+  nextIsCover: false,
+  progressRatio: 0,
+  slideProgressRatio: 0,
 }

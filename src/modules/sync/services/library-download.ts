@@ -37,12 +37,23 @@ type CollectResult = {
   found: boolean
 }
 
+type CollectMediaOptions = {
+  /**
+   * Só faixa vocal (`url_music`) + capa.
+   * Usado na reconciliação pós-import legado: o Delphi costuma não ter
+   * todos os instrumentais/slides do catálogo atual.
+   */
+  primaryOnly?: boolean
+}
+
 async function collectMediaForAlbum(
   album: LibraryAlbum,
   onSongFetched?: (fetched: number, total: number) => void,
+  options: CollectMediaOptions = {},
 ): Promise<CollectResult> {
   const musicFiles = new Set<string>()
   const slideFiles = new Set<string>()
+  const primaryOnly = Boolean(options.primaryOnly)
 
   let songRefs: Array<{ id_music: number | string }> = []
 
@@ -72,11 +83,13 @@ async function collectMediaForAlbum(
     if (!musicData) continue
 
     if (musicData.url_music) musicFiles.add(musicData.url_music)
-    if (musicData.url_instrumental_music) {
-      musicFiles.add(musicData.url_instrumental_music)
+    if (!primaryOnly) {
+      if (musicData.url_instrumental_music) {
+        musicFiles.add(musicData.url_instrumental_music)
+      }
+      if (musicData.url_image) slideFiles.add(musicData.url_image)
+      collectLyricImageUrls(musicData).forEach((url) => slideFiles.add(url))
     }
-    if (musicData.url_image) slideFiles.add(musicData.url_image)
-    collectLyricImageUrls(musicData).forEach((url) => slideFiles.add(url))
   }
 
   const items: MediaDownloadItem[] = [
@@ -279,6 +292,61 @@ export async function downloadAlbumMedia(
 
   await markAlbumAsDownloaded(album.id)
   return { status: 'downloaded', failureReason: null, totalErrors }
+}
+
+/**
+ * Após importação local (ex.: Louvor JA legado), marca como baixadas as
+ * coletâneas cujas faixas principais já existem no workspace — a Central
+ * de Mídia só olha o manifesto `downloadedAlbums`, não o disco.
+ *
+ * Critério alinhado ao download oficial (que marca mesmo com falhas
+ * parciais): exige todas as `url_music`; capa/instrumental/slides não
+ * bloqueiam.
+ */
+export async function reconcileAlbumsAgainstLocalMedia(
+  onProgress?: (current: number, total: number, albumName: string) => void,
+): Promise<{ checked: number; marked: number }> {
+  const bridge = getDesktopBridge()
+  if (!bridge) return { checked: 0, marked: 0 }
+
+  const { loadLibraryCategories } = await import('./library-catalog')
+  const categories = await loadLibraryCategories()
+  const albums = categories.flatMap((category) => category.albums)
+
+  let marked = 0
+  let checked = 0
+
+  for (const album of albums) {
+    checked += 1
+    onProgress?.(checked, albums.length, album.name)
+
+    if (album.status === 'downloaded') continue
+
+    const { items, found } = await collectMediaForAlbum(album, undefined, {
+      primaryOnly: true,
+    })
+    if (!found) continue
+
+    const musicItems = items.filter((item) => item.type === 'music')
+    if (musicItems.length === 0) continue
+
+    let complete = true
+    for (const media of musicItems) {
+      const relativePath = toRelativeMediaPath(media.url)
+      const exists = await bridge.media.check(media.type, relativePath)
+      if (!exists) {
+        complete = false
+        break
+      }
+    }
+
+    if (complete) {
+      await markAlbumAsDownloaded(album.id)
+      marked += 1
+    }
+  }
+
+  return { checked, marked }
 }
 
 /** Remove arquivos de áudio e slides da coletânea (capas permanecem). */

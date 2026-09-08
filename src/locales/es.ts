@@ -18,6 +18,7 @@ export default {
     loading: 'Detectando monitores…',
     empty: 'No se encontraron monitores extendidos.',
     primary: 'Principal',
+    returnScreen: 'Pantalla de retorno',
     selectedCount: '{count} seleccionadas',
   },
   popupCount: {

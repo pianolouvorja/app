@@ -314,19 +314,6 @@ function viewKey(viewRoute: typeof route) {
       <div class="app-shell__header-end">
         <UiZoomControls />
         <div class="app-shell__projection">
-          <button
-            v-if="hasOpenScreens"
-            type="button"
-            class="app-shell__project-btn"
-            :aria-label="t('popupControls.closeAll')"
-            :title="t('popupControls.closeAll')"
-            @click="onCloseAllScreens"
-          >
-            <i
-              class="ti ti-square-x"
-              aria-hidden="true"
-            />
-          </button>
           <MonitorTargetSelect
             class="app-shell__screens"
             show-label
@@ -344,6 +331,19 @@ function viewKey(viewRoute: typeof route) {
             <i
               class="ti"
               :class="isProjecting ? 'ti-player-stop' : 'ti-presentation'"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            v-if="hasOpenScreens"
+            type="button"
+            class="app-shell__project-btn"
+            :aria-label="t('popupControls.closeAll')"
+            :title="t('popupControls.closeAll')"
+            @click="onCloseAllScreens"
+          >
+            <i
+              class="ti ti-square-x"
               aria-hidden="true"
             />
           </button>

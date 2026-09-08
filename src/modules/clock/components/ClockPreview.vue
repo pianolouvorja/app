@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
+import type { StageSettings } from '../../settings/types/stage-settings'
 import type { ClockConfig } from '../types/clock'
 import { useClockDisplay } from '../composables/useClock'
 
 const props = withDefaults(
   defineProps<{
     config: ClockConfig
+    /** Personalização Palco do escopo clock — mesma fonte da projeção. */
+    stage?: StageSettings
     preview?: boolean
   }>(),
   {
@@ -29,6 +32,10 @@ const {
 } = useClockDisplay(() => props.config)
 
 const digitalFontSize = computed(() => {
+  const st = props.stage
+  if (st && sizeWidth.value > 0) {
+    return Math.max(16, (st.fontSize / 1920) * sizeWidth.value)
+  }
   const v = Math.min(sizeWidth.value, sizeHeight.value)
   const ratio = config.value.showSeconds ? 0.35 : 0.4
   return Math.max(v * ratio, 20)
@@ -36,13 +43,66 @@ const digitalFontSize = computed(() => {
 
 const analogSize = computed(() => {
   const v = Math.min(sizeWidth.value, sizeHeight.value)
-  return Math.max(v * 0.8, 100)
+  const base = Math.max(v * 0.8, 100)
+  const st = props.stage
+  if (!st || sizeWidth.value <= 0) return base
+  // Escala o analógico junto com o tamanho de fonte do Palco (96 = neutro).
+  return Math.max(80, base * (st.fontSize / 96))
+})
+
+const accentColor = computed(() => {
+  if (props.stage) return props.stage.textColor
+  if (props.preview) return 'var(--ds-color-on-surface)'
+  return config.value.textColor
+})
+
+const digitalStyle = computed(() => {
+  const st = props.stage
+  const color = accentColor.value
+  return {
+    fontSize: `${digitalFontSize.value}px`,
+    fontWeight: st ? String(st.fontWeight) : '900',
+    color,
+    textAlign: st?.textAlign ?? 'center',
+    textShadow:
+      props.preview && !st
+        ? 'none'
+        : st?.textShadow
+          ? `0 0 ${st.shadowBlur}vh rgba(0,0,0,${st.shadowIntensity})`
+          : st
+            ? 'none'
+            : `0 4px 30px ${color}40`,
+    background: st?.textBox ? `rgba(0,0,0,${st.boxOpacity})` : 'transparent',
+    border: st?.textBox && st.boxBorder ? '1px solid rgba(255,255,255,0.25)' : 'none',
+    borderRadius: st?.textBox ? '1.4cqw 0 1.4cqw 0' : '0',
+    padding: st?.textBox ? '2.5vmin 1.8vmin' : '0',
+  } as Record<string, string>
 })
 
 const surfaceStyle = computed(() => ({
   background: 'transparent',
-  color: props.preview ? 'var(--ds-color-on-surface)' : config.value.textColor,
+  color: accentColor.value,
+  ...stageFlexJustify(props.stage),
 }))
+
+function stageFlexJustify(st?: StageSettings): Record<string, string> {
+  if (!st) {
+    return { alignItems: 'center', justifyContent: 'center' }
+  }
+  const alignItems =
+    st.textVerticalAlign === 'top'
+      ? 'flex-start'
+      : st.textVerticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'center'
+  const justifyContent =
+    st.textAlign === 'left'
+      ? 'flex-start'
+      : st.textAlign === 'right'
+        ? 'flex-end'
+        : 'center'
+  return { alignItems, justifyContent }
+}
 
 function measure() {
   const el = containerRef.value
@@ -74,10 +134,7 @@ onUnmounted(() => {
     <div
       v-if="config.style === 'digital'"
       class="clock-preview__digital"
-      :style="{
-        fontSize: `${digitalFontSize}px`,
-        textShadow: preview ? 'none' : `0 4px 30px ${config.textColor}40`,
-      }"
+      :style="digitalStyle"
     >
       <span>{{ formattedTime }}</span>
       <span
@@ -96,6 +153,7 @@ onUnmounted(() => {
         :style="{
           fontSize: `${digitalFontSize * 0.3}px`,
           marginBottom: `${digitalFontSize * 0.2}px`,
+          fontWeight: stage ? String(Math.min(700, stage.fontWeight)) : undefined,
         }"
       >
         {{ ampm }}
@@ -108,10 +166,12 @@ onUnmounted(() => {
       :style="{
         width: `${analogSize}px`,
         height: `${analogSize}px`,
-        border: `min(8px, ${analogSize * 0.02}px) solid ${preview ? 'var(--ds-color-on-surface)' : config.textColor}`,
+        border: `min(8px, ${analogSize * 0.02}px) solid ${accentColor}`,
         boxShadow: preview
           ? 'none'
-          : `inset 0 0 40px ${config.bgColor}40, 0 10px 40px ${config.textColor}20`,
+          : stage?.textShadow
+            ? `inset 0 0 40px rgba(0,0,0,0.2), 0 0 ${stage.shadowBlur}vh rgba(0,0,0,${stage.shadowIntensity})`
+            : `inset 0 0 40px ${config.bgColor}40, 0 10px 40px ${accentColor}20`,
       }"
     >
       <div
@@ -119,7 +179,7 @@ onUnmounted(() => {
         :style="{
           width: `${analogSize * 0.06}px`,
           height: `${analogSize * 0.06}px`,
-          background: preview ? 'var(--ds-color-on-surface)' : config.textColor,
+          background: accentColor,
         }"
       />
 
@@ -128,7 +188,7 @@ onUnmounted(() => {
         :style="{
           width: `${analogSize * 0.025}px`,
           height: `${analogSize * 0.3}px`,
-          background: preview ? 'var(--ds-color-on-surface)' : config.textColor,
+          background: accentColor,
           left: `calc(50% - ${analogSize * 0.0125}px)`,
           transform: `rotate(${hourAngle}deg)`,
         }"
@@ -139,7 +199,7 @@ onUnmounted(() => {
         :style="{
           width: `${analogSize * 0.015}px`,
           height: `${analogSize * 0.4}px`,
-          background: preview ? 'var(--ds-color-on-surface)' : config.textColor,
+          background: accentColor,
           left: `calc(50% - ${analogSize * 0.0075}px)`,
           transform: `rotate(${minuteAngle}deg)`,
         }"
@@ -170,7 +230,7 @@ onUnmounted(() => {
             width: `${i % 3 === 0 ? analogSize * 0.02 : analogSize * 0.01}px`,
             height: `${i % 3 === 0 ? analogSize * 0.06 : analogSize * 0.03}px`,
             marginTop: `${analogSize * 0.02}px`,
-            background: preview ? 'var(--ds-color-on-surface)' : config.textColor,
+            background: accentColor,
             opacity: i % 3 === 0 ? 1 : 0.5,
           }"
         />
@@ -185,21 +245,17 @@ onUnmounted(() => {
   display: flex;
   width: 100%;
   height: 100%;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 
 .clock-preview__digital {
   display: flex;
-  width: 100%;
+  max-width: 100%;
   align-items: center;
   justify-content: center;
   font-family: system-ui, -apple-system, sans-serif;
-  font-weight: 900;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
 .clock-preview__seconds {

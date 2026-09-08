@@ -7,6 +7,7 @@ import MonitorArrangementCard from '../components/MonitorArrangementCard.vue'
 import MultiScreenSelectCard from '../components/MultiScreenSelectCard.vue'
 import PalcoCard from '../components/PalcoCard.vue'
 import PalcoSlotsCard from '../components/PalcoSlotsCard.vue'
+import ReturnScreenOptionsCard from '../components/ReturnScreenOptionsCard.vue'
 import StageCustomizationCard from '../components/StageCustomizationCard.vue'
 import { useProjectionSettings } from '../composables/useProjectionSettings'
 
@@ -32,7 +33,10 @@ onMounted(() => {
 
     <div class="projection-settings__split">
       <MultiScreenSelectCard />
-      <MainScreenOptionsCard />
+      <div class="projection-settings__stack">
+        <MainScreenOptionsCard />
+        <ReturnScreenOptionsCard />
+      </div>
     </div>
 
     <PalcoCard />
@@ -62,6 +66,13 @@ onMounted(() => {
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.projection-settings__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
 }
 
 .projection-settings__error {

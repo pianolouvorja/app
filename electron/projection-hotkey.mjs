@@ -171,36 +171,12 @@ export function buildShortcutHintLines() {
 }
 
 /**
- * Hint de atalhos exibido nos primeiros 6s de cada load de janela de
- * projeção (spec 30/08 — descoberta). JS puro: injeta DOM no documento
- * da projeção via executeJavaScript. Usado pelos DOIS fluxos de janela.
+ * Hint de atalhos — legado (antes injetado na projeção).
+ * O texto agora vive no player do operador (MediaView). Mantido para testes
+ * de copy; não injeta mais DOM nas janelas de projeção.
  */
-export function injectProjectionShortcutHint(win) {
-  if (!win || win.isDestroyed()) return
-  const hintJs = `(() => {
-    try {
-      if (document.getElementById('__lj_hotkey_hint')) return
-      const el = document.createElement('div')
-      el.id = '__lj_hotkey_hint'
-      el.textContent = 'ESC encerra a projeção  ·  Ctrl+Alt+P alterna com a tela do operador'
-      el.style.cssText = 'position:fixed;right:2vmin;bottom:2vmin;z-index:2147483000;' +
-        'font:500 13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;' +
-        'background:rgba(10,14,26,0.72);padding:8px 14px;border-radius:10px;' +
-        'box-shadow:0 6px 20px rgba(0,0,0,0.4);opacity:0;transition:opacity .6s ease;' +
-        'pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis'
-      ;(document.body || document.documentElement).appendChild(el)
-      requestAnimationFrame(() => { el.style.opacity = '1' })
-      setTimeout(() => {
-        el.style.opacity = '0'
-        setTimeout(() => { el.remove() }, 800)
-      }, 6000)
-    } catch (_) {}
-  })()`
-  try {
-    void win.webContents.executeJavaScript(hintJs).catch(() => {})
-  } catch {
-    /* ignore */
-  }
+export function injectProjectionShortcutHint(_win) {
+  // no-op: hint movido para a UI do operador
 }
 
 /** A URL é de popup de projeção do app (hinos/slides via window.open)? */

@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isDesktopApp } from '@shared/services/desktop-bridge'
-import { peekTrackDownloadCache } from '@shared/services/track-media'
+import {
+  invalidateTrackMediaCache,
+  peekTrackDownloadCache,
+} from '@shared/services/track-media'
 
 import type {
   DownloadFailureNotice,
@@ -16,6 +19,7 @@ import {
   downloadAlbumMedia,
   listAlbumMusicIds,
   markAlbumAsDownloaded,
+  reconcileAlbumsAgainstLocalMedia,
   resolveAlbumIdsForMusic,
   unmarkAlbumAsDownloaded,
 } from '../services/library-download'
@@ -145,6 +149,21 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     } finally {
       isLoadingList.value = false
     }
+  }
+
+  /**
+   * Marca no manifesto as coletâneas já presentes no disco (import legado)
+   * e recarrega a listagem da Central de Mídia.
+   */
+  async function reconcileFromLocalMedia(
+    onProgress?: (current: number, total: number, albumName: string) => void,
+  ): Promise<{ checked: number; marked: number }> {
+    if (!isDesktopApp()) return { checked: 0, marked: 0 }
+
+    const result = await reconcileAlbumsAgainstLocalMedia(onProgress)
+    invalidateTrackMediaCache()
+    await refreshCollections()
+    return result
   }
 
   async function downloadAlbum(albumId: LibraryAlbum['id']) {
@@ -319,6 +338,7 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     isAnyDownloading,
     clearError,
     refreshCollections,
+    reconcileFromLocalMedia,
     reconcileAlbumsForMusic,
     stopBackgroundReconcile,
     downloadAlbum,

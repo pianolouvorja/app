@@ -70,13 +70,17 @@ export function useCountdownDisplay(
       (runtime.value.status === 'running' || runtime.value.status === 'paused'),
   )
 
-  const isFinished = computed(
-    () =>
-      runtime.value.finished ||
-      (remainingMs.value <= 0 &&
-        runtime.value.durationMs > 0 &&
-        runtime.value.accumulatedMs > 0),
-  )
+  /** Zerou ou passou do tempo (overtime negativo). */
+  const isFinished = computed(() => {
+    if (runtime.value.durationMs <= 0) return false
+    if (runtime.value.finished) return true
+    return (
+      remainingMs.value <= 0 &&
+      (runtime.value.status === 'running' ||
+        runtime.value.status === 'paused' ||
+        runtime.value.accumulatedMs > 0)
+    )
+  })
 
   return {
     now,

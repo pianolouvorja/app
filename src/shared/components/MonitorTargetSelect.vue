@@ -243,7 +243,10 @@ watch(open, async (isOpen) => {
           >
             <label
               class="monitor-target-select__option"
-              :class="{ 'monitor-target-select__option--active': monitor.isSelected }"
+              :class="{
+                'monitor-target-select__option--active': monitor.isSelected,
+                'monitor-target-select__option--return': monitor.isReturn,
+              }"
             >
               <input
                 type="checkbox"
@@ -260,6 +263,12 @@ watch(open, async (isOpen) => {
                     class="monitor-target-select__tag"
                   >
                     {{ t('monitors.primary') }}
+                  </span>
+                  <span
+                    v-if="monitor.isReturn"
+                    class="monitor-target-select__tag monitor-target-select__tag--return"
+                  >
+                    {{ t('monitors.returnScreen') }}
                   </span>
                 </span>
                 <span class="monitor-target-select__option-meta">
@@ -514,6 +523,20 @@ watch(open, async (isOpen) => {
     border-color: color-mix(in srgb, var(--ds-color-primary) 55%, transparent);
     background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
   }
+
+  &--return {
+    border-color: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 55%, transparent);
+    background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 14%, transparent);
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 55%, transparent);
+      background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 18%, transparent);
+    }
+
+    .monitor-target-select__checkbox {
+      accent-color: var(--ds-color-secondary, #78d6d2);
+    }
+  }
 }
 
 .monitor-target-select__checkbox {
@@ -533,6 +556,7 @@ watch(open, async (isOpen) => {
 
 .monitor-target-select__option-name {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.78rem;
@@ -553,6 +577,11 @@ watch(open, async (isOpen) => {
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+}
+
+.monitor-target-select__tag--return {
+  background: color-mix(in srgb, var(--ds-color-secondary, #78d6d2) 22%, transparent);
+  color: var(--ds-color-secondary, #78d6d2);
 }
 
 .monitor-target-select__empty {
