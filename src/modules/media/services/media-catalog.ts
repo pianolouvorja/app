@@ -1,4 +1,5 @@
 import { readCatalogRecord } from '@shared/services/workspace-api'
+import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 
 import type {
   MediaAlbumRef,
@@ -121,7 +122,11 @@ export async function loadMediaTrack(
 ): Promise<MediaTrackRecord | null> {
   if (!Number.isFinite(musicId) || musicId <= 0) return null
 
-  const row = await readCatalogRecord<CatalogMusicRow>(`music_${musicId}`)
+  const local = await readCatalogRecord<CatalogMusicRow>(`music_${musicId}`)
+  // Fallback remoto: faixa nova (ex: Infantis/Doxologia 90xxx) pode não estar
+  // no cache local ainda — busca do backend antes de desistir (trackMissing).
+  const row =
+    local ?? (await fetchRemoteCatalogJson<CatalogMusicRow>(`music_${musicId}`))
   if (!row) return null
   return mapTrack(row, musicId)
 }

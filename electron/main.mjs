@@ -22,6 +22,7 @@ import { buildProjectionWindowBounds } from "./projection-display.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
+import { registerTunnelCorpBypass } from "./tunnel-corp-bypass.mjs";
 import {
   initProjectionHotkey,
   addProjectionWindowProvider,
@@ -568,6 +569,7 @@ app.whenReady().then(async () => {
 		registerWindowIpc(() => mainWindow);
 		registerLocalFileProtocol();
 		registerYoutubeEmbedHeaders();
+		registerTunnelCorpBypass();
 		createWindow(locale);
 	} catch (error) {
 		console.error("[main] falha no startup", error);
