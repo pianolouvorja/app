@@ -80,6 +80,11 @@ if (typeof process.getuid === "function" && process.getuid() === 0) {
 /** Permite autoplay com áudio nas janelas de projeção (YouTube). */
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
+/** CDP p/ debug automatizado (apenas dev). */
+if (process.env.VITE_DEV_SERVER_URL) {
+	app.commandLine.appendSwitch("remote-debugging-port", "9222");
+}
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
 	app.quit();

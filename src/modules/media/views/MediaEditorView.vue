@@ -29,6 +29,7 @@ import {
   uploadCustomFile,
 } from '../services/custom-catalog'
 import type { CustomCollectionSummary } from '../services/custom-catalog'
+import { customApiUrl } from '../services/custom-catalog'
 import { buildSlja, parseSlja } from '../../../shared/services/slja'
 
 /**
@@ -358,7 +359,7 @@ async function onSelectMusic(id: number): Promise<void> {
   loading.value = true
   notify('')
   try {
-    const response = await fetch(`/v1/custom/musics/${id}`)
+    const response = await fetch(customApiUrl(`/musics/${id}`))
     if (response.ok) {
       const data = (await response.json()) as {
         name: string

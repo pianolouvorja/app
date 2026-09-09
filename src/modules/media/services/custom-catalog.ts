@@ -538,6 +538,10 @@ export async function updateCustomMusic(
 }
 
 /** URL absoluta para um path de arquivo servido pela API (/file/...) */
+export function customApiUrl(path: string): string {
+  return `${customBaseUrl()}${path}`
+}
+
 export function customFileUrl(urlPath: string): string {
   const base = import.meta.env.VITE_PALCO_API_URL
   if (base) return `${base.replace(/\/$/, '')}/file${urlPath}`
