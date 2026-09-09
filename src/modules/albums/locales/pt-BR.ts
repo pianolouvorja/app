@@ -1,5 +1,8 @@
 export default {
   albums: {
+    custom: {
+      openEditor: 'Abrir editor de letras',
+    },
     title: 'Central de Mídia',
     subtitle: 'Álbum & Coletâneas',
     collectionFallback: 'Coletânea',

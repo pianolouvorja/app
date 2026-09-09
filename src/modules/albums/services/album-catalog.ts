@@ -4,6 +4,12 @@ import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
+import {
+  listCustomCollections,
+  customFileUrl,
+  toCustomCollectionId,
+  fromCustomCollectionId,
+} from '@modules/media/services/custom-catalog'
 
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
 
@@ -96,9 +102,38 @@ async function buildHymnalCollections(): Promise<AlbumCollection[]> {
 }
 
 /** Catálogo de hinários e coletâneas para navegação no módulo Álbuns. */
+/** Minhas Coletâneas custom no formato AlbumCollection (mesma estética dos álbuns). */
+async function buildCustomCollectionCards(): Promise<AlbumCollection[]> {
+  try {
+    const customs = await listCustomCollections()
+    return customs.map((c) => ({
+      id: toCustomCollectionId(c.id),
+      kind: 'album' as const,
+      name: c.name,
+      subtitle: c.description ?? '',
+      coverUrl: c.coverUrl ? customFileUrl(c.coverUrl) : null,
+      trackCount: c.musicsCount,
+      catalogKey: `custom_collection_${c.id}`,
+      isCustom: true,
+    }))
+  } catch {
+    return []
+  }
+}
+
 export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
   const result: AlbumCategory[] = []
   const langPrefix = getCurrentApiPrefix()
+
+  // Minhas Coletâneas (custom) — primeira seção da Central, como no web
+  const customs = await buildCustomCollectionCards()
+  if (customs.length > 0) {
+    result.push({
+      id: 'custom',
+      name: 'Minhas Coletâneas',
+      collections: customs,
+    })
+  }
 
   const hymnals = await buildHymnalCollections()
   if (hymnals.length > 0) {

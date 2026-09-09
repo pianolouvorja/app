@@ -11,6 +11,8 @@ export type AlbumCollection = {
   trackCount: number | null
   /** Arquivo de catálogo: pt_hymnal, pt_hymnal_1996 ou album_{id} */
   catalogKey: string
+  /** Coletânea custom do usuário (API /v1/custom): cover editável, delete etc. */
+  isCustom?: boolean
 }
 
 export type AlbumCategory = {

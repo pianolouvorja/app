@@ -1,5 +1,8 @@
 export default {
   albums: {
+    custom: {
+      openEditor: 'Open lyrics editor',
+    },
     title: 'Media Center',
     subtitle: 'Albums & Collections',
     collectionFallback: 'Collection',

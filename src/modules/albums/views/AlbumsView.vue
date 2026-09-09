@@ -74,6 +74,10 @@ function isHymnalsCategory(category: AlbumCategory) {
   return String(category.id) === 'hymnals'
 }
 
+function isCustomCategory(category: AlbumCategory) {
+  return String(category.id) === 'custom'
+}
+
 function categoryTitle(category: AlbumCategory) {
   if (isHymnalsCategory(category)) return t('sync.categories.hymnals')
   if (
@@ -540,6 +544,18 @@ async function runAction(
               {{ categorySubtitle(category) }}
             </p>
           </div>
+          <button
+            v-if="isCustomCategory(category)"
+            type="button"
+            class="albums-view__editor-btn"
+            @click="router.push('/media/editor')"
+          >
+            <i
+              class="ti ti-pencil"
+              aria-hidden="true"
+            />
+            {{ t('albums.custom.openEditor') }}
+          </button>
         </header>
 
         <div
@@ -828,6 +844,25 @@ async function runAction(
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.albums-view__editor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--ds-color-outline-strong, rgba(255, 255, 255, 0.1));
+  border-radius: var(--ds-radius-md, 12px 0 12px 0);
+  background: color-mix(in srgb, var(--ds-color-surface-card, #242424) 70%, transparent);
+  color: var(--ds-color-on-surface, #e5e2e1);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+
+  &:hover {
+    border-color: var(--ds-color-primary, #2196f3);
+    color: var(--ds-color-primary, #2196f3);
+  }
 }
 
 .albums-view__category-title {
