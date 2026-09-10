@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import MediaSlideStage from '../components/MediaSlideStage.vue'
+import MediaAccountBar from '../components/MediaAccountBar.vue'
+import { getAuthSession } from '../services/auth-client'
 import {
   addOfficialMusicToCollection,
   copyCustomMusic,
@@ -68,15 +70,20 @@ const statusMessage = ref('')
 const snackbarOpen = ref(false)
 
 /** statusMessage + snackbar juntos (toast). */
-function notify(message: string): void {
+function notify(message: string, isError = false): void {
   statusMessage.value = message
+  isErrorFlag.value = isError
   snackbarOpen.value = true
 }
 
-/** Status de erro ganha ícone/cor distintos no toast. */
+/** Status de erro ganha ícone/cor distintos no toast (regex OU flag explícita). */
 const isErrorStatus = computed(() =>
-  /falha|erro|indispon|não foi possível/i.test(statusMessage.value),
+  isErrorFlag.value ||
+  /falha|erro|indispon|não foi possível|incorret/i.test(statusMessage.value),
 )
+
+/** Flag explícita de erro setada por notify(msg, true). */
+const isErrorFlag = ref(false)
 
 /** Progresso 0..1 da estrofe dentro do intervalo até a próxima (barra estilo /media). */
 function stanzaProgress(index: number): number {
@@ -129,6 +136,10 @@ async function onCollectionChange(): Promise<void> {
 async function onCreateCollection(): Promise<void> {
   const name = newCollectionName.value.trim()
   if (!name) return
+  if (!getAuthSession()) {
+    notify('Entre com sua conta para criar coletâneas', true)
+    return
+  }
   saving.value = true
   try {
     const result = await createCustomCollection(name)
@@ -139,7 +150,7 @@ async function onCreateCollection(): Promise<void> {
       await onCollectionChange()
       notify('Coletânea criada')
     } else {
-      notify('Falha ao criar coletânea (API indisponível?)')
+      notify('Falha ao criar coletânea (API indisponível?)', true)
     }
   } finally {
     saving.value = false
@@ -877,6 +888,7 @@ onMounted(async () => {
         <h2 class="editor__section-title">
           Coletâneas
         </h2>
+        <MediaAccountBar :notify="notify" />
         <!-- Capa da coletânea selecionada (upload/remoção) -->
         <div
           v-if="selectedCollection"

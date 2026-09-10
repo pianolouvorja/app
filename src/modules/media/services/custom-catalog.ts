@@ -3,6 +3,7 @@ import type {
   MediaTrackRecord,
 } from '../types/media'
 
+import { authHeaders } from './auth-client'
 import { loadMediaTrack } from './media-catalog'
 import { resolveRemoteFileUrl } from './media-audio'
 
@@ -210,6 +211,10 @@ export type CustomCollectionSummary = {
   name: string
   description: string | null
   coverUrl?: string | null
+  /** Dono (null = coletânea legado/pública, sem dono). */
+  ownerId?: number | null
+  /** Nome do criador exibido na listagem (opcional, informativo). */
+  authorName?: string | null
   musicsCount: number
 }
 
@@ -221,7 +226,7 @@ export async function updateCustomCollection(
   try {
     const response = await fetch(`${customBaseUrl()}/collections/${collectionId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(patch),
     })
     if (!response.ok) return null
@@ -248,7 +253,9 @@ export async function listCustomCollections(): Promise<
   CustomCollectionSummary[]
 > {
   try {
-    const response = await fetch(`${customBaseUrl()}/collections`)
+    const response = await fetch(`${customBaseUrl()}/collections`, {
+      headers: authHeaders(),
+    })
     if (!response.ok) return []
     const json = (await response.json()) as {
       data?: Array<{
@@ -256,6 +263,8 @@ export async function listCustomCollections(): Promise<
         name: string
         description: string | null
         cover_url?: string | null
+        owner_id?: number | null
+        author_name?: string | null
         musics_count?: number
       }>
     }
@@ -264,6 +273,8 @@ export async function listCustomCollections(): Promise<
       name: row.name,
       description: row.description ?? null,
       coverUrl: row.cover_url ?? null,
+      ownerId: row.owner_id ?? null,
+      authorName: row.author_name ?? null,
       musicsCount: row.musics_count ?? 0,
     }))
   } catch {
@@ -291,7 +302,7 @@ export async function copyCustomMusic(
   try {
     const response = await fetch(
       `${customBaseUrl()}/collections/${collectionId}/musics/${musicId}/copy`,
-      { method: 'POST' },
+      { method: 'POST', headers: authHeaders() },
     )
     if (!response.ok) return null
     const json = (await response.json()) as { id_music: number }
@@ -450,12 +461,13 @@ export function probeAudioDuration(
 export async function createCustomCollection(
   name: string,
   description?: string,
+  authorName?: string,
 ): Promise<{ id: number } | null> {
   try {
     const response = await fetch(`${customBaseUrl()}/collections`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name, description }),
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name, description, author_name: authorName }),
     })
     if (!response.ok) return null
     const json = (await response.json()) as { id_collection: number }
@@ -474,7 +486,7 @@ export async function createCustomMusic(
       `${customBaseUrl()}/collections/${collectionId}/musics`,
       {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...authHeaders() },
         body: JSON.stringify(input),
       },
     )
@@ -501,7 +513,7 @@ export async function addOfficialMusicToCollection(
       `${customBaseUrl()}/collections/${collectionId}/musics`,
       {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...authHeaders() },
         // name opcional: o catálogo oficial (json_db remoto) é a fonte do nome —
         // o SQLite local pode não ter o hino.
         body: JSON.stringify({ official_music_id: officialMusicId, name }),
@@ -528,7 +540,7 @@ export async function updateCustomMusic(
   try {
     const response = await fetch(`${customBaseUrl()}/musics/${musicId}`, {
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(input),
     })
     return response.ok
@@ -563,6 +575,7 @@ export async function uploadCustomFile(
     formData.append('kind', kind)
     const response = await fetch(`${customBaseUrl()}/files`, {
       method: 'POST',
+      headers: authHeaders(),
       body: formData,
     })
     if (!response.ok) return null
@@ -577,6 +590,7 @@ export async function deleteCustomMusic(musicId: number): Promise<boolean> {
   try {
     const response = await fetch(`${customBaseUrl()}/musics/${musicId}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     })
     return response.ok
   } catch {
@@ -588,6 +602,7 @@ export async function deleteCustomCollection(collectionId: number): Promise<bool
   try {
     const response = await fetch(`${customBaseUrl()}/collections/${collectionId}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     })
     return response.ok
   } catch {
@@ -608,7 +623,7 @@ export async function createCustomLyric(
   try {
     const response = await fetch(`${customBaseUrl()}/musics/${musicId}/lyrics`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(input),
     })
     if (!response.ok) return null
@@ -631,7 +646,7 @@ export async function updateCustomLyric(
   try {
     const response = await fetch(`${customBaseUrl()}/lyrics/${lyricId}`, {
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(input),
     })
     return response.ok
@@ -644,6 +659,7 @@ export async function deleteCustomLyric(lyricId: number): Promise<boolean> {
   try {
     const response = await fetch(`${customBaseUrl()}/lyrics/${lyricId}`, {
       method: 'DELETE',
+      headers: authHeaders(),
     })
     return response.ok
   } catch {
