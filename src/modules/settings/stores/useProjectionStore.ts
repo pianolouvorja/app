@@ -63,9 +63,20 @@ export const useProjectionStore = defineStore('settings-projection', () => {
 
   const hasExtendedDisplays = computed(() => extendedDisplays.value.length > 0)
 
+  /** Há ao menos uma tela estendida marcada para projetar (não o monitor principal). */
+  const hasSelectedAudienceTargets = computed(() => {
+    const extendedIds = new Set(extendedDisplays.value.map((display) => display.id))
+    return settings.value.targetDisplayIds.some((id) => extendedIds.has(id))
+  })
+
   function persist(next: ProjectionSettings) {
     settings.value = next
     saveProjectionSettings(next)
+  }
+
+  /** Atualiza o estado em memória sem regravar (ex.: sync do MonitorTargetSelect). */
+  function applySettings(next: ProjectionSettings) {
+    settings.value = next
   }
 
   function persistAndReapply(next: ProjectionSettings) {
@@ -254,6 +265,8 @@ export const useProjectionStore = defineStore('settings-projection', () => {
     monitorOptions,
     extendedMonitorOptions,
     hasExtendedDisplays,
+    hasSelectedAudienceTargets,
+    applySettings,
     hydrate,
     refreshDisplays,
     identifyMonitors,

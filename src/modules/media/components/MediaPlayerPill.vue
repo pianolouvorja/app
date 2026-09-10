@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
+import { useProjectionStore } from '@modules/settings/stores/useProjectionStore'
 import MonitorTargetSelect from '@shared/components/MonitorTargetSelect.vue'
 
 import type { MediaPlaybackMode } from '../types/media'
@@ -38,6 +40,18 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const modeMenuOpen = ref(false)
 const volumeOpen = ref(false)
+
+const { hasSelectedAudienceTargets } = storeToRefs(useProjectionStore())
+
+/** Parar sempre liberado; iniciar exige tela estendida selecionada. */
+const canToggleProjection = computed(
+  () => props.projecting || hasSelectedAudienceTargets.value,
+)
+
+const projectAriaLabel = computed(() => {
+  if (!canToggleProjection.value) return t('monitors.projectNeedsScreens')
+  return props.projecting ? t('media.clearProjection') : t('media.project')
+})
 
 const modeIcon = computed(() => {
   if (props.mode === 'instrumental') return 'ti-piano'
@@ -248,8 +262,9 @@ function selectMode(mode: MediaPlaybackMode) {
         type="button"
         class="media-player-pill__icon-btn"
         :class="{ 'is-on': projecting }"
-        :aria-label="projecting ? t('media.clearProjection') : t('media.project')"
-        :title="projecting ? t('media.clearProjection') : t('media.project')"
+        :disabled="!canToggleProjection"
+        :aria-label="projectAriaLabel"
+        :title="projectAriaLabel"
         @click="emit('toggleProjection')"
       >
         <i
