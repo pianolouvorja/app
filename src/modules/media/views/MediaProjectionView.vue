@@ -23,9 +23,10 @@ let unsubStage: (() => void) | null = null
 let channel: BroadcastChannel | null = null
 
 const lyric = computed(() => stripHtmlBreaks(runtime.value.lyric))
-const showTitle = computed(
-  () => runtime.value.isCover || (!lyric.value && Boolean(runtime.value.title)),
-)
+// Título grande SÓ no slide de capa (cover) — slide de letra vazio não deve
+// renderizar o nome da música no meio do hino (slides de solfejo/pausa são
+// filtrados no buildMediaSlides, mas qualquer slide vazio residual não vira título).
+const showTitle = computed(() => runtime.value.isCover)
 
 function applyRuntime(raw: unknown) {
   runtime.value = normalizeMediaRuntime(raw)

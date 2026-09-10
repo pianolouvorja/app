@@ -109,6 +109,11 @@ export function installRemoteLiturgyBridge({ router }: { router: Router }) {
     random: useRandomStore() as never,
     palco: {
       status: () => palcoSession.status(),
+      slots: () => palcoSession.slots(),
+      createSlot: (label) => palcoSession.createSlot(label),
+      removeSlot: (id) => palcoSession.removeSlot(id),
+      startSlot: (id) => palcoSession.startSlot(id),
+      stopSlot: (id) => palcoSession.stopSlot(id),
       turnOn: () => palcoSession.turnOn(),
       turnOff: () => palcoSession.turnOff(),
       project: (scope, input) => palcoSession.project(scope, input),
@@ -325,13 +330,21 @@ export function installRemoteLiturgyBridge({ router }: { router: Router }) {
   }
 
   const onCommand = async (msg: RemoteBridgeMessage) => {
-    let ok = false
-    try {
-      ok = await execute(msg)
-    } catch {
-      ok = false
+    let ack: { id?: string | number; ok: boolean; data?: unknown } = {
+      id: msg.id,
+      ok: false,
     }
-    send('remote:ack', { id: msg.id, ok })
+    try {
+      const result = await execute(msg)
+      if (typeof result === 'object' && result !== null && 'ok' in result) {
+        ack = { id: msg.id, ok: result.ok, data: result.data }
+      } else {
+        ack = { id: msg.id, ok: result }
+      }
+    } catch {
+      ack = { id: msg.id, ok: false }
+    }
+    send('remote:ack', ack)
     pushState()
   }
 
