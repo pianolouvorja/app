@@ -505,7 +505,9 @@ export function attachPalcoServer(getContents) {
   // IPC: send → slot específico (default: principal)
   ipcMain.handle('palco:send', (_e, { slotId, ...msg }) => {
     const slot = manager.getSlot(slotId ?? '0')
-    return slot?.send(msg) ?? false
+    const r = slot?.send(msg) ?? false
+    console.log('[palco:send]', slotId ?? '0', msg?.type, '→ ok=' + r)
+    return r
   })
 
   // IPC: serve media (base64)
