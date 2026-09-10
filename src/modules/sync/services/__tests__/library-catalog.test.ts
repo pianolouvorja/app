@@ -373,13 +373,12 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // Infantis (order 98) deve vir ANTES de custom_unmapped (order 50 default)
+    // Infantis (order 3) deve vir ANTES de custom_unmapped (order 50 default)
     // Mutante: se ?? vira &&, custom_unmapped teria order 0 (false && 50 = false -> 0)
-    // e Infantis teria order 0 tambem (false && 98 = false -> 0)
+    // e Infantis teria order 0 tambem (false && 3 = false -> 0)
     // Ambos em 0 cairiam em localeCompare
-    // Precisamos garantir que o teste diferencia ?? de &&
-    // Com ??: Infantis=98, custom=50 -> custom ANTES de Infantis
-    expect(catIds.indexOf('custom_unmapped')).toBeLessThan(catIds.indexOf('Infantis'))
+    // Com ??: Infantis=3, custom=50 -> Infantis ANTES de custom
+    expect(catIds.indexOf('Infantis')).toBeLessThan(catIds.indexOf('custom_unmapped'))
   })
 
   it('usa CATEGORY_ORDER por name quando id nao esta no mapa', async () => {
@@ -388,7 +387,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
     const mockCategories = [
       {
         id_category: 'unmapped_a',
-        name: 'Doxologia',  // order 99
+        name: 'Doxologia',  // order 4
         albums: [{ id_album: 200, name: 'Album B', url_image: null }],
       },
       {
@@ -404,18 +403,18 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // CDs Oficiais/Ano (order 2) ANTES de Doxologia (order 99)
+    // CDs Oficiais/Ano (order 2) ANTES de Doxologia (order 4)
     expect(catIds.indexOf('unmapped_b')).toBeLessThan(catIds.indexOf('unmapped_a'))
   })
 
   it('orderA - orderB: ordem crescente verificada com 3 categorias', async () => {
     // Mata mutante: orderA - orderB -> orderA + orderB
-    // Com subtracao: 2, 98, 99 (crescente)
-    // Com soma: 99+98=197, 2+99=101, 2+98=100 -> ordem diferente
+    // Com subtracao: 2, 3, 4 (crescente)
+    // Com soma: 4+3=7, 2+4=6, 2+3=5 -> ordem diferente
     const mockCategories = [
       {
         id_category: 'dox_id',
-        name: 'Doxologia',  // order 99
+        name: 'Doxologia',  // order 4
         albums: [{ id_album: 300, name: 'Album C', url_image: null }],
       },
       {
@@ -425,7 +424,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
       },
       {
         id_category: 'inf_id',
-        name: 'Infantis',  // order 98
+        name: 'Infantis',  // order 3
         albums: [{ id_album: 200, name: 'Album B', url_image: null }],
       },
     ]
@@ -436,7 +435,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // Ordem esperada: CDs Oficiais (2) < Infantis (98) < Doxologia (99)
+    // Ordem esperada: CDs Oficiais (2) < Infantis (3) < Doxologia (4)
     expect(catIds).toEqual(['cds_id', 'inf_id', 'dox_id'])
   })
 })

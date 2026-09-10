@@ -1,5 +1,10 @@
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { readCatalogRecord } from '@shared/services/workspace-api'
+import {
+  listCustomMusics,
+  fromCustomCollectionId,
+  toCustomMusicId,
+} from '@modules/media/services/custom-catalog'
 
 import type {
   AlbumCollection,
@@ -121,9 +126,45 @@ function withFallbackTrackNumbers(tracks: AlbumTrack[]): AlbumTrack[] {
   })
 }
 
+/** Formata duração da API para m:ss (mesma regra do custom-catalog). */
+function formatDurationLabel(value: unknown): string {
+  if (value == null) return '—'
+  if (typeof value === 'number') {
+    const m = Math.floor(value / 60)
+    const s = Math.floor(value % 60)
+    return `${m}:${String(s).padStart(2, '0')}`
+  }
+  const raw = String(value).trim()
+  const parts = raw.split(':').map(Number)
+  if (parts.length === 3) {
+    return `${parts[0]! * 60 + parts[1]!}:${String(parts[2] ?? 0).padStart(2, '0')}`
+  }
+  if (parts.length === 2) {
+    return `${parts[0]}:${String(parts[1] ?? 0).padStart(2, '0')}`
+  }
+  return raw
+}
+
 export async function loadCollectionTracks(
   collection: AlbumCollection,
 ): Promise<AlbumTrack[]> {
+  // Minhas Coletâneas (custom): faixas via API /v1/custom. Link de hino
+  // oficial vira musicId sem offset (dispatcher do media store resolve).
+  if (collection.isCustom) {
+    const customId = fromCustomCollectionId(Number(collection.id))
+    const musics = await listCustomMusics(customId)
+    return musics.map((music, index) => ({
+      musicId:
+        music.officialMusicId != null
+          ? music.officialMusicId
+          : toCustomMusicId(music.id),
+      name: music.name ?? `Hino oficial #${music.officialMusicId ?? music.id}`,
+      track: index + 1,
+      durationLabel: music.duration != null ? formatDurationLabel(music.duration) : '—',
+      hasInstrumental: false,
+    }))
+  }
+
   if (collection.kind === 'hymnal') {
     const rows = await readOrFetchCatalog<CatalogTrackRow[]>(collection.catalogKey)
     if (!Array.isArray(rows)) return []

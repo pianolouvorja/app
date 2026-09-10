@@ -10,7 +10,8 @@
  */
 
 export interface ModuleHandlers {
-  execute(namespace: string, action: string, msg: Record<string, unknown>): Promise<boolean>
+  /** Retorna boolean ou `{ ok, data }` (ack estendido com payload p/ queries). */
+  execute(namespace: string, action: string, msg: Record<string, unknown>): Promise<boolean | { ok: boolean; data: unknown }>
   snapshot(namespace: string): Record<string, unknown> | null
 }
 
@@ -140,7 +141,12 @@ export interface ModuleHandlerDeps {
 
 /** Dependências do namespace palco (sender de cast para TV). */
 export interface PalcoDeps {
-  status(): Promise<{ running: boolean; clients: number } | null>
+  status(): Promise<{ running: boolean; clients: number; url: string | null; wsUrl: string | null } | null>
+  slots(): Promise<Array<{ id: string; label: string; running: boolean; clients: number; httpPort: number; wsPort: number }>>
+  createSlot(label: string): Promise<{ id: string; label: string; httpPort: number; wsPort: number } | null>
+  removeSlot(id: string): Promise<boolean>
+  startSlot(id: string): Promise<boolean>
+  stopSlot(id: string): Promise<void>
   turnOn(): Promise<boolean>
   turnOff(): Promise<void>
   project(scope: string, input: { text: string; footerRef?: string }): void
@@ -552,13 +558,43 @@ async function executePalco(
   palco: PalcoDeps,
   action: string,
   msg: Record<string, unknown>,
-): Promise<boolean> {
+): Promise<boolean | { ok: boolean; data: unknown }> {
   switch (action) {
     case 'palco.on':
       return palco.turnOn()
     case 'palco.off': {
       await palco.turnOff()
       return true
+    }
+    case 'palco.status': {
+      const status = await palco.status()
+      return { ok: true, data: status }
+    }
+    case 'palco.slots': {
+      const slots = await palco.slots()
+      return { ok: true, data: slots }
+    }
+    case 'palco.slot-add': {
+      const label = typeof msg.label === 'string' && msg.label.trim() ? msg.label.trim() : 'TV'
+      const slot = await palco.createSlot(label)
+      return slot ? { ok: true, data: slot } : { ok: false, data: null }
+    }
+    case 'palco.slot-remove': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id || id === '0') return false
+      await palco.removeSlot(id)
+      return { ok: true, data: null }
+    }
+    case 'palco.slot-start': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id) return false
+      return palco.startSlot(id)
+    }
+    case 'palco.slot-stop': {
+      const id = typeof msg.slotId === 'string' ? msg.slotId : ''
+      if (!id) return false
+      await palco.stopSlot(id)
+      return { ok: true, data: null }
     }
     case 'palco.project': {
       const text = typeof msg.text === 'string' ? msg.text : ''

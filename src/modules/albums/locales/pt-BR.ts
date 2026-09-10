@@ -1,5 +1,22 @@
 export default {
   albums: {
+    custom: {
+      title: 'Minhas Coletâneas',
+      openEditor: 'Abrir editor de letras',
+      open: 'Abrir coletânea {name}',
+      trackCount: '{count} faixa(s)',
+      empty: 'Nenhuma coletânea criada ainda. Importe um .slja no editor.',
+      newPlaceholder: 'Nome da nova coletânea...',
+      create: 'Criar',
+    },
+    playlists: {
+      title: 'Playlists',
+      newPlaceholder: 'Nome da nova playlist...',
+      create: 'Criar',
+      export: 'Exportar playlists',
+      import: 'Importar playlists',
+      empty: 'Nenhuma playlist criada ainda.',
+    },
     title: 'Central de Mídia',
     subtitle: 'Álbum & Coletâneas',
     collectionFallback: 'Coletânea',
