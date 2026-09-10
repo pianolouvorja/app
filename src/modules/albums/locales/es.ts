@@ -1,6 +1,7 @@
 export default {
   albums: {
     custom: {
+      title: 'Mis Colecciones',
       openEditor: 'Abrir editor de letras',
     },
     title: 'Centro de Medios',

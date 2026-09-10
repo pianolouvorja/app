@@ -1,6 +1,7 @@
 export default {
   albums: {
     custom: {
+      title: 'My Collections',
       openEditor: 'Open lyrics editor',
     },
     title: 'Media Center',
