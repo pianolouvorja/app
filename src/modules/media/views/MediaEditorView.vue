@@ -28,7 +28,7 @@ import {
   updateCustomMusic,
   uploadCustomFile,
 } from '../services/custom-catalog'
-import type { CustomCollectionSummary } from '../services/custom-catalog'
+import type { CustomCollectionSummary, CustomMusicSummary } from '../services/custom-catalog'
 import { customApiUrl } from '../services/custom-catalog'
 import { buildSlja, parseSlja } from '../../../shared/services/slja'
 
@@ -58,7 +58,7 @@ const route = useRoute()
 
 const collections = ref<CustomCollectionSummary[]>([])
 const selectedCollectionId = ref<number | null>(null)
-const musics = ref<Array<{ id: number; name: string }>>([])
+const musics = ref<CustomMusicSummary[]>([])
 const selectedMusicId = ref<number | null>(null)
 const musicName = ref('')
 const lyrics = ref<EditorLyric[]>([])
@@ -218,7 +218,7 @@ interface ReusableMusic {
 
 const reuseSearch = ref('')
 const reuseResults = ref<ReusableMusic[]>([])
-let allCustomMusicsCache: Array<ReusableMusic & { collectionId?: number }> | null = null
+let allCustomMusicsCache: Array<CustomMusicSummary & { collectionName?: string; collectionId?: number }> | null = null
 
 function onReuseSearchInput(): void {
   const query = reuseSearch.value.trim().toLowerCase()
@@ -230,7 +230,9 @@ function onReuseSearchInput(): void {
     if (allCustomMusicsCache == null) {
       allCustomMusicsCache = await listAllCustomMusics()
     }
-    reuseResults.value = allCustomMusicsCache
+    const cached = allCustomMusicsCache
+    if (!cached) return
+    reuseResults.value = cached
       .filter((m) => m.name.toLowerCase().includes(query))
       .slice(0, 8)
       .map((m) => ({
@@ -489,8 +491,13 @@ async function onImportFile(event: Event): Promise<void> {
     /** imageUrl → id_file, pro createCustomLyric (API espera id, não url) */
     const imageIdByUrl = new Map(uploadedAssets.value.map((a) => [a.url, a.idFile]))
 
-    // CAPA vira estrofe 1 (se tiver texto), demais slides na ordem
-    const slides = [...archive.slides].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    // Slides CAPA do .slja NÃO viram estrofe: o player já projeta a capa
+    // automática (buildMediaSlides, order -1 com o nome da música). Importar
+    // o slide de título duplicava a capa na projeção e deslocava a
+    // sincronia da letra inteira (relato Rafael 10/09).
+    const slides = [...archive.slides]
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .filter((slide) => slide.type !== 'CAPA')
     for (const slide of slides) {
       const text = slide.lyric.trim()
       if (!text) continue
@@ -626,7 +633,9 @@ async function onDeleteMusic(): Promise<void> {
       lyrics.value = []
       musicName.value = ''
       loadAudioForMusic(null)
-      await refreshCollections()
+      if (selectedCollectionId.value != null) {
+        musics.value = await listCustomMusics(selectedCollectionId.value)
+      }
       notify('Música excluída')
     } else {
       notify('Falha ao excluir música')
