@@ -137,22 +137,18 @@ function onRemove(event: MouseEvent) {
           </span>
         </button>
 
-        <div
+        <button
           v-if="showDownloadControls && canRemove"
-          class="album-collection-card__footer"
+          type="button"
+          class="album-collection-card__remove"
+          :aria-label="t('sync.remove')"
+          @click.stop="onRemove"
         >
-          <button
-            type="button"
-            class="album-collection-card__action album-collection-card__action--remove"
-            :aria-label="t('sync.remove')"
-            @click="onRemove"
-          >
-            <i
-              class="ti ti-trash"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+          <i
+            class="ti ti-trash"
+            aria-hidden="true"
+          />
+        </button>
       </div>
 
       <div
@@ -420,6 +416,41 @@ function onRemove(event: MouseEvent) {
   }
 }
 
+.album-collection-card__remove {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  z-index: 4;
+  display: inline-flex;
+  width: 1.35rem;
+  height: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 45%);
+  color: rgb(255 255 255 / 78%);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+
+  .ti {
+    font-size: 0.75rem;
+    line-height: 1;
+    color: inherit;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 72%, #000);
+    color: #fff;
+    transform: scale(1.08);
+  }
+}
+
 .album-collection-card__action {
   display: inline-flex;
   align-items: center;
@@ -449,11 +480,6 @@ function onRemove(event: MouseEvent) {
 
   &--cancel,
   &--retry {
-    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 82%, transparent);
-    color: #fff;
-  }
-
-  &--remove {
     background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 82%, transparent);
     color: #fff;
   }

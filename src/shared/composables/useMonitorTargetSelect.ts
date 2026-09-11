@@ -10,10 +10,22 @@ import {
   reconcileTargetDisplays,
   saveProjectionSettings,
 } from '@modules/settings/services/projection-preferences'
-import type { SystemDisplay } from '@modules/settings/types/projection'
+import { useProjectionStore } from '@modules/settings/stores/useProjectionStore'
+import type {
+  ProjectionSettings,
+  SystemDisplay,
+} from '@modules/settings/types/projection'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { reapplyProjectionTargets } from '@shared/composables/useProjectionWindow'
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue'
+
+function syncProjectionStore(next: ProjectionSettings) {
+  try {
+    useProjectionStore().applySettings(next)
+  } catch {
+    // Pinia ainda não disponível (testes / bootstrap)
+  }
+}
 
 export type MonitorTargetOption = {
   id: number
@@ -158,6 +170,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
       ),
     }
     saveProjectionSettings(settings)
+    syncProjectionStore(settings)
     rememberReturnDisplay(settings)
     selectedIds.value = [...settings.targetDisplayIds]
   }
@@ -200,6 +213,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
           declinedDisplayIds: extendedIds.filter((id) => !next.includes(id)),
         }
         saveProjectionSettings(nextSettings)
+        syncProjectionStore(nextSettings)
         rememberReturnDisplay(nextSettings)
       }
       emitUpdate([...next])
@@ -234,6 +248,7 @@ export function useMonitorTargetSelect(options: UseMonitorTargetSelectOptions = 
         declinedDisplayIds: declined,
       }
       saveProjectionSettings(nextSettings)
+      syncProjectionStore(nextSettings)
       rememberReturnDisplay(nextSettings)
     }
     emitUpdate([...selectedIds.value])
