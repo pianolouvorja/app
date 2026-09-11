@@ -145,6 +145,12 @@ export default {
       dataHint:
         'Elimina el catálogo, los medios descargados y las preferencias guardadas en la carpeta de datos de la app (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO, compartida entre usuarios). La aplicación reiniciará la configuración en el próximo inicio.',
       clearData: 'Borrar todos los datos',
+      clearConfirmTitle: '¿Borrar todos los datos?',
+      clearConfirmText:
+        'Esta acción elimina el catálogo, los medios descargados y las preferencias guardadas. No se puede deshacer. En el próximo inicio la aplicación volverá al setup.',
+      clearConfirmCheckbox: 'Entiendo que perderé todos los datos de esta aplicación.',
+      clearConfirmCancel: 'Cancelar',
+      clearConfirmAction: 'Borrar todos los datos',
       clearError: 'No se pudieron borrar los datos. Intente de nuevo.',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
       updateTitle: 'Actualizaciones',
