@@ -100,10 +100,11 @@ let splashWindow = null;
 const SPLASH_HTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:none;-webkit-user-select:none}
-.s{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.s{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center}
 .l{width:80px;height:80px;animation:p 1.8s ease-in-out infinite}
 .t{color:#fcce02;font-size:18px;font-weight:700;letter-spacing:.5px}
-.sp{width:26px;height:26px;border:3px solid rgba(252,206,2,.15);border-top-color:#fcce02;border-radius:50%;animation:r .8s linear infinite}
+.m{max-width:240px;color:rgba(242,242,245,.75);font-size:13px;font-weight:400;line-height:1.45}
+.sp{width:26px;height:26px;margin-top:4px;border:3px solid rgba(252,206,2,.15);border-top-color:#fcce02;border-radius:50%;animation:r .8s linear infinite}
 @keyframes r{to{transform:rotate(360deg)}}
 @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(.94)}}
 </style></head><body><div class="s">
@@ -124,6 +125,7 @@ html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:
 <path d="M277.012 323.881C288.562 324.13 300.417 329.892 309.472 336.816 338.637 359.111 345.102 405.044 321.822 434.159 316.432 440.739 312.127 444.539 305.057 449.084 294.867 408.619 286.032 364.841 277.012 323.881Z" fill="#10438C"/>
 </svg>
 <div class="t">LouvorJA - PIANO</div>
+<div class="m">Estamos configurando e preparando tudo para você.</div>
 <div class="sp"></div>
 </div></body></html>`;
 
@@ -133,8 +135,8 @@ html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:
  */
 function createSplash() {
 	splashWindow = new BrowserWindow({
-		width: 360,
-		height: 240,
+		width: 380,
+		height: 280,
 		frame: false,
 		resizable: false,
 		center: true,

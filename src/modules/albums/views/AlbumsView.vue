@@ -687,21 +687,21 @@ async function runAction(
     </template>
 
     <div
-      v-if="isLoadingCatalog"
+      v-if="isLoadingCatalog && categories.length === 0"
       class="albums-view__state"
     >
       {{ t('albums.loading') }}
     </div>
 
     <div
-      v-if="categories.length === 0"
+      v-else-if="!isLoadingCatalog && categories.length === 0 && !isHubSearching"
       class="albums-view__state"
     >
       {{ t('albums.messages.catalogEmpty') }}
     </div>
 
     <div
-      v-if="!isLoadingCatalog && categories.length > 0 && !isHubSearching"
+      v-if="categories.length > 0 && !isHubSearching"
       class="albums-view__body"
     >
       <section

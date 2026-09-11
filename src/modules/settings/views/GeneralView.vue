@@ -27,6 +27,7 @@ import {
   isValidLouvorjaContent,
 } from '@modules/sync/services/louvorja-package'
 import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
+import MediaFolderCard from '../components/MediaFolderCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
@@ -294,6 +295,9 @@ async function clearAllLocalData() {
 
     <!-- Importação de mídia do Louvor JA legado (somente Windows) -->
     <LegacyMediaImportCard />
+
+    <!-- Pasta de mídia compartilhada (somente Windows, junto da importação) -->
+    <MediaFolderCard />
 
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>

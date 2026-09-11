@@ -38,6 +38,8 @@ const showPersistentDownload = computed(
     (status.value === 'idle' || status.value === 'error' || isBusy.value),
 )
 
+const coverSrc = computed(() => props.collection.coverUrl || '')
+
 function onOpen() {
   emit('open')
 }
@@ -70,14 +72,18 @@ function onRemove(event: MouseEvent) {
     <div
       class="album-collection-card__cover"
       :class="{ 'album-collection-card__cover--custom': isCustom }"
-      :style="
-        collection.coverUrl
-          ? { backgroundImage: `url(${collection.coverUrl})` }
-          : undefined
-      "
     >
+      <img
+        v-if="coverSrc"
+        class="album-collection-card__cover-img"
+        :src="coverSrc"
+        alt=""
+        decoding="sync"
+        loading="eager"
+        draggable="false"
+      />
       <i
-        v-if="!collection.coverUrl"
+        v-else
         class="ti album-collection-card__fallback"
         :class="collection.kind === 'hymnal' ? 'ti-book' : 'ti-disc'"
         aria-hidden="true"
@@ -234,6 +240,15 @@ function onRemove(event: MouseEvent) {
     transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
   }
+}
+
+.album-collection-card__cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .album-collection-card__fallback {

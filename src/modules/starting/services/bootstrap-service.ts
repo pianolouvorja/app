@@ -55,7 +55,8 @@ export async function markBootstrapComplete(): Promise<void> {
 }
 
 export async function prepareFreshInstall(): Promise<void> {
-  await clearWorkspace()
+  // Preserva Media (capas/músicas) se já existir de outra instalação no mesmo path.
+  await clearWorkspace({ preserveMedia: true })
 }
 
 export async function syncRemoteConfig(): Promise<void> {

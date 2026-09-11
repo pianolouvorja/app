@@ -4,6 +4,7 @@ export const APP_PRODUCT_NAME = 'LouvorJA - PIANO'
 /**
  * Nome da pasta de dados.
  * Windows empacotado: %ProgramData%\\LouvorJA-PIANO (compartilhado entre perfis).
+ *   Mídia pode ficar em outra pasta (HKLM Software\\LouvorJA\\PIANO MediaRoot).
  * Linux empacotado: /var/lib/LouvorJA-PIANO (compartilhado entre perfis).
  * macOS empacotado: /Users/Shared/LouvorJA-PIANO (compartilhado entre perfis).
  * Dev: pasta per-user padrão do Electron.

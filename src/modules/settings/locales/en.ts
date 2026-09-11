@@ -189,6 +189,21 @@ export default {
       legacyMediaNotFound:
         'Legacy Louvor JA folder not found. Check Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'Could not import media. Try again.',
+      mediaFolderTitle: 'Media folder',
+      mediaFolderHint:
+        'Media is shared across all users on this PC. You can move it to another drive (e.g. from C: to D:).',
+      mediaFolderCurrent: 'Current folder:',
+      mediaFolderCustomBadge: 'Custom',
+      mediaFolderMove: 'Choose folder and move',
+      mediaFolderMoving: 'Moving media…',
+      mediaFolderMoveHint:
+        'Pick a base folder (e.g. D:\\). Media will go to folder\\LouvorJA-PIANO\\Media (covers, songs, images). Applies to all users.',
+      mediaFolderRestore: 'Restore default folder',
+      mediaFolderMoved: 'Media moved to {path}',
+      mediaFolderError: 'Could not move the media folder. Try again.',
+      mediaFolderDestInside: 'Choose a folder outside the current media folder.',
+      mediaFolderPersistError:
+        'Media was copied, but the shared path could not be saved.',
     },
 
     remote: {

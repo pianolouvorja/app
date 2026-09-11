@@ -8,6 +8,8 @@ export type AlbumCollection = {
   name: string
   subtitle: string
   coverUrl: string | null
+  /** Path bruto do catálogo (`/covers/...`) para hydrate local em background. */
+  rawCoverUrl?: string | null
   trackCount: number | null
   /** Arquivo de catálogo: pt_hymnal, pt_hymnal_1996 ou album_{id} */
   catalogKey: string
