@@ -317,7 +317,6 @@ export function configureUserDataPath({ isDev = false } = {}) {
     try {
       ensureSharedFolderAccess(targetRoot)
       migrateLegacyUserDataIfNeeded(targetRoot)
-      ensureSharedFolderAccess(targetRoot)
     } catch (error) {
       console.warn(
         '[userData] falha ao preparar pasta compartilhada; usando pasta por usuário',
@@ -329,12 +328,37 @@ export function configureUserDataPath({ isDev = false } = {}) {
 
   app.setPath('userData', targetRoot)
 
-  // Pasta de mídia pode ser customizada (HKLM) e também precisa de ACL compartilhada.
+  // Mídia fora do data root (override em Configurações) precisa de ACL própria.
+  // Se está dentro de ProgramData\LouvorJA-PIANO, a ACL da raiz já herda.
   if (process.platform === 'win32' && !isDev) {
     try {
-      ensureWindowsSharedFolderAcl(resolveMediaRoot(targetRoot))
+      const mediaRoot = resolveMediaRoot(targetRoot)
+      if (!isPathInsideRoot(mediaRoot, targetRoot)) {
+        ensureWindowsSharedFolderAcl(mediaRoot)
+      }
     } catch (error) {
       console.warn('[userData] falha ao preparar ACL da pasta de mídia', error)
     }
   }
+}
+
+/**
+ * @param {string} candidate
+ * @param {string} root
+ * @returns {boolean}
+ */
+function isPathInsideRoot(candidate, root) {
+  const pathApi = process.platform === 'win32' ? path.win32 : path
+  const normalizedRoot = pathApi.normalize(root).replace(/[\\/]+$/, '')
+  const normalizedCandidate = pathApi.normalize(candidate).replace(/[\\/]+$/, '')
+  const rootWithSep = normalizedRoot.endsWith(pathApi.sep)
+    ? normalizedRoot
+    : `${normalizedRoot}${pathApi.sep}`
+  if (process.platform === 'win32') {
+    const a = normalizedCandidate.toLowerCase()
+    const b = normalizedRoot.toLowerCase()
+    const bSep = rootWithSep.toLowerCase()
+    return a === b || a.startsWith(bSep)
+  }
+  return normalizedCandidate === normalizedRoot || normalizedCandidate.startsWith(rootWithSep)
 }

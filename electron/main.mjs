@@ -36,6 +36,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(VITE_DEV_SERVER_URL);
 const PRELOAD_PATH = path.join(__dirname, "preload.mjs");
+const bootT0 = Date.now();
+
+function bootMark(label) {
+	console.log(`[boot +${Date.now() - bootT0}ms] ${label}`);
+}
 
 registerLocalScheme();
 
@@ -66,7 +71,9 @@ if (process.platform === "linux") {
 	app.setName(APP_PRODUCT_NAME);
 }
 
+bootMark("main loaded");
 configureUserDataPath({ isDev });
+bootMark("userData");
 
 if (process.platform === "win32") {
 	app.setAppUserModelId("com.louvorja.piano");
@@ -134,6 +141,9 @@ html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:
  * Usa data: URL inline — não depende de filesystem, sempre carrega.
  */
 function createSplash() {
+	// Windows: janela transparente atrasa o primeiro paint (GPU/DWM) e o
+	// usuário vê vários segundos de nada. Fundo opaco aparece na hora.
+	const opaqueSplash = process.platform === "win32";
 	splashWindow = new BrowserWindow({
 		width: 380,
 		height: 280,
@@ -141,9 +151,9 @@ function createSplash() {
 		resizable: false,
 		center: true,
 		show: true,
-		transparent: true,
-		backgroundColor: "#00000000",
-		hasShadow: true,
+		transparent: !opaqueSplash,
+		backgroundColor: opaqueSplash ? "#12121c" : "#00000000",
+		hasShadow: !opaqueSplash,
 		skipTaskbar: true,
 		menuBarVisible: false,
 		autoHideMenuBar: true,
@@ -580,24 +590,25 @@ function createWindow(locale = 'pt-BR') {
 }
 
 app.whenReady().then(async () => {
-	ensureLinuxTaskbarIntegration();
-	// Controle remoto: WS :7071 — APK conecta e comanda liturgia/player
-	attachRemoteServer(() => mainWindow?.webContents ?? null);
-	attachPalcoServer(() => mainWindow?.webContents ?? null);
-	ensureWorkspaceDirectories();
-
-	// Splash screen — feedback visual imediato antes de qualquer coisa
+	bootMark("whenReady");
+	// Primeira coisa visível — checagens e servidores vêm depois.
 	createSplash();
+	bootMark("splash");
 
+	let locale = "pt-BR";
 	try {
-		// EULA: detecta idioma do SO, fallback pt-BR
-		const locale = resolveAppLocale(app.getLocale());
+		ensureLinuxTaskbarIntegration();
+		ensureWorkspaceDirectories();
+		bootMark("workspace");
+
+		locale = resolveAppLocale(app.getLocale());
 
 		if (!(await checkEulaAcceptance(locale))) {
 			closeSplash();
 			app.quit();
 			return;
 		}
+		bootMark("eula");
 
 		registerWorkspaceIpc();
 		registerWindowIpc(() => mainWindow);
@@ -605,6 +616,10 @@ app.whenReady().then(async () => {
 		registerYoutubeEmbedHeaders();
 		registerTunnelCorpBypass();
 		createWindow(locale);
+		bootMark("mainWindow");
+
+		attachRemoteServer(() => mainWindow?.webContents ?? null);
+		attachPalcoServer(() => mainWindow?.webContents ?? null);
 	} catch (error) {
 		console.error("[main] falha no startup", error);
 		closeSplash();
