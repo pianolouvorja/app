@@ -28,6 +28,7 @@ import {
 } from '@modules/sync/services/louvorja-package'
 import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
 import MediaFolderCard from '../components/MediaFolderCard.vue'
+import AppBackupCard from '../components/AppBackupCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
@@ -316,6 +317,9 @@ async function clearAllLocalData() {
 
     <!-- Pasta de mídia compartilhada (somente Windows, junto da importação) -->
     <MediaFolderCard />
+
+    <!-- Backup completo da pasta de dados + mídias -->
+    <AppBackupCard />
 
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>
