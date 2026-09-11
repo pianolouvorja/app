@@ -344,6 +344,7 @@ describe('user-data-path', () => {
 
     configureUserDataPath({ isDev: false })
 
+    expect(ensureWindowsSharedFolderAcl).toHaveBeenCalledTimes(1)
     expect(ensureWindowsSharedFolderAcl).toHaveBeenCalledWith(
       path.win32.join('C:\\ProgramData', 'LouvorJA-PIANO'),
     )
