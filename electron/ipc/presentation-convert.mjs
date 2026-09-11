@@ -14,6 +14,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { app } from 'electron'
 
+import { resolveMediaRoot } from '../windows-media-root.mjs'
+
 const execFileAsync = promisify(execFile)
 
 const OFFICE_CANDIDATES = [
@@ -71,7 +73,7 @@ export function hasPresentationOffice() {
 }
 
 function getCacheDir() {
-  const dir = path.join(app.getPath('userData'), 'Media', 'pptx-cache')
+  const dir = path.join(resolveMediaRoot(app.getPath('userData')), 'pptx-cache')
   mkdirSync(dir, { recursive: true })
   return dir
 }

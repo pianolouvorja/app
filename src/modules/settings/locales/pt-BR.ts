@@ -146,8 +146,32 @@ export default {
       dataHint:
         'Remove o catálogo, mídias baixadas e preferências salvas na pasta de dados do app (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO — compartilhada entre usuários). O app reinicia o setup na próxima abertura.',
       clearData: 'Apagar todos os dados',
+      clearConfirmTitle: 'Apagar todos os dados?',
+      clearConfirmText:
+        'Esta ação remove o catálogo, as mídias baixadas e as preferências salvas. Não dá para desfazer. Na próxima abertura o aplicativo inicia o setup de novo.',
+      clearConfirmCheckbox: 'Entendo que vou perder todos os dados deste aplicativo.',
+      clearConfirmCancel: 'Cancelar',
+      clearConfirmAction: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
+      backupTitle: 'Backup',
+      backupHint:
+        'Salva um zip da pasta de dados (mídias, liturgia e playlists). Se a mídia estiver em outro disco, ela entra no backup como pasta Media padrão. A restauração sempre volta para a pasta padrão; depois você pode mover a mídia em Pasta de mídia.',
+      backupCreate: 'Criar backup',
+      backupRestore: 'Restaurar backup',
+      backupCreating: 'Criando backup…',
+      backupRestoring: 'Restaurando…',
+      backupProgress: 'Arquivo {current} de {total}',
+      backupCreated: 'Backup salvo em {path}',
+      backupError: 'Não foi possível criar o backup. Tente novamente.',
+      backupRestoreError: 'Não foi possível restaurar o backup. Tente novamente.',
+      backupRestoreConfirmTitle: 'Restaurar backup?',
+      backupRestoreConfirmText:
+        'Os dados atuais (catálogo, liturgia, playlists, preferências e mídias da pasta padrão) serão substituídos pelo conteúdo do zip. A mídia volta para a pasta padrão do aplicativo.',
+      backupRestoreConfirmCheckbox:
+        'Entendo que os dados atuais serão substituídos pelo backup.',
+      backupRestoreConfirmCancel: 'Cancelar',
+      backupRestoreConfirmAction: 'Restaurar backup',
 
 
       updateTitle: 'Atualizações',
@@ -194,6 +218,21 @@ export default {
       legacyMediaNotFound:
         'Pasta do Louvor JA legado não encontrada. Verifique se existe em Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'Não foi possível importar as mídias. Tente novamente.',
+      mediaFolderTitle: 'Pasta de mídia',
+      mediaFolderHint:
+        'As mídias ficam compartilhadas entre todos os usuários deste PC. Você pode movê-las para outro disco (ex.: de C: para D:).',
+      mediaFolderCurrent: 'Pasta atual:',
+      mediaFolderCustomBadge: 'Personalizada',
+      mediaFolderMove: 'Escolher pasta e mover',
+      mediaFolderMoving: 'Movendo mídias…',
+      mediaFolderMoveHint:
+        'Escolha a pasta base (ex.: D:\\). As mídias irão para pasta\\LouvorJA-PIANO\\Media, com capas, músicas e imagens. Vale para todos os usuários.',
+      mediaFolderRestore: 'Restaurar pasta padrão',
+      mediaFolderMoved: 'Mídias movidas para {path}',
+      mediaFolderError: 'Não foi possível mover a pasta de mídia. Tente novamente.',
+      mediaFolderDestInside: 'Escolha uma pasta fora da pasta de mídia atual.',
+      mediaFolderPersistError:
+        'As mídias foram copiadas, mas não foi possível salvar o caminho compartilhado.',
     },
 
     remote: {

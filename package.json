@@ -1,6 +1,6 @@
 {
   "name": "louvorja-piano",
-  "version": "1.24.1",
+  "version": "1.26.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -17,14 +17,14 @@
     "preview": "vite preview",
     "host": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
-    "build-only": "vite build",
+    "build-only": "vite build --base=./",
     "type-check": "vue-tsc --build",
     "test": "vitest run",
     "git:tag": "git tag -a \"v$npm_package_version\" -m \"Versão $npm_package_version\" && git push origin \"v$npm_package_version\"",
     "git:publish": "git push -u origin HEAD --follow-tags",
     "electron:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173\" \"wait-on http://127.0.0.1:5173 && env -u ELECTRON_RUN_AS_NODE cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron . --class=louvorja-piano\"",
     "electron:preview": "vite build --base=./ && env -u ELECTRON_RUN_AS_NODE electron . --class=louvorja-piano",
-    "electron:build": "vite build --base=./ && electron-builder",
+    "electron:build": "vite build --base=./ && node build/patch-nsis-templates.mjs && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -32,6 +32,7 @@
     "@tabler/icons-webfont": "^3.45.0",
     "basic-ftp": "^6.0.1",
     "electron-updater": "^6.8.9",
+    "fflate": "^0.8.3",
     "jsqr": "^1.4.0",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
@@ -39,7 +40,9 @@
     "vue-i18n": "^11.4.6",
     "vue-router": "^4.6.4",
     "vuetify": "^4.1.4",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "yauzl": "^3.4.0",
+    "yazl": "^3.3.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -187,8 +190,7 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
-      "selectPerMachineByDefault": true,
+      "perMachine": true,
       "allowElevation": true,
       "allowToChangeInstallationDirectory": false,
       "license": "electron/legal/eula/pt-BR.txt",

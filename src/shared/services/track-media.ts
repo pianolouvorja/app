@@ -1,6 +1,7 @@
 import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { readCatalogRecord } from '@shared/services/workspace-api'
+import { CUSTOM_MUSIC_ID_OFFSET } from '@modules/media/services/custom-catalog'
 
 export type TrackMediaKind = 'music' | 'slides' | 'covers'
 
@@ -122,6 +123,9 @@ function collectLyricImageUrls(music: CatalogMusicRecord): string[] {
 async function readMusicRecord(
   musicId: number,
 ): Promise<CatalogMusicRecord | null> {
+  // Faixa custom (Minhas Coletâneas, id >= 1M): não existe no catálogo
+  // oficial — evita 404 no json_db/túnel.
+  if (musicId >= CUSTOM_MUSIC_ID_OFFSET) return null
   const local = await readCatalogRecord<CatalogMusicRecord>(`music_${musicId}`)
   if (local != null) return local
 

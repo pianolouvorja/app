@@ -10,7 +10,10 @@ import {
   prepareFreshInstall,
   syncRemoteConfig,
 } from '@modules/starting/services/bootstrap-service'
-import { startCoverBackgroundSync } from '@modules/starting/services/cover-background-sync'
+import {
+  ensureAlbumCovers,
+  startCoverBackgroundSync,
+} from '@modules/starting/services/cover-background-sync'
 import {
   getDesktopBridge,
   isDesktopApp,
@@ -71,9 +74,14 @@ export function useAppBootstrap() {
 
     await delay(300)
     store.hide()
+    // Pré-aquece a Central de Mídia enquanto o usuário ainda não abriu a aba.
+    void import('@modules/albums/stores/useAlbumsStore').then(({ useAlbumsStore }) => {
+      void useAlbumsStore().hydrateCatalog()
+    })
+    // Capas faltantes em background — sem atrasar a UI.
     window.setTimeout(() => {
       void startCoverBackgroundSync()
-    }, 5000)
+    }, 800)
   }
 
   async function runFirstBoot() {
@@ -106,6 +114,18 @@ export function useAppBootstrap() {
         store.setProgress(value)
       },
     )
+
+    store.phase = 'syncing-covers'
+    store.setStatus('starting.status.syncingCovers')
+    store.setProgress(0)
+    await ensureAlbumCovers({
+      skipIfSynced: false,
+      onProgress: (value) => {
+        store.phase = 'syncing-covers'
+        store.setStatus('starting.status.syncingCovers')
+        store.setProgress(value)
+      },
+    })
 
     store.setProgress(100)
     store.setStatus('starting.status.done')

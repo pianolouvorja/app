@@ -145,8 +145,31 @@ export default {
       dataHint:
         'Removes the catalog, downloaded media and saved preferences in the app data folder (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO — shared across users). The app will restart setup on next launch.',
       clearData: 'Clear all data',
+      clearConfirmTitle: 'Clear all data?',
+      clearConfirmText:
+        'This removes the catalog, downloaded media and saved preferences. It cannot be undone. The app will start setup again on the next launch.',
+      clearConfirmCheckbox: 'I understand I will lose all data in this app.',
+      clearConfirmCancel: 'Cancel',
+      clearConfirmAction: 'Clear all data',
       clearError: 'Could not clear the data. Try again.',
       desktopOnly: 'Only available in the desktop app.',
+      backupTitle: 'Backup',
+      backupHint:
+        'Saves a zip of the app data folder (media, liturgy and playlists). If media lives on another drive, it is stored in the backup as the default Media folder. Restore always uses the default folders; you can move media later in Media folder.',
+      backupCreate: 'Create backup',
+      backupRestore: 'Restore backup',
+      backupCreating: 'Creating backup…',
+      backupRestoring: 'Restoring…',
+      backupProgress: 'File {current} of {total}',
+      backupCreated: 'Backup saved to {path}',
+      backupError: 'Could not create the backup. Try again.',
+      backupRestoreError: 'Could not restore the backup. Try again.',
+      backupRestoreConfirmTitle: 'Restore backup?',
+      backupRestoreConfirmText:
+        'Current data (catalog, liturgy, playlists, preferences and media in the default folder) will be replaced by the zip. Media returns to the app’s default folder.',
+      backupRestoreConfirmCheckbox: 'I understand current data will be replaced by the backup.',
+      backupRestoreConfirmCancel: 'Cancel',
+      backupRestoreConfirmAction: 'Restore backup',
       updateTitle: 'Updates',
       updateHint: 'Checks if a new app version is available for download.',
       checkUpdate: 'Check for updates',
@@ -189,6 +212,21 @@ export default {
       legacyMediaNotFound:
         'Legacy Louvor JA folder not found. Check Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'Could not import media. Try again.',
+      mediaFolderTitle: 'Media folder',
+      mediaFolderHint:
+        'Media is shared across all users on this PC. You can move it to another drive (e.g. from C: to D:).',
+      mediaFolderCurrent: 'Current folder:',
+      mediaFolderCustomBadge: 'Custom',
+      mediaFolderMove: 'Choose folder and move',
+      mediaFolderMoving: 'Moving media…',
+      mediaFolderMoveHint:
+        'Pick a base folder (e.g. D:\\). Media will go to folder\\LouvorJA-PIANO\\Media (covers, songs, images). Applies to all users.',
+      mediaFolderRestore: 'Restore default folder',
+      mediaFolderMoved: 'Media moved to {path}',
+      mediaFolderError: 'Could not move the media folder. Try again.',
+      mediaFolderDestInside: 'Choose a folder outside the current media folder.',
+      mediaFolderPersistError:
+        'Media was copied, but the shared path could not be saved.',
     },
 
     remote: {

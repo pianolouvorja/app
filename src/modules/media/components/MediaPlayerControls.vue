@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-defineProps<{
+import { useProjectionStore } from '@modules/settings/stores/useProjectionStore'
+
+const props = defineProps<{
   isPlaying: boolean
   hasAudio: boolean
   currentTimeLabel: string
@@ -25,6 +29,16 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { hasSelectedAudienceTargets } = storeToRefs(useProjectionStore())
+
+const canToggleProjection = computed(
+  () => props.projecting || hasSelectedAudienceTargets.value,
+)
+
+const projectAriaLabel = computed(() => {
+  if (!canToggleProjection.value) return t('monitors.projectNeedsScreens')
+  return props.projecting ? t('media.clearProjection') : t('media.project')
+})
 
 function onSeekInput(event: Event) {
   const target = event.target as HTMLInputElement
@@ -125,8 +139,9 @@ function onVolumeInput(event: Event) {
         type="button"
         class="media-player-controls__btn"
         :class="{ 'media-player-controls__btn--on': projecting }"
-        :aria-label="projecting ? t('media.clearProjection') : t('media.project')"
-        :title="projecting ? t('media.clearProjection') : t('media.project')"
+        :disabled="!canToggleProjection"
+        :aria-label="projectAriaLabel"
+        :title="projectAriaLabel"
         @click="emit('toggleProjection')"
       >
         <i

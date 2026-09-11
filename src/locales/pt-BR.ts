@@ -20,6 +20,7 @@ export default {
     primary: 'Principal',
     returnScreen: 'Tela retorno',
     selectedCount: '{count} selecionada(s)',
+    projectNeedsScreens: 'Selecione ao menos uma tela estendida para projetar',
   },
   popupCount: {
     label: 'Telas',

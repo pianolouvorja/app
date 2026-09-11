@@ -17,7 +17,18 @@ vi.mock('@shared/services/desktop-bridge', () => ({
 // Mock media-paths
 vi.mock('../media-paths', () => ({
   resolveRemoteFileUrl: vi.fn((url: string) => `https://api.test/${url}`),
-  toRelativeMediaPath: vi.fn((url: string) => url),
+  toRelativeMediaPath: vi.fn((url: string) => url.replace(/^\/(musics|images|covers)\//, '')),
+  resolveCoverDisplayUrl: vi.fn((url: string | null | undefined) =>
+    url == null ? null : `https://api.test/${url}`,
+  ),
+  resolveCoverUrlsFromDisk: vi.fn(async (urls: Array<string | null | undefined>) => {
+    const map = new Map<string, string>()
+    for (const url of urls) {
+      if (!url) continue
+      map.set(url, `https://api.test/${url}`)
+    }
+    return map
+  }),
 }))
 
 // Mock @plugins/i18n para evitar side-effects do createI18n nos testes
@@ -33,7 +44,20 @@ vi.mock('@plugins/i18n', () => ({
 import { readCatalogRecord } from '@shared/services/workspace-api'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { WORKSPACE_RECORD_KEYS } from '@shared/constants/storage-keys'
-import { loadLibraryCategories, getCurrentApiPrefix, readDownloadedAlbumIds, writeDownloadedAlbumIds } from '../library-catalog'
+import { resolveCoverUrlsFromDisk } from '../media-paths'
+import { loadLibraryCategories, getCurrentApiPrefix, readDownloadedAlbumIds, writeDownloadedAlbumIds, hydrateLocalLibraryCoverUrls } from '../library-catalog'
+
+function mockCoverDiskAsRemote() {
+  vi.mocked(resolveCoverUrlsFromDisk).mockImplementation(async (urls) => {
+    const map = new Map<string, string>()
+    for (const url of urls) {
+      if (!url) continue
+      map.set(url, `https://api.test/${url}`)
+    }
+    return map
+  })
+}
+
 
 describe('getCurrentApiPrefix', () => {
   beforeEach(() => {
@@ -232,19 +256,40 @@ describe('getCurrentApiPrefix - mutantes sobreviventes', () => {
   })
 })
 
-describe('resolveCoverUrl - cobertura do bridge', () => {
+describe('resolveCoverUrl - carga com resolveCoverUrlsFromDisk', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('usa desktop bridge para resolver cover quando bridge disponivel', async () => {
-    // Mocka getDesktopBridge para retornar um bridge com media.check
-    const { getDesktopBridge } = await import('@shared/services/desktop-bridge')
-    vi.mocked(getDesktopBridge).mockReturnValue({
-      media: {
-        check: vi.fn().mockResolvedValue('/local/covers/test.jpg'),
+  it('loadLibraryCategories resolve capas via resolveCoverUrlsFromDisk', async () => {
+    const mockCategories = [
+      {
+        id_category: 'cat1',
+        name: 'Categorias',
+        albums: [
+          { id_album: 100, name: 'Album', url_image: '/img/test.jpg' },
+        ],
       },
-    } as any)
+    ]
+    vi.mocked(readCatalogRecord).mockImplementation(async (key: string) => {
+      if (key === 'pt_categories') return mockCategories
+      return null
+    })
+    vi.mocked(resolveCoverUrlsFromDisk).mockResolvedValue(
+      new Map([['/img/test.jpg', 'local://media/covers/test.jpg']]),
+    )
+
+    const result = await loadLibraryCategories()
+    const cat = result.find((c) => c.id === 'cat1')
+    expect(cat!.albums[0].coverUrl).toBe('local://media/covers/test.jpg')
+    expect(cat!.albums[0].rawCoverUrl).toBe('/img/test.jpg')
+    expect(resolveCoverUrlsFromDisk).toHaveBeenCalled()
+  })
+
+  it('hydrateLocalLibraryCoverUrls aplica o mapa local', async () => {
+    vi.mocked(resolveCoverUrlsFromDisk)
+      .mockResolvedValueOnce(new Map([['/img/test.jpg', 'https://api.test//img/test.jpg']]))
+      .mockResolvedValueOnce(new Map([['/img/test.jpg', 'local://media/covers/img/test.jpg']]))
 
     const mockCategories = [
       {
@@ -261,18 +306,15 @@ describe('resolveCoverUrl - cobertura do bridge', () => {
     })
 
     const result = await loadLibraryCategories()
+    await hydrateLocalLibraryCoverUrls(result)
     const cat = result.find((c) => c.id === 'cat1')
-    // coverUrl deve ser o path local retornado pelo bridge
-    expect(cat!.albums[0].coverUrl).toBe('/local/covers/test.jpg')
+    expect(cat!.albums[0].coverUrl).toBe('local://media/covers/img/test.jpg')
   })
 
-  it('fallback para resolveRemoteFileUrl quando bridge.media.check retorna null', async () => {
-    const { getDesktopBridge } = await import('@shared/services/desktop-bridge')
-    vi.mocked(getDesktopBridge).mockReturnValue({
-      media: {
-        check: vi.fn().mockResolvedValue(null),
-      },
-    } as any)
+  it('mantém URL remota quando resolveCoverUrlsFromDisk devolve remoto', async () => {
+    vi.mocked(resolveCoverUrlsFromDisk).mockResolvedValue(
+      new Map([['/img/fallback.jpg', 'https://api.test//img/fallback.jpg']]),
+    )
 
     const mockCategories = [
       {
@@ -290,18 +332,10 @@ describe('resolveCoverUrl - cobertura do bridge', () => {
 
     const result = await loadLibraryCategories()
     const cat = result.find((c) => c.id === 'cat1')
-    // coverUrl deve vir do resolveRemoteFileUrl mock
     expect(cat!.albums[0].coverUrl).toContain('api.test')
   })
 
   it('cover null quando url_image é null mesmo com bridge ativo', async () => {
-    const { getDesktopBridge } = await import('@shared/services/desktop-bridge')
-    vi.mocked(getDesktopBridge).mockReturnValue({
-      media: {
-        check: vi.fn().mockResolvedValue(null),
-      },
-    } as any)
-
     const mockCategories = [
       {
         id_category: 'cat1',
@@ -322,7 +356,6 @@ describe('resolveCoverUrl - cobertura do bridge', () => {
   })
 
   it('cover null quando url_image é undefined', async () => {
-    // Mata mutante de nullish coalescing em url_image ?? null
     const mockCategories = [
       {
         id_category: 'cat1',
@@ -373,13 +406,12 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // Infantis (order 98) deve vir ANTES de custom_unmapped (order 50 default)
+    // Infantis (order 3) deve vir ANTES de custom_unmapped (order 50 default)
     // Mutante: se ?? vira &&, custom_unmapped teria order 0 (false && 50 = false -> 0)
-    // e Infantis teria order 0 tambem (false && 98 = false -> 0)
+    // e Infantis teria order 0 tambem (false && 3 = false -> 0)
     // Ambos em 0 cairiam em localeCompare
-    // Precisamos garantir que o teste diferencia ?? de &&
-    // Com ??: Infantis=98, custom=50 -> custom ANTES de Infantis
-    expect(catIds.indexOf('custom_unmapped')).toBeLessThan(catIds.indexOf('Infantis'))
+    // Com ??: Infantis=3, custom=50 -> Infantis ANTES de custom
+    expect(catIds.indexOf('Infantis')).toBeLessThan(catIds.indexOf('custom_unmapped'))
   })
 
   it('usa CATEGORY_ORDER por name quando id nao esta no mapa', async () => {
@@ -388,7 +420,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
     const mockCategories = [
       {
         id_category: 'unmapped_a',
-        name: 'Doxologia',  // order 99
+        name: 'Doxologia',  // order 4
         albums: [{ id_album: 200, name: 'Album B', url_image: null }],
       },
       {
@@ -404,18 +436,18 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // CDs Oficiais/Ano (order 2) ANTES de Doxologia (order 99)
+    // CDs Oficiais/Ano (order 2) ANTES de Doxologia (order 4)
     expect(catIds.indexOf('unmapped_b')).toBeLessThan(catIds.indexOf('unmapped_a'))
   })
 
   it('orderA - orderB: ordem crescente verificada com 3 categorias', async () => {
     // Mata mutante: orderA - orderB -> orderA + orderB
-    // Com subtracao: 2, 98, 99 (crescente)
-    // Com soma: 99+98=197, 2+99=101, 2+98=100 -> ordem diferente
+    // Com subtracao: 2, 3, 4 (crescente)
+    // Com soma: 4+3=7, 2+4=6, 2+3=5 -> ordem diferente
     const mockCategories = [
       {
         id_category: 'dox_id',
-        name: 'Doxologia',  // order 99
+        name: 'Doxologia',  // order 4
         albums: [{ id_album: 300, name: 'Album C', url_image: null }],
       },
       {
@@ -425,7 +457,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
       },
       {
         id_category: 'inf_id',
-        name: 'Infantis',  // order 98
+        name: 'Infantis',  // order 3
         albums: [{ id_album: 200, name: 'Album B', url_image: null }],
       },
     ]
@@ -436,7 +468,7 @@ describe('sortCategories - mutantes de nullish coalescing', () => {
 
     const result = await loadLibraryCategories()
     const catIds = result.map((c) => c.id)
-    // Ordem esperada: CDs Oficiais (2) < Infantis (98) < Doxologia (99)
+    // Ordem esperada: CDs Oficiais (2) < Infantis (3) < Doxologia (4)
     expect(catIds).toEqual(['cds_id', 'inf_id', 'dox_id'])
   })
 })
@@ -682,14 +714,8 @@ describe('mutantes sobreviventes - round 2', () => {
     vi.mocked(readCatalogRecord).mockResolvedValue(null)
   })
 
-  // Mutante L59: 'covers' -> "" — bridge.media.check deve receber 'covers' exato
-  it('resolveCoverUrl passa "covers" como primeiro argumento para bridge.media.check', async () => {
-    vi.mocked(getDesktopBridge).mockReturnValue({
-      media: {
-        check: vi.fn().mockResolvedValue(null),
-      },
-    } as any)
-
+  // resolveCoverUrlsFromDisk é a fonte da verdade das capas
+  it('loadLibraryCategories chama resolveCoverUrlsFromDisk para capas', async () => {
     vi.mocked(readCatalogRecord).mockImplementation(async (key: string) => {
       if (key === 'pt_categories') {
         return [
@@ -704,14 +730,7 @@ describe('mutantes sobreviventes - round 2', () => {
     })
 
     await loadLibraryCategories()
-
-    const bridge = getDesktopBridge()
-    if (bridge) {
-      const checkSpy = bridge.media.check as ReturnType<typeof vi.fn>
-      expect(checkSpy).toHaveBeenCalledWith('covers', expect.any(String))
-      // Garante que primeiro arg NAO é string vazia (mata mutante "" -> "")
-      expect(checkSpy.mock.calls[0][0]).toBe('covers')
-    }
+    expect(resolveCoverUrlsFromDisk).toHaveBeenCalled()
   })
 
   // Mutante L90: ?? -> && — categoria com id no mapa mas name fora do mapa
@@ -845,11 +864,8 @@ describe('mutantes sobreviventes - round 3', () => {
     expect(getCurrentApiPrefix()).toBe('pt')
   })
 
-  // #20 L57: if(bridge) -> if(true) em resolveCoverUrl
-  // Ja temos teste que mocka bridge. O mutante if(true) faria o codigo entrar
-  // mesmo com bridge null e chamar toRelativeMediaPath etc.
-  // Para matar: verificar que bridge.media.check NAO e chamado quando bridge e null
-  it('#20: bridge null -> resolveCoverUrl usa fallback remoto, nao chama bridge', async () => {
+  // loadLibraryCategories não chama bridge — URL remota imediata
+  it('#20: bridge null -> loadLibraryCategories usa fallback remoto sem crash', async () => {
     vi.mocked(getDesktopBridge).mockReturnValue(null)
     vi.mocked(readCatalogRecord).mockImplementation(async (key: string) => {
       if (key === 'pt_categories') {
@@ -860,9 +876,6 @@ describe('mutantes sobreviventes - round 3', () => {
     const result = await loadLibraryCategories()
     const cat = result.find((c) => c.id === 'cat1')
     expect(cat).toBeDefined()
-    // Mutante if(true): chamaria bridge.media.check mas bridge e null -> throw
-    // Se o mutante entrasse no if com bridge null, bridge.media.check throw -> uncaught
-    // Logo o teste passaria com o original e falharia com o mutante (crash)
     expect(cat!.albums[0].coverUrl).toBe('https://api.test//img/test.jpg')
   })
 

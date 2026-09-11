@@ -1,4 +1,5 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import path from 'node:path'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 
 import { detectClassoInstallation, probeClassoRegistry } from '../classo-detect.mjs'
 import {
@@ -6,9 +7,14 @@ import {
   importLegacyMediaItems,
   resolveLegacyMediaConfigFromSelection,
 } from '../legacy-media-import.mjs'
+import {
+  getWindowsMediaFolderStatus,
+  migrateWindowsMediaFolder,
+} from '../media-folder-migrate.mjs'
 
 import {
   checkMediaFile,
+  checkMediaFiles,
   clearWorkspaceData,
   deleteMediaFile,
   downloadCatalogDatabase,
@@ -17,6 +23,16 @@ import {
   readWorkspaceRecord,
   writeWorkspaceRecord,
 } from '../workspace.mjs'
+import { ensureWorkspaceDirectories, getWorkspacePaths } from '../paths.mjs'
+import { writeWindowsMediaRootOverride } from '../windows-media-root.mjs'
+import {
+  buildBackupFileName,
+  buildLocalStorageRestoreScript,
+  buildLocalStorageSnapshotScript,
+  createAppBackupArchive,
+  readRestoredBrowserStorage,
+  restoreAppBackupArchive,
+} from '../app-backup.mjs'
 import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
@@ -423,9 +439,9 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  ipcMain.handle('workspace:clear', () => {
+  ipcMain.handle('workspace:clear', (_event, options) => {
     try {
-      return clearWorkspaceData()
+      return clearWorkspaceData(options ?? {})
     } catch (error) {
       console.error('[ipc] workspace:clear', error)
       return false
@@ -501,6 +517,152 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  // Pasta de mídia compartilhada (Windows): status / escolher / migrar
+  ipcMain.handle('media-folder:status', () => {
+    try {
+      if (process.platform !== 'win32') {
+        return { currentPath: '', defaultPath: '', isCustom: false }
+      }
+      return getWindowsMediaFolderStatus()
+    } catch (error) {
+      console.error('[ipc] media-folder:status', error)
+      return { currentPath: '', defaultPath: '', isCustom: false }
+    }
+  })
+
+  ipcMain.handle('media-folder:pick', async (event) => {
+    try {
+      if (process.platform !== 'win32') return null
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: 'Selecione a pasta base (será criado LouvorJA-PIANO\\Media dentro dela)',
+        properties: ['openDirectory', 'createDirectory'],
+      })
+      if (result.canceled || !result.filePaths?.[0]) return null
+      return result.filePaths[0]
+    } catch (error) {
+      console.error('[ipc] media-folder:pick', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('media-folder:migrate', (_event, targetPath) => {
+    try {
+      if (process.platform !== 'win32') {
+        return { ok: false, path: null, reason: 'not-windows' }
+      }
+      return migrateWindowsMediaFolder(String(targetPath ?? ''))
+    } catch (error) {
+      console.error('[ipc] media-folder:migrate', error)
+      return { ok: false, path: null, reason: 'error' }
+    }
+  })
+
+  ipcMain.handle('backup:create', async (event) => {
+    try {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const defaultName = buildBackupFileName()
+      const result = await dialog.showSaveDialog(win ?? undefined, {
+        title: 'Salvar backup do LouvorJA - PIANO',
+        defaultPath: path.join(app.getPath('documents'), defaultName),
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+      })
+      if (result.canceled || !result.filePath) {
+        return { ok: false, reason: 'cancelled' }
+      }
+      let destZip = result.filePath
+      if (!destZip.toLowerCase().endsWith('.zip')) destZip = `${destZip}.zip`
+
+      const paths = getWorkspacePaths()
+      const sendProgress = (payload) => {
+        try {
+          if (!event.sender.isDestroyed()) event.sender.send('backup:progress', payload)
+        } catch {
+          /* ignore */
+        }
+      }
+      sendProgress({ current: 0, total: 0, zipPath: destZip })
+      let browserStorage = {}
+      try {
+        if (!event.sender.isDestroyed()) {
+          browserStorage = await event.sender.executeJavaScript(
+            buildLocalStorageSnapshotScript(),
+            true,
+          )
+        }
+      } catch (error) {
+        console.warn('[ipc] backup localStorage snapshot', error)
+      }
+      await createAppBackupArchive({
+        dataRoot: paths.root,
+        mediaRoot: paths.media,
+        mediaFolders: {
+          covers: paths.covers,
+          music: paths.music,
+          images: paths.images,
+        },
+        destZip,
+        onProgress: sendProgress,
+        browserStorage: browserStorage && typeof browserStorage === 'object' ? browserStorage : {},
+      })
+      return { ok: true, path: destZip }
+    } catch (error) {
+      console.error('[ipc] backup:create', error)
+      return { ok: false, reason: 'error' }
+    }
+  })
+
+  ipcMain.handle('backup:restore', async (event) => {
+    try {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: 'Selecionar backup do LouvorJA - PIANO',
+        filters: [{ name: 'ZIP', extensions: ['zip'] }],
+        properties: ['openFile'],
+      })
+      if (result.canceled || !result.filePaths?.[0]) {
+        return { ok: false, reason: 'cancelled' }
+      }
+
+      if (process.platform === 'win32') {
+        writeWindowsMediaRootOverride(null)
+      }
+
+      const { root } = getWorkspacePaths()
+      const sendProgress = (payload) => {
+        try {
+          if (!event.sender.isDestroyed()) event.sender.send('backup:progress', payload)
+        } catch {
+          /* ignore */
+        }
+      }
+      sendProgress({ current: 0, total: 0, zipPath: result.filePaths[0] })
+      await restoreAppBackupArchive({
+        zipFile: result.filePaths[0],
+        destRoot: root,
+        onProgress: sendProgress,
+      })
+      const browserStorage = readRestoredBrowserStorage(root)
+      if (browserStorage) {
+        try {
+          if (!event.sender.isDestroyed()) {
+            await event.sender.executeJavaScript(
+              buildLocalStorageRestoreScript(browserStorage),
+              true,
+            )
+          }
+        } catch (error) {
+          console.warn('[ipc] backup localStorage restore', error)
+        }
+      }
+      ensureWorkspaceDirectories()
+      return { ok: true }
+    } catch (error) {
+      console.error('[ipc] backup:restore', error)
+      return { ok: false, reason: 'error', message: String(error?.message || error) }
+    }
+  })
+
   // Importação de mídia do Louvor JA legado (Windows: config/capas|imagens|musicas)
   ipcMain.handle('legacy-media:analyze', (_event, selectedPath) => {
     try {
@@ -565,6 +727,10 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('media:check', (_event, mediaType, filename) => {
     return checkMediaFile(mediaType, filename)
+  })
+
+  ipcMain.handle('media:check-many', (_event, mediaType, filenames) => {
+    return checkMediaFiles(mediaType, filenames)
   })
 
   ipcMain.handle('media:delete', (_event, mediaType, filename) => {

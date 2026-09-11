@@ -122,8 +122,51 @@ describe("NSIS multilingual EULA configuration", () => {
     expect(script).toContain("LicenseLangString LicenseFile ${LANG_SPANISH_ES}");
     expect(script).not.toMatch(/LicenseLangString LicenseFile \$\{LANG_(ENGLISH|SPANISH)\}/);
     expect(script).toContain('!define INSTALL_FOLDER_NAME "Louvor JA PIANO"');
-    expect(script).toContain("customInstallmode");
+    expect(script).toContain('!define DATA_FOLDER_NAME "LouvorJA-PIANO"');
     expect(script).toContain("customInit");
+    expect(script).toContain("killAppIfRunning");
+    expect(script).toContain("customHeader");
+    expect(script).toContain('!addincludedir "${BUILD_RESOURCES_DIR}"');
+    expect(script).toContain('taskkill /F /IM "${APP_EXECUTABLE_FILENAME}" /T');
+    // Check não deve exibir o diálogo — só taskkill.
+    expect(script).not.toMatch(
+      /!macro customCheckAppRunning[\s\S]*\$\(appCannotBeClosed\)/,
+    );
+    expect(script).toContain("customInstall");
+    expect(script).toContain("preInit");
+    // Instalação simplificada: sem página de pasta custom (fica em Configurações).
+    expect(script).not.toContain("customPageAfterChangeDir");
+    expect(script).not.toContain("MediaPage");
+    expect(script).not.toContain("MEDIA_OPT_CUSTOM");
+    expect(script).not.toContain("nsDialogs.nsh");
+    // NSIS: \\${...} evita C:\ProgramDataLouvorJA-PIANO (barra engolida)
+    expect(script).toMatch(/\$0\\\\\$\{DATA_FOLDER_NAME\}/);
+    expect(script).toMatch(/Media\\\\covers/);
+  });
+
+  it("overrides extractAppPackage to extract 7z in-place without CopyFiles dialog", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const extractPath = fileURLToPath(
+      new URL("../../build/extractAppPackage.nsh", import.meta.url),
+    );
+    const script = await readFile(extractPath, "utf8");
+    expect(script).toContain("!macro extractUsing7za");
+    expect(script).toContain('taskkill /F /IM "${APP_EXECUTABLE_FILENAME}" /T');
+    expect(script).toContain("Nsis7z::Extract");
+    expect(script).not.toMatch(/MessageBox.*appCannotBeClosed/)
+    expect(script).not.toMatch(/CopyFiles/)
+  });
+
+  it("patch NSIS remove o label OneMoreAttempt (makensis warning 6012 vira erro)", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const { fileURLToPath } = await import("node:url");
+    const patchPath = fileURLToPath(
+      new URL("../../build/patch-nsis-templates.mjs", import.meta.url),
+    );
+    const script = await readFile(patchPath, "utf8");
+    expect(script).toMatch(/replace\(\/\^\\s\*OneMoreAttempt:/);
+    expect(script).not.toMatch(/IDRETRY OneMoreAttempt/);
   });
 });
 

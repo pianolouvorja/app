@@ -7,6 +7,7 @@ import type { MediaPlaybackMode } from '@modules/media/types/media'
 import {
   findCollectionById,
   loadAlbumCategories,
+  loadCustomAlbumCategory,
 } from '../services/album-catalog'
 import {
   filterAlbumMusicIndex,
@@ -71,16 +72,30 @@ export const useAlbumsStore = defineStore('albums', () => {
     }
   }
 
+  async function mergeCustomCollections() {
+    try {
+      const customCategory = await loadCustomAlbumCategory()
+      if (!customCategory) return
+
+      const withoutCustom = categories.value.filter(
+        (category) => String(category.id) !== 'custom',
+      )
+      categories.value = [customCategory, ...withoutCustom]
+    } catch (error) {
+      console.warn('[albums] falha ao carregar Minhas Coletâneas', error)
+    }
+  }
+
   async function hydrateCatalog() {
     if (categories.value.length > 0) return
     isLoadingCatalog.value = true
     lastErrorKey.value = null
     try {
+      // Catálogo local primeiro — a Central abre na hora com capas.
       categories.value = await loadAlbumCategories()
       if (categories.value.length === 0) {
         lastErrorKey.value = 'albums.messages.catalogEmpty'
       }
-      void hydrateMusicIndex()
     } catch (error) {
       console.error('[albums] falha ao carregar catálogo', error)
       lastErrorKey.value = 'albums.messages.catalogFailed'
@@ -88,6 +103,9 @@ export const useAlbumsStore = defineStore('albums', () => {
     } finally {
       isLoadingCatalog.value = false
     }
+
+    void hydrateMusicIndex()
+    void mergeCustomCollections()
   }
 
   async function openCollection(collectionId: string) {

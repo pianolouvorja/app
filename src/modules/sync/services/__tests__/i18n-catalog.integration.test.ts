@@ -26,6 +26,17 @@ vi.mock('@shared/services/desktop-bridge', () => ({
 vi.mock('../media-paths', () => ({
   resolveRemoteFileUrl: vi.fn((url: string) => `https://api.test/${url}`),
   toRelativeMediaPath: vi.fn((url: string) => url),
+  resolveCoverDisplayUrl: vi.fn((url: string | null | undefined) =>
+    url == null ? null : `https://api.test/${url}`,
+  ),
+  resolveCoverUrlsFromDisk: vi.fn(async (urls: Array<string | null | undefined>) => {
+    const map = new Map<string, string>()
+    for (const url of urls) {
+      if (!url) continue
+      map.set(url, `https://api.test/${url}`)
+    }
+    return map
+  }),
 }))
 
 // Mock @plugins/i18n para evitar side-effects

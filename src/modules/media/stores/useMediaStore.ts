@@ -37,6 +37,11 @@ import {
   switchMediaAudioElement,
 } from '../services/media-audio'
 import {
+  loadCustomMusicTrack,
+  isCustomMusicId,
+  fromCustomMusicId,
+} from '../services/custom-catalog'
+import {
   loadMediaTrack,
   resolveAlbumSubtitle,
 } from '../services/media-catalog'
@@ -509,7 +514,11 @@ export const useMediaStore = defineStore('media', () => {
     status.value = 'loading'
     lastErrorKey.value = null
 
-    const track = await loadMediaTrack(musicId)
+    // Dispatcher custom vs oficial (mesmo contrato do web): id >= 1M é
+    // música custom de Minhas Coletâneas.
+    const track = isCustomMusicId(musicId)
+      ? await loadCustomMusicTrack(fromCustomMusicId(musicId))
+      : await loadMediaTrack(musicId)
     if (!track) {
       status.value = 'error'
       lastErrorKey.value = 'media.messages.trackMissing'
@@ -872,7 +881,9 @@ export const useMediaStore = defineStore('media', () => {
     status.value = 'loading'
     lastErrorKey.value = null
 
-    const track = await loadMediaTrack(current.musicId)
+    const track = isCustomMusicId(current.musicId)
+      ? await loadCustomMusicTrack(fromCustomMusicId(current.musicId))
+      : await loadMediaTrack(current.musicId)
     if (!track) {
       status.value = 'error'
       lastErrorKey.value = 'media.messages.trackMissing'

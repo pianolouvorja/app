@@ -145,8 +145,32 @@ export default {
       dataHint:
         'Elimina el catálogo, los medios descargados y las preferencias guardadas en la carpeta de datos de la app (Windows: C:\\ProgramData\\LouvorJA-PIANO; Linux: /var/lib/LouvorJA-PIANO; macOS: /Users/Shared/LouvorJA-PIANO, compartida entre usuarios). La aplicación reiniciará la configuración en el próximo inicio.',
       clearData: 'Borrar todos los datos',
+      clearConfirmTitle: '¿Borrar todos los datos?',
+      clearConfirmText:
+        'Esta acción elimina el catálogo, los medios descargados y las preferencias guardadas. No se puede deshacer. En el próximo inicio la aplicación volverá al setup.',
+      clearConfirmCheckbox: 'Entiendo que perderé todos los datos de esta aplicación.',
+      clearConfirmCancel: 'Cancelar',
+      clearConfirmAction: 'Borrar todos los datos',
       clearError: 'No se pudieron borrar los datos. Intente de nuevo.',
       desktopOnly: 'Solo disponible en la aplicación de escritorio.',
+      backupTitle: 'Copia de seguridad',
+      backupHint:
+        'Guarda un zip de la carpeta de datos (medios, liturgia y playlists). Si los medios están en otro disco, entran en el backup como la carpeta Media predeterminada. La restauración siempre usa las carpetas predeterminadas; luego puede mover los medios en Carpeta de medios.',
+      backupCreate: 'Crear copia',
+      backupRestore: 'Restaurar copia',
+      backupCreating: 'Creando copia…',
+      backupRestoring: 'Restaurando…',
+      backupProgress: 'Archivo {current} de {total}',
+      backupCreated: 'Copia guardada en {path}',
+      backupError: 'No se pudo crear la copia. Intente de nuevo.',
+      backupRestoreError: 'No se pudo restaurar la copia. Intente de nuevo.',
+      backupRestoreConfirmTitle: '¿Restaurar copia?',
+      backupRestoreConfirmText:
+        'Los datos actuales (catálogo, liturgia, playlists, preferencias y medios de la carpeta predeterminada) se reemplazarán por el zip. Los medios vuelven a la carpeta predeterminada.',
+      backupRestoreConfirmCheckbox:
+        'Entiendo que los datos actuales serán reemplazados por la copia.',
+      backupRestoreConfirmCancel: 'Cancelar',
+      backupRestoreConfirmAction: 'Restaurar copia',
       updateTitle: 'Actualizaciones',
       updateHint: 'Verifica si hay una nueva versión de la aplicación disponible.',
       checkUpdate: 'Buscar actualizaciones',
@@ -190,6 +214,21 @@ export default {
       legacyMediaNotFound:
         'No se encontró la carpeta del Louvor JA legado. Revise Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'No se pudieron importar los medios. Intente de nuevo.',
+      mediaFolderTitle: 'Carpeta de medias',
+      mediaFolderHint:
+        'Las medias se comparten entre todos los usuarios de este PC. Puede moverlas a otro disco (p. ej. de C: a D:).',
+      mediaFolderCurrent: 'Carpeta actual:',
+      mediaFolderCustomBadge: 'Personalizada',
+      mediaFolderMove: 'Elegir carpeta y mover',
+      mediaFolderMoving: 'Moviendo medias…',
+      mediaFolderMoveHint:
+        'Elija la carpeta base (p. ej. D:\\). Las medias irán a carpeta\\LouvorJA-PIANO\\Media (portadas, canciones e imágenes). Vale para todos los usuarios.',
+      mediaFolderRestore: 'Restaurar carpeta predeterminada',
+      mediaFolderMoved: 'Medias movidas a {path}',
+      mediaFolderError: 'No se pudo mover la carpeta de medias. Intente de nuevo.',
+      mediaFolderDestInside: 'Elija una carpeta fuera de la carpeta de medias actual.',
+      mediaFolderPersistError:
+        'Las medias se copiaron, pero no se pudo guardar la ruta compartida.',
     },
 
     remote: {
