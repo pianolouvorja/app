@@ -389,6 +389,40 @@
             await refresh()
           }
         })
+
+        async function stepPage(direction) {
+          if (!window.louvorja || !window.louvorja.projection) return
+          if (direction === 'next' && window.louvorja.projection.remotePptNext) {
+            await window.louvorja.projection.remotePptNext()
+          } else if (direction === 'prev' && window.louvorja.projection.remotePptPrev) {
+            await window.louvorja.projection.remotePptPrev()
+          } else {
+            return
+          }
+          await syncPptToTvs()
+          await refresh()
+        }
+
+        // Expõe para o main (setas no canvas do PDF) atualizar TVs/contador.
+        window.__pdfBarAfterPageChange = async function () {
+          await syncPptToTvs()
+          await refresh()
+        }
+
+        window.addEventListener('keydown', function (event) {
+          if (event.defaultPrevented) return
+          if (event.altKey || event.ctrlKey || event.metaKey) return
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === 'Right' || event.key === 'Down') {
+            event.preventDefault()
+            void stepPage('next')
+            return
+          }
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.key === 'Left' || event.key === 'Up') {
+            event.preventDefault()
+            void stepPage('prev')
+          }
+        })
+
         projectBtn.addEventListener('click', async function () {
           if (window.louvorja && window.louvorja.projection && window.louvorja.projection.toggleVideoScreens) {
             await window.louvorja.projection.toggleVideoScreens()
