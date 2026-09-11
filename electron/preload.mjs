@@ -137,6 +137,12 @@ contextBridge.exposeInMainWorld('louvorja', {
     migrate: (targetPath) => ipcRenderer.invoke('media-folder:migrate', targetPath ?? ''),
   },
 
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: () => ipcRenderer.invoke('backup:restore'),
+    onProgress: (callback) => subscribe('backup:progress', callback),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),

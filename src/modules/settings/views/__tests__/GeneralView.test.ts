@@ -29,6 +29,9 @@ vi.mock('../../components/LegacyMediaImportCard.vue', () => ({
 vi.mock('../../components/MediaFolderCard.vue', () => ({
   default: { name: 'MediaFolderCard', template: '<div />' },
 }))
+vi.mock('../../components/AppBackupCard.vue', () => ({
+  default: { name: 'AppBackupCard', template: '<div class="app-backup-card-mock" />' },
+}))
 
 import GeneralView from '../GeneralView.vue'
 import { isDesktopApp } from '@shared/services/desktop-bridge'
@@ -73,6 +76,7 @@ describe('GeneralView.vue', () => {
           Teleport: true,
           LegacyMediaImportCard: true,
           MediaFolderCard: true,
+          AppBackupCard: true,
         },
       },
     })

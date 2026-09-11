@@ -107,6 +107,24 @@ export type MediaFolderApi = {
   migrate: (targetPath: string) => Promise<MediaFolderMigrateResult>
 }
 
+export type BackupProgress = {
+  current: number
+  total: number
+  zipPath: string
+}
+
+export type BackupResult = {
+  ok: boolean
+  path?: string
+  reason?: string
+}
+
+export type BackupApi = {
+  create: () => Promise<BackupResult>
+  restore: () => Promise<BackupResult>
+  onProgress: (callback: (progress: BackupProgress) => void) => () => void
+}
+
 export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
@@ -319,6 +337,7 @@ export type LouvorJaBridge = {
   classo?: ClassoApi
   legacyMedia?: LegacyMediaApi
   mediaFolder?: MediaFolderApi
+  backup?: BackupApi
   media: MediaApi
   displays: DisplaysApi
   dialog: DialogApi

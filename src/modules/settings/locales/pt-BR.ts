@@ -154,6 +154,24 @@ export default {
       clearConfirmAction: 'Apagar todos os dados',
       clearError: 'Não foi possível limpar os dados. Tente novamente.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
+      backupTitle: 'Backup',
+      backupHint:
+        'Salva um zip da pasta de dados (mídias, liturgia e playlists). Se a mídia estiver em outro disco, ela entra no backup como pasta Media padrão. A restauração sempre volta para a pasta padrão; depois você pode mover a mídia em Pasta de mídia.',
+      backupCreate: 'Criar backup',
+      backupRestore: 'Restaurar backup',
+      backupCreating: 'Criando backup…',
+      backupRestoring: 'Restaurando…',
+      backupProgress: 'Arquivo {current} de {total}',
+      backupCreated: 'Backup salvo em {path}',
+      backupError: 'Não foi possível criar o backup. Tente novamente.',
+      backupRestoreError: 'Não foi possível restaurar o backup. Tente novamente.',
+      backupRestoreConfirmTitle: 'Restaurar backup?',
+      backupRestoreConfirmText:
+        'Os dados atuais (catálogo, liturgia, playlists, preferências e mídias da pasta padrão) serão substituídos pelo conteúdo do zip. A mídia volta para a pasta padrão do aplicativo.',
+      backupRestoreConfirmCheckbox:
+        'Entendo que os dados atuais serão substituídos pelo backup.',
+      backupRestoreConfirmCancel: 'Cancelar',
+      backupRestoreConfirmAction: 'Restaurar backup',
 
 
       updateTitle: 'Atualizações',
