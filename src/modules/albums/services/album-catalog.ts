@@ -1,15 +1,14 @@
 import hymnalCover from '@assets/library/hymnal.jpeg'
 import hymnal1996Cover from '@assets/library/hymnal_1996.jpeg'
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
-import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
 import {
   listCustomCollections,
   customFileUrl,
   toCustomCollectionId,
-  fromCustomCollectionId,
 } from '@modules/media/services/custom-catalog'
+import { resolveCoverUrlsFromDisk, resolveRemoteFileUrl } from '@modules/sync/services/media-paths'
 
 import type { AlbumCategory, AlbumCollection } from '../types/albums'
 
@@ -33,16 +32,6 @@ type CatalogHymnalEntry = {
   id_music?: number | string
 }
 
-function toRelativeCoverPath(urlPath: string): string {
-  return urlPath.replace(/^\/(musics|images|covers)\//, '')
-}
-
-function resolveRemoteCoverUrl(urlPath: string): string {
-  const cleanPath = urlPath.startsWith('/') ? urlPath.slice(1) : urlPath
-  const base = import.meta.env.VITE_URL_FILES ?? 'https://api.louvorja.com.br/file'
-  return `${base}/${cleanPath}`
-}
-
 async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
   const local = await readCatalogRecord<T>(filename)
   if (local != null) return local
@@ -53,19 +42,6 @@ async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
     console.warn(`[albums] falha ao obter catálogo ${filename}`, error)
     return null
   }
-}
-
-async function resolveCoverUrl(urlImage: string | null | undefined): Promise<string | null> {
-  if (!urlImage) return null
-
-  const bridge = getDesktopBridge()
-  if (bridge) {
-    const relativePath = toRelativeCoverPath(urlImage)
-    const local = await bridge.media.check('covers', relativePath)
-    if (local) return local
-  }
-
-  return resolveRemoteCoverUrl(urlImage)
 }
 
 async function buildHymnalCollections(): Promise<AlbumCollection[]> {
@@ -121,21 +97,16 @@ async function buildCustomCollectionCards(): Promise<AlbumCollection[]> {
   }
 }
 
+/** Catálogo oficial (hinários + categorias) — capas resolvidas do disco em 1 IPC. */
 export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
   const result: AlbumCategory[] = []
   const langPrefix = getCurrentApiPrefix()
 
-  // Minhas Coletâneas (custom) — primeira seção da Central, como no web
-  const customs = await buildCustomCollectionCards()
-  if (customs.length > 0) {
-    result.push({
-      id: 'custom',
-      name: 'Minhas Coletâneas',
-      collections: customs,
-    })
-  }
+  const [hymnals, categories] = await Promise.all([
+    buildHymnalCollections(),
+    readOrFetchCatalog<CatalogCategory[]>(`${langPrefix}_categories`),
+  ])
 
-  const hymnals = await buildHymnalCollections()
   if (hymnals.length > 0) {
     result.push({
       id: 'hymnals',
@@ -144,8 +115,15 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
     })
   }
 
-  const categories = await readOrFetchCatalog<CatalogCategory[]>(`${langPrefix}_categories`)
-  if (!Array.isArray(categories)) return result
+  if (!Array.isArray(categories)) return sortAlbumCategories(result)
+
+  const rawCoverUrls: Array<string | null | undefined> = []
+  for (const category of categories) {
+    category.albums?.forEach((album) => {
+      rawCoverUrls.push(album.url_image)
+    })
+  }
+  const coverByRaw = await resolveCoverUrlsFromDisk(rawCoverUrls)
 
   for (const category of categories) {
     if (!category.albums?.length) continue
@@ -159,12 +137,16 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
       const name = String(album.name ?? '').trim()
       if (!name) continue
 
+      const rawCover = album.url_image ?? null
       collections.push({
         id: albumId,
         kind: 'album',
         name,
         subtitle: String(album.subtitle ?? '').trim(),
-        coverUrl: await resolveCoverUrl(album.url_image),
+        coverUrl: rawCover
+          ? (coverByRaw.get(rawCover) ?? resolveRemoteFileUrl(rawCover))
+          : null,
+        rawCoverUrl: rawCover,
         trackCount: null,
         catalogKey: `album_${albumId}`,
       })
@@ -179,9 +161,26 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
     }
   }
 
+  return sortAlbumCategories(result)
+}
+
+/** Minhas Coletâneas (API remota) — pode ser mesclado depois sem bloquear a lista. */
+export async function loadCustomAlbumCategory(): Promise<AlbumCategory | null> {
+  const customs = await buildCustomCollectionCards()
+  if (customs.length === 0) return null
+  return {
+    id: 'custom',
+    name: 'Minhas Coletâneas',
+    collections: customs,
+  }
+}
+
+function sortAlbumCategories(categories: AlbumCategory[]): AlbumCategory[] {
   // Ordem de exibição na Central — mesma hierarquia da biblioteca local:
   // hinários primeiro, CDs oficiais, Infantis/Doxologia logo após, demais coletâneas em seguida.
   const CATEGORY_ORDER: Record<string, number> = {
+    custom: 0,
+    'Minhas Coletâneas': 0,
     Hinários: 1,
     hymnals: 1,
     'CDs Oficiais/Ano': 2,
@@ -192,14 +191,12 @@ export async function loadAlbumCategories(): Promise<AlbumCategory[]> {
     'Celebra SP': 12,
     Diversas: 13,
   }
-  result.sort((a, b) => {
+  return [...categories].sort((a, b) => {
     const orderA = CATEGORY_ORDER[String(a.id)] ?? CATEGORY_ORDER[a.name] ?? 50
     const orderB = CATEGORY_ORDER[String(b.id)] ?? CATEGORY_ORDER[b.name] ?? 50
     if (orderA !== orderB) return orderA - orderB
     return a.name.localeCompare(b.name)
   })
-
-  return result
 }
 
 export function findCollectionById(

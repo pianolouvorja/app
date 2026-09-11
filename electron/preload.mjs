@@ -107,7 +107,7 @@ contextBridge.exposeInMainWorld('louvorja', {
     readBinaryFile: (path) => ipcRenderer.invoke('dialog:read-binary-file', path),
     getRecord: (filename) => ipcRenderer.invoke('workspace:get-record', filename),
     saveRecord: (filename, data) => ipcRenderer.invoke('workspace:save-record', filename, data),
-    clear: () => ipcRenderer.invoke('workspace:clear'),
+    clear: (options) => ipcRenderer.invoke('workspace:clear', options),
   },
 
   catalog: {
@@ -131,10 +131,18 @@ contextBridge.exposeInMainWorld('louvorja', {
     onImportProgress: (callback) => subscribe('legacy-media:import-progress', callback),
   },
 
+  mediaFolder: {
+    status: () => ipcRenderer.invoke('media-folder:status'),
+    pick: () => ipcRenderer.invoke('media-folder:pick'),
+    migrate: (targetPath) => ipcRenderer.invoke('media-folder:migrate', targetPath ?? ''),
+  },
+
   media: {
     download: (url, mediaType, filename) =>
       ipcRenderer.invoke('media:download', url, mediaType, filename),
     check: (mediaType, filename) => ipcRenderer.invoke('media:check', mediaType, filename),
+    checkMany: (mediaType, filenames) =>
+      ipcRenderer.invoke('media:check-many', mediaType, filenames ?? []),
     delete: (mediaType, filename) => ipcRenderer.invoke('media:delete', mediaType, filename),
     probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },

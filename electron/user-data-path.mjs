@@ -19,6 +19,7 @@ import {
 } from './linux-shared-permissions.mjs'
 import { ensureMacSharedFolderPermissions } from './macos-shared-permissions.mjs'
 import { ensureWindowsSharedFolderAcl } from './windows-shared-acl.mjs'
+import { resolveMediaRoot } from './windows-media-root.mjs'
 
 /** Subpasta legada (build anterior) dentro de Program Files — somente para migração. */
 export const LEGACY_WINDOWS_PROGRAM_FILES_DATA_DIR = 'Data'
@@ -327,4 +328,13 @@ export function configureUserDataPath({ isDev = false } = {}) {
   }
 
   app.setPath('userData', targetRoot)
+
+  // Pasta de mídia pode ser customizada (HKLM) e também precisa de ACL compartilhada.
+  if (process.platform === 'win32' && !isDev) {
+    try {
+      ensureWindowsSharedFolderAcl(resolveMediaRoot(targetRoot))
+    } catch (error) {
+      console.warn('[userData] falha ao preparar ACL da pasta de mídia', error)
+    }
+  }
 }

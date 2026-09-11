@@ -24,7 +24,7 @@
     "git:publish": "git push -u origin HEAD --follow-tags",
     "electron:dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173\" \"wait-on http://127.0.0.1:5173 && env -u ELECTRON_RUN_AS_NODE cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron . --class=louvorja-piano\"",
     "electron:preview": "vite build --base=./ && env -u ELECTRON_RUN_AS_NODE electron . --class=louvorja-piano",
-    "electron:build": "vite build --base=./ && electron-builder",
+    "electron:build": "vite build --base=./ && node build/patch-nsis-templates.mjs && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -188,8 +188,7 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
-      "selectPerMachineByDefault": true,
+      "perMachine": true,
       "allowElevation": true,
       "allowToChangeInstallationDirectory": false,
       "license": "electron/legal/eula/pt-BR.txt",

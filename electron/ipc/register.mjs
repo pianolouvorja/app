@@ -6,9 +6,14 @@ import {
   importLegacyMediaItems,
   resolveLegacyMediaConfigFromSelection,
 } from '../legacy-media-import.mjs'
+import {
+  getWindowsMediaFolderStatus,
+  migrateWindowsMediaFolder,
+} from '../media-folder-migrate.mjs'
 
 import {
   checkMediaFile,
+  checkMediaFiles,
   clearWorkspaceData,
   deleteMediaFile,
   downloadCatalogDatabase,
@@ -423,9 +428,9 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  ipcMain.handle('workspace:clear', () => {
+  ipcMain.handle('workspace:clear', (_event, options) => {
     try {
-      return clearWorkspaceData()
+      return clearWorkspaceData(options ?? {})
     } catch (error) {
       console.error('[ipc] workspace:clear', error)
       return false
@@ -501,6 +506,47 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  // Pasta de mídia compartilhada (Windows): status / escolher / migrar
+  ipcMain.handle('media-folder:status', () => {
+    try {
+      if (process.platform !== 'win32') {
+        return { currentPath: '', defaultPath: '', isCustom: false }
+      }
+      return getWindowsMediaFolderStatus()
+    } catch (error) {
+      console.error('[ipc] media-folder:status', error)
+      return { currentPath: '', defaultPath: '', isCustom: false }
+    }
+  })
+
+  ipcMain.handle('media-folder:pick', async (event) => {
+    try {
+      if (process.platform !== 'win32') return null
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: 'Selecione a pasta base (será criado LouvorJA-PIANO\\Media dentro dela)',
+        properties: ['openDirectory', 'createDirectory'],
+      })
+      if (result.canceled || !result.filePaths?.[0]) return null
+      return result.filePaths[0]
+    } catch (error) {
+      console.error('[ipc] media-folder:pick', error)
+      return null
+    }
+  })
+
+  ipcMain.handle('media-folder:migrate', (_event, targetPath) => {
+    try {
+      if (process.platform !== 'win32') {
+        return { ok: false, path: null, reason: 'not-windows' }
+      }
+      return migrateWindowsMediaFolder(String(targetPath ?? ''))
+    } catch (error) {
+      console.error('[ipc] media-folder:migrate', error)
+      return { ok: false, path: null, reason: 'error' }
+    }
+  })
+
   // Importação de mídia do Louvor JA legado (Windows: config/capas|imagens|musicas)
   ipcMain.handle('legacy-media:analyze', (_event, selectedPath) => {
     try {
@@ -565,6 +611,10 @@ export function registerWorkspaceIpc() {
 
   ipcMain.handle('media:check', (_event, mediaType, filename) => {
     return checkMediaFile(mediaType, filename)
+  })
+
+  ipcMain.handle('media:check-many', (_event, mediaType, filenames) => {
+    return checkMediaFiles(mediaType, filenames)
   })
 
   ipcMain.handle('media:delete', (_event, mediaType, filename) => {

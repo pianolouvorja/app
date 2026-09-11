@@ -8,6 +8,7 @@ import {
   TEMP_DATABASE_FILE,
   WORKSPACE_DIRS,
 } from './constants.mjs'
+import { resolveMediaRoot } from './windows-media-root.mjs'
 
 /**
  * @typedef {object} WorkspacePaths
@@ -26,7 +27,7 @@ import {
  */
 export function getWorkspacePaths() {
   const root = app.getPath('userData')
-  const media = path.join(root, WORKSPACE_DIRS.media)
+  const media = resolveMediaRoot(root)
 
   return {
     root,

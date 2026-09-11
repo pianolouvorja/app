@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppBootstrap } from '@modules/starting/composables/useAppBootstrap'
@@ -10,8 +11,20 @@ const {
   showContent,
   hasError,
   statusKey,
+  isFirstBoot,
+  progress,
   retryBootstrap,
 } = useAppBootstrap()
+
+const headline = computed(() =>
+  isFirstBoot.value
+    ? t('starting.titleFirstBoot')
+    : t('starting.titleWarmBoot'),
+)
+
+const showProgress = computed(
+  () => !hasError.value && isFirstBoot.value && progress.value > 0,
+)
 </script>
 
 <template>
@@ -37,15 +50,41 @@ const {
               width="96"
               height="96"
             >
-            <p class="starting-overlay__title">
+            <p class="starting-overlay__brand">
               LouvorJA - PIANO
             </p>
+            <p class="starting-overlay__title">
+              {{ headline }}
+            </p>
+            <p class="starting-overlay__subtitle">
+              {{ t('starting.subtitle') }}
+            </p>
 
-            <div
-              v-if="!hasError"
-              class="starting-overlay__spinner"
-              aria-hidden="true"
-            />
+            <template v-if="!hasError">
+              <div
+                class="starting-overlay__spinner"
+                aria-hidden="true"
+              />
+              <p
+                class="starting-overlay__status"
+                data-test="starting-status"
+              >
+                {{ t(statusKey) }}
+              </p>
+              <div
+                v-if="showProgress"
+                class="starting-overlay__progress"
+                role="progressbar"
+                :aria-valuenow="Math.round(progress)"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div
+                  class="starting-overlay__progress-fill"
+                  :style="{ width: `${Math.min(100, progress)}%` }"
+                />
+              </div>
+            </template>
 
             <button
               v-else
@@ -80,17 +119,20 @@ const {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 12px;
+  max-width: 22rem;
+  padding: 0 1.5rem;
   text-align: center;
 }
 
 .starting-overlay__logo {
   width: 96px;
   height: 96px;
+  margin-bottom: 8px;
   animation: starting-pulse 1.8s ease-in-out infinite;
 }
 
-.starting-overlay__title {
+.starting-overlay__brand {
   margin: 0;
   color: #fcce02;
   font-size: 20px;
@@ -98,17 +140,59 @@ const {
   letter-spacing: 0.5px;
 }
 
+.starting-overlay__title {
+  margin: 0;
+  color: #f2f2f5;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.starting-overlay__subtitle {
+  margin: 0 0 4px;
+  color: rgba(242, 242, 245, 0.72);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
 .starting-overlay__spinner {
   width: 28px;
   height: 28px;
+  margin-top: 8px;
   border: 3px solid rgba(252, 206, 2, 0.15);
   border-top-color: #fcce02;
   border-radius: 50%;
   animation: starting-spin 0.8s linear infinite;
 }
 
+.starting-overlay__status {
+  margin: 0;
+  min-height: 1.25rem;
+  color: rgba(252, 206, 2, 0.92);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.starting-overlay__progress {
+  width: min(16rem, 70vw);
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(252, 206, 2, 0.12);
+}
+
+.starting-overlay__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #fcce02;
+  transition: width 200ms ease;
+}
+
 .starting-overlay__retry {
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
   padding: 0.5rem 1.25rem;
   border: none;
   border-radius: 999px;
@@ -155,6 +239,10 @@ const {
   .starting-overlay__logo,
   .starting-overlay__spinner {
     animation: none;
+  }
+
+  .starting-overlay__progress-fill {
+    transition: none;
   }
 }
 </style>

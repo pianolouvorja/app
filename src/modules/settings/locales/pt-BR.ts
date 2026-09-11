@@ -194,6 +194,21 @@ export default {
       legacyMediaNotFound:
         'Pasta do Louvor JA legado não encontrada. Verifique se existe em Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'Não foi possível importar as mídias. Tente novamente.',
+      mediaFolderTitle: 'Pasta de mídia',
+      mediaFolderHint:
+        'As mídias ficam compartilhadas entre todos os usuários deste PC. Você pode movê-las para outro disco (ex.: de C: para D:).',
+      mediaFolderCurrent: 'Pasta atual:',
+      mediaFolderCustomBadge: 'Personalizada',
+      mediaFolderMove: 'Escolher pasta e mover',
+      mediaFolderMoving: 'Movendo mídias…',
+      mediaFolderMoveHint:
+        'Escolha a pasta base (ex.: D:\\). As mídias irão para pasta\\LouvorJA-PIANO\\Media, com capas, músicas e imagens. Vale para todos os usuários.',
+      mediaFolderRestore: 'Restaurar pasta padrão',
+      mediaFolderMoved: 'Mídias movidas para {path}',
+      mediaFolderError: 'Não foi possível mover a pasta de mídia. Tente novamente.',
+      mediaFolderDestInside: 'Escolha uma pasta fora da pasta de mídia atual.',
+      mediaFolderPersistError:
+        'As mídias foram copiadas, mas não foi possível salvar o caminho compartilhado.',
     },
 
     remote: {

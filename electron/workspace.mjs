@@ -5,6 +5,7 @@ import {
   unlinkSync,
   writeFileSync,
   readFileSync,
+  rmSync,
   statSync,
 } from 'node:fs'
 import path from 'node:path'
@@ -72,7 +73,12 @@ export function writeWorkspaceRecord(filename, data) {
   return true
 }
 
-export function clearWorkspaceData() {
+/**
+ * Esvazia e recria o workspace de dados/mídia.
+ * @param {{ preserveMedia?: boolean }} [options]
+ */
+export function clearWorkspaceData(options = {}) {
+  const preserveMedia = Boolean(options?.preserveMedia)
   const { sysdata } = getWorkspacePaths()
   const legalRecordNames = ['eula.bin', 'eula']
   const preservedLegalRecords = new Map()
@@ -84,7 +90,14 @@ export function clearWorkspaceData() {
     }
   }
 
-  resetWorkspaceDirectories()
+  if (preserveMedia) {
+    if (existsSync(sysdata)) {
+      rmSync(sysdata, { recursive: true, force: true })
+    }
+    ensureWorkspaceDirectories()
+  } else {
+    resetWorkspaceDirectories()
+  }
 
   for (const [recordName, content] of preservedLegalRecords) {
     writeFileSync(path.join(sysdata, recordName), content, 'utf8')
@@ -314,6 +327,24 @@ export function checkMediaFile(mediaType, filename) {
   const cleanFilename = decodedFilename.replace(/\\/g, '/')
   const mappedType = mediaType === 'slides' ? 'images' : mediaType
   return `local://media/${mappedType}/${cleanFilename}`
+}
+
+/**
+ * Checagem em lote (um IPC) — evita N round-trips na abertura da Central.
+ * @param {'covers' | 'music' | 'slides'} mediaType
+ * @param {string[]} filenames
+ * @returns {Record<string, string | false>}
+ */
+export function checkMediaFiles(mediaType, filenames) {
+  /** @type {Record<string, string | false>} */
+  const result = {}
+  if (!Array.isArray(filenames)) return result
+
+  for (const filename of filenames) {
+    if (typeof filename !== 'string' || !filename) continue
+    result[filename] = checkMediaFile(mediaType, filename)
+  }
+  return result
 }
 
 /**

@@ -5,6 +5,7 @@ export type BootstrapPhase =
   | 'fetching-config'
   | 'downloading'
   | 'extracting'
+  | 'syncing-covers'
   | 'warming'
   | 'done'
   | 'error'

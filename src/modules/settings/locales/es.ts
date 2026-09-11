@@ -190,6 +190,21 @@ export default {
       legacyMediaNotFound:
         'No se encontró la carpeta del Louvor JA legado. Revise Program Files (x86)\\Louvor JA\\config.',
       legacyMediaError: 'No se pudieron importar los medios. Intente de nuevo.',
+      mediaFolderTitle: 'Carpeta de medias',
+      mediaFolderHint:
+        'Las medias se comparten entre todos los usuarios de este PC. Puede moverlas a otro disco (p. ej. de C: a D:).',
+      mediaFolderCurrent: 'Carpeta actual:',
+      mediaFolderCustomBadge: 'Personalizada',
+      mediaFolderMove: 'Elegir carpeta y mover',
+      mediaFolderMoving: 'Moviendo medias…',
+      mediaFolderMoveHint:
+        'Elija la carpeta base (p. ej. D:\\). Las medias irán a carpeta\\LouvorJA-PIANO\\Media (portadas, canciones e imágenes). Vale para todos los usuarios.',
+      mediaFolderRestore: 'Restaurar carpeta predeterminada',
+      mediaFolderMoved: 'Medias movidas a {path}',
+      mediaFolderError: 'No se pudo mover la carpeta de medias. Intente de nuevo.',
+      mediaFolderDestInside: 'Elija una carpeta fuera de la carpeta de medias actual.',
+      mediaFolderPersistError:
+        'Las medias se copiaron, pero no se pudo guardar la ruta compartida.',
     },
 
     remote: {
