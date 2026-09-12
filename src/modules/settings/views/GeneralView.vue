@@ -27,6 +27,7 @@ import {
   isValidLouvorjaContent,
 } from '@modules/sync/services/louvorja-package'
 import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
+import YoutubeAccountCard from '../components/YoutubeAccountCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
@@ -294,6 +295,9 @@ async function clearAllLocalData() {
 
     <!-- Importação de mídia do Louvor JA legado (somente Windows) -->
     <LegacyMediaImportCard />
+
+    <!-- YouTube: login Google Premium sem anúncios + bloqueador experimental -->
+    <YoutubeAccountCard />
 
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>
