@@ -827,7 +827,7 @@ onMounted(async () => {
       <button
         type="button"
         class="editor__btn"
-        title="Importar arquivo .slja (LouvorJA Delphi)"
+        title="Importar arquivo .slja"
         @click="onImportSlja"
       >
         <i

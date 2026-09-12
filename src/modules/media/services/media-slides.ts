@@ -43,6 +43,10 @@ export function buildMediaSlides(
 
   const lyricSlides = track.lyrics
     .filter((slide) => slide.showSlide)
+    // Slides sem texto (solfejo/pausa do upstream: lyric vazio + url_image de
+    // partitura) viram slide vazio -> receiver mostra o TITULO no meio do hino
+    // (showTitle fallback). Removidos para nao confundir quem nao conhece o hino.
+    .filter((slide) => (slide.lyric ?? '').trim().length > 0)
     .map((slide) => {
       if (slide.imageUrl) {
         prevImage = slide.imageUrl

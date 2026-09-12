@@ -775,10 +775,40 @@ function createSourceWindow(loadUrl, title) {
   win.webContents.on('did-navigate-in-page', onPageReady)
   win.webContents.on('dom-ready', () => hideYoutubeSidebar(win))
 
-  win.webContents.on('before-input-event', (_event, input) => {
-    if (input.type === 'keyDown' && input.key === 'Escape') {
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return
+    if (input.key === 'Escape') {
       closeWebProjectionWindows()
+      return
     }
+    if (!isPdfDocumentMode()) return
+    const next =
+      input.key === 'ArrowRight' ||
+      input.key === 'Right' ||
+      input.key === 'ArrowDown' ||
+      input.key === 'Down'
+    const prev =
+      input.key === 'ArrowLeft' ||
+      input.key === 'Left' ||
+      input.key === 'ArrowUp' ||
+      input.key === 'Up'
+    if (!next && !prev) return
+    event.preventDefault()
+    void (async () => {
+      if (next) await remotePptNext()
+      else await remotePptPrev()
+      // Atualiza TVs/Palco via a barra (mesmo fluxo dos botões).
+      if (controlBarView && !controlBarView.webContents.isDestroyed()) {
+        try {
+          await controlBarView.webContents.executeJavaScript(
+            'window.__pdfBarAfterPageChange ? window.__pdfBarAfterPageChange() : null',
+            true,
+          )
+        } catch {
+          /* ignore */
+        }
+      }
+    })()
   })
 
   win.on('closed', () => {

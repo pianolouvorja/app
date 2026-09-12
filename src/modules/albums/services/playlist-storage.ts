@@ -1,4 +1,6 @@
-const PLAYLISTS_STORAGE_KEY = 'louvorja-playlists-v1'
+import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
+
+const PLAYLISTS_STORAGE_KEY = BROWSER_STORAGE_KEYS.playlists
 
 export type PlaylistItem = {
   musicId: number

@@ -1,7 +1,6 @@
 import hymnalCover from '@assets/library/hymnal.jpeg'
 import hymnal1996Cover from '@assets/library/hymnal_1996.jpeg'
 import { WORKSPACE_RECORD_KEYS } from '@shared/constants/storage-keys'
-import { getDesktopBridge } from '@shared/services/desktop-bridge'
 import {
   readCatalogRecord,
   writeCatalogRecord,
@@ -14,7 +13,7 @@ import type {
   LibraryAlbum,
   LibraryCategory,
 } from '../types/library'
-import { resolveRemoteFileUrl, toRelativeMediaPath } from './media-paths'
+import { resolveCoverUrlsFromDisk, resolveRemoteFileUrl } from './media-paths'
 
 /** Coletâneas excluídas do catálogo (legado). */
 const EXCLUDED_ALBUM_IDS = new Set([712, 629])
@@ -23,8 +22,8 @@ const CATEGORY_ORDER: Record<string, number> = {
   hymnals: 1,
   Hinários: 1,
   'CDs Oficiais/Ano': 2,
-  Infantis: 98,
-  Doxologia: 99,
+  Infantis: 3,
+  Doxologia: 4,
 }
 
 /**
@@ -50,17 +49,25 @@ export function getCurrentApiPrefix(customLocale?: string): string {
   return 'pt'
 }
 
-async function resolveCoverUrl(urlImage: string | null | undefined): Promise<string | null> {
-  if (!urlImage) return null
+/**
+ * Atualiza coverUrl para local:// quando a capa já está no disco.
+ * Preferir resolveCoverUrlsFromDisk na carga — este hydrate é residual.
+ */
+export async function hydrateLocalLibraryCoverUrls(
+  categories: LibraryCategory[],
+): Promise<void> {
+  const rawUrls = categories.flatMap((category) =>
+    category.albums.map((album) => album.rawCoverUrl),
+  )
+  const coverByRaw = await resolveCoverUrlsFromDisk(rawUrls)
 
-  const bridge = getDesktopBridge()
-  if (bridge) {
-    const relativePath = toRelativeMediaPath(urlImage)
-    const local = await bridge.media.check('covers', relativePath)
-    if (local) return local
+  for (const category of categories) {
+    for (const album of category.albums) {
+      if (!album.rawCoverUrl) continue
+      const resolved = coverByRaw.get(album.rawCoverUrl)
+      if (resolved) album.coverUrl = resolved
+    }
   }
-
-  return resolveRemoteFileUrl(urlImage)
 }
 
 function createAlbumBase(
@@ -163,6 +170,11 @@ export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
     return sortCategories(result)
   }
 
+  const rawCoverUrls = categories.flatMap(
+    (category) => category.albums?.map((album) => album.url_image) ?? [],
+  )
+  const coverByRaw = await resolveCoverUrlsFromDisk(rawCoverUrls)
+
   for (const category of categories) {
     if (!category.albums?.length) continue
 
@@ -171,15 +183,16 @@ export async function loadLibraryCategories(): Promise<LibraryCategory[]> {
     for (const album of category.albums) {
       if (EXCLUDED_ALBUM_IDS.has(album.id_album)) continue
 
-      const coverUrl = await resolveCoverUrl(album.url_image)
-
+      const rawCover = album.url_image ?? null
       albums.push(
         createAlbumBase({
           id: album.id_album,
           name: album.name,
           subtitle: album.subtitle ?? '',
-          coverUrl,
-          rawCoverUrl: album.url_image ?? null,
+          coverUrl: rawCover
+            ? (coverByRaw.get(rawCover) ?? resolveRemoteFileUrl(rawCover))
+            : null,
+          rawCoverUrl: rawCover,
           status: downloaded.includes(album.id_album) ? 'downloaded' : 'idle',
           isHymnal: false,
         }),

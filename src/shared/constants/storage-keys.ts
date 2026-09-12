@@ -4,6 +4,7 @@ export const BROWSER_STORAGE_KEYS = {
   recentCollections: 'history_recent_collections',
   topSongs: 'history_top_songs',
   catalogSessionPrefix: 'db:',
+  playlists: 'louvorja-playlists-v1',
 } as const
 
 /** Campos dentro de `user_data` (preferências do operador). */

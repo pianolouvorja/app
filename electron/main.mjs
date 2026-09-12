@@ -26,6 +26,7 @@ import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
 import { registerYoutubeAuthIpc } from "./youtube-auth.mjs";
 import { registerAdblockerIpc } from "./youtube-adblock.mjs";
 import { readWorkspaceRecord, writeWorkspaceRecord } from "./workspace.mjs";
+import { registerTunnelCorpBypass } from "./tunnel-corp-bypass.mjs";
 import {
   initProjectionHotkey,
   addProjectionWindowProvider,
@@ -38,6 +39,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(VITE_DEV_SERVER_URL);
 const PRELOAD_PATH = path.join(__dirname, "preload.mjs");
+const bootT0 = Date.now();
+
+function bootMark(label) {
+	console.log(`[boot +${Date.now() - bootT0}ms] ${label}`);
+}
 
 registerLocalScheme();
 
@@ -68,7 +74,9 @@ if (process.platform === "linux") {
 	app.setName(APP_PRODUCT_NAME);
 }
 
+bootMark("main loaded");
 configureUserDataPath({ isDev });
+bootMark("userData");
 
 if (process.platform === "win32") {
 	app.setAppUserModelId("com.louvorja.piano");
@@ -81,6 +89,11 @@ if (typeof process.getuid === "function" && process.getuid() === 0) {
 
 /** Permite autoplay com áudio nas janelas de projeção (YouTube). */
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
+/** CDP p/ debug automatizado (apenas dev). */
+if (process.env.VITE_DEV_SERVER_URL) {
+	app.commandLine.appendSwitch("remote-debugging-port", "9222");
+}
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -97,10 +110,11 @@ let splashWindow = null;
 const SPLASH_HTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:none;-webkit-user-select:none}
-.s{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.s{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center}
 .l{width:80px;height:80px;animation:p 1.8s ease-in-out infinite}
 .t{color:#fcce02;font-size:18px;font-weight:700;letter-spacing:.5px}
-.sp{width:26px;height:26px;border:3px solid rgba(252,206,2,.15);border-top-color:#fcce02;border-radius:50%;animation:r .8s linear infinite}
+.m{max-width:240px;color:rgba(242,242,245,.75);font-size:13px;font-weight:400;line-height:1.45}
+.sp{width:26px;height:26px;margin-top:4px;border:3px solid rgba(252,206,2,.15);border-top-color:#fcce02;border-radius:50%;animation:r .8s linear infinite}
 @keyframes r{to{transform:rotate(360deg)}}
 @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(.94)}}
 </style></head><body><div class="s">
@@ -121,6 +135,7 @@ html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:
 <path d="M277.012 323.881C288.562 324.13 300.417 329.892 309.472 336.816 338.637 359.111 345.102 405.044 321.822 434.159 316.432 440.739 312.127 444.539 305.057 449.084 294.867 408.619 286.032 364.841 277.012 323.881Z" fill="#10438C"/>
 </svg>
 <div class="t">LouvorJA - PIANO</div>
+<div class="m">Estamos configurando e preparando tudo para você.</div>
 <div class="sp"></div>
 </div></body></html>`;
 
@@ -129,16 +144,19 @@ html,body{width:100%;height:100%;background:#12121c;overflow:hidden;user-select:
  * Usa data: URL inline — não depende de filesystem, sempre carrega.
  */
 function createSplash() {
+	// Windows: janela transparente atrasa o primeiro paint (GPU/DWM) e o
+	// usuário vê vários segundos de nada. Fundo opaco aparece na hora.
+	const opaqueSplash = process.platform === "win32";
 	splashWindow = new BrowserWindow({
-		width: 360,
-		height: 240,
+		width: 380,
+		height: 280,
 		frame: false,
 		resizable: false,
 		center: true,
 		show: true,
-		transparent: true,
-		backgroundColor: "#00000000",
-		hasShadow: true,
+		transparent: !opaqueSplash,
+		backgroundColor: opaqueSplash ? "#12121c" : "#00000000",
+		hasShadow: !opaqueSplash,
 		skipTaskbar: true,
 		menuBarVisible: false,
 		autoHideMenuBar: true,
@@ -575,24 +593,25 @@ function createWindow(locale = 'pt-BR') {
 }
 
 app.whenReady().then(async () => {
-	ensureLinuxTaskbarIntegration();
-	// Controle remoto: WS :7071 — APK conecta e comanda liturgia/player
-	attachRemoteServer(() => mainWindow?.webContents ?? null);
-	attachPalcoServer(() => mainWindow?.webContents ?? null);
-	ensureWorkspaceDirectories();
-
-	// Splash screen — feedback visual imediato antes de qualquer coisa
+	bootMark("whenReady");
+	// Primeira coisa visível — checagens e servidores vêm depois.
 	createSplash();
+	bootMark("splash");
 
+	let locale = "pt-BR";
 	try {
-		// EULA: detecta idioma do SO, fallback pt-BR
-		const locale = resolveAppLocale(app.getLocale());
+		ensureLinuxTaskbarIntegration();
+		ensureWorkspaceDirectories();
+		bootMark("workspace");
+
+		locale = resolveAppLocale(app.getLocale());
 
 		if (!(await checkEulaAcceptance(locale))) {
 			closeSplash();
 			app.quit();
 			return;
 		}
+		bootMark("eula");
 
 		registerWorkspaceIpc();
 		registerWindowIpc(() => mainWindow);
@@ -607,7 +626,12 @@ app.whenReady().then(async () => {
 				return rec?.enabled === true;
 			},
 		);
+		registerTunnelCorpBypass();
 		createWindow(locale);
+		bootMark("mainWindow");
+
+		attachRemoteServer(() => mainWindow?.webContents ?? null);
+		attachPalcoServer(() => mainWindow?.webContents ?? null);
 	} catch (error) {
 		console.error("[main] falha no startup", error);
 		closeSplash();

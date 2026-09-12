@@ -10,7 +10,7 @@ export type WorkspaceApi = {
   readBinaryFile?: (path: string) => Promise<Uint8Array | null>
   getRecord: <T = unknown>(filename: string) => Promise<T | null>
   saveRecord: (filename: string, data: unknown) => Promise<boolean>
-  clear: () => Promise<boolean>
+  clear: (options?: { preserveMedia?: boolean }) => Promise<boolean>
 }
 
 export type CatalogApi = {
@@ -104,9 +104,51 @@ export type LegacyMediaApi = {
   ) => () => void
 }
 
+export type MediaFolderStatus = {
+  currentPath: string
+  defaultPath: string
+  isCustom: boolean
+}
+
+export type MediaFolderMigrateResult = {
+  ok: boolean
+  path: string | null
+  reason?: string
+  movedBytes?: number
+}
+
+export type MediaFolderApi = {
+  status: () => Promise<MediaFolderStatus>
+  pick: () => Promise<string | null>
+  migrate: (targetPath: string) => Promise<MediaFolderMigrateResult>
+}
+
+export type BackupProgress = {
+  current: number
+  total: number
+  zipPath: string
+}
+
+export type BackupResult = {
+  ok: boolean
+  path?: string
+  reason?: string
+}
+
+export type BackupApi = {
+  create: () => Promise<BackupResult>
+  restore: () => Promise<BackupResult>
+  onProgress: (callback: (progress: BackupProgress) => void) => () => void
+}
+
 export type MediaApi = {
   download: (url: string, mediaType: MediaFolderType, filename: string) => Promise<boolean>
   check: (mediaType: MediaFolderType, filename: string) => Promise<string | false>
+  /** Checagem em lote no main process (um IPC). */
+  checkMany?: (
+    mediaType: MediaFolderType,
+    filenames: string[],
+  ) => Promise<Record<string, string | false>>
   delete: (mediaType: MediaFolderType, filename: string) => Promise<boolean>
   /** Duração de mídia local em ms via ffprobe (main process). */
   probeDuration?: (path: string) => Promise<number>
@@ -312,6 +354,8 @@ export type LouvorJaBridge = {
   ytAuth?: YoutubeAuthApi
   ytAdblock?: YoutubeAdblockApi
   legacyMedia?: LegacyMediaApi
+  mediaFolder?: MediaFolderApi
+  backup?: BackupApi
   media: MediaApi
   displays: DisplaysApi
   dialog: DialogApi

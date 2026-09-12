@@ -28,10 +28,29 @@ import {
 } from '@modules/sync/services/louvorja-package'
 import LegacyMediaImportCard from '../components/LegacyMediaImportCard.vue'
 import YoutubeAccountCard from '../components/YoutubeAccountCard.vue'
+import MediaFolderCard from '../components/MediaFolderCard.vue'
+import AppBackupCard from '../components/AppBackupCard.vue'
 
 const { t, locale } = useI18n()
 const isClearing = ref(false)
 const clearError = ref(false)
+const clearConfirmOpen = ref(false)
+const clearAcknowledged = ref(false)
+const clearConfirmTitleId = 'settings-clear-confirm-title'
+const clearConfirmTextId = 'settings-clear-confirm-text'
+
+function openClearConfirm() {
+  if (!isDesktopApp() || isClearing.value) return
+  clearError.value = false
+  clearAcknowledged.value = false
+  clearConfirmOpen.value = true
+}
+
+function closeClearConfirm() {
+  if (isClearing.value) return
+  clearConfirmOpen.value = false
+  clearAcknowledged.value = false
+}
 
 type SyncStatus =
   | { kind: 'idle' }
@@ -123,10 +142,11 @@ async function handleCheckUpdate() {
 }
 
 async function clearAllLocalData() {
-  if (!isDesktopApp() || isClearing.value) return
+  if (!isDesktopApp() || isClearing.value || !clearAcknowledged.value) return
 
   isClearing.value = true
   clearError.value = false
+  clearConfirmOpen.value = false
 
   try {
     const cleared = await clearWorkspace()
@@ -299,6 +319,12 @@ async function clearAllLocalData() {
     <!-- YouTube: login Google Premium sem anúncios + bloqueador experimental -->
     <YoutubeAccountCard />
 
+    <!-- Pasta de mídia compartilhada (somente Windows, junto da importação) -->
+    <MediaFolderCard />
+
+    <!-- Backup completo da pasta de dados + mídias -->
+    <AppBackupCard />
+
     <!-- Dados locais -->
     <GlassCard class="general-settings__card" elevated>
       <div class="general-settings__accent general-settings__accent--danger" aria-hidden="true" />
@@ -320,7 +346,7 @@ async function clearAllLocalData() {
         type="button"
         class="general-settings__btn general-settings__btn--danger"
         :disabled="!isDesktopApp() || isClearing"
-        @click="clearAllLocalData"
+        @click="openClearConfirm"
       >
         <i class="ti ti-trash" aria-hidden="true" />
         {{ t('settings.general.clearData') }}
@@ -341,6 +367,64 @@ async function clearAllLocalData() {
         {{ t('settings.general.desktopOnly') }}
       </p>
     </GlassCard>
+
+    <Teleport to="body">
+      <div
+        v-if="clearConfirmOpen"
+        class="clear-confirm"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="clearConfirmTitleId"
+        :aria-describedby="clearConfirmTextId"
+      >
+        <div
+          class="clear-confirm__backdrop"
+          aria-hidden="true"
+          @click="closeClearConfirm"
+        />
+        <div class="clear-confirm__panel">
+          <h2
+            :id="clearConfirmTitleId"
+            class="clear-confirm__title"
+          >
+            {{ t('settings.general.clearConfirmTitle') }}
+          </h2>
+          <p
+            :id="clearConfirmTextId"
+            class="clear-confirm__text"
+          >
+            {{ t('settings.general.clearConfirmText') }}
+          </p>
+          <label class="clear-confirm__check">
+            <input
+              v-model="clearAcknowledged"
+              type="checkbox"
+              class="clear-confirm__checkbox"
+              :disabled="isClearing"
+            >
+            <span>{{ t('settings.general.clearConfirmCheckbox') }}</span>
+          </label>
+          <div class="clear-confirm__actions">
+            <button
+              type="button"
+              class="clear-confirm__btn"
+              :disabled="isClearing"
+              @click="closeClearConfirm"
+            >
+              {{ t('settings.general.clearConfirmCancel') }}
+            </button>
+            <button
+              type="button"
+              class="clear-confirm__btn clear-confirm__btn--danger"
+              :disabled="!clearAcknowledged || isClearing"
+              @click="clearAllLocalData"
+            >
+              {{ t('settings.general.clearConfirmAction') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -535,5 +619,109 @@ async function clearAllLocalData() {
   color: var(--ds-color-on-surface-variant);
   font-size: 0.75rem;
   opacity: 0.6;
+}
+
+.clear-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.clear-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 45%);
+}
+
+.clear-confirm__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.5rem;
+  border-radius: var(--ds-radius-lg, 0.75rem 0 0.75rem 0);
+  border: 1px solid var(--ds-color-outline-strong, rgb(255 255 255 / 8%));
+  background: var(--ds-color-surface-elevated, #1e1e1e);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 40%);
+}
+
+.clear-confirm__title {
+  margin: 0 0 0.75rem;
+  color: var(--ds-color-on-surface);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.clear-confirm__text {
+  margin: 0;
+  color: var(--ds-color-on-surface-variant);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.clear-confirm__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  color: var(--ds-color-on-surface);
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.clear-confirm__checkbox {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.125rem;
+  accent-color: rgb(var(--v-theme-error));
+  cursor: pointer;
+}
+
+.clear-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.clear-confirm__btn {
+  height: 2.25rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--ds-radius-md, 0.5rem 0 0.5rem 0);
+  background: color-mix(in srgb, var(--ds-color-on-surface) 6%, transparent);
+  color: var(--ds-color-on-surface);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    background-color 200ms ease,
+    opacity 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &--danger {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 18%, transparent);
+    color: var(--ds-color-error, #ffb4ab);
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 28%, transparent);
+    }
+  }
 }
 </style>

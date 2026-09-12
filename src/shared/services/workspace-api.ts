@@ -31,10 +31,12 @@ export async function writeCatalogRecord(filename: string, data: unknown): Promi
   return saved
 }
 
-export async function clearWorkspace(): Promise<boolean> {
+export async function clearWorkspace(
+  options?: { preserveMedia?: boolean },
+): Promise<boolean> {
   const bridge = getDesktopBridge()
   if (!bridge) return false
-  return bridge.workspace.clear()
+  return bridge.workspace.clear(options)
 }
 
 export function resolveMediaUrl(relativePath: string): string {

@@ -13,7 +13,7 @@ import type {
   LibraryAlbumId,
   LibraryCategory,
 } from '../types/library'
-import { loadLibraryCategories } from '../services/library-catalog'
+import { loadLibraryCategories, hydrateLocalLibraryCoverUrls } from '../services/library-catalog'
 import {
   deleteAlbumMedia,
   downloadAlbumMedia,
@@ -142,6 +142,7 @@ export const useLocalLibraryStore = defineStore('localLibrary', () => {
     clearError()
     try {
       categories.value = await loadLibraryCategories()
+      void hydrateLocalLibraryCoverUrls(categories.value)
     } catch (error) {
       console.error('[sync] falha ao carregar coletâneas', error)
       setError('sync.errors.loadFailed')

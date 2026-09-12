@@ -29,11 +29,16 @@ const progressLabel = computed(() =>
 
 const canRemove = computed(() => status.value === 'downloaded')
 const isBusy = computed(() => status.value === 'downloading')
+/** Coletânea custom (API /v1/custom): já está na API — nada pra baixar. */
+const isCustom = computed(() => Boolean(props.collection.isCustom))
 const showPersistentDownload = computed(
   () =>
+    !isCustom.value &&
     Boolean(props.showDownloadControls) &&
     (status.value === 'idle' || status.value === 'error' || isBusy.value),
 )
+
+const coverSrc = computed(() => props.collection.coverUrl || '')
 
 function onOpen() {
   emit('open')
@@ -66,18 +71,33 @@ function onRemove(event: MouseEvent) {
   >
     <div
       class="album-collection-card__cover"
-      :style="
-        collection.coverUrl
-          ? { backgroundImage: `url(${collection.coverUrl})` }
-          : undefined
-      "
+      :class="{ 'album-collection-card__cover--custom': isCustom }"
     >
+      <img
+        v-if="coverSrc"
+        class="album-collection-card__cover-img"
+        :src="coverSrc"
+        alt=""
+        decoding="sync"
+        loading="eager"
+        draggable="false"
+      />
       <i
-        v-if="!collection.coverUrl"
+        v-else
         class="ti album-collection-card__fallback"
         :class="collection.kind === 'hymnal' ? 'ti-book' : 'ti-disc'"
         aria-hidden="true"
       />
+      <span
+        v-if="isCustom"
+        class="album-collection-card__custom-badge"
+        :title="t('albums.custom.title')"
+      >
+        <i
+          class="ti ti-pencil"
+          aria-hidden="true"
+        />
+      </span>
 
       <div
         v-if="showDownloadControls && status === 'downloaded'"
@@ -123,22 +143,18 @@ function onRemove(event: MouseEvent) {
           </span>
         </button>
 
-        <div
+        <button
           v-if="showDownloadControls && canRemove"
-          class="album-collection-card__footer"
+          type="button"
+          class="album-collection-card__remove"
+          :aria-label="t('sync.remove')"
+          @click.stop="onRemove"
         >
-          <button
-            type="button"
-            class="album-collection-card__action album-collection-card__action--remove"
-            :aria-label="t('sync.remove')"
-            @click="onRemove"
-          >
-            <i
-              class="ti ti-trash"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+          <i
+            class="ti ti-trash"
+            aria-hidden="true"
+          />
+        </button>
       </div>
 
       <div
@@ -226,9 +242,50 @@ function onRemove(event: MouseEvent) {
   }
 }
 
+.album-collection-card__cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .album-collection-card__fallback {
   font-size: 2.5rem;
   color: color-mix(in srgb, #fff 70%, transparent);
+}
+
+/* Coletânea custom: gradiente de marca + badge ✏ (identifica editável) */
+.album-collection-card__cover--custom {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ds-color-primary, #2196f3) 28%, transparent),
+      rgba(0, 0, 0, 0.4)
+    ),
+    color-mix(in srgb, var(--ds-color-surface-card, #242424) 88%, #000);
+}
+
+.album-collection-card__cover--custom .album-collection-card__fallback {
+  font-size: 2rem;
+}
+
+.album-collection-card__custom-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--ds-color-primary, #2196f3) 85%, #000);
+  color: #fff;
+  font-size: 0.8rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .album-collection-card__check {
@@ -374,6 +431,41 @@ function onRemove(event: MouseEvent) {
   }
 }
 
+.album-collection-card__remove {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  z-index: 4;
+  display: inline-flex;
+  width: 1.35rem;
+  height: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 45%);
+  color: rgb(255 255 255 / 78%);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+
+  .ti {
+    font-size: 0.75rem;
+    line-height: 1;
+    color: inherit;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 72%, #000);
+    color: #fff;
+    transform: scale(1.08);
+  }
+}
+
 .album-collection-card__action {
   display: inline-flex;
   align-items: center;
@@ -403,11 +495,6 @@ function onRemove(event: MouseEvent) {
 
   &--cancel,
   &--retry {
-    background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 82%, transparent);
-    color: #fff;
-  }
-
-  &--remove {
     background: color-mix(in srgb, var(--ds-color-error, #ffb4ab) 82%, transparent);
     color: #fff;
   }

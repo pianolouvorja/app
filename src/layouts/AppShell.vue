@@ -126,6 +126,9 @@ const hasOpenScreens = computed(
   () => isProjecting.value || hasModuleScreens.value,
 )
 
+const projectionStore = useProjectionStore()
+const { hasSelectedAudienceTargets } = storeToRefs(projectionStore)
+
 function refreshOpenScreens() {
   hasModuleScreens.value = isProjectionModuleOpen()
 }
@@ -147,7 +150,7 @@ onMounted(() => {
   screensPollTimer = setInterval(refreshOpenScreens, 400)
 
   // Hotplug de monitores (legado onDisplaysChanged)
-  const projectionStore = useProjectionStore()
+  void projectionStore.hydrate()
   unsubscribeDisplaysChanged = subscribeDisplaysChanged(() => {
     void (async () => {
       await projectionStore.refreshDisplays()
@@ -162,8 +165,8 @@ onUnmounted(() => {
   unsubscribeDisplaysChanged?.()
 })
 
-/** Há conteúdo projetável ou projeção ativa. */
-const canToggleProjection = computed(
+/** Conteúdo projetável (mídia, bíblia, utilitários, liturgia…). */
+const hasProjectableContent = computed(
   () =>
     hasMediaSession.value ||
     isMediaProjecting.value ||
@@ -181,7 +184,24 @@ const canToggleProjection = computed(
     (isOnLiturgyRoute.value && hasLiturgyProjectableSelection.value),
 )
 
+/**
+ * Pode alternar projeção: com conteúdo + telas estendidas selecionadas.
+ * Se já estiver projetando, permanece habilitado para poder parar.
+ */
+const canToggleProjection = computed(
+  () =>
+    isProjecting.value ||
+    (hasProjectableContent.value && hasSelectedAudienceTargets.value),
+)
+
 const projectAriaLabel = computed(() => {
+  if (
+    !isProjecting.value &&
+    hasProjectableContent.value &&
+    !hasSelectedAudienceTargets.value
+  ) {
+    return t('monitors.projectNeedsScreens')
+  }
   if (isLiturgyProjecting.value) return t('liturgy.actions.stopSiteProjection')
   if (isClockProjecting.value) return t('clock.clearProjection')
   if (isCountdownProjecting.value) return t('countdown.clearProjection')

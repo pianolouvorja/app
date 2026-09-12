@@ -186,6 +186,11 @@ export async function startRemoteServer(wss, contents) {
             text: typeof msg.text === 'string' ? msg.text : undefined,
             footerRef:
               typeof msg.footerRef === 'string' ? msg.footerRef : undefined,
+            // Palco slots: criar/remover/ligar TVs remotamente
+            slotId:
+              typeof msg.slotId === 'string' ? msg.slotId : undefined,
+            label:
+              typeof msg.label === 'string' ? msg.label : undefined,
           })
           return
         }
