@@ -351,6 +351,9 @@ export function buildLiturgyItemFromDraft(
           : []
 
     item.filePath = paths[0] ?? ''
+    if (type === 'presentation') {
+      item.presentationEngine = draft.presentationEngine ?? 'auto'
+    }
     if (type === 'images' && paths.length > 0) {
       item.filePaths = paths
       if (!details) {

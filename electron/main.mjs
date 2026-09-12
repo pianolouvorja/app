@@ -574,21 +574,26 @@ function createWindow(locale = 'pt-BR') {
 	});
 
 	// Fallback: se a janela principal falhar ao carregar, mostra erro e fecha o splash
+	let abortedRetries = 0;
 	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
 		console.error(`[main] falha ao carregar: code=${errorCode} desc=${errorDescription}`);
-		// -3 (ABORTED) é transitório — Vite recompilando durante o load ou
-		// redirect pendente. Recarrega em vez de destruir o app (crash falso).
-		if (isMainFrame && errorCode === -3) {
+		// -3 (ABORTED) é transitório — Vite recompilando durante o load.
+		// Máximo 3 retries com backoff: loadURL novo aborta o anterior e cada
+		// aborto dispara did-fail-load de novo — sem teto, vira loop infinito
+		// de tela preta (relato 12/09).
+		if (isMainFrame && errorCode === -3 && abortedRetries < 3) {
+			abortedRetries += 1;
+			const delay = 800 * abortedRetries;
 			setTimeout(() => {
 				if (mainWindow && !mainWindow.isDestroyed()) {
-					console.error("[main] retry do load após ABORTED");
+					console.error(`[main] retry ${abortedRetries}/3 do load após ABORTED`);
 					if (isDev && VITE_DEV_SERVER_URL) {
 						void mainWindow.loadURL(`${VITE_DEV_SERVER_URL}/?lang=${locale}`);
 					} else {
 						void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"), { query: { lang: locale } });
 					}
 				}
-			}, 800);
+			}, delay);
 			return;
 		}
 		closeSplash();
