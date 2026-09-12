@@ -4,17 +4,37 @@
  * Ordem (RF: app sempre com onde fazer requisicao):
  *   1. Primária: VITE_URL_DATABASE / VITE_URL_FILES (default: nossa API
  *      api.pianolouvorja.com.br)
- *   2. api.louvorja.com.br  (producao oficial do ecossistema)
- *   3. api.louvorja.workers.dev  (mirror Cloudflare da comunidade)
+ *   2. Fallbacks: VITE_API_FALLBACK_URLS (lista separada por vírgula;
+ *      default: api.louvorja.com.br, api.louvorja.workers.dev)
+ *
+ * Tudo vem de env — nada de host hardcoded. Para adicionar uma redundância
+ * da nossa API no futuro, basta incluir o host em VITE_API_FALLBACK_URLS
+ * (ou em ApiConfig no APK), sem tocar em código.
  *
  * Mesma semantica do ApiConfig do APK (Flutter) — paridade entre clientes.
  */
 
-/** Hosts de reserva, em ordem de prioridade. A primaria NAO esta aqui. */
-const FALLBACK_HOSTS = [
+/** Fallbacks default, em ordem de prioridade. A primária NÃO está aqui. */
+const DEFAULT_FALLBACK_HOSTS = [
   'https://api.louvorja.com.br',
   'https://api.louvorja.workers.dev',
 ]
+
+/**
+ * Hosts de reserva: env VITE_API_FALLBACK_URLS (vírgula = separador),
+ * caindo para os defaults se não definida. Espaço p/ redundância futura
+ * da nossa API: é só acrescentar o host na lista.
+ */
+function fallbackHosts(): string[] {
+  const env = import.meta.env.VITE_API_FALLBACK_URLS
+  if (typeof env === 'string' && env.trim()) {
+    return env
+      .split(',')
+      .map((h) => h.trim().replace(/\/+$/, ''))
+      .filter(Boolean)
+  }
+  return DEFAULT_FALLBACK_HOSTS
+}
 
 type ApiKind = 'database' | 'files'
 
@@ -50,7 +70,7 @@ export function apiCandidateBases(kind: ApiKind): string[] {
   const primaryHost = baseToHost(primary)
   const path = kindToPath(kind)
   const candidates = [primary]
-  for (const host of FALLBACK_HOSTS) {
+  for (const host of fallbackHosts()) {
     if (host !== primaryHost) candidates.push(`${host}${path}`)
   }
   return candidates
