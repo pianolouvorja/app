@@ -25,27 +25,28 @@ let loginWindow = null
  */
 export async function getYoutubeAuthStatus() {
   try {
-    // O endpoint /premium responde diferente para assinantes; usamos o
-    // redirect do account menu como sinal de login (barato e estável):
+    // Detecção por cookie (instantânea, sem rede): sessão Google logada no
+    // contexto do player = cookies SID/SAPISID em .youtube.com.
+    // Nota: ses.fetch com redirect:manual trava no Electron — não usar.
     const ses = session.defaultSession
-    const result = await ses.fetch(
-      'https://www.youtube.com/signin?feature=sign_in_button&next=/',
-      { redirect: 'manual' },
-    )
-    // Sem login: redireciona para accounts.google.com. Logado: fica no YouTube.
-    const location = result.headers.get('location') ?? ''
-    const signedIn = !/accounts\.google\.com/.test(location)
+    const ytCookies = await ses.cookies.get({ domain: 'youtube.com' })
+    const hasSession = ytCookies.some((c) => c.name === 'SID' || c.name === 'SAPISID')
+    if (!hasSession) return { signedIn: false, premium: null }
 
-    // Premium: só é detectável de forma confiável via página /premium
+    // Premium: página /premium diz "Você já tem o YouTube Premium" para
+    // assinantes (mesma validação do P1). Rede com timeout curto.
     let premium = null
-    if (signedIn) {
-      const res = await ses.fetch('https://www.youtube.com/premium', {
-        redirect: 'manual',
-      })
-      const body = typeof res.text === 'function' ? await res.text() : ''
+    try {
+      const res = await Promise.race([
+        ses.fetch('https://www.youtube.com/premium'),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ])
+      const body = await res.text()
       premium = /já tem o YouTube Premium|already have YouTube Premium/i.test(body)
+    } catch {
+      premium = null // offline/timeout: mostra só "Conectado"
     }
-    return { signedIn, premium }
+    return { signedIn: true, premium }
   } catch {
     return { signedIn: false, premium: null }
   }
@@ -65,8 +66,8 @@ export function openYoutubeLogin(parent) {
     }
 
     loginWindow = new BrowserWindow({
-      width: 520,
-      height: 700,
+      width: 560,
+      height: 760,
       parent: parent ?? undefined,
       modal: Boolean(parent),
       title: 'Entrar com Google',
@@ -76,8 +77,16 @@ export function openYoutubeLogin(parent) {
         // mesma session do player (defaultSession) — sem partition separada
         contextIsolation: true,
         nodeIntegration: false,
+        sandbox: false,
       },
     })
+    // UA sem token "Electron" — o login do Google recusa UAs de automação
+    // (ERR_FAILED) mantendo o resto do UA do runtime
+    loginWindow.webContents.setUserAgent(
+      loginWindow.webContents
+        .getUserAgent()
+        .replace(/\s*Electron\/[\d.]+/, ''),
+    )
 
     let settled = false
     const finish = (payload) => {
@@ -104,7 +113,18 @@ export function openYoutubeLogin(parent) {
       }
     })
 
-    void loginWindow.loadURL(LOGIN_URL)
+    loginWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+      // -3 (ABORTED) acontece em redirects do próprio fluxo Google — benigno
+      console.error(`[yt-auth] did-fail-load ${code} ${desc} ${url}`)
+      if (code !== -3 && loginWindow && !loginWindow.isDestroyed()) {
+        loginWindow.close()
+      }
+    })
+
+    void loginWindow.loadURL(LOGIN_URL).catch((err) => {
+      console.error('[yt-auth] loadURL falhou', err)
+      if (loginWindow && !loginWindow.isDestroyed()) loginWindow.close()
+    })
   })
 }
 
