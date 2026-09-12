@@ -889,6 +889,38 @@ function isLightDot(hex: string): boolean {
             >
               {{ filePickerError }}
             </p>
+
+            <!-- Engine de conversão: só para itens de apresentação (PPTX) -->
+            <div
+              v-if="draft.type === 'presentation'"
+              class="moment-dialog__engine"
+              data-test="liturgy-ppt-engine"
+            >
+              <span class="moment-dialog__label">
+                {{ t('liturgy.fields.presentationEngine') }}
+              </span>
+              <div
+                class="moment-dialog__engine-options"
+                role="radiogroup"
+                :aria-label="t('liturgy.fields.presentationEngine')"
+              >
+                <button
+                  v-for="option in (['auto', 'powerpoint', 'libreoffice'] as const)"
+                  :key="option"
+                  type="button"
+                  role="radio"
+                  :aria-checked="(draft.presentationEngine ?? 'auto') === option"
+                  :class="{ selected: (draft.presentationEngine ?? 'auto') === option }"
+                  :data-test="`liturgy-engine-${option}`"
+                  @click="patch({ presentationEngine: option })"
+                >
+                  {{ t(`liturgy.fields.engine.${option}`) }}
+                </button>
+              </div>
+              <p class="moment-dialog__engine-hint">
+                {{ t('liturgy.fields.presentationEngineHint') }}
+              </p>
+            </div>
           </div>
 
           <div
@@ -1666,5 +1698,35 @@ function isLightDot(hex: string): boolean {
   .moment-dialog__submit {
     justify-content: center;
   }
+}
+.moment-dialog__engine {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+.moment-dialog__engine-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.moment-dialog__engine-options button {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.moment-dialog__engine-options button.selected {
+  background: var(--ds-color-primary, #04549b);
+  border-color: transparent;
+  color: #fff;
+}
+.moment-dialog__engine-hint {
+  font-size: 0.75rem;
+  opacity: 0.55;
 }
 </style>

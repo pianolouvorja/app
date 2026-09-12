@@ -147,6 +147,8 @@ export interface LiturgyItem {
   filePath?: string
   /** Caminhos locais (galeria de imagens). */
   filePaths?: string[]
+  /** Engine de conversão do PPTX (itens presentation): auto|powerpoint|libreoffice. */
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice'
   url?: string
 }
 
@@ -199,6 +201,7 @@ export interface LiturgyItemDraft {
   verseNumbers: string
   filePath: string
   filePaths: string[]
+  presentationEngine: 'auto' | 'powerpoint' | 'libreoffice'
   url: string
 }
 
@@ -242,6 +245,7 @@ export const DEFAULT_LITURGY_ITEM_DRAFT: LiturgyItemDraft = {
   verseNumbers: '',
   filePath: '',
   filePaths: [],
+  presentationEngine: 'auto',
   url: '',
 }
 

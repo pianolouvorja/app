@@ -254,6 +254,8 @@ export type OpenUrlProjectionPayload = {
   fullscreenOnPrimary?: boolean
   mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
+  /** Engine de conversão para este item (sobrepõe o setting global). */
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice'
 }
 
 export type PlaybackSyncPayload = {

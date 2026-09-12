@@ -415,6 +415,7 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
           ? [item.filePath]
           : [],
     url: item.url ?? '',
+    presentationEngine: item.presentationEngine ?? 'auto',
   }
 }
 

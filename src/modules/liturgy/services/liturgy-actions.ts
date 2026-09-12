@@ -216,6 +216,7 @@ export async function executeLiturgyItem(
       const opened = await openLiturgyLocalPresentationControl(
         filePath,
         item.name?.trim() || filePath,
+        item.presentationEngine,
       )
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
@@ -328,6 +329,7 @@ export async function playLiturgyItemOnScreens(
     const ok = await playLiturgyLocalPresentationOnScreens(
       filePath,
       item.name?.trim() || filePath,
+      item.presentationEngine,
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
