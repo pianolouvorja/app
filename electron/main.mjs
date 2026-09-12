@@ -23,6 +23,9 @@ import { buildProjectionWindowBounds } from "./projection-display.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
+import { registerYoutubeAuthIpc } from "./youtube-auth.mjs";
+import { registerAdblockerIpc } from "./youtube-adblock.mjs";
+import { readWorkspaceRecord, writeWorkspaceRecord } from "./workspace.mjs";
 import {
   initProjectionHotkey,
   addProjectionWindowProvider,
@@ -595,6 +598,15 @@ app.whenReady().then(async () => {
 		registerWindowIpc(() => mainWindow);
 		registerLocalFileProtocol();
 		registerYoutubeEmbedHeaders();
+		registerYoutubeAuthIpc();
+		// adblock YouTube (opt-in): estado persistido em workspace record
+		registerAdblockerIpc(
+			(enabled) => writeWorkspaceRecord("yt-adblock.json", { enabled }),
+			() => {
+				const rec = readWorkspaceRecord("yt-adblock.json");
+				return rec?.enabled === true;
+			},
+		);
 		createWindow(locale);
 	} catch (error) {
 		console.error("[main] falha no startup", error);

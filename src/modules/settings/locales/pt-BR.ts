@@ -75,6 +75,24 @@ export default {
       scheduledFound: 'Itens agendados (itensAgendados.xml) encontrados',
       wip: 'Reutilização e migração de mídia em desenvolvimento.',
     },
+    youtube: {
+      title: 'YouTube',
+      description:
+        'Entre com sua conta Google para reproduzir vídeos sem anúncios durante o culto (requer YouTube Premium na conta).',
+      checking: 'Verificando sessão…',
+      signedIn: 'Conectado ao Google',
+      premiumActive: 'Conectado — YouTube Premium ativo (sem anúncios)',
+      signedOut: 'Não conectado',
+      login: 'Entrar com Google',
+      loggingIn: 'Aguardando login…',
+      logout: 'Sair da conta',
+      notPremiumHint:
+        'Esta conta não tem YouTube Premium. Considere assinar para vídeos sem anúncios, ou ative o bloqueador experimental abaixo.',
+      adblock: 'Reduzir anúncios (experimental)',
+      adblockHint:
+        'Bloqueia anúncios do player do YouTube para contas sem Premium. Pode falhar quando o YouTube muda seu player; o login com Premium é o caminho recomendado.',
+      desktopOnly: 'Disponível apenas no aplicativo desktop.',
+    },
     projection: {
       monitors: {
         title: 'Arranjo de Monitores',

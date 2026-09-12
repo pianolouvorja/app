@@ -70,6 +70,24 @@ export default {
       scheduledFound: 'Scheduled items (itensAgendados.xml) found',
       wip: 'Media reuse and migration under development.',
     },
+    youtube: {
+      title: 'YouTube',
+      description:
+        'Sign in with your Google account to play videos without ads during the service (requires YouTube Premium on the account).',
+      checking: 'Checking session…',
+      signedIn: 'Signed in to Google',
+      premiumActive: 'Signed in — YouTube Premium active (ad-free)',
+      signedOut: 'Not signed in',
+      login: 'Sign in with Google',
+      loggingIn: 'Waiting for sign-in…',
+      logout: 'Sign out',
+      notPremiumHint:
+        'This account has no YouTube Premium. Consider subscribing for ad-free videos, or enable the experimental blocker below.',
+      adblock: 'Reduce ads (experimental)',
+      adblockHint:
+        'Blocks ads in the YouTube player for accounts without Premium. May break when YouTube changes its player; signing in with Premium is the recommended path.',
+      desktopOnly: 'Available on the desktop application only.',
+    },
     placeholder: {
       general: 'General app preferences coming soon.',
       media: 'Audio, video and player settings coming soon.',

@@ -122,6 +122,19 @@ contextBridge.exposeInMainWorld('louvorja', {
     detect: () => ipcRenderer.invoke('classo:detect'),
   },
 
+  ytAuth: {
+    // Login Google na session do app → YouTube Premium sem anúncios no player
+    status: () => ipcRenderer.invoke('yt-auth:status'),
+    login: () => ipcRenderer.invoke('yt-auth:login'),
+    logout: () => ipcRenderer.invoke('yt-auth:logout'),
+  },
+
+  ytAdblock: {
+    // Bloqueador de anúncios do player YouTube (opt-in, experimental)
+    status: () => ipcRenderer.invoke('yt-adblock:status'),
+    set: (enabled) => ipcRenderer.invoke('yt-adblock:set', enabled),
+  },
+
   legacyMedia: {
     analyze: (selectedPath) =>
       ipcRenderer.invoke('legacy-media:analyze', selectedPath ?? ''),

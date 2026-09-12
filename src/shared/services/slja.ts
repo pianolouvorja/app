@@ -392,7 +392,7 @@ export async function parseSljaFile(
   }
 
   const zipResult = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
-    unzip(new Uint8Array(fileBuffer), (err, result) => {
+    unzip(new Uint8Array(fileBuffer), (err: Error | null, result: unknown) => {
       if (err) reject(err)
       else resolve(result as Record<string, Uint8Array>)
     })

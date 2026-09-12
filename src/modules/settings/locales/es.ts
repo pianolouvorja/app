@@ -70,6 +70,24 @@ export default {
       scheduledFound: 'Ítems agendados (itensAgendados.xml) encontrados',
       wip: 'Reutilización y migración de media en desarrollo.',
     },
+    youtube: {
+      title: 'YouTube',
+      description:
+        'Inicia sesión con tu cuenta de Google para reproducir videos sin anuncios durante el culto (requiere YouTube Premium en la cuenta).',
+      checking: 'Verificando sesión…',
+      signedIn: 'Sesión iniciada en Google',
+      premiumActive: 'Sesión iniciada — YouTube Premium activo (sin anuncios)',
+      signedOut: 'Sin sesión iniciada',
+      login: 'Iniciar sesión con Google',
+      loggingIn: 'Esperando inicio de sesión…',
+      logout: 'Cerrar sesión',
+      notPremiumHint:
+        'Esta cuenta no tiene YouTube Premium. Considera suscribirte para videos sin anuncios, o activa el bloqueador experimental abajo.',
+      adblock: 'Reducir anuncios (experimental)',
+      adblockHint:
+        'Bloquea anuncios del reproductor de YouTube para cuentas sin Premium. Puede fallar cuando YouTube cambia su reproductor; iniciar sesión con Premium es el camino recomendado.',
+      desktopOnly: 'Disponible solo en la aplicación de escritorio.',
+    },
     placeholder: {
       general: 'Preferencias generales de la aplicación próximamente.',
       media: 'Configuraciones de audio, video y reproductor próximamente.',

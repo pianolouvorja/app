@@ -1,0 +1,185 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { YoutubeAuthStatus } from '@/shared/types/desktop-bridge'
+
+const { t } = useI18n()
+
+const bridge = window.louvorja
+const isDesktop = Boolean(bridge?.isElectron && bridge.ytAuth)
+
+const status = ref<YoutubeAuthStatus | null>(null)
+const busy = ref(false)
+const adblockEnabled = ref(false)
+const adblockBusy = ref(false)
+
+onMounted(async () => {
+  if (!bridge?.ytAuth) return
+  try {
+    status.value = await bridge.ytAuth.status()
+  } catch {
+    status.value = { signedIn: false, premium: null }
+  }
+  if (bridge.ytAdblock) {
+    try {
+      const s = await bridge.ytAdblock.status()
+      adblockEnabled.value = s.enabled
+    } catch {
+      adblockEnabled.value = false
+    }
+  }
+})
+
+async function login() {
+  if (!bridge?.ytAuth || busy.value) return
+  busy.value = true
+  try {
+    const r = await bridge.ytAuth.login()
+    status.value = await bridge.ytAuth.status()
+    if (!r.signedIn) {
+      // usuário fechou sem logar — status já reflete
+    }
+  } catch (err) {
+    console.error('[yt-auth] login falhou', err)
+  } finally {
+    busy.value = false
+  }
+}
+
+async function logout() {
+  if (!bridge?.ytAuth || busy.value) return
+  busy.value = true
+  try {
+    await bridge.ytAuth.logout()
+    status.value = await bridge.ytAuth.status()
+  } catch (err) {
+    console.error('[yt-auth] logout falhou', err)
+  } finally {
+    busy.value = false
+  }
+}
+
+async function toggleAdblock() {
+  if (!bridge?.ytAdblock || adblockBusy.value) return
+  adblockBusy.value = true
+  const next = !adblockEnabled.value
+  try {
+    const r = await bridge.ytAdblock.set(next)
+    if (r.ok) adblockEnabled.value = next
+  } catch (err) {
+    console.error('[yt-adblock] toggle falhou', err)
+  } finally {
+    adblockBusy.value = false
+  }
+}
+</script>
+
+<template>
+  <section class="yt-card" data-test="youtube-account-card">
+    <h3>{{ t('settings.youtube.title') }}</h3>
+    <p class="hint">{{ t('settings.youtube.description') }}</p>
+
+    <template v-if="isDesktop">
+      <div class="status" data-test="youtube-auth-status">
+        <span
+          class="dot"
+          :class="{ on: status?.signedIn }"
+          aria-hidden="true"
+        />
+        <span v-if="status == null">{{ t('settings.youtube.checking') }}</span>
+        <span v-else-if="status.signedIn && status.premium">
+          {{ t('settings.youtube.premiumActive') }}
+        </span>
+        <span v-else-if="status.signedIn">
+          {{ t('settings.youtube.signedIn') }}
+        </span>
+        <span v-else>{{ t('settings.youtube.signedOut') }}</span>
+      </div>
+
+      <div class="actions">
+        <button
+          v-if="!status?.signedIn"
+          :disabled="busy"
+          data-test="youtube-login-button"
+          @click="login"
+        >
+          {{ busy ? t('settings.youtube.loggingIn') : t('settings.youtube.login') }}
+        </button>
+        <button
+          v-else
+          :disabled="busy"
+          class="secondary"
+          data-test="youtube-logout-button"
+          @click="logout"
+        >
+          {{ t('settings.youtube.logout') }}
+        </button>
+      </div>
+
+      <p v-if="status?.signedIn && status.premium === false" class="hint">
+        {{ t('settings.youtube.notPremiumHint') }}
+      </p>
+
+      <label class="adblock" data-test="youtube-adblock-toggle">
+        <input
+          type="checkbox"
+          :checked="adblockEnabled"
+          :disabled="adblockBusy"
+          @change="toggleAdblock"
+        />
+        <span>
+          {{ t('settings.youtube.adblock') }}
+          <small>{{ t('settings.youtube.adblockHint') }}</small>
+        </span>
+      </label>
+    </template>
+    <p v-else class="hint">{{ t('settings.youtube.desktopOnly') }}</p>
+  </section>
+</template>
+
+<style scoped>
+.yt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.hint {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #78808d;
+}
+.dot.on {
+  background: #24d36b;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+button.secondary {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+.adblock {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+.adblock small {
+  display: block;
+  opacity: 0.65;
+  font-size: 0.78rem;
+}
+</style>

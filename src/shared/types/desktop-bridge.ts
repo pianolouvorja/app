@@ -44,6 +44,22 @@ export type ClassoApi = {
   detect: () => Promise<ClassoDetectionResult>
 }
 
+export type YoutubeAuthStatus = {
+  signedIn: boolean
+  premium: boolean | null
+}
+
+export type YoutubeAuthApi = {
+  status: () => Promise<YoutubeAuthStatus>
+  login: () => Promise<{ ok: boolean; signedIn: boolean }>
+  logout: () => Promise<{ ok: boolean }>
+}
+
+export type YoutubeAdblockApi = {
+  status: () => Promise<{ enabled: boolean }>
+  set: (enabled: boolean) => Promise<{ ok: boolean }>
+}
+
 export type LegacyMediaCounts = {
   covers: number
   music: number
@@ -293,6 +309,8 @@ export type LouvorJaBridge = {
   workspace: WorkspaceApi
   catalog: CatalogApi
   classo?: ClassoApi
+  ytAuth?: YoutubeAuthApi
+  ytAdblock?: YoutubeAdblockApi
   legacyMedia?: LegacyMediaApi
   media: MediaApi
   displays: DisplaysApi
