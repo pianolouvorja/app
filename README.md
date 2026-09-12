@@ -163,6 +163,47 @@ npm run electron:build -- --win
 npm run electron:build -- --mac
 ```
 
+---
+
+
+
+## Aviso do Windows (SmartScreen / Defender)
+
+
+
+O instalador `.exe` do Windows **não possui assinatura digital** (code signing custa ~R$ 1.200-2.000/ano e ainda não foi contratado). Por isso o Windows pode exibir:
+
+- **SmartScreen**: "O Windows protegeu o computador" ao executar o instalador;
+- **Microsoft Defender**: detecção `PUADIManager:Win32/OnePlatform` (genérica, para instaladores NSIS sem assinatura e sem reputação).
+
+
+
+**Isso é um falso positivo.** O app é open source, sem telemetria e sem código malicioso — todo o código e o pipeline de build são públicos neste repositório e nos workflows do GitHub Actions.
+
+
+
+### Como instalar mesmo assim
+
+1. Na tela "O Windows protegeu o computador", clique em **Mais informações**;
+2. Clique em **Executar assim mesmo**;
+3. Se o Defender bloquear: **Proteção contra vírus e ameaças → Histórico de proteção → Ameaça bloqueada → Permitir**.
+
+
+
+### Como conferir a integridade do arquivo
+
+Cada release publica os arquivos `SHA256SUMS-*` junto aos instaladores. Compare o hash do arquivo baixado:
+
+```powershell
+Get-FileHash .\louvorja-piano-1.22.0-x64.exe -Algorithm SHA256
+```
+
+
+
+> **Situação atual (set/2026):** o build v1.22.0 foi submetido à Microsoft como falso positivo (submission `b6e692a1-0966-4e3a-9aaa-5873b6e8b910`, 12/09/2026). A correção via whitelist é por hash — **cada nova versão pode voltar a ser sinalizada** até que o projeto assine os instaladores (certificado OV/EV). Acompanhamento: https://www.microsoft.com/en-us/wdsi/filesubmission
+
+---
+
 
 
 ### Versionamento
