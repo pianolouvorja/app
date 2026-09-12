@@ -32,7 +32,7 @@ import {
 } from '../services/custom-catalog'
 import type { CustomCollectionSummary, CustomMusicSummary } from '../services/custom-catalog'
 import { customApiUrl } from '../services/custom-catalog'
-import { buildSlja, parseSlja } from '../../../shared/services/slja'
+import { buildSlja, parseSljaFile } from '../../../shared/services/slja'
 
 /**
  * Editor de letras v1 (web)
@@ -437,13 +437,15 @@ async function onImportFile(event: Event): Promise<void> {
   notify('')
   try {
     const buffer = await file.arrayBuffer()
-    const archive = await parseSlja(buffer)
+    // Aceita .slja direto OU .slja.zip (wrapper que o WhatsApp cria)
+    const archive = await parseSljaFile(buffer, file.name)
+    const innerName = (archive as { innerName?: string }).innerName
 
     // Nome da música: título do arquivo .slja, mas ignora fallbacks genéricos do
     // parser (v<versao> / "Sem título") — nesses casos usa o nome do arquivo.
     const genericTitle = /^v[\d.]+$/.test(archive.title?.trim() ?? '') || !archive.title?.trim()
     const name = genericTitle
-      ? file.name.replace(/\.slja$/i, '')
+      ? (innerName ?? file.name).replace(/\.slja(\.zip)?$/i, '')
       : archive.title.trim()
 
     // Garante coletânea de importação: reaproveita a primeira "Importações .slja"
@@ -818,7 +820,7 @@ onMounted(async () => {
       <input
         ref="fileInputEl"
         type="file"
-        accept=".slja"
+        accept=".slja,.zip"
         class="editor__file-input"
         @change="onImportFile"
       >
