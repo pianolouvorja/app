@@ -300,6 +300,27 @@ export async function playLiturgyItemOnScreens(
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
+    // Player externo (global das Configurações ou override do item): quando
+    // ativo, o arquivo abre no player do usuário em vez do controle interno.
+    const bridge = getDesktopBridge()
+    let playerId: string | undefined = item.playerId
+    if (!playerId || playerId === 'default') {
+      playerId = await bridge?.externalPlayer?.get?.()
+    }
+    if (playerId && playerId !== 'associated') {
+      const result = await bridge?.externalPlayer?.play?.(filePath)
+      if (result?.ok) {
+        if (item.type === 'audio') {
+          void palcoSession.audioRouted({
+            url: filePath,
+            title: item.name?.trim() || undefined,
+            action: 'play',
+          })
+        }
+        return { ok: true }
+      }
+      // player não encontrado etc → cai no interno (controle de projeção)
+    }
     const ok = await playLiturgyLocalVideoOnScreens(
       filePath,
       item.name?.trim() || filePath,
