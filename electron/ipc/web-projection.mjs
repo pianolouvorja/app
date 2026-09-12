@@ -726,6 +726,12 @@ function createSourceWindow(loadUrl, title) {
 
   const win = new BrowserWindow(options)
   win.setTitle(title || SOURCE_WINDOW_TITLE)
+  // O <title> do player HTML sobrescreve o título no load — trava no nome do
+  // item (ex: 'Casamento — apresentação') em vez de 'PDF — LouvorJA'.
+  win.webContents.on('page-title-updated', (event) => {
+    event.preventDefault()
+    win.setTitle(title || SOURCE_WINDOW_TITLE)
+  })
   win.setMinimumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
   win.setMaximumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
   win.setResizable(false)
@@ -1650,16 +1656,23 @@ export async function openWebProjectionWindows(payload) {
         typeof input.filePath === 'string' ? input.filePath.trim() : ''
       if (!filePath) return false
 
-      // Engine escolhido: setting do usuário ('auto' default).
-      // PowerPoint exporta PNGs pixel-perfect (LibreOffice quebra formatação);
-      // PNGs alimentam o player de imagens existente (multi-tela intacto).
+      // Engine: payload do item (escolha no dialog da liturgia) sobrepõe o
+      // setting global. PowerPoint exporta PNGs pixel-perfect (LibreOffice
+      // quebra formatação); PNGs alimentam o player de imagens (multi-tela).
       let preference = 'auto'
-      try {
-        const rec = readWorkspaceRecord('ppt-engine')
-        if (rec?.engine === 'powerpoint' || rec?.engine === 'libreoffice') {
-          preference = rec.engine
-        }
-      } catch { /* default auto */ }
+      if (
+        input.presentationEngine === 'powerpoint' ||
+        input.presentationEngine === 'libreoffice'
+      ) {
+        preference = input.presentationEngine
+      } else {
+        try {
+          const rec = readWorkspaceRecord('ppt-engine')
+          if (rec?.engine === 'powerpoint' || rec?.engine === 'libreoffice') {
+            preference = rec.engine
+          }
+        } catch { /* default auto */ }
+      }
 
       try {
         const { resolvePresentationEngine, exportPptxToPngs } = await import(
