@@ -574,8 +574,23 @@ function createWindow(locale = 'pt-BR') {
 	});
 
 	// Fallback: se a janela principal falhar ao carregar, mostra erro e fecha o splash
-	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
 		console.error(`[main] falha ao carregar: code=${errorCode} desc=${errorDescription}`);
+		// -3 (ABORTED) é transitório — Vite recompilando durante o load ou
+		// redirect pendente. Recarrega em vez de destruir o app (crash falso).
+		if (isMainFrame && errorCode === -3) {
+			setTimeout(() => {
+				if (mainWindow && !mainWindow.isDestroyed()) {
+					console.error("[main] retry do load após ABORTED");
+					if (isDev && VITE_DEV_SERVER_URL) {
+						void mainWindow.loadURL(`${VITE_DEV_SERVER_URL}/?lang=${locale}`);
+					} else {
+						void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"), { query: { lang: locale } });
+					}
+				}
+			}, 800);
+			return;
+		}
 		closeSplash();
 		if (!mainWindow || mainWindow.isDestroyed()) return;
 		dialog.showMessageBoxSync(mainWindow, {
