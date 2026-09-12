@@ -51,6 +51,7 @@ import { BrowserWindow, dialog } from "electron";
 import {
   __setEulaPlatformForTests,
   __setEulaPresenterForTests,
+  __setChangeSummaryPresenterForTests,
   acceptEula,
   checkEulaAcceptance,
   getEulaText,
@@ -352,8 +353,7 @@ describe("getEulaChangeSummary / re-aceite v2", () => {
   it("re-aceite (v1 aceita): resumo aceito → grava v2 sem mostrar texto integral", async () => {
     readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
     writeWorkspaceRecord.mockReturnValue(true);
-    // mocka dialog.showMessageBoxSync retornando 0 (aceitou no resumo)
-    dialog.showMessageBoxSync = vi.fn(() => 0);
+    __setChangeSummaryPresenterForTests(async () => true);
 
     const result = await checkEulaAcceptance("pt-BR");
     expect(result).toBe(true);
@@ -363,7 +363,7 @@ describe("getEulaChangeSummary / re-aceite v2", () => {
   it("re-aceite (v1 aceita): resumo recusado → false sem gravar", async () => {
     writeWorkspaceRecord.mockClear();
     readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
-    dialog.showMessageBoxSync = vi.fn(() => 1);
+    __setChangeSummaryPresenterForTests(async () => false);
 
     const result = await checkEulaAcceptance("pt-BR");
     expect(result).toBe(false);

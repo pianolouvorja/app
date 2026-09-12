@@ -30,6 +30,17 @@ export function __setEulaPresenterForTests(fn) {
 	eulaPresenterOverride = fn;
 }
 
+/** @type {null | ((locale: string) => Promise<boolean>)} */
+let changeSummaryPresenterOverride = null;
+
+/**
+ * Hook de testes para substituir a janela de resumo do re-aceite.
+ * @param {null | ((locale: string, summary: string) => Promise<boolean>)} fn
+ */
+export function __setChangeSummaryPresenterForTests(fn) {
+	changeSummaryPresenterOverride = fn;
+}
+
 /**
  * Verifica se o EULA foi aceito pelo usuário.
  * Lê o record 'eula' do workspace (arquivo .bin criptografado).
@@ -331,6 +342,106 @@ export function getEulaChangeSummary(acceptedVersion) {
 }
 
 /**
+ * Janela HTML com o resumo "o que mudou" (re-aceite v2+).
+ * Modal nativo (showMessageBoxSync) não renderiza markdown — o resumo
+ * é markdown do CHANGELOG.md e merece leitura decente (LGPD: aceite informado).
+ * @param {string} locale
+ * @param {string} summaryMarkdown
+ * @returns {Promise<boolean>} true = aceitou, false = recusou/fechou
+ */
+function presentChangeSummaryWindow(locale, summaryMarkdown) {
+	return new Promise((resolve) => {
+		const labels = getEulaDialogLabels(locale);
+		const heading =
+			locale === "en"
+				? "Our terms have been updated"
+				: locale === "es"
+					? "Nuestros términos fueron actualizados"
+					: "Nossos termos foram atualizados";
+		const subheading =
+			locale === "en"
+				? "Here is what changed:"
+				: locale === "es"
+					? "Esto es lo que cambió:"
+					: "Veja o que mudou:";
+
+		const win = new BrowserWindow({
+			width: 620,
+			height: 620,
+			center: true,
+			show: false,
+			resizable: true,
+			autoHideMenuBar: true,
+			alwaysOnTop: true,
+			backgroundColor: "#12121c",
+			title: labels.title,
+			webPreferences: {
+				nodeIntegration: false,
+				contextIsolation: true,
+				sandbox: true,
+			},
+		});
+
+		let settled = false;
+		const finish = (accepted) => {
+			if (settled) return;
+			settled = true;
+			if (!win.isDestroyed()) win.destroy();
+			resolve(accepted);
+		};
+		win.on("closed", () => finish(false));
+		win.webContents.on("will-navigate", (event, targetUrl) => {
+			event.preventDefault();
+			try {
+				const target = new URL(targetUrl);
+				if (target.protocol !== "louvorja-eula:") return;
+				if (target.hostname === "accept") finish(true);
+				if (target.hostname === "decline") finish(false);
+			} catch {
+				/* ignora URLs externas */
+			}
+		});
+
+		const body = markdownToHtml(summaryMarkdown);
+		const html = `<!doctype html><html lang="${escapeHtml(locale)}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'"><style>html,body{height:100%;margin:0}body{display:flex;flex-direction:column;color:#f5f5f7;background:#12121c;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}header{padding:22px 26px 12px;border-bottom:1px solid #343440}h1{margin:0 0 4px;color:#ffd200;font-size:20px}main{flex:1;min-height:0;overflow:auto;padding:18px 26px}h2{font-size:16px;color:#ffd200;margin:14px 0 8px}ul{margin:6px 0;padding-left:20px}li{margin:4px 0;line-height:1.5}hr{border:0;border-top:1px solid #343440;margin:14px 0}footer{display:flex;justify-content:flex-end;gap:10px;padding:14px 26px;border-top:1px solid #343440;background:#181822}a{padding:9px 18px;border-radius:7px;color:#f5f5f7;text-decoration:none;background:#3a3a46}.primary{color:#111;background:#ffd200;font-weight:600}</style></head><body><header><h1>${escapeHtml(heading)}</h1><p>${escapeHtml(subheading)}</p></header><main>${body}</main><footer><a href="louvorja-eula://decline">${escapeHtml(labels.decline)}</a><a class="primary" href="louvorja-eula://accept">${escapeHtml(labels.accept)}</a></footer></body></html>`;
+		win.once("ready-to-show", () => {
+			win.show();
+			win.focus();
+		});
+		void win
+			.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+			.catch(() => finish(false));
+	});
+}
+
+/**
+ * Markdown mínimo → HTML seguro (títulos ##, itens -, **bold**, ---).
+ * Entrada é o CHANGELOG.md versionado no repo (fonte confiável), e a saída
+ * passa por escapeHtml por pedaço — sem XSS mesmo se o texto mudar.
+ * @param {string} md
+ * @returns {string} html
+ */
+function markdownToHtml(md) {
+	const inline = (text) =>
+		escapeHtml(text)
+			.replaceAll(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+	const lines = md.split("\n");
+	const out = [];
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+		if (trimmed.startsWith("## ")) out.push(`<h2>${inline(trimmed.slice(3))}</h2>`);
+		else if (trimmed === "---") out.push("<hr>");
+		else if (trimmed.startsWith("- ")) out.push(`<ul><li>${inline(trimmed.slice(2))}</li></ul>`);
+		else out.push(`<p>${inline(trimmed)}</p>`);
+	}
+	// agrupa <li> consecutivos numa única <ul>
+	return out
+		.join("\n")
+		.replaceAll("</ul>\n<ul>", "");
+}
+
+/**
  * Orquestra a verificação do EULA no startup.
  * Se já aceito na versao atual, retorna true sem exibir dialog.
  * Se não aceito, exibe o dialog e retorna a decisão do usuário.
@@ -350,22 +461,9 @@ export async function checkEulaAcceptance(locale) {
 	if (previousVersion >= 1 && previousVersion < CURRENT_EULA_VERSION) {
 		const summary = getEulaChangeSummary(previousVersion);
 		if (summary) {
-			const labels = getEulaDialogLabels(locale);
-			const summaryChoice = dialog.showMessageBoxSync({
-				type: "info",
-				title: labels.title,
-				message:
-					locale === "en"
-						? "Our terms have been updated. Here is what changed:"
-						: locale === "es"
-							? "Nuestros términos fueron actualizados. Esto es lo que cambió:"
-							: "Nossos termos foram atualizados. Veja o que mudou:",
-				detail: summary.slice(0, 3500),
-				buttons: [labels.accept, labels.decline],
-				defaultId: 0,
-				cancelId: 1,
-			});
-			if (summaryChoice === 0) {
+			const presenter = changeSummaryPresenterOverride ?? presentChangeSummaryWindow;
+			const accepted = await presenter(locale, summary);
+			if (accepted) {
 				// aceitou no resumo: grava e pula o texto integral
 				acceptEula();
 				return true;
