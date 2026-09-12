@@ -352,7 +352,17 @@ export function buildLiturgyItemFromDraft(
 
     item.filePath = paths[0] ?? ''
     if (type === 'presentation') {
-      item.presentationEngine = draft.presentationEngine ?? 'auto'
+      // Mesma semântica do player: só persiste engine se for escolha
+      // EXPLÍCITA do usuário no modal. 'auto' no select = sem override —
+      // o global das Configurações vale na execução.
+      if (
+        draft.presentationEngine &&
+        draft.presentationEngine !== 'auto'
+      ) {
+        item.presentationEngine = draft.presentationEngine
+      } else {
+        delete item.presentationEngine
+      }
     }
     if (type === 'video' || type === 'audio') {
       // 'default' = herda o global das Configurações; não persiste no item.

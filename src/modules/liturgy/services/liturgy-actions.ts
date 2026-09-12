@@ -223,17 +223,22 @@ export async function executeLiturgyItem(
 
       const bridge = getDesktopBridge()
 
-      // Engine EXPLÍCITO (PowerPoint/LibreOffice/Custom) = abre o APLICATIVO
-      // externo em modo slideshow — fidelidade total, o programa cuida da tela
-      // cheia. 'auto'/ausente = conversão interna do app (projeção multi-tela).
+      // Engine efetivo: override explícito do item > global das Configurações.
+      // Explícito (powerpoint/libreoffice/custom) = APLICATIVO externo em
+      // modo slideshow (fidelidade total). 'auto' = conversão interna do app
+      // (projeção multi-tela).
+      let engine = item.presentationEngine
+      if (!engine) {
+        engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+      }
       if (
-        item.presentationEngine === 'powerpoint' ||
-        item.presentationEngine === 'libreoffice' ||
-        item.presentationEngine === 'custom'
+        engine === 'powerpoint' ||
+        engine === 'libreoffice' ||
+        engine === 'custom'
       ) {
         const result = await bridge?.presentation?.openExternal?.(
           filePath,
-          item.presentationEngine,
+          engine,
         )
         if (!result?.ok) {
           return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
@@ -377,14 +382,19 @@ export async function playLiturgyItemOnScreens(
     }
     const bridge = getDesktopBridge()
 
-    // Engine EXPLÍCITO = aplicativo externo em slideshow (ver case acima).
+    // Engine efetivo: override do item > global (ver executeLiturgyItem).
+    let engine = item.presentationEngine
+    if (!engine) {
+      engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+    }
     if (
-      item.presentationEngine === 'powerpoint' ||
-      item.presentationEngine === 'libreoffice'
+      engine === 'powerpoint' ||
+      engine === 'libreoffice' ||
+      engine === 'custom'
     ) {
       const result = await bridge?.presentation?.openExternal?.(
         filePath,
-        item.presentationEngine,
+        engine,
       )
       if (!result?.ok) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
@@ -399,10 +409,11 @@ export async function playLiturgyItemOnScreens(
         messageKey: 'liturgy.messages.presentationOfficeMissing',
       }
     }
+    // Chegou aqui com engine 'auto' (interno): converte e projeta multi-tela.
     const ok = await playLiturgyLocalPresentationOnScreens(
       filePath,
       item.name?.trim() || filePath,
-      item.presentationEngine,
+      'auto',
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
