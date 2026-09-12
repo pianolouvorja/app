@@ -62,9 +62,9 @@ export default {
       projection: 'Configurações de projeção e telas em breve.',
     },
     classo: {
-      title: 'LouvorJA Classo (Delphi)',
+      title: 'Migração do LouvorJA antigo (Classo)',
       description:
-        'Detecta a instalação do LouvorJA Classo no computador para reutilizar as mídias e a liturgia já baixadas, sem baixar tudo de novo.',
+        'Usa as mídias e a liturgia já baixadas no programa antigo (LouvorJA Classo/Delphi), sem baixar tudo de novo.',
       detect: 'Detectar instalação do Classo',
       detecting: 'Procurando instalação…',
       notFound: 'Instalação do Classo não encontrada nos locais padrão.',
@@ -82,8 +82,11 @@ export default {
         associated: 'Player do sistema',
         vlc: 'VLC',
         mpv: 'mpv',
+        custom: 'Outro ({name})',
       },
-      hint: 'Player do sistema abre com o programa associado ao formato. VLC/mpv são usados se instalados. Padrão: player do sistema (reprodução interna do app).',
+      pickOther: 'Escolher outro player…',
+      pickTitle: 'Escolha o executável do player de vídeo/áudio',
+      hint: 'Lista só o que está instalado nesta máquina. Padrão: player do sistema (reprodução interna do app).',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
     },
     presentation: {

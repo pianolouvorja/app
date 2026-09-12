@@ -168,6 +168,7 @@ contextBridge.exposeInMainWorld('louvorja', {
 
   externalPlayer: {
     get: () => ipcRenderer.invoke('external-player:get'),
+    detect: () => ipcRenderer.invoke('external-player:detect'),
     set: (player) => ipcRenderer.invoke('external-player:set', player),
     play: (filePath) => ipcRenderer.invoke('external-player:play', filePath),
   },

@@ -57,7 +57,7 @@ export default {
         'Light Mode offers better readability in brightly lit environments during daytime services.',
     },
     classo: {
-      title: 'LouvorJA Classo (Delphi)',
+      title: 'Migrate from old LouvorJA (Classo)',
       description:
         'Detects the LouvorJA Classo installation on this computer to reuse already-downloaded media and liturgy instead of downloading everything again.',
       detect: 'Detect Classo installation',
@@ -77,8 +77,11 @@ export default {
         associated: 'System player',
         vlc: 'VLC',
         mpv: 'mpv',
+        custom: 'Other ({name})',
       },
-      hint: 'System player opens with the program associated to the format. VLC/mpv are used if installed. Default: system player (in-app playback).',
+      pickOther: 'Choose another player…',
+      pickTitle: 'Select the video/audio player executable',
+      hint: 'Only players installed on this machine are listed. Default: system player (in-app playback).',
       desktopOnly: 'Available on the desktop application only.',
     },
     presentation: {

@@ -41,6 +41,7 @@ import {
   getExternalPlayerPreference,
   setExternalPlayerPreference,
   playInExternalPlayer,
+  detectInstalledPlayers,
 } from '../external-player.mjs'
 import {
   hasPresentationOffice,
@@ -780,6 +781,7 @@ export function registerWorkspaceIpc() {
 
   // Player externo (app#177): preferência + play no player do usuário
   ipcMain.handle('external-player:get', () => getExternalPlayerPreference())
+  ipcMain.handle('external-player:detect', () => detectInstalledPlayers())
   ipcMain.handle('external-player:set', (_event, player) =>
     setExternalPlayerPreference(String(player ?? 'associated')),
   )

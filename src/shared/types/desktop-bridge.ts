@@ -225,10 +225,21 @@ export type DialogApi = {
   ) => Promise<string | string[] | null>
 }
 
-export type ExternalPlayerPreference = 'associated' | 'vlc' | 'mpv'
+export type ExternalPlayerPreference =
+  | 'associated'
+  | 'vlc'
+  | 'mpv'
+  | 'celluloid'
+  | 'smplayer'
+  | 'totem'
+  | `custom:${string}`
+
+export type DetectedPlayer = { id: string; label: string }
 
 export type ExternalPlayerApi = {
   get: () => Promise<ExternalPlayerPreference>
+  /** Players conhecidos instalados nesta máquina (além do "player do sistema"). */
+  detect: () => Promise<DetectedPlayer[]>
   set: (player: ExternalPlayerPreference) => Promise<boolean>
   play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
 }

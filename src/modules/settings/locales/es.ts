@@ -57,7 +57,7 @@ export default {
         'El Modo Claro ofrece mejor legibilidad en entornos muy iluminados durante cultos diurnos.',
     },
     classo: {
-      title: 'LouvorJA Classo (Delphi)',
+      title: 'Migrar del LouvorJA antiguo (Classo)',
       description:
         'Detecta la instalación de LouvorJA Classo en la computadora para reutilizar las medias y la liturgia ya descargadas.',
       detect: 'Detectar instalación del Classo',
@@ -77,8 +77,11 @@ export default {
         associated: 'Reproductor del sistema',
         vlc: 'VLC',
         mpv: 'mpv',
+        custom: 'Otro ({name})',
       },
-      hint: 'El reproductor del sistema abre con el programa asociado al formato. VLC/mpv se usan si están instalados. Predeterminado: reproductor del sistema (reproducción interna).',
+      pickOther: 'Elegir otro reproductor…',
+      pickTitle: 'Selecciona el ejecutable del reproductor de video/audio',
+      hint: 'Solo se enumeran los reproductores instalados en esta máquina. Predeterminado: reproductor del sistema (reproducción interna).',
       desktopOnly: 'Disponible solo en la aplicación de escritorio.',
     },
     presentation: {
