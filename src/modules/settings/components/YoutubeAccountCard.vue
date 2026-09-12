@@ -166,9 +166,33 @@ async function toggleAdblock() {
   display: flex;
   gap: 0.5rem;
 }
+button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--ds-color-primary, #04549b);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.05s ease;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 button.secondary {
   background: transparent;
-  border: 1px solid currentColor;
+  border-color: currentColor;
 }
 .adblock {
   display: flex;
