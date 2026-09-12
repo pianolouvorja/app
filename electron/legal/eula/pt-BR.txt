@@ -82,7 +82,7 @@ O Software não coleta, armazena nem transmite dados pessoais do Usuário para s
 Declaração explícita:
 
 - Login opcional (Google/YouTube): O Usuário PODE, opcionalmente, conectar sua conta Google/YouTube para reproduzir vídeos sem anúncios (assinantes YouTube Premium). Esta conexão é um recurso opt-in: sem ela, o Software funciona integralmente. Os dados de sessão dessa conexão (cookies) ficam armazenados EXCLUSIVAMENTE no dispositivo local (Electron userData) e nunca são enviados aos servidores do Licenciante. O Usuário pode revogar a qualquer momento via "Sair da conta" nas Configurações, que remove 100% dos dados de sessão do dispositivo.
-- Cadastro opcional de coletâneas: funcionalidades de coletâneas da comunidade podem exigir conta (email/senha), fornecida voluntariamente pelo Usuário e usada exclusivamente para autenticação e autoria de conteúdo.
+- Cadastro opcional de coletâneas: funcionalidades de coletâneas da comunidade podem exigir conta (email, nome de exibição e senha). Diferente do login do YouTube, ESTES dados são armazenados nos servidores do Licenciante, exclusivamente para autenticação e autoria de conteúdo — nunca compartilhados com terceiros nem usados para publicidade. O Usuário pode solicitar a exclusão da conta e dos dados associados; as coletâneas publicadas podem ser mantidas de forma anônima ou removidas, a critério do Usuário.
 - Sem telemetria: O Software não envia dados de uso, estatísticas ou analíticos para servidores.
 - Sem cookies de tracking: O Software não utiliza cookies de rastreamento.
 - Dados locais: Preferências do Usuário (idioma, tema, configurações de projeção) são armazenadas exclusivamente no dispositivo local (browser storage / Electron userData).
