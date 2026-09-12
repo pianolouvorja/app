@@ -57,13 +57,13 @@ export default {
         'Light Mode offers better readability in brightly lit environments during daytime services.',
     },
     classo: {
-      title: 'Migrate from old LouvorJA (Classo)',
+      title: 'Migrate from old LouvorJA (Delphi version)',
       description:
-        'Detects the LouvorJA Classo installation on this computer to reuse already-downloaded media and liturgy instead of downloading everything again.',
-      detect: 'Detect Classo installation',
+        'Reuses media and liturgy already downloaded in the old LouvorJA desktop program instead of downloading everything again.',
+      detect: 'Search for old LouvorJA installation',
       detecting: 'Searching installation…',
-      notFound: 'Classo installation not found in default locations.',
-      detectError: 'Error while searching for the Classo installation.',
+      notFound: 'Old LouvorJA installation not found in default locations.',
+      detectError: 'Error while searching for the old LouvorJA installation.',
       desktopOnly: 'Available on the desktop application only.',
       albumsFound: '{count} media album(s) found (~{mb} MB)',
       liturgyFound: 'Liturgy (liturgia.ja) found',

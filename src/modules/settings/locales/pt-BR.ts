@@ -62,13 +62,13 @@ export default {
       projection: 'Configurações de projeção e telas em breve.',
     },
     classo: {
-      title: 'Migração do LouvorJA antigo (Classo)',
+      title: 'Migração do LouvorJA antigo (versão Delphi)',
       description:
-        'Usa as mídias e a liturgia já baixadas no programa antigo (LouvorJA Classo/Delphi), sem baixar tudo de novo.',
-      detect: 'Detectar instalação do Classo',
+        'Usa as mídias e a liturgia já baixadas no LouvorJA antigo (programa de computador da versão anterior), sem baixar tudo de novo.',
+      detect: 'Procurar instalação do LouvorJA antigo',
       detecting: 'Procurando instalação…',
-      notFound: 'Instalação do Classo não encontrada nos locais padrão.',
-      detectError: 'Erro ao procurar a instalação do Classo.',
+      notFound: 'O LouvorJA antigo não foi encontrado nos locais padrão.',
+      detectError: 'Erro ao procurar a instalação do LouvorJA antigo.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
       albumsFound: '{count} álbum(ns) de mídia encontrados (~{mb} MB)',
       liturgyFound: 'Liturgia (liturgia.ja) encontrada',

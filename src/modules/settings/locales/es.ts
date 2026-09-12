@@ -57,13 +57,13 @@ export default {
         'El Modo Claro ofrece mejor legibilidad en entornos muy iluminados durante cultos diurnos.',
     },
     classo: {
-      title: 'Migrar del LouvorJA antiguo (Classo)',
+      title: 'Migrar del LouvorJA antiguo (versión Delphi)',
       description:
-        'Detecta la instalación de LouvorJA Classo en la computadora para reutilizar las medias y la liturgia ya descargadas.',
-      detect: 'Detectar instalación del Classo',
+        'Reutiliza las medias y la liturgia ya descargadas en el antiguo programa LouvorJA de computadora.',
+      detect: 'Buscar instalación del LouvorJA antiguo',
       detecting: 'Buscando instalación…',
-      notFound: 'Instalación del Classo no encontrada en los lugares predeterminados.',
-      detectError: 'Error al buscar la instalación del Classo.',
+      notFound: 'No se encontró la instalación del LouvorJA antiguo en los lugares predeterminados.',
+      detectError: 'Error al buscar la instalación del LouvorJA antiguo.',
       desktopOnly: 'Disponible solo en la aplicación de escritorio.',
       albumsFound: '{count} álbum(es) de media encontrados (~{mb} MB)',
       liturgyFound: 'Liturgia (liturgia.ja) encontrada',
