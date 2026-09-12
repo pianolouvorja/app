@@ -70,6 +70,17 @@ export default {
       scheduledFound: 'Ítems agendados (itensAgendados.xml) encontrados',
       wip: 'Reutilización y migración de media en desarrollo.',
     },
+    externalPlayer: {
+      title: 'Reproductor externo',
+      description: 'Reproduce video y audio en el reproductor de tu sistema (escucha previa en el monitor del operador). La proyección en pantallas sigue siendo de la aplicación.',
+      player: {
+        associated: 'Reproductor del sistema',
+        vlc: 'VLC',
+        mpv: 'mpv',
+      },
+      hint: 'El reproductor del sistema abre con el programa asociado al formato. VLC/mpv se usan si están instalados. Predeterminado: reproductor del sistema (reproducción interna).',
+      desktopOnly: 'Disponible solo en la aplicación de escritorio.',
+    },
     presentation: {
       title: 'Presentaciones (PPTX)',
       description: 'Motor utilizado para convertir presentaciones en diapositivas de proyección.',

@@ -37,6 +37,11 @@ import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
 import {
+  getExternalPlayerPreference,
+  setExternalPlayerPreference,
+  playInExternalPlayer,
+} from '../external-player.mjs'
+import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
 import {
@@ -760,4 +765,13 @@ export function registerWorkspaceIpc() {
       return 0
     }
   })
+
+  // Player externo (app#177): preferência + play no player do usuário
+  ipcMain.handle('external-player:get', () => getExternalPlayerPreference())
+  ipcMain.handle('external-player:set', (_event, player) =>
+    setExternalPlayerPreference(String(player ?? 'associated')),
+  )
+  ipcMain.handle('external-player:play', async (_event, filePath) =>
+    playInExternalPlayer(String(filePath ?? '')),
+  )
 }

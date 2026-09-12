@@ -75,6 +75,17 @@ export default {
       scheduledFound: 'Itens agendados (itensAgendados.xml) encontrados',
       wip: 'Reutilização e migração de mídia em desenvolvimento.',
     },
+    externalPlayer: {
+      title: 'Player externo',
+      description: 'Reproduz vídeo e áudio no player do seu sistema (pré-escuta no monitor do operador). A projeção nas telas continua pelo app.',
+      player: {
+        associated: 'Player do sistema',
+        vlc: 'VLC',
+        mpv: 'mpv',
+      },
+      hint: 'Player do sistema abre com o programa associado ao formato. VLC/mpv são usados se instalados. Padrão: player do sistema (reprodução interna do app).',
+      desktopOnly: 'Disponível apenas no aplicativo desktop.',
+    },
     presentation: {
       title: 'Apresentações (PPTX)',
       description: 'Motor usado para converter apresentações em slides de projeção.',

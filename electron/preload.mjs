@@ -166,6 +166,12 @@ contextBridge.exposeInMainWorld('louvorja', {
     probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },
 
+  externalPlayer: {
+    get: () => ipcRenderer.invoke('external-player:get'),
+    set: (player) => ipcRenderer.invoke('external-player:set', player),
+    play: (filePath) => ipcRenderer.invoke('external-player:play', filePath),
+  },
+
   displays: {
     list: () => ipcRenderer.invoke('displays:list'),
     identify: () => ipcRenderer.invoke('displays:identify'),

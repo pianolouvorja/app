@@ -225,6 +225,14 @@ export type DialogApi = {
   ) => Promise<string | string[] | null>
 }
 
+export type ExternalPlayerPreference = 'associated' | 'vlc' | 'mpv'
+
+export type ExternalPlayerApi = {
+  get: () => Promise<ExternalPlayerPreference>
+  set: (player: ExternalPlayerPreference) => Promise<boolean>
+  play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
+}
+
 export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice'
 
 export type PresentationApi = {
@@ -358,6 +366,7 @@ export type LouvorJaBridge = {
   classo?: ClassoApi
   ytAuth?: YoutubeAuthApi
   ytAdblock?: YoutubeAdblockApi
+  externalPlayer?: ExternalPlayerApi
   legacyMedia?: LegacyMediaApi
   mediaFolder?: MediaFolderApi
   backup?: BackupApi

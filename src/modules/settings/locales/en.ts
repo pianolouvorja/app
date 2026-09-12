@@ -70,6 +70,17 @@ export default {
       scheduledFound: 'Scheduled items (itensAgendados.xml) found',
       wip: 'Media reuse and migration under development.',
     },
+    externalPlayer: {
+      title: 'External player',
+      description: 'Play video and audio in your system player (preview on the operator monitor). Projection screens keep using the app.',
+      player: {
+        associated: 'System player',
+        vlc: 'VLC',
+        mpv: 'mpv',
+      },
+      hint: 'System player opens with the program associated to the format. VLC/mpv are used if installed. Default: system player (in-app playback).',
+      desktopOnly: 'Available on the desktop application only.',
+    },
     presentation: {
       title: 'Presentations (PPTX)',
       description: 'Engine used to convert presentations into projection slides.',
