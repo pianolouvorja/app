@@ -223,12 +223,13 @@ export async function executeLiturgyItem(
 
       const bridge = getDesktopBridge()
 
-      // Engine EXPLÍCITO (PowerPoint/LibreOffice) = abre o APLICATIVO externo
-      // em modo slideshow — fidelidade total, o programa cuida da tela cheia.
-      // 'auto'/ausente = conversão interna do app (projeção multi-tela).
+      // Engine EXPLÍCITO (PowerPoint/LibreOffice/Custom) = abre o APLICATIVO
+      // externo em modo slideshow — fidelidade total, o programa cuida da tela
+      // cheia. 'auto'/ausente = conversão interna do app (projeção multi-tela).
       if (
         item.presentationEngine === 'powerpoint' ||
-        item.presentationEngine === 'libreoffice'
+        item.presentationEngine === 'libreoffice' ||
+        item.presentationEngine === 'custom'
       ) {
         const result = await bridge?.presentation?.openExternal?.(
           filePath,

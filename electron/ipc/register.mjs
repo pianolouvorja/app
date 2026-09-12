@@ -36,7 +36,10 @@ import {
 import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
-import { openPresentationExternal } from './presentation-external.mjs'
+import {
+  openPresentationExternal,
+  setCustomPresentationApp,
+} from './presentation-external.mjs'
 import {
   getExternalPlayerPreference,
   setExternalPlayerPreference,
@@ -157,6 +160,12 @@ export function registerWorkspaceIpc() {
       return { ok: false, error: 'unexpected' }
     }
   })
+
+  // App externo custom de apresentação (Keynote, OnlyOffice, WPS...)
+  ipcMain.handle(
+    'presentation:set-custom-app',
+    (_event, appPath) => setCustomPresentationApp(String(appPath ?? '')),
+  )
 
   // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
   ipcMain.on('projection:video-ended', () => {

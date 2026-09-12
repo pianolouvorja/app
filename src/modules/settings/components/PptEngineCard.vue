@@ -23,6 +23,11 @@ onMounted(async () => {
 
 async function setEngine(next: PresentationEngine) {
   if (!hasApi || busy.value) return
+  // 'custom' exige um executável escolhido antes de virar o global.
+  if (next === 'custom') {
+    await pickCustomApp()
+    return
+  }
   busy.value = true
   const previous = engine.value
   engine.value = next
@@ -33,6 +38,26 @@ async function setEngine(next: PresentationEngine) {
     engine.value = previous
   } finally {
     busy.value = false
+  }
+}
+
+/** Seletor de aplicativo externo custom (Keynote, OnlyOffice, WPS...). */
+async function pickCustomApp() {
+  try {
+    const picked = await bridge!.dialog!.openFile!({
+      title: t('settings.presentation.customAppTitle'),
+      multiple: false,
+    })
+    const appPath = Array.isArray(picked) ? picked[0] : picked
+    if (typeof appPath === 'string' && appPath.trim()) {
+      const ok = await bridge!.presentation!.setCustomApp!(appPath.trim())
+      if (ok) {
+        await bridge!.presentation!.setEngine!('custom')
+        engine.value = 'custom'
+      }
+    }
+  } catch {
+    /* usuário cancelou */
   }
 }
 </script>
@@ -60,6 +85,21 @@ async function setEngine(next: PresentationEngine) {
         @click="setEngine(option)"
       >
         {{ t(`settings.presentation.engine.${option}`) }}
+      </button>
+      <button
+        type="button"
+        role="radio"
+        :aria-checked="engine === 'custom'"
+        :class="{ selected: engine === 'custom' }"
+        data-test="ppt-engine-custom"
+        :disabled="busy"
+        @click="setEngine('custom')"
+      >
+        {{
+          engine === 'custom'
+            ? t('settings.presentation.engine.customActive')
+            : t('settings.presentation.engine.custom')
+        }}
       </button>
     </div>
     <p v-else class="hint">{{ t('settings.presentation.desktopOnly') }}</p>

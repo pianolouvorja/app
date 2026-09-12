@@ -302,7 +302,7 @@ async function openLiturgyLocalPresentation(
   filePath: string,
   title = '',
   withScreens: boolean,
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice',
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
 ): Promise<boolean> {
   const path = filePath.trim()
   if (!path) return false
@@ -314,7 +314,11 @@ async function openLiturgyLocalPresentation(
   // Sem PowerPoint disponível, só LibreOffice/PDF atende — falha cedo
   // apenas se o usuário pediu engine explicitamente e não há nenhum Office.
   const hasOffice = await bridge.presentation?.detectOffice?.()
-  if (hasOffice === false && presentationEngine !== 'powerpoint') {
+  if (
+    hasOffice === false &&
+    presentationEngine !== 'powerpoint' &&
+    presentationEngine !== 'custom'
+  ) {
     return false
   }
 
@@ -342,7 +346,7 @@ async function openLiturgyLocalPresentation(
 export async function openLiturgyLocalPresentationControl(
   filePath: string,
   title = '',
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice',
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
 ): Promise<boolean> {
   return openLiturgyLocalPresentation(filePath, title, false, presentationEngine)
 }
@@ -351,7 +355,7 @@ export async function openLiturgyLocalPresentationControl(
 export async function playLiturgyLocalPresentationOnScreens(
   filePath: string,
   title = '',
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice',
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
 ): Promise<boolean> {
   return openLiturgyLocalPresentation(filePath, title, true, presentationEngine)
 }

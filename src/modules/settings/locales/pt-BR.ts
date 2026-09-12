@@ -97,6 +97,8 @@ export default {
         powerpoint: 'Microsoft PowerPoint',
         libreoffice: 'LibreOffice',
       },
+      customActive: 'Outro app (definido)',
+      customAppTitle: 'Escolha o aplicativo de apresentação (Keynote, OnlyOffice, WPS…)',
       hint: 'Automático usa o PowerPoint quando instalado (formatação fiel) e cai para o LibreOffice caso contrário. Requer Microsoft Office instalado para o modo PowerPoint.',
       desktopOnly: 'Disponível apenas no aplicativo desktop.',
     },

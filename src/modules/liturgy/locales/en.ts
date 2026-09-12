@@ -169,6 +169,8 @@ export default {
       selectPdfButton: 'Select a PDF',
       presentationEngine: 'Conversion engine',
     presentationEngineHint: 'Automatic uses PowerPoint when installed (faithful formatting). LibreOffice may alter formatting of complex presentations.',
+    engineCustom: 'Other app…',
+    customAppTitle: 'Choose the presentation application (Keynote, OnlyOffice, WPS…)',
     playerSelect: 'Play in player',
     playerDefault: 'Settings default',
     playerAssociated: 'In-app player (internal)',

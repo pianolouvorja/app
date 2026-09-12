@@ -421,6 +421,45 @@ function onPlayerChange(event: Event) {
   patch({ playerId: value || 'default' })
 }
 
+/** Opções de motor PPTX: as 3 fixas + "Outro app…" (custom com executável). */
+const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'>>([
+  'auto',
+  'powerpoint',
+  'libreoffice',
+  'custom',
+])
+
+/**
+ * Troca o motor do item. Escolhendo 'custom', abre o seletor de aplicativo
+ * e só aplica se o usuário escolher um executável válido.
+ */
+async function onEngineChange(
+  option: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
+) {
+  if (option !== 'custom') {
+    patch({ presentationEngine: option })
+    return
+  }
+  const bridge = getDesktopBridge()
+  if (!bridge?.dialog?.openFile || !bridge?.presentation?.setCustomApp) {
+    patch({ presentationEngine: 'custom' })
+    return
+  }
+  try {
+    const picked = await bridge.dialog.openFile({
+      title: t('liturgy.fields.customAppTitle'),
+      multiple: false,
+    })
+    const appPath = Array.isArray(picked) ? picked[0] : picked
+    if (typeof appPath === 'string' && appPath.trim()) {
+      const ok = await bridge.presentation.setCustomApp(appPath.trim())
+      if (ok) patch({ presentationEngine: 'custom' })
+    }
+  } catch {
+    /* usuário cancelou — mantém o engine atual */
+  }
+}
+
 function onMusicQueryInput(event: Event) {
   emit('update:musicQuery', (event.target as HTMLInputElement).value)
 }
@@ -927,16 +966,20 @@ function isLightDot(hex: string): boolean {
                 :aria-label="t('liturgy.fields.presentationEngine')"
               >
                 <button
-                  v-for="option in (['auto', 'powerpoint', 'libreoffice'] as const)"
+                  v-for="option in engineOptions"
                   :key="option"
                   type="button"
                   role="radio"
                   :aria-checked="(draft.presentationEngine ?? 'auto') === option"
                   :class="{ selected: (draft.presentationEngine ?? 'auto') === option }"
                   :data-test="`liturgy-engine-${option}`"
-                  @click="patch({ presentationEngine: option })"
+                  @click="onEngineChange(option)"
                 >
-                  {{ t(`liturgy.fields.engine.${option}`) }}
+                  {{
+                    option === 'custom'
+                      ? t('liturgy.fields.engineCustom')
+                      : t(`liturgy.fields.engine.${option}`)
+                  }}
                 </button>
               </div>
               <p class="moment-dialog__engine-hint">

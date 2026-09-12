@@ -184,12 +184,14 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   presentation: {
-    detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
-    getEngine: () => ipcRenderer.invoke('presentation:get-engine'),
-    setEngine: (engine) => ipcRenderer.invoke('presentation:set-engine', engine),
-    openExternal: (filePath, engine) =>
-      ipcRenderer.invoke('presentation:open-external', filePath, engine),
-  },
+      detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
+      getEngine: () => ipcRenderer.invoke('presentation:get-engine'),
+      setEngine: (engine) => ipcRenderer.invoke('presentation:set-engine', engine),
+      openExternal: (filePath, engine) =>
+        ipcRenderer.invoke('presentation:open-external', filePath, engine),
+      setCustomApp: (appPath) =>
+        ipcRenderer.invoke('presentation:set-custom-app', appPath),
+    },
 
   projection: {
     openUrl: (payload) => ipcRenderer.invoke('projection:open-url', payload),

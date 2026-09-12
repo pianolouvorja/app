@@ -147,8 +147,8 @@ export interface LiturgyItem {
   filePath?: string
   /** Caminhos locais (galeria de imagens). */
   filePaths?: string[]
-  /** Engine de conversão do PPTX (itens presentation): auto|powerpoint|libreoffice. */
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice'
+  /** Engine do PPTX (itens presentation): auto|powerpoint|libreoffice|custom. */
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
   /**
    * Player de reprodução do item (vídeo/áudio): undefined = usa o global das
    * Configurações; senão associated|<known-id>|custom:<path>.
@@ -206,7 +206,7 @@ export interface LiturgyItemDraft {
   verseNumbers: string
   filePath: string
   filePaths: string[]
-  presentationEngine: 'auto' | 'powerpoint' | 'libreoffice'
+  presentationEngine: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
   /** Player do item; 'default' = herda o global das Configurações. */
   playerId: string
   url: string

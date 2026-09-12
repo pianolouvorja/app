@@ -2,6 +2,10 @@ import { exec } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import {
+  readWorkspaceRecord,
+  writeWorkspaceRecord,
+} from './workspace.mjs'
 
 const execAsync = promisify(exec)
 
@@ -69,16 +73,51 @@ export function hasLibreOffice() {
   return Boolean(findBinary(SOFFICE_CANDIDATES))
 }
 
+/** App externo custom de apresentação salvo pelo usuário (workspace). */
+export function getCustomPresentationApp() {
+  try {
+    const rec = readWorkspaceRecord('presentation-custom-app')
+    if (
+      typeof rec?.path === 'string' &&
+      rec.path.trim() &&
+      existsSync(rec.path.trim())
+    ) {
+      return rec.path.trim()
+    }
+  } catch {
+    // default
+  }
+  return null
+}
+
+export function setCustomPresentationApp(appPath) {
+  const clean = String(appPath ?? '').trim()
+  if (!clean || !existsSync(clean)) return false
+  return writeWorkspaceRecord('presentation-custom-app', { path: clean })
+}
+
 /**
  * Abre o arquivo no aplicativo externo, em modo apresentação.
  * @param {string} filePath caminho absoluto do .pptx
- * @param {'powerpoint' | 'libreoffice'} engine
+ * @param {'powerpoint' | 'libreoffice' | 'custom'} engine
  * @returns {Promise<{ok: boolean, error?: string}>}
  */
 export async function openPresentationExternal(filePath, engine) {
   const absolute = path.resolve(String(filePath ?? '').trim())
   if (!absolute || !existsSync(absolute)) {
     return { ok: false, error: 'file-missing' }
+  }
+
+  if (engine === 'custom') {
+    // App escolhido pelo usuário (Keynote, OnlyOffice, WPS...): abre o
+    // arquivo e o aplicativo cuida de como apresentar. Sem flags especiais —
+    // cada programa tem seu próprio modo slideshow.
+    const bin = getCustomPresentationApp()
+    if (!bin) return { ok: false, error: 'custom-app-missing' }
+    exec(`"${bin}" "${absolute}"`, (err) => {
+      if (err) console.error('[external-presentation] custom', err.message)
+    })
+    return { ok: true }
   }
 
   if (engine === 'powerpoint') {

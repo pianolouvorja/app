@@ -244,7 +244,7 @@ export type ExternalPlayerApi = {
   play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
 }
 
-export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice'
+export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
 
 export type PresentationApi = {
   /** True se LibreOffice/soffice estiver disponível para converter PPT. */
@@ -255,8 +255,10 @@ export type PresentationApi = {
   /** Abre o .pptx no aplicativo externo (PowerPoint/Impress) em modo slideshow. */
   openExternal?: (
     filePath: string,
-    engine: 'powerpoint' | 'libreoffice',
+    engine: 'powerpoint' | 'libreoffice' | 'custom',
   ) => Promise<{ ok: boolean; error?: string }>
+  /** Define o app externo custom de apresentação (executável escolhido). */
+  setCustomApp?: (appPath: string) => Promise<boolean>
 }
 
 export type OpenUrlProjectionPayload = {
@@ -271,7 +273,7 @@ export type OpenUrlProjectionPayload = {
   mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
   /** Engine de conversão para este item (sobrepõe o setting global). */
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice'
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
 }
 
 export type PlaybackSyncPayload = {
