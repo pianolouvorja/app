@@ -1,6 +1,8 @@
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 
+import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
+
 import type {
   BibleBook,
   BibleBookTone,
@@ -11,8 +13,14 @@ import type {
   CatalogBibleVersionRow,
 } from '../types/bible'
 
-const BOOKS_FILE = 'pt_bible_book'
-const VERSIONS_FILE = 'pt_bible_version'
+/** Arquivos do catálogo bíblico por idioma: es_bible_book, pt_bible_book... */
+function booksFile(): string {
+  return `${getCurrentApiPrefix()}_bible_book`
+}
+
+function versionsFile(): string {
+  return `${getCurrentApiPrefix()}_bible_version`
+}
 
 async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
   const local = await readCatalogRecord<T>(filename)
@@ -24,6 +32,18 @@ async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
     console.warn(`[bible] falha ao obter catálogo ${filename}`, error)
     return null
   }
+}
+
+/** Lê o catálogo do idioma atual; se a API não tiver (404), cai no pt_. */
+async function readOrFetchBibleCatalog<T>(filename: string): Promise<T | null> {
+  const localized = await readOrFetchCatalog<T>(filename)
+  if (localized != null) return localized
+
+  // Fallback: nem todo idioma tem bíblia traduzida na API — PT é o cânone.
+  if (!filename.startsWith('pt_')) {
+    return readOrFetchCatalog<T>(filename.replace(/^[a-z]+_/, 'pt_'))
+  }
+  return null
 }
 
 function mapBook(row: CatalogBibleBookRow): BibleBook {
@@ -69,13 +89,13 @@ export function chapterRecordKey(
 }
 
 export async function loadBibleBooks(): Promise<BibleBook[]> {
-  const rows = await readOrFetchCatalog<CatalogBibleBookRow[]>(BOOKS_FILE)
+  const rows = await readOrFetchBibleCatalog<CatalogBibleBookRow[]>(booksFile())
   if (!rows || !Array.isArray(rows)) return []
   return rows.map(mapBook)
 }
 
 export async function loadBibleVersions(): Promise<BibleVersion[]> {
-  const rows = await readOrFetchCatalog<CatalogBibleVersionRow[]>(VERSIONS_FILE)
+  const rows = await readOrFetchBibleCatalog<CatalogBibleVersionRow[]>(versionsFile())
   if (!rows || !Array.isArray(rows)) return []
   return rows.map(mapVersion)
 }

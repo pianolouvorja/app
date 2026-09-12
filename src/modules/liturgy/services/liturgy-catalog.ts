@@ -44,10 +44,14 @@ type CatalogBibleBookRow = {
   chapters?: number | string
 }
 
-const HYMNAL_SOURCES: Array<{ file: string; albumName: string }> = [
-  { file: 'pt_hymnal', albumName: 'Hinário Adventista' },
-  { file: 'pt_hymnal_1996', albumName: 'Hinário Adventista 1996' },
-]
+/** Fontes de hinário — prefixo de idioma resolvido em runtime (es_hymnal etc.). */
+function hymnalSources(): Array<{ file: string; albumName: string }> {
+  const prefix = getCurrentApiPrefix()
+  return [
+    { file: `${prefix}_hymnal`, albumName: 'Hinário Adventista' },
+    { file: `${prefix}_hymnal_1996`, albumName: 'Hinário Adventista 1996' },
+  ]
+}
 
 /** Coletâneas excluídas do catálogo (mesmo critério da biblioteca). */
 const EXCLUDED_ALBUM_IDS = new Set([712, 629])
@@ -219,7 +223,7 @@ async function loadFromMusicIndex(): Promise<LiturgyMusicOption[] | null> {
 async function loadHymnalOptions(
   byId: Map<number, LiturgyMusicOption>,
 ): Promise<void> {
-  for (const source of HYMNAL_SOURCES) {
+  for (const source of hymnalSources()) {
     const rows = await readOrFetchCatalog<CatalogHymnalRow[]>(source.file)
     if (!rows || !Array.isArray(rows)) continue
 
@@ -235,7 +239,9 @@ async function loadHymnalOptions(
 async function loadCollectionOptions(
   byId: Map<number, LiturgyMusicOption>,
 ): Promise<void> {
-  const categories = await readOrFetchCatalog<CatalogCategory[]>('pt_categories')
+  const categories = await readOrFetchCatalog<CatalogCategory[]>(
+    `${getCurrentApiPrefix()}_categories`,
+  )
   if (!categories || !Array.isArray(categories)) return
 
   const albums = new Map<number, string>()
