@@ -18,11 +18,21 @@ function setEnv(key: string, value: string | undefined) {
 
 const fetchMock = vi.fn()
 
+// Config de produção — a MESMA do .env de build. Zero default no código:
+// sem env, sem candidatos (contrato testado no primeiro describe).
+const PROD = {
+  database: 'https://api.pianolouvorja.com.br/json_db',
+  files: 'https://api.pianolouvorja.com.br/file',
+  fallbacks:
+    'https://api.louvorja.com.br,https://api.louvorja.workers.dev',
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.stubGlobal('fetch', fetchMock)
-  setEnv('VITE_URL_DATABASE', undefined)
-  setEnv('VITE_URL_FILES', undefined)
+  setEnv('VITE_URL_DATABASE', PROD.database)
+  setEnv('VITE_URL_FILES', PROD.files)
+  setEnv('VITE_API_FALLBACK_URLS', PROD.fallbacks)
   setEnv('VITE_API_TOKEN', undefined)
 })
 
@@ -31,10 +41,33 @@ afterEach(() => {
 })
 
 describe('apiCandidateBases', () => {
-  it('default sem env: primária pianolouvorja + fallbacks louvorja/workers', () => {
+  it('sem env NENHUMA: lista vazia — zero hardcoded, zero default', () => {
+    setEnv('VITE_URL_DATABASE', undefined)
+    setEnv('VITE_URL_FILES', undefined)
+    setEnv('VITE_API_FALLBACK_URLS', undefined)
+    expect(apiCandidateBases('database')).toEqual([])
+    expect(apiCandidateBases('files')).toEqual([])
+  })
+
+  it('env de produção: primária pianolouvorja + fallbacks louvorja/workers', () => {
     const bases = apiCandidateBases('database')
     expect(bases).toEqual([
       'https://api.pianolouvorja.com.br/json_db',
+      'https://api.louvorja.com.br/json_db',
+      'https://api.louvorja.workers.dev/json_db',
+    ])
+  })
+
+  it('env sem fallbacks: só a primária', () => {
+    setEnv('VITE_API_FALLBACK_URLS', undefined)
+    const bases = apiCandidateBases('database')
+    expect(bases).toEqual(['https://api.pianolouvorja.com.br/json_db'])
+  })
+
+  it('env sem primária: só os fallbacks', () => {
+    setEnv('VITE_URL_DATABASE', undefined)
+    const bases = apiCandidateBases('database')
+    expect(bases).toEqual([
       'https://api.louvorja.com.br/json_db',
       'https://api.louvorja.workers.dev/json_db',
     ])
@@ -47,11 +80,10 @@ describe('apiCandidateBases', () => {
     expect(bases.filter((b) => b.includes('pianolouvorja'))).toHaveLength(1)
   })
 
-  it('env apontando pra API dos caras: primária ela, fallbacks fixos sem duplicar', () => {
+  it('env apontando pra API dos caras: primária ela, fallbacks sem duplicar', () => {
     setEnv('VITE_URL_DATABASE', 'https://api.louvorja.com.br/json_db')
     const bases = apiCandidateBases('database')
     expect(bases[0]).toBe('https://api.louvorja.com.br/json_db')
-    expect(bases).not.toContain('https://api.louvorja.com.br/json_db' + 'x')
     // sem duplicar a primária nos fallbacks
     expect(bases.filter((b) => b === 'https://api.louvorja.com.br/json_db')).toHaveLength(1)
     expect(bases).toContain('https://api.louvorja.workers.dev/json_db')
@@ -61,58 +93,73 @@ describe('apiCandidateBases', () => {
     setEnv('VITE_URL_DATABASE', 'http://127.0.0.1:3100/json_db')
     const bases = apiCandidateBases('database')
     expect(bases[0]).toBe('http://127.0.0.1:3100/json_db')
-    expect(bases).toHaveLength(3)
+    expect(bases).toContain('https://api.louvorja.com.br/json_db')
+  })
+
+  it('fallbacks com redundância extra da nossa API (futuro): respeita a ordem da env', () => {
+    setEnv(
+      'VITE_API_FALLBACK_URLS',
+      'https://backup.pianolouvorja.com.br, https://api.louvorja.com.br',
+    )
+    const bases = apiCandidateBases('database')
+    expect(bases).toEqual([
+      'https://api.pianolouvorja.com.br/json_db',
+      'https://backup.pianolouvorja.com.br/json_db',
+      'https://api.louvorja.com.br/json_db',
+    ])
   })
 })
 
 describe('fetchWithApiFallback', () => {
   it('primária ok: nem tenta fallback', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ok: 1 }), { status: 200 }))
-    const { data, base } = await fetchWithApiFallback('database', 'pt_categories')
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: 1 }), { status: 200 }),
+    )
+    const { data } = await fetchWithApiFallback<{ ok: number }>('database', 'pt_categories')
     expect(data).toEqual({ ok: 1 })
-    expect(base).toContain('pianolouvorja')
     expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]![0]).toContain('pianolouvorja')
   })
 
   it('primária fora (rede) → cai pra api.louvorja.com.br', async () => {
     fetchMock
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: 2 }), { status: 200 }))
-    const { data, base } = await fetchWithApiFallback('database', 'pt_categories', {
-      retries: 0,
-    })
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: 2 }), { status: 200 }),
+      )
+    const { data, base } = await fetchWithApiFallback<{ ok: number }>('database', 'pt_categories', { retries: 0, delayMs: 1 })
     expect(data).toEqual({ ok: 2 })
-    expect(base).toContain('api.louvorja.com.br')
+    expect(base).toBe('https://api.louvorja.com.br/json_db')
   })
 
   it('primária e fallback 1 fora → workers.dev atende', async () => {
     fetchMock
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: 3 }), { status: 200 }))
-    const { data, base } = await fetchWithApiFallback('database', 'pt_musics', {
-      retries: 0,
-    })
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: 3 }), { status: 200 }),
+      )
+    const { data, base } = await fetchWithApiFallback<{ ok: number }>('database', 'pt_categories', { retries: 0, delayMs: 1 })
     expect(data).toEqual({ ok: 3 })
-    expect(base).toContain('workers.dev')
+    expect(base).toBe('https://api.louvorja.workers.dev/json_db')
   })
 
   it('todas caídas: propaga o último erro', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
     await expect(
-      fetchWithApiFallback('database', 'pt_categories', { retries: 0 }),
-    ).rejects.toThrow()
+      fetchWithApiFallback('database', 'pt_categories', { retries: 0, delayMs: 1 }),
+    ).rejects.toThrow('Failed to fetch')
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
   it('404 definitivo na primária também migra de host (catálogo pode divergir)', async () => {
     fetchMock
       .mockResolvedValueOnce(new Response('not found', { status: 404 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: 9 }), { status: 200 }))
-    const { data, base } = await fetchWithApiFallback('database', 'pt_categories', {
-      retries: 0,
-    })
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: 9 }), { status: 200 }),
+      )
+    const { data, base } = await fetchWithApiFallback<{ ok: number }>('database', 'pt_categories', { retries: 0, delayMs: 1 })
     expect(data).toEqual({ ok: 9 })
-    expect(base).toContain('api.louvorja.com.br')
+    expect(base).toBe('https://api.louvorja.com.br/json_db')
   })
 })

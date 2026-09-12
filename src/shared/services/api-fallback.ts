@@ -1,39 +1,27 @@
 /**
  * Fallback em cascata de APIs do ecossistema LouvorJA.
  *
- * Ordem (RF: app sempre com onde fazer requisicao):
- *   1. Primária: VITE_URL_DATABASE / VITE_URL_FILES (default: nossa API
- *      api.pianolouvorja.com.br)
- *   2. Fallbacks: VITE_API_FALLBACK_URLS (lista separada por vírgula;
- *      default: api.louvorja.com.br, api.louvorja.workers.dev)
+ * TUDO vem de ambiente — zero hardcoded, zero default:
+ *   1. Primária: VITE_URL_DATABASE / VITE_URL_FILES
+ *   2. Fallbacks: VITE_API_FALLBACK_URLS (hosts separados por vírgula)
  *
- * Tudo vem de env — nada de host hardcoded. Para adicionar uma redundância
- * da nossa API no futuro, basta incluir o host em VITE_API_FALLBACK_URLS
- * (ou em ApiConfig no APK), sem tocar em código.
+ * Env vazia/ausente = lista sem aquela entrada (sem primária, sem
+ * fallback). A referência dos valores mora no .env.example e no .env
+ * de cada build/deploy — mudou URL, muda env, não código.
  *
  * Mesma semantica do ApiConfig do APK (Flutter) — paridade entre clientes.
  */
 
-/** Fallbacks default, em ordem de prioridade. A primária NÃO está aqui. */
-const DEFAULT_FALLBACK_HOSTS = [
-  'https://api.louvorja.com.br',
-  'https://api.louvorja.workers.dev',
-]
-
-/**
- * Hosts de reserva: env VITE_API_FALLBACK_URLS (vírgula = separador),
- * caindo para os defaults se não definida. Espaço p/ redundância futura
- * da nossa API: é só acrescentar o host na lista.
- */
+/** Fallbacks: vêm EXCLUSIVAMENTE da env VITE_API_FALLBACK_URLS.
+ * Sem hardcoded, sem default — env vazia/ausente = sem fallback.
+ * A referência das URLs mora no .env.example (e no .env de cada build). */
 function fallbackHosts(): string[] {
   const env = import.meta.env.VITE_API_FALLBACK_URLS
-  if (typeof env === 'string' && env.trim()) {
-    return env
-      .split(',')
-      .map((h) => h.trim().replace(/\/+$/, ''))
-      .filter(Boolean)
-  }
-  return DEFAULT_FALLBACK_HOSTS
+  if (typeof env !== 'string' || !env.trim()) return []
+  return env
+    .split(',')
+    .map((h) => h.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
 }
 
 type ApiKind = 'database' | 'files'
@@ -43,10 +31,8 @@ const ENV_KEYS: Record<ApiKind, string> = {
   files: 'VITE_URL_FILES',
 }
 
-const DEFAULT_PRIMARIES: Record<ApiKind, string> = {
-  database: 'https://api.pianolouvorja.com.br/json_db',
-  files: 'https://api.pianolouvorja.com.br/file',
-}
+// Primária: EXCLUSIVAMENTE da env (VITE_URL_DATABASE/VITE_URL_FILES).
+// Sem hardcoded, sem default — env vazia = sem base primária.
 
 /** Extrai o host (origem) de uma base tipo https://host/json_db */
 function baseToHost(base: string): string {
@@ -66,10 +52,11 @@ function kindToPath(kind: ApiKind): string {
  */
 export function apiCandidateBases(kind: ApiKind): string[] {
   const env = import.meta.env[ENV_KEYS[kind]]
-  const primary = (typeof env === 'string' && env.trim()) || DEFAULT_PRIMARIES[kind]
+  const primary = typeof env === 'string' && env.trim() ? env.trim() : ''
   const primaryHost = baseToHost(primary)
   const path = kindToPath(kind)
-  const candidates = [primary]
+  const candidates: string[] = []
+  if (primary) candidates.push(primary)
   for (const host of fallbackHosts()) {
     if (host !== primaryHost) candidates.push(`${host}${path}`)
   }
