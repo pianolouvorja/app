@@ -241,6 +241,11 @@ export type PresentationApi = {
   /** Engine de conversão de apresentações: auto (default), powerpoint, libreoffice. */
   getEngine?: () => Promise<PresentationEngine>
   setEngine?: (engine: PresentationEngine) => Promise<boolean>
+  /** Abre o .pptx no aplicativo externo (PowerPoint/Impress) em modo slideshow. */
+  openExternal?: (
+    filePath: string,
+    engine: 'powerpoint' | 'libreoffice',
+  ) => Promise<{ ok: boolean; error?: string }>
 }
 
 export type OpenUrlProjectionPayload = {

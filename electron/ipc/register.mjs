@@ -36,6 +36,7 @@ import {
 import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
+import { openPresentationExternal } from './presentation-external.mjs'
 import {
   getExternalPlayerPreference,
   setExternalPlayerPreference,
@@ -143,6 +144,17 @@ export function registerWorkspaceIpc() {
     const valid = ['auto', 'powerpoint', 'libreoffice']
     if (!valid.includes(engine)) return false
     return writeWorkspaceRecord('ppt-engine', { engine })
+  })
+
+  // Abre a apresentação no aplicativo externo (PowerPoint/Impress) em
+  // modo slideshow — escolha explícita do usuário no item da liturgia.
+  ipcMain.handle('presentation:open-external', async (_event, filePath, engine) => {
+    try {
+      return await openPresentationExternal(String(filePath ?? ''), engine)
+    } catch (error) {
+      console.error('[ipc] presentation:open-external', error)
+      return { ok: false, error: 'unexpected' }
+    }
   })
 
   // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).

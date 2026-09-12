@@ -205,6 +205,24 @@ export async function executeLiturgyItem(
       }
 
       const bridge = getDesktopBridge()
+
+      // Engine EXPLÍCITO (PowerPoint/LibreOffice) = abre o APLICATIVO externo
+      // em modo slideshow — fidelidade total, o programa cuida da tela cheia.
+      // 'auto'/ausente = conversão interna do app (projeção multi-tela).
+      if (
+        item.presentationEngine === 'powerpoint' ||
+        item.presentationEngine === 'libreoffice'
+      ) {
+        const result = await bridge?.presentation?.openExternal?.(
+          filePath,
+          item.presentationEngine,
+        )
+        if (!result?.ok) {
+          return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+        }
+        return { ok: true }
+      }
+
       const hasOffice = await bridge?.presentation?.detectOffice?.()
       if (hasOffice === false) {
         return {
@@ -319,6 +337,22 @@ export async function playLiturgyItemOnScreens(
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
     const bridge = getDesktopBridge()
+
+    // Engine EXPLÍCITO = aplicativo externo em slideshow (ver case acima).
+    if (
+      item.presentationEngine === 'powerpoint' ||
+      item.presentationEngine === 'libreoffice'
+    ) {
+      const result = await bridge?.presentation?.openExternal?.(
+        filePath,
+        item.presentationEngine,
+      )
+      if (!result?.ok) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
     const hasOffice = await bridge?.presentation?.detectOffice?.()
     if (hasOffice === false) {
       return {
