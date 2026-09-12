@@ -178,6 +178,8 @@ contextBridge.exposeInMainWorld('louvorja', {
 
   presentation: {
     detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
+    getEngine: () => ipcRenderer.invoke('presentation:get-engine'),
+    setEngine: (engine) => ipcRenderer.invoke('presentation:set-engine', engine),
   },
 
   projection: {

@@ -225,9 +225,14 @@ export type DialogApi = {
   ) => Promise<string | string[] | null>
 }
 
+export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice'
+
 export type PresentationApi = {
   /** True se LibreOffice/soffice estiver disponível para converter PPT. */
   detectOffice?: () => Promise<boolean>
+  /** Engine de conversão de apresentações: auto (default), powerpoint, libreoffice. */
+  getEngine?: () => Promise<PresentationEngine>
+  setEngine?: (engine: PresentationEngine) => Promise<boolean>
 }
 
 export type OpenUrlProjectionPayload = {

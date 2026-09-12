@@ -70,6 +70,17 @@ export default {
       scheduledFound: 'Ítems agendados (itensAgendados.xml) encontrados',
       wip: 'Reutilización y migración de media en desarrollo.',
     },
+    presentation: {
+      title: 'Presentaciones (PPTX)',
+      description: 'Motor utilizado para convertir presentaciones en diapositivas de proyección.',
+      engine: {
+        auto: 'Automático',
+        powerpoint: 'Microsoft PowerPoint',
+        libreoffice: 'LibreOffice',
+      },
+      hint: 'Automático usa PowerPoint cuando está instalado (formato fiel) y recurre a LibreOffice en caso contrario. Se requiere Microsoft Office para el modo PowerPoint.',
+      desktopOnly: 'Disponible solo en la aplicación de escritorio.',
+    },
     youtube: {
       title: 'YouTube',
       description:

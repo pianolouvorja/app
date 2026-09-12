@@ -70,6 +70,17 @@ export default {
       scheduledFound: 'Scheduled items (itensAgendados.xml) found',
       wip: 'Media reuse and migration under development.',
     },
+    presentation: {
+      title: 'Presentations (PPTX)',
+      description: 'Engine used to convert presentations into projection slides.',
+      engine: {
+        auto: 'Automatic',
+        powerpoint: 'Microsoft PowerPoint',
+        libreoffice: 'LibreOffice',
+      },
+      hint: 'Automatic uses PowerPoint when installed (faithful formatting) and falls back to LibreOffice otherwise. Microsoft Office is required for PowerPoint mode.',
+      desktopOnly: 'Available on the desktop application only.',
+    },
     youtube: {
       title: 'YouTube',
       description:

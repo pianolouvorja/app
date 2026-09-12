@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
+import { readWorkspaceRecord, writeWorkspaceRecord } from '../workspace.mjs'
 import { getPalcoManager } from '../palco-server.mjs'
 import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey } from '../projection-hotkey.mjs'
 
@@ -1645,21 +1646,62 @@ export async function openWebProjectionWindows(payload) {
     typeof effective.title === 'string' ? effective.title.trim() : ''
 
   if (input.mode === 'presentation') {
-    const filePath =
-      typeof input.filePath === 'string' ? input.filePath.trim() : ''
-    if (!filePath) return false
-    try {
-      const pdfPath = await convertPresentationToPdf(filePath)
-      effective = {
-        ...input,
-        filePath: pdfPath,
-        // Player PDF; título/controles mantêm modo presentation.
-        __presentationPdf: true,
+      const filePath =
+        typeof input.filePath === 'string' ? input.filePath.trim() : ''
+      if (!filePath) return false
+
+      // Engine escolhido: setting do usuário ('auto' default).
+      // PowerPoint exporta PNGs pixel-perfect (LibreOffice quebra formatação);
+      // PNGs alimentam o player de imagens existente (multi-tela intacto).
+      let preference = 'auto'
+      try {
+        const rec = readWorkspaceRecord('ppt-engine')
+        if (rec?.engine === 'powerpoint' || rec?.engine === 'libreoffice') {
+          preference = rec.engine
+        }
+      } catch { /* default auto */ }
+
+      try {
+        const { resolvePresentationEngine, exportPptxToPngs } = await import(
+          './presentation-powerpoint.mjs'
+        )
+        let usedEngine = 'libreoffice'
+        try {
+          const { engine } = resolvePresentationEngine(preference)
+          usedEngine = engine
+        } catch (engineError) {
+          // powerpoint pedida mas não instalada → fallback com aviso no log
+          console.error('[projection] engine pedido indisponível:', engineError.message)
+        }
+
+        if (usedEngine === 'powerpoint') {
+          try {
+            const pngs = await exportPptxToPngs(filePath)
+            effective = {
+              ...input,
+              mode: 'image',
+              filePaths: pngs,
+              __presentationEngine: 'powerpoint',
+            }
+          } catch (exportError) {
+            console.error('[projection] export PowerPoint falhou, cai p/ LibreOffice:', exportError.message)
+            usedEngine = 'libreoffice'
+          }
+        }
+
+        if (usedEngine === 'libreoffice') {
+          const pdfPath = await convertPresentationToPdf(filePath)
+          effective = {
+            ...input,
+            filePath: pdfPath,
+            // Player PDF; título/controles mantêm modo presentation.
+            __presentationPdf: true,
+          }
+        }
+      } catch (error) {
+        console.error('[projection] presentation convert', error)
+        return false
       }
-    } catch (error) {
-      console.error('[projection] presentation convert', error)
-      return false
-    }
   }
 
   const loadUrl =

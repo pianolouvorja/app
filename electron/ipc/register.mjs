@@ -125,6 +125,21 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  // Engine de apresentações: 'auto' (default), 'powerpoint' ou 'libreoffice'
+  ipcMain.handle('presentation:get-engine', () => {
+    try {
+      const rec = readWorkspaceRecord('ppt-engine')
+      return rec?.engine ?? 'auto'
+    } catch {
+      return 'auto'
+    }
+  })
+  ipcMain.handle('presentation:set-engine', (_event, engine) => {
+    const valid = ['auto', 'powerpoint', 'libreoffice']
+    if (!valid.includes(engine)) return false
+    return writeWorkspaceRecord('ppt-engine', { engine })
+  })
+
   // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
   ipcMain.on('projection:video-ended', () => {
     try {
