@@ -399,6 +399,67 @@ function onCategoryChange(event: Event) {
   patch({ categoryId: value || null })
 }
 
+/** Players detectados na máquina (Configurações usa o mesmo backend). */
+const detectedPlayers = ref<Array<{ id: string; label: string }>>([])
+onMountedPlayerDetect()
+
+function onMountedPlayerDetect() {
+  const bridge = getDesktopBridge()
+  if (!bridge?.externalPlayer?.detect) return
+  bridge.externalPlayer
+    .detect()
+    .then((players) => {
+      detectedPlayers.value = players ?? []
+    })
+    .catch(() => {
+      detectedPlayers.value = []
+    })
+}
+
+function onPlayerChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+  patch({ playerId: value || 'default' })
+}
+
+/** Opções de motor PPTX: as 3 fixas + "Outro app…" (custom com executável). */
+const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'>>([
+  'auto',
+  'powerpoint',
+  'libreoffice',
+  'custom',
+])
+
+/**
+ * Troca o motor do item. Escolhendo 'custom', abre o seletor de aplicativo
+ * e só aplica se o usuário escolher um executável válido.
+ */
+async function onEngineChange(
+  option: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
+) {
+  if (option !== 'custom') {
+    patch({ presentationEngine: option })
+    return
+  }
+  const bridge = getDesktopBridge()
+  if (!bridge?.dialog?.openFile || !bridge?.presentation?.setCustomApp) {
+    patch({ presentationEngine: 'custom' })
+    return
+  }
+  try {
+    const picked = await bridge.dialog.openFile({
+      title: t('liturgy.fields.customAppTitle'),
+      multiple: false,
+    })
+    const appPath = Array.isArray(picked) ? picked[0] : picked
+    if (typeof appPath === 'string' && appPath.trim()) {
+      const ok = await bridge.presentation.setCustomApp(appPath.trim())
+      if (ok) patch({ presentationEngine: 'custom' })
+    }
+  } catch {
+    /* usuário cancelou — mantém o engine atual */
+  }
+}
+
 function onMusicQueryInput(event: Event) {
   emit('update:musicQuery', (event.target as HTMLInputElement).value)
 }
@@ -889,6 +950,77 @@ function isLightDot(hex: string): boolean {
             >
               {{ filePickerError }}
             </p>
+
+            <!-- Engine de conversão: só para itens de apresentação (PPTX) -->
+            <div
+              v-if="draft.type === 'presentation'"
+              class="moment-dialog__engine"
+              data-test="liturgy-ppt-engine"
+            >
+              <span class="moment-dialog__label">
+                {{ t('liturgy.fields.presentationEngine') }}
+              </span>
+              <div
+                class="moment-dialog__engine-options"
+                role="radiogroup"
+                :aria-label="t('liturgy.fields.presentationEngine')"
+              >
+                <button
+                  v-for="option in engineOptions"
+                  :key="option"
+                  type="button"
+                  role="radio"
+                  :aria-checked="(draft.presentationEngine ?? 'auto') === option"
+                  :class="{ selected: (draft.presentationEngine ?? 'auto') === option }"
+                  :data-test="`liturgy-engine-${option}`"
+                  @click="onEngineChange(option)"
+                >
+                  {{
+                    option === 'custom'
+                      ? t('liturgy.fields.engineCustom')
+                      : t(`liturgy.fields.engine.${option}`)
+                  }}
+                </button>
+              </div>
+              <p class="moment-dialog__engine-hint">
+                {{ t('liturgy.fields.presentationEngineHint') }}
+              </p>
+            </div>
+
+            <!-- Player de reprodução: só para itens de vídeo/áudio com arquivo local -->
+            <div
+              v-if="draft.type === 'video' || draft.type === 'audio'"
+              class="moment-dialog__engine"
+              data-test="liturgy-player-select"
+            >
+              <span class="moment-dialog__label">
+                {{ t('liturgy.fields.playerSelect') }}
+              </span>
+              <select
+                class="moment-dialog__input moment-dialog__select"
+                :value="draft.playerId ?? 'default'"
+                :aria-label="t('liturgy.fields.playerSelect')"
+                data-test="liturgy-player-options"
+                @change="onPlayerChange"
+              >
+                <option value="default">
+                  {{ t('liturgy.fields.playerDefault') }}
+                </option>
+                <option value="associated">
+                  {{ t('liturgy.fields.playerAssociated') }}
+                </option>
+                <option
+                  v-for="p in detectedPlayers"
+                  :key="p.id"
+                  :value="p.id"
+                >
+                  {{ p.label }}
+                </option>
+              </select>
+              <p class="moment-dialog__engine-hint">
+                {{ t('liturgy.fields.playerSelectHint') }}
+              </p>
+            </div>
           </div>
 
           <div
@@ -1666,5 +1798,35 @@ function isLightDot(hex: string): boolean {
   .moment-dialog__submit {
     justify-content: center;
   }
+}
+.moment-dialog__engine {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+.moment-dialog__engine-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.moment-dialog__engine-options button {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.moment-dialog__engine-options button.selected {
+  background: var(--ds-color-primary, #04549b);
+  border-color: transparent;
+  color: #fff;
+}
+.moment-dialog__engine-hint {
+  font-size: 0.75rem;
+  opacity: 0.55;
 }
 </style>

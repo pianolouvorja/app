@@ -1,4 +1,5 @@
 import { resolveDatabaseUrl } from '@shared/services/workspace-api'
+import { fetchWithApiFallback } from '@shared/services/api-fallback'
 
 async function delay(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
@@ -40,6 +41,10 @@ export async function fetchRemoteCatalogJson<T = unknown>(
       await delay(delayMs)
       return fetchRemoteCatalogJson(file, retries - 1, delayMs * 1.5)
     }
-    throw error
+
+    // Primária esgotada → cascata: api.pianolouvorja → api.louvorja → workers.dev
+    // (mesma semântica do ApiConfig do APK — paridade entre clientes).
+    const { data } = await fetchWithApiFallback<T>('database', file, { retries, delayMs })
+    return data
   }
 }

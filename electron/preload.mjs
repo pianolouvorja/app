@@ -122,6 +122,19 @@ contextBridge.exposeInMainWorld('louvorja', {
     detect: () => ipcRenderer.invoke('classo:detect'),
   },
 
+  ytAuth: {
+    // Login Google na session do app → YouTube Premium sem anúncios no player
+    status: () => ipcRenderer.invoke('yt-auth:status'),
+    login: () => ipcRenderer.invoke('yt-auth:login'),
+    logout: () => ipcRenderer.invoke('yt-auth:logout'),
+  },
+
+  ytAdblock: {
+    // Bloqueador de anúncios do player YouTube (opt-in, experimental)
+    status: () => ipcRenderer.invoke('yt-adblock:status'),
+    set: (enabled) => ipcRenderer.invoke('yt-adblock:set', enabled),
+  },
+
   legacyMedia: {
     analyze: (selectedPath) =>
       ipcRenderer.invoke('legacy-media:analyze', selectedPath ?? ''),
@@ -153,6 +166,13 @@ contextBridge.exposeInMainWorld('louvorja', {
     probeDuration: (path) => ipcRenderer.invoke('media:probe-duration', path ?? ''),
   },
 
+  externalPlayer: {
+    get: () => ipcRenderer.invoke('external-player:get'),
+    detect: () => ipcRenderer.invoke('external-player:detect'),
+    set: (player) => ipcRenderer.invoke('external-player:set', player),
+    play: (filePath) => ipcRenderer.invoke('external-player:play', filePath),
+  },
+
   displays: {
     list: () => ipcRenderer.invoke('displays:list'),
     identify: () => ipcRenderer.invoke('displays:identify'),
@@ -164,8 +184,14 @@ contextBridge.exposeInMainWorld('louvorja', {
   },
 
   presentation: {
-    detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
-  },
+      detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
+      getEngine: () => ipcRenderer.invoke('presentation:get-engine'),
+      setEngine: (engine) => ipcRenderer.invoke('presentation:set-engine', engine),
+      openExternal: (filePath, engine) =>
+        ipcRenderer.invoke('presentation:open-external', filePath, engine),
+      setCustomApp: (appPath) =>
+        ipcRenderer.invoke('presentation:set-custom-app', appPath),
+    },
 
   projection: {
     openUrl: (payload) => ipcRenderer.invoke('projection:open-url', payload),

@@ -44,6 +44,22 @@ export type ClassoApi = {
   detect: () => Promise<ClassoDetectionResult>
 }
 
+export type YoutubeAuthStatus = {
+  signedIn: boolean
+  premium: boolean | null
+}
+
+export type YoutubeAuthApi = {
+  status: () => Promise<YoutubeAuthStatus>
+  login: () => Promise<{ ok: boolean; signedIn: boolean }>
+  logout: () => Promise<{ ok: boolean }>
+}
+
+export type YoutubeAdblockApi = {
+  status: () => Promise<{ enabled: boolean }>
+  set: (enabled: boolean) => Promise<{ ok: boolean }>
+}
+
 export type LegacyMediaCounts = {
   covers: number
   music: number
@@ -209,9 +225,40 @@ export type DialogApi = {
   ) => Promise<string | string[] | null>
 }
 
+export type ExternalPlayerPreference =
+  | 'associated'
+  | 'vlc'
+  | 'mpv'
+  | 'celluloid'
+  | 'smplayer'
+  | 'totem'
+  | `custom:${string}`
+
+export type DetectedPlayer = { id: string; label: string }
+
+export type ExternalPlayerApi = {
+  get: () => Promise<ExternalPlayerPreference>
+  /** Players conhecidos instalados nesta máquina (além do "player do sistema"). */
+  detect: () => Promise<DetectedPlayer[]>
+  set: (player: ExternalPlayerPreference) => Promise<boolean>
+  play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
+}
+
+export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
+
 export type PresentationApi = {
   /** True se LibreOffice/soffice estiver disponível para converter PPT. */
   detectOffice?: () => Promise<boolean>
+  /** Engine de conversão de apresentações: auto (default), powerpoint, libreoffice. */
+  getEngine?: () => Promise<PresentationEngine>
+  setEngine?: (engine: PresentationEngine) => Promise<boolean>
+  /** Abre o .pptx no aplicativo externo (PowerPoint/Impress) em modo slideshow. */
+  openExternal?: (
+    filePath: string,
+    engine: 'powerpoint' | 'libreoffice' | 'custom',
+  ) => Promise<{ ok: boolean; error?: string }>
+  /** Define o app externo custom de apresentação (executável escolhido). */
+  setCustomApp?: (appPath: string) => Promise<boolean>
 }
 
 export type OpenUrlProjectionPayload = {
@@ -225,6 +272,8 @@ export type OpenUrlProjectionPayload = {
   fullscreenOnPrimary?: boolean
   mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
+  /** Engine de conversão para este item (sobrepõe o setting global). */
+  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
 }
 
 export type PlaybackSyncPayload = {
@@ -335,6 +384,9 @@ export type LouvorJaBridge = {
   workspace: WorkspaceApi
   catalog: CatalogApi
   classo?: ClassoApi
+  ytAuth?: YoutubeAuthApi
+  ytAdblock?: YoutubeAdblockApi
+  externalPlayer?: ExternalPlayerApi
   legacyMedia?: LegacyMediaApi
   mediaFolder?: MediaFolderApi
   backup?: BackupApi

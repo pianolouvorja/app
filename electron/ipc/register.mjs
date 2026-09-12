@@ -37,6 +37,16 @@ import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
 import {
+  openPresentationExternal,
+  setCustomPresentationApp,
+} from './presentation-external.mjs'
+import {
+  getExternalPlayerPreference,
+  setExternalPlayerPreference,
+  playInExternalPlayer,
+  detectInstalledPlayers,
+} from '../external-player.mjs'
+import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
 import {
@@ -124,6 +134,38 @@ export function registerWorkspaceIpc() {
       return false
     }
   })
+
+  // Engine de apresentações: 'auto' (default), 'powerpoint' ou 'libreoffice'
+  ipcMain.handle('presentation:get-engine', () => {
+    try {
+      const rec = readWorkspaceRecord('ppt-engine')
+      return rec?.engine ?? 'auto'
+    } catch {
+      return 'auto'
+    }
+  })
+  ipcMain.handle('presentation:set-engine', (_event, engine) => {
+    const valid = ['auto', 'powerpoint', 'libreoffice']
+    if (!valid.includes(engine)) return false
+    return writeWorkspaceRecord('ppt-engine', { engine })
+  })
+
+  // Abre a apresentação no aplicativo externo (PowerPoint/Impress) em
+  // modo slideshow — escolha explícita do usuário no item da liturgia.
+  ipcMain.handle('presentation:open-external', async (_event, filePath, engine) => {
+    try {
+      return await openPresentationExternal(String(filePath ?? ''), engine)
+    } catch (error) {
+      console.error('[ipc] presentation:open-external', error)
+      return { ok: false, error: 'unexpected' }
+    }
+  })
+
+  // App externo custom de apresentação (Keynote, OnlyOffice, WPS...)
+  ipcMain.handle(
+    'presentation:set-custom-app',
+    (_event, appPath) => setCustomPresentationApp(String(appPath ?? '')),
+  )
 
   // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
   ipcMain.on('projection:video-ended', () => {
@@ -745,4 +787,14 @@ export function registerWorkspaceIpc() {
       return 0
     }
   })
+
+  // Player externo (app#177): preferência + play no player do usuário
+  ipcMain.handle('external-player:get', () => getExternalPlayerPreference())
+  ipcMain.handle('external-player:detect', () => detectInstalledPlayers())
+  ipcMain.handle('external-player:set', (_event, player) =>
+    setExternalPlayerPreference(String(player ?? 'associated')),
+  )
+  ipcMain.handle('external-player:play', async (_event, filePath) =>
+    playInExternalPlayer(String(filePath ?? '')),
+  )
 }

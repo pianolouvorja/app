@@ -374,3 +374,44 @@ function hmsToMs(hms: string): number {
   }
   return 0
 }
+
+/**
+ * Lê um arquivo escolhido pelo usuário que pode ser:
+ * - `.slja` direto (ZIP com slides.lja), OU
+ * - `.slja.zip` (wrapper que o WhatsApp cria: zip externo com o .slja dentro).
+ *
+ * Retorna o SljaArchive e, quando veio de um wrapper, o nome real do .slja
+ * interno (para nomear a música corretamente).
+ */
+export async function parseSljaFile(
+  fileBuffer: ArrayBuffer,
+  fileName: string,
+): Promise<SljaArchive & { innerName?: string }> {
+  if (!/\.zip$/i.test(fileName)) {
+    return parseSlja(fileBuffer)
+  }
+
+  const zipResult = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
+    unzip(new Uint8Array(fileBuffer), (err: Error | null, result: unknown) => {
+      if (err) reject(err)
+      else resolve(result as Record<string, Uint8Array>)
+    })
+  })
+
+  const innerKey = Object.keys(zipResult).find((key) =>
+    key.replaceAll('\\', '/').toLowerCase().endsWith('.slja'),
+  )
+  if (!innerKey) {
+    throw new Error('Arquivo .slja não encontrado dentro do .zip')
+  }
+
+  const innerBytes = zipResult[innerKey]!
+  const innerBuffer = innerBytes.buffer.slice(
+    innerBytes.byteOffset,
+    innerBytes.byteOffset + innerBytes.byteLength,
+  ) as ArrayBuffer
+
+  const archive = await parseSlja(innerBuffer)
+  const innerName = innerKey.replaceAll('\\', '/').split('/').pop()
+  return { ...archive, innerName }
+}

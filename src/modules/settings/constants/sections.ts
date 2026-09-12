@@ -15,8 +15,6 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     id: 'media',
     routeName: 'settings-media',
     labelKey: 'settings.tabs.media',
-    // Temporariamente fora do menu — não estamos trabalhando nesta seção.
-    hidden: true,
   },
   {
     id: 'projection',

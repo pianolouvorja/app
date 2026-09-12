@@ -2,7 +2,7 @@
 
 LouvorJA Piano — Software de Projeção de Hinos
 
-Versão: 1.0 | Data: 07 de agosto de 2026
+ Versão: 2.0 | Data: 12 de setembro de 2026 (v2.0)
 
 
 1. Aceitação da Licença
@@ -77,20 +77,22 @@ O Usuário reconhece que o Software é gratuito e de código aberto, e que o Lic
 
 8. Privacidade
 
-O Software NÃO COLETA, ARMAZENA NEM TRANSMITE dados pessoais do Usuário.
+O Software não coleta, armazena nem transmite dados pessoais do Usuário para servidores do Licenciante.
 
 Declaração explícita:
 
-- Sem login/conta de usuário: O Software não exige cadastro, email, nome ou identificação.
+- Login opcional (Google/YouTube): O Usuário PODE, opcionalmente, conectar sua conta Google/YouTube para reproduzir vídeos sem anúncios (assinantes YouTube Premium). Esta conexão é um recurso opt-in: sem ela, o Software funciona integralmente. Os dados de sessão dessa conexão (cookies) ficam armazenados EXCLUSIVAMENTE no dispositivo local (Electron userData) e nunca são enviados aos servidores do Licenciante. O Usuário pode revogar a qualquer momento via "Sair da conta" nas Configurações, que remove 100% dos dados de sessão do dispositivo.
+- Cadastro opcional de coletâneas: funcionalidades de coletâneas da comunidade podem exigir conta (email, nome de exibição e senha). Diferente do login do YouTube, ESTES dados são armazenados nos servidores do Licenciante, exclusivamente para autenticação e autoria de conteúdo — nunca compartilhados com terceiros nem usados para publicidade. O Usuário pode solicitar a exclusão da conta e dos dados associados; as coletâneas publicadas podem ser mantidas de forma anônima ou removidas, a critério do Usuário.
 - Sem telemetria: O Software não envia dados de uso, estatísticas ou analíticos para servidores.
 - Sem cookies de tracking: O Software não utiliza cookies de rastreamento.
 - Dados locais: Preferências do Usuário (idioma, tema, configurações de projeção) são armazenadas exclusivamente no dispositivo local (browser storage / Electron userData).
 - Cache de catálogo: O Software baixa um catálogo de hinos (JSON) da API LouvorJA e armazena em cache local para funcionamento offline. Este catálogo não contém dados pessoais.
 
-A única comunicação de rede realizada pelo Software é:
+As comunicações de rede realizadas pelo Software são:
 
-1. API LouvorJA: Requisição de catálogo de hinos (JSON público, sem autenticação pessoal).
+1. API LouvorJA: Requisição de catálogo de hinos e operações de coletâneas da comunidade (autenticadas quando o Usuário opta por usá-las).
 2. YouTube embed: Carregamento de vídeos para projeção (responsabilidade do Google/YouTube).
+3. Google/YouTube (opcional): Autenticação da conta do Usuário quando ele ativa o login para reprodução sem anúncios — dados trafegam apenas entre o dispositivo do Usuário e o Google.
 
 
 9. Serviços Terceiros
