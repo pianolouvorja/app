@@ -97,8 +97,8 @@ async function pickCustomApp() {
       >
         {{
           engine === 'custom'
-            ? t('settings.presentation.engine.customActive')
-            : t('settings.presentation.engine.custom')
+            ? t('settings.presentation.customActive')
+            : t('settings.presentation.custom')
         }}
       </button>
     </div>

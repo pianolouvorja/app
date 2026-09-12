@@ -5,7 +5,7 @@ import { promisify } from 'node:util'
 import {
   readWorkspaceRecord,
   writeWorkspaceRecord,
-} from './workspace.mjs'
+} from '../workspace.mjs'
 
 const execAsync = promisify(exec)
 
