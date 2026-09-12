@@ -29,7 +29,12 @@ async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
   try {
     return await fetchRemoteCatalogJson<T>(filename)
   } catch (error) {
-    console.warn(`[bible] falha ao obter catálogo ${filename}`, error)
+    // 404 de catálogo por idioma é caminho esperado (nem todo idioma tem
+    // bíblia traduzida na API) — silencioso; outros erros logam.
+    const message = error instanceof Error ? error.message : String(error)
+    if (!message.includes('404')) {
+      console.warn(`[bible] falha ao obter catálogo ${filename}`, error)
+    }
     return null
   }
 }
