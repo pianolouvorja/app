@@ -144,11 +144,14 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.videoSelectFile' }
       }
 
-      // Player externo escolhido nas Configurações (sistema/VLC/mpv) e arquivo
-      // local disponível → reproduz fora do app (pré-escuta do operador).
+      // Player de reprodução: o item pode sobrescrever (playerId); sem override,
+      // vale o global das Configurações ('associated' default = player interno).
       const bridge = getDesktopBridge()
       if (filePath && !objectUrl) {
-        const pref = await bridge?.externalPlayer?.get?.()
+        let pref: string | undefined = item.playerId
+        if (!pref || pref === 'default') {
+          pref = await bridge?.externalPlayer?.get?.()
+        }
         if (pref && pref !== 'associated') {
           const result = await bridge?.externalPlayer?.play?.(filePath)
           if (result?.ok) {

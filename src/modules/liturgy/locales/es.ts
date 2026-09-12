@@ -169,6 +169,10 @@ export default {
       selectPdfButton: 'Seleccione un PDF',
       presentationEngine: 'Motor de conversión',
     presentationEngineHint: 'Automático usa PowerPoint cuando está instalado (formato fiel). LibreOffice puede alterar el formato de presentaciones complejas.',
+    playerSelect: 'Reproducir en el reproductor',
+    playerDefault: 'Predeterminado de Configuración',
+    playerAssociated: 'Reproductor de la app (interno)',
+    playerSelectHint: 'Sin anulación, se aplica el reproductor definido en Configuración → Medios y Reproductor. La proyección en pantallas sigue siendo de la app.',
     engine: {
       auto: 'Automático',
       powerpoint: 'PowerPoint',

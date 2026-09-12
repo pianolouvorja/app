@@ -354,6 +354,14 @@ export function buildLiturgyItemFromDraft(
     if (type === 'presentation') {
       item.presentationEngine = draft.presentationEngine ?? 'auto'
     }
+    if (type === 'video' || type === 'audio') {
+      // 'default' = herda o global das Configurações; não persiste no item.
+      if (draft.playerId && draft.playerId !== 'default') {
+        item.playerId = draft.playerId
+      } else {
+        delete item.playerId
+      }
+    }
     if (type === 'images' && paths.length > 0) {
       item.filePaths = paths
       if (!details) {
@@ -417,6 +425,7 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
         : item.filePath
           ? [item.filePath]
           : [],
+    playerId: item.playerId ?? 'default',
     url: item.url ?? '',
     presentationEngine: item.presentationEngine ?? 'auto',
   }

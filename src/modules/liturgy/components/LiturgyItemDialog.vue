@@ -399,6 +399,28 @@ function onCategoryChange(event: Event) {
   patch({ categoryId: value || null })
 }
 
+/** Players detectados na máquina (Configurações usa o mesmo backend). */
+const detectedPlayers = ref<Array<{ id: string; label: string }>>([])
+onMountedPlayerDetect()
+
+function onMountedPlayerDetect() {
+  const bridge = getDesktopBridge()
+  if (!bridge?.externalPlayer?.detect) return
+  bridge.externalPlayer
+    .detect()
+    .then((players) => {
+      detectedPlayers.value = players ?? []
+    })
+    .catch(() => {
+      detectedPlayers.value = []
+    })
+}
+
+function onPlayerChange(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+  patch({ playerId: value || 'default' })
+}
+
 function onMusicQueryInput(event: Event) {
   emit('update:musicQuery', (event.target as HTMLInputElement).value)
 }
@@ -919,6 +941,41 @@ function isLightDot(hex: string): boolean {
               </div>
               <p class="moment-dialog__engine-hint">
                 {{ t('liturgy.fields.presentationEngineHint') }}
+              </p>
+            </div>
+
+            <!-- Player de reprodução: só para itens de vídeo/áudio com arquivo local -->
+            <div
+              v-if="draft.type === 'video' || draft.type === 'audio'"
+              class="moment-dialog__engine"
+              data-test="liturgy-player-select"
+            >
+              <span class="moment-dialog__label">
+                {{ t('liturgy.fields.playerSelect') }}
+              </span>
+              <select
+                class="moment-dialog__input moment-dialog__select"
+                :value="draft.playerId ?? 'default'"
+                :aria-label="t('liturgy.fields.playerSelect')"
+                data-test="liturgy-player-options"
+                @change="onPlayerChange"
+              >
+                <option value="default">
+                  {{ t('liturgy.fields.playerDefault') }}
+                </option>
+                <option value="associated">
+                  {{ t('liturgy.fields.playerAssociated') }}
+                </option>
+                <option
+                  v-for="p in detectedPlayers"
+                  :key="p.id"
+                  :value="p.id"
+                >
+                  {{ p.label }}
+                </option>
+              </select>
+              <p class="moment-dialog__engine-hint">
+                {{ t('liturgy.fields.playerSelectHint') }}
               </p>
             </div>
           </div>

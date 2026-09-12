@@ -169,6 +169,10 @@ export default {
       selectPdfButton: 'Select a PDF',
       presentationEngine: 'Conversion engine',
     presentationEngineHint: 'Automatic uses PowerPoint when installed (faithful formatting). LibreOffice may alter formatting of complex presentations.',
+    playerSelect: 'Play in player',
+    playerDefault: 'Settings default',
+    playerAssociated: 'In-app player (internal)',
+    playerSelectHint: 'Without an override, the player set in Settings → Media & Player applies. Projection screens keep using the app.',
     engine: {
       auto: 'Automatic',
       powerpoint: 'PowerPoint',
