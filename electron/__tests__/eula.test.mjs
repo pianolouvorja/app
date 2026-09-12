@@ -68,7 +68,7 @@ describe("isEulaAccepted", () => {
   it("retorna true quando record existe com accepted: true e versao atual", () => {
     readWorkspaceRecord.mockReturnValue({
       accepted: true,
-      version: 1,
+      version: 2,
       date: "2026-08-07",
     });
     expect(isEulaAccepted()).toBe(true);
@@ -102,7 +102,7 @@ describe("acceptEula", () => {
       "eula",
       expect.objectContaining({
         accepted: true,
-        version: 1,
+        version: 2,
       }),
     );
   });
@@ -250,7 +250,7 @@ describe("checkEulaAcceptance", () => {
   });
 
   it("retorna true sem mostrar dialog quando EULA ja foi aceito na versao atual", async () => {
-    readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
+    readWorkspaceRecord.mockReturnValue({ accepted: true, version: 2 });
     writeWorkspaceRecord.mockReturnValue(true);
 
     const result = await checkEulaAcceptance("pt-BR");
@@ -285,5 +285,45 @@ describe("checkEulaAcceptance", () => {
     const result = await checkEulaAcceptance("pt-BR");
     expect(writeWorkspaceRecord).not.toHaveBeenCalled();
     expect(result).toBe(false);
+  });
+});
+
+describe("getEulaChangeSummary / re-aceite v2", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("getEulaChangeSummary retorna seções novas quando versão aceita < atual", async () => {
+    const { getEulaChangeSummary } = await import("../eula.mjs");
+    const summary = getEulaChangeSummary(1);
+    expect(summary).toContain("Login opcional");
+    expect(summary).toContain("v2.0");
+  });
+
+  it("getEulaChangeSummary retorna null quando não há versão aceita", async () => {
+    const { getEulaChangeSummary } = await import("../eula.mjs");
+    expect(getEulaChangeSummary(0)).toBeNull();
+    expect(getEulaChangeSummary(null)).toBeNull();
+  });
+
+  it("re-aceite (v1 aceita): resumo aceito → grava v2 sem mostrar texto integral", async () => {
+    readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
+    writeWorkspaceRecord.mockReturnValue(true);
+    // mocka dialog.showMessageBoxSync retornando 0 (aceitou no resumo)
+    dialog.showMessageBoxSync = vi.fn(() => 0);
+
+    const result = await checkEulaAcceptance("pt-BR");
+    expect(result).toBe(true);
+    expect(writeWorkspaceRecord).toHaveBeenCalled();
+  });
+
+  it("re-aceite (v1 aceita): resumo recusado → false sem gravar", async () => {
+    writeWorkspaceRecord.mockClear();
+    readWorkspaceRecord.mockReturnValue({ accepted: true, version: 1 });
+    dialog.showMessageBoxSync = vi.fn(() => 1);
+
+    const result = await checkEulaAcceptance("pt-BR");
+    expect(result).toBe(false);
+    expect(writeWorkspaceRecord).not.toHaveBeenCalled();
   });
 });

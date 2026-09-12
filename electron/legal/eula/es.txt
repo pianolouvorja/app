@@ -2,7 +2,7 @@
 
 LouvorJA Piano — Software de Proyección de Himnos
 
-Versión: 1.0 | Fecha: 7 de agosto de 2026
+Versión: 2.0 | Fecha: 12 de septiembre de 2026 (v2.0)
 
 
 1. Aceptación de la Licencia
@@ -77,20 +77,22 @@ El Usuario reconoce que el Software es gratuito y de código abierto, y que el L
 
 8. Privacidad
 
-El Software NO RECOPILA, ALMACENA NI TRANSMITE datos personales del Usuario.
+El Software no recopila, almacena ni transmite datos personales del Usuario a servidores del Licenciante.
 
 Declaración explícita:
 
-- Sin login/cuenta de usuario: El Software no requiere registro, email, nombre o identificación.
+- Login opcional (Google/YouTube): El Usuario PUEDE, opcionalmente, conectar su cuenta de Google/YouTube para reproducir videos sin anuncios (suscriptores de YouTube Premium). Es un recurso opt-in: sin él, el Software funciona íntegramente. Los datos de sesión de esa conexión (cookies) se almacenan EXCLUSIVAMENTE en el dispositivo local (Electron userData) y nunca se envían a los servidores del Licenciante. El Usuario puede revocarlo en cualquier momento mediante "Cerrar sesión" en Configuraciones, que elimina el 100% de los datos de sesión del dispositivo.
+- Registro opcional de colecciones: las funciones de colecciones de la comunidad pueden requerir una cuenta (email/contraseña), proporcionada voluntariamente por el Usuario y usada exclusivamente para autenticación y autoría de contenido.
 - Sin telemetría: El Software no envía datos de uso, estadísticas o analíticas a servidores.
-- Sin cookies de rastreo: El Software no utiliza cookies de seguimiento.
+- Sin cookies de seguimiento: El Software no utiliza cookies de seguimiento.
 - Datos locales: Las preferencias del Usuario (idioma, tema, configuraciones de proyección) se almacenan exclusivamente en el dispositivo local (browser storage / Electron userData).
 - Caché de catálogo: El Software descarga un catálogo de himnos (JSON) de la API LouvorJA y lo almacena en caché local para funcionamiento sin conexión. Este catálogo no contiene datos personales.
 
-La única comunicación de red realizada por el Software es:
+Las comunicaciones de red realizadas por el Software son:
 
-1. API LouvorJA: Solicitud de catálogo de himnos (JSON público, sin autenticación personal).
+1. API LouvorJA: Solicitudes de catálogo de himnos y operaciones de colecciones de la comunidad (autenticadas cuando el Usuario opta por usarlas).
 2. YouTube embed: Carga de vídeos para proyección (responsabilidad de Google/YouTube).
+3. Google/YouTube (opcional): Autenticación de la cuenta del Usuario cuando activa el login para reproducción sin anuncios — los datos circulan solo entre el dispositivo del Usuario y Google.
 
 
 9. Servicios de Terceros

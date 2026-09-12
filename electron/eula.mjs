@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, screen } from "electron";
 import { readWorkspaceRecord, writeWorkspaceRecord } from "./workspace.mjs";
 
-const CURRENT_EULA_VERSION = 1;
+const CURRENT_EULA_VERSION = 2;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {null | ((locale: string) => Promise<0 | 1>)} */
@@ -302,6 +302,35 @@ export async function showEulaDialog(locale) {
 }
 
 /**
+ * Retorna o resumo "o que mudou" desde a versão aceita pelo usuário.
+ * Usado no re-aceite: em vez de reapresentar o texto inteiro sem contexto,
+ * o usuário vê primeiro um resumo das mudanças (LGPD: novo aceite informado).
+ * @param {number} acceptedVersion - versão que o usuário aceitou (0 se nenhuma)
+ * @returns {string | null} texto do resumo, ou null se não houver/erro
+ */
+export function getEulaChangeSummary(acceptedVersion) {
+	if (!acceptedVersion || acceptedVersion < 1) return null;
+	try {
+		const changelogPath = path.join(getEulaDir(), "CHANGELOG.md");
+		const raw = readFileSync(changelogPath, "utf-8");
+		// extrai as seções de versão > acceptedVersion
+		const sections = raw.split(/^## /m).slice(1);
+		const newer = sections.filter((s) => {
+			const m = s.match(/v(\d+)\.(\d+)/);
+			if (!m) return false;
+			const ver = Number(m[1]);
+			return ver > acceptedVersion;
+		});
+		if (newer.length === 0) return null;
+		return newer
+			.map((s) => s.trim())
+			.join("\n\n---\n\n");
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Orquestra a verificação do EULA no startup.
  * Se já aceito na versao atual, retorna true sem exibir dialog.
  * Se não aceito, exibe o dialog e retorna a decisão do usuário.
@@ -312,6 +341,37 @@ export async function showEulaDialog(locale) {
 export async function checkEulaAcceptance(locale) {
 	if (isEulaAccepted()) {
 		return true;
+	}
+
+	// Re-aceite: usuário já aceitou uma versão anterior — mostra resumo
+	// "o que mudou" antes do texto integral (transparência LGPD).
+	const record = readWorkspaceRecord("eula");
+	const previousVersion = record?.accepted === true ? Number(record.version ?? 0) : 0;
+	if (previousVersion >= 1 && previousVersion < CURRENT_EULA_VERSION) {
+		const summary = getEulaChangeSummary(previousVersion);
+		if (summary) {
+			const labels = getEulaDialogLabels(locale);
+			const summaryChoice = dialog.showMessageBoxSync({
+				type: "info",
+				title: labels.title,
+				message:
+					locale === "en"
+						? "Our terms have been updated. Here is what changed:"
+						: locale === "es"
+							? "Nuestros términos fueron actualizados. Esto es lo que cambió:"
+							: "Nossos termos foram atualizados. Veja o que mudou:",
+				detail: summary.slice(0, 3500),
+				buttons: [labels.accept, labels.decline],
+				defaultId: 0,
+				cancelId: 1,
+			});
+			if (summaryChoice === 0) {
+				// aceitou no resumo: grava e pula o texto integral
+				acceptEula();
+				return true;
+			}
+			return false;
+		}
 	}
 
 	return showEulaDialog(locale);
