@@ -2,6 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import AppearanceView from './views/AppearanceView.vue'
 import GeneralView from './views/GeneralView.vue'
+import MediaView from './views/MediaView.vue'
 import ProjectionView from './views/ProjectionView.vue'
 import RemotePairingView from '@modules/remote/views/RemotePairingView.vue'
 import { isElectronShell } from '@shared/services/desktop-bridge'
@@ -33,11 +34,15 @@ export const settingsRoutes: RouteRecordRaw[] = [
           navKey: 'settings',
         },
       },
-      // Mídia — oculto no menu; redirect até reativarmos a seção.
+      // Mídia — reativada: player externo (app#177), engine PPTX (app#176)
+      // e conta YouTube precisam de um lugar visível pro usuário.
       {
         path: 'media',
         name: 'settings-media',
-        redirect: { name: 'settings-appearance' },
+        component: MediaView,
+        meta: {
+          navKey: 'settings',
+        },
       },
       {
         path: 'projection',
