@@ -19,10 +19,10 @@ export const WORKSPACE_DIRS = {
   images: 'images',
 }
 
-/** Arquivo SQLite temporário baixado no first-boot (removido após extração). */
+/** Arquivo SQLite temporário (legado FTP — não usado no first-boot HTTP). */
 export const TEMP_DATABASE_FILE = 'database.db'
 
-/** Marca download FTP concluído — evita re-download em retentativas do first-boot. */
+/** Flag legado do download FTP do catálogo (não usada no sync HTTP). */
 export const DB_DOWNLOAD_COMPLETE_FLAG = 'db_download_complete.flag'
 
 export const MEDIA_FOLDER_BY_TYPE = {

@@ -9,7 +9,7 @@ export default {
       preparingInstall: 'Preparando la configuración inicial…',
       preparing: 'Organizando el entorno del culto…',
       loading: 'Casi listo — cargando sus recursos…',
-      downloading: 'Descargando el catálogo y los datos necesarios…',
+      downloading: 'Sincronizando el catálogo con la API…',
       extracting: 'Extrayendo y preparando los archivos locales…',
       syncingCovers: 'Preparando las portadas e imágenes esenciales…',
       done: '¡Todo listo!',
@@ -21,7 +21,7 @@ export default {
         'Demasiadas solicitudes al servidor (Rate Limit). Intente más tarde.',
       errorServer: 'No se pudo conectar con el servidor. Intente de nuevo.',
       errorDownload:
-        'Error al descargar los datos. Verifique su internet e intente de nuevo.',
+        'Error al sincronizar el catálogo con la API. Verifique su internet e intente de nuevo.',
       errorExtract: 'Error al preparar los datos locales.',
       bridgeMissing:
         'No se pudo conectar al escritorio. Cierre y vuelva a abrir la aplicación.',

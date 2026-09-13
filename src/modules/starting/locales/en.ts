@@ -9,7 +9,7 @@ export default {
       preparingInstall: 'Preparing the first-time setup…',
       preparing: 'Setting up your worship environment…',
       loading: 'Almost there — loading your resources…',
-      downloading: 'Downloading the catalog and required data…',
+      downloading: 'Syncing the catalog with the API…',
       extracting: 'Extracting and preparing local files…',
       syncingCovers: 'Preparing essential covers and images…',
       done: 'All set!',
@@ -21,7 +21,7 @@ export default {
         'Too many server requests (Rate Limit). Please try again later.',
       errorServer: 'Failed to connect to the server. Please try again.',
       errorDownload:
-        'Error downloading data. Check your internet and try again.',
+        'Error syncing the catalog with the API. Check your internet and try again.',
       errorExtract: 'Error preparing local data.',
       bridgeMissing:
         'Could not connect to desktop. Close and reopen the application.',
