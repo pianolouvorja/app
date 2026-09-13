@@ -258,10 +258,8 @@ export async function downloadMediaFile(_url, mediaType, filename) {
 
   /** @returns {Promise<boolean>} */
   const run = async () => {
-    await getFtpParams().catch((error) => {
-      console.warn('[media] pré-fetch FTP falhou:', error.message)
-    })
-
+    // Não pré-busca FTP: /params?type=env é legado (api.louvorja) e a Piano
+    // API responde 404. FTP só sob demanda (429 / janela useFtpFallback).
     const destFolder = resolveMediaDirectory(mediaType)
     const decodedFilename = decodeURIComponent(filename)
     const filePath = path.join(destFolder, decodedFilename)

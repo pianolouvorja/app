@@ -14,7 +14,7 @@ export function toRelativeMediaPath(urlPath: string): string {
 /** URL HTTP do arquivo remoto (capas ainda não baixadas). */
 export function resolveRemoteFileUrl(urlPath: string): string {
   const cleanPath = urlPath.startsWith('/') ? urlPath.slice(1) : urlPath
-  const base = import.meta.env.VITE_URL_FILES ?? 'https://api.louvorja.com.br/file'
+  const base = import.meta.env.VITE_URL_FILES ?? 'https://api.pianolouvorja.com.br/file'
   return `${base}/${cleanPath}`
 }
 
