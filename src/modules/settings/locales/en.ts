@@ -56,20 +56,6 @@ export default {
       tipLight:
         'Light Mode offers better readability in brightly lit environments during daytime services.',
     },
-    classo: {
-      title: 'Migrate from old LouvorJA (Delphi version)',
-      description:
-        'Reuses media and liturgy already downloaded in the old LouvorJA desktop program instead of downloading everything again.',
-      detect: 'Search for old LouvorJA installation',
-      detecting: 'Searching installation…',
-      notFound: 'Old LouvorJA installation not found in default locations.',
-      detectError: 'Error while searching for the old LouvorJA installation.',
-      desktopOnly: 'Available on the desktop application only.',
-      albumsFound: '{count} media album(s) found (~{mb} MB)',
-      liturgyFound: 'Liturgy (liturgia.ja) found',
-      scheduledFound: 'Scheduled items (itensAgendados.xml) found',
-      wip: 'Media reuse and migration under development.',
-    },
     externalPlayer: {
       title: 'External player',
       description: 'Play video and audio in your system player (preview on the operator monitor). Projection screens keep using the app.',

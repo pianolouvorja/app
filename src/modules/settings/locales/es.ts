@@ -56,20 +56,6 @@ export default {
       tipLight:
         'El Modo Claro ofrece mejor legibilidad en entornos muy iluminados durante cultos diurnos.',
     },
-    classo: {
-      title: 'Migrar del LouvorJA antiguo (versión Delphi)',
-      description:
-        'Reutiliza las medias y la liturgia ya descargadas en el antiguo programa LouvorJA de computadora.',
-      detect: 'Buscar instalación del LouvorJA antiguo',
-      detecting: 'Buscando instalación…',
-      notFound: 'No se encontró la instalación del LouvorJA antiguo en los lugares predeterminados.',
-      detectError: 'Error al buscar la instalación del LouvorJA antiguo.',
-      desktopOnly: 'Disponible solo en la aplicación de escritorio.',
-      albumsFound: '{count} álbum(es) de media encontrados (~{mb} MB)',
-      liturgyFound: 'Liturgia (liturgia.ja) encontrada',
-      scheduledFound: 'Ítems agendados (itensAgendados.xml) encontrados',
-      wip: 'Reutilización y migración de media en desarrollo.',
-    },
     externalPlayer: {
       title: 'Reproductor externo',
       description: 'Reproduce video y audio en el reproductor de tu sistema (escucha previa en el monitor del operador). La proyección en pantallas sigue siendo de la aplicación.',

@@ -61,20 +61,6 @@ export default {
       media: 'Configurações de áudio, vídeo e player em breve.',
       projection: 'Configurações de projeção e telas em breve.',
     },
-    classo: {
-      title: 'Migração do LouvorJA antigo (versão Delphi)',
-      description:
-        'Usa as mídias e a liturgia já baixadas no LouvorJA antigo (programa de computador da versão anterior), sem baixar tudo de novo.',
-      detect: 'Procurar instalação do LouvorJA antigo',
-      detecting: 'Procurando instalação…',
-      notFound: 'O LouvorJA antigo não foi encontrado nos locais padrão.',
-      detectError: 'Erro ao procurar a instalação do LouvorJA antigo.',
-      desktopOnly: 'Disponível apenas no aplicativo desktop.',
-      albumsFound: '{count} álbum(ns) de mídia encontrados (~{mb} MB)',
-      liturgyFound: 'Liturgia (liturgia.ja) encontrada',
-      scheduledFound: 'Itens agendados (itensAgendados.xml) encontrados',
-      wip: 'Reutilização e migração de mídia em desenvolvimento.',
-    },
     externalPlayer: {
       title: 'Player externo',
       description: 'Reproduz vídeo e áudio no player do seu sistema (pré-escuta no monitor do operador). A projeção nas telas continua pelo app.',
