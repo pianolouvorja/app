@@ -929,7 +929,7 @@ onMounted(async () => {
     >
       <div class="editor__toast">
         <i
-          class="editor__toast-icon"
+          class="ti editor__toast-icon"
           :class="isErrorStatus ? 'ti-alert-circle' : 'ti-circle-check'"
           aria-hidden="true"
         />
