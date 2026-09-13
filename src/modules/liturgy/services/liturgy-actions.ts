@@ -144,10 +144,11 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.videoSelectFile' }
       }
 
-      // Player de reprodução: o item pode sobrescrever (playerId); sem override,
-      // vale o global das Configurações ('associated' default = player interno).
+      // Player externo SÓ para áudio (Ezequias 13/09: "mp3 blz, não é preciso
+      // projetar"). Vídeo PRECISA do player interno: é ele que projeta nas
+      // telas — VLC/mpv não comandam a projeção.
       const bridge = getDesktopBridge()
-      if (filePath && !objectUrl) {
+      if (item.type === 'audio' && filePath && !objectUrl) {
         let pref: string | undefined = item.playerId
         if (!pref || pref === 'default') {
           pref = await bridge?.externalPlayer?.get?.()
@@ -306,26 +307,26 @@ export async function playLiturgyItemOnScreens(
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
-    // Player externo (global das Configurações ou override do item): quando
-    // ativo, o arquivo abre no player do usuário em vez do controle interno.
+    // Player externo SÓ para áudio (áudio não projeta imagem). Vídeo volta
+    // 100% pro controle interno — é ele que espelha nas telas estendidas.
     const bridge = getDesktopBridge()
-    let playerId: string | undefined = item.playerId
-    if (!playerId || playerId === 'default') {
-      playerId = await bridge?.externalPlayer?.get?.()
-    }
-    if (playerId && playerId !== 'associated') {
-      const result = await bridge?.externalPlayer?.play?.(filePath)
-      if (result?.ok) {
-        if (item.type === 'audio') {
+    if (item.type === 'audio') {
+      let playerId: string | undefined = item.playerId
+      if (!playerId || playerId === 'default') {
+        playerId = await bridge?.externalPlayer?.get?.()
+      }
+      if (playerId && playerId !== 'associated') {
+        const result = await bridge?.externalPlayer?.play?.(filePath)
+        if (result?.ok) {
           void palcoSession.audioRouted({
             url: filePath,
             title: item.name?.trim() || undefined,
             action: 'play',
           })
+          return { ok: true }
         }
-        return { ok: true }
+        // player não encontrado etc → cai no interno (controle de projeção)
       }
-      // player não encontrado etc → cai no interno (controle de projeção)
     }
     const ok = await playLiturgyLocalVideoOnScreens(
       filePath,
