@@ -41,12 +41,20 @@ afterEach(() => {
 })
 
 describe('apiCandidateBases', () => {
-  it('sem env NENHUMA: lista vazia — zero hardcoded, zero default', () => {
+  it('sem env NENHUMA: defaults públicos — primária pianolouvorja + fallbacks (hotfix 14/09: CI não injeta VITE_*, zero default quebrava toda build de release)', () => {
     setEnv('VITE_URL_DATABASE', undefined)
     setEnv('VITE_URL_FILES', undefined)
     setEnv('VITE_API_FALLBACK_URLS', undefined)
-    expect(apiCandidateBases('database')).toEqual([])
-    expect(apiCandidateBases('files')).toEqual([])
+    expect(apiCandidateBases('database')).toEqual([
+      'https://api.pianolouvorja.com.br/json_db',
+      'https://api.louvorja.com.br/json_db',
+      'https://api.louvorja.workers.dev/json_db',
+    ])
+    expect(apiCandidateBases('files')).toEqual([
+      'https://api.pianolouvorja.com.br/file',
+      'https://api.louvorja.com.br/file',
+      'https://api.louvorja.workers.dev/file',
+    ])
   })
 
   it('env de produção: primária pianolouvorja + fallbacks louvorja/workers', () => {
@@ -58,16 +66,30 @@ describe('apiCandidateBases', () => {
     ])
   })
 
-  it('env sem fallbacks: só a primária', () => {
-    setEnv('VITE_API_FALLBACK_URLS', undefined)
+  it('env apontando pra fallback externo: sobrepõe os defaults', () => {
+    setEnv('VITE_API_FALLBACK_URLS', 'https://mirror.example.com')
     const bases = apiCandidateBases('database')
-    expect(bases).toEqual(['https://api.pianolouvorja.com.br/json_db'])
+    expect(bases).toEqual([
+      'https://api.pianolouvorja.com.br/json_db',
+      'https://mirror.example.com/json_db',
+    ])
   })
 
-  it('env sem primária: só os fallbacks', () => {
+  it('env sem fallbacks: primária + fallbacks default', () => {
+    setEnv('VITE_API_FALLBACK_URLS', undefined)
+    const bases = apiCandidateBases('database')
+    expect(bases).toEqual([
+      'https://api.pianolouvorja.com.br/json_db',
+      'https://api.louvorja.com.br/json_db',
+      'https://api.louvorja.workers.dev/json_db',
+    ])
+  })
+
+  it('env sem primária: fallbacks default', () => {
     setEnv('VITE_URL_DATABASE', undefined)
     const bases = apiCandidateBases('database')
     expect(bases).toEqual([
+      'https://api.pianolouvorja.com.br/json_db',
       'https://api.louvorja.com.br/json_db',
       'https://api.louvorja.workers.dev/json_db',
     ])

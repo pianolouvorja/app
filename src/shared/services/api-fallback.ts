@@ -1,23 +1,31 @@
 /**
  * Fallback em cascata de APIs do ecossistema LouvorJA.
  *
- * TUDO vem de ambiente — zero hardcoded, zero default:
+ * Ordem (RF: app sempre com onde fazer requisicao):
  *   1. Primária: VITE_URL_DATABASE / VITE_URL_FILES
- *   2. Fallbacks: VITE_API_FALLBACK_URLS (hosts separados por vírgula)
+ *      (default: api.pianolouvorja.com.br — nossa API)
+ *   2. Fallbacks: VITE_API_FALLBACK_URLS (lista separada por vírgula;
+ *      default: api.louvorja.com.br, api.louvorja.workers.dev)
  *
- * Env vazia/ausente = lista sem aquela entrada (sem primária, sem
- * fallback). A referência dos valores mora no .env.example e no .env
- * de cada build/deploy — mudou URL, muda env, não código.
+ * DEFAULTS RESTAURADOS (app#177, hotfix 14/09): o refactor 'zero default'
+ * (7c66a46) quebrou TODA build de release — .env é gitignored e o CI não
+ * injeta VITE_*, então a lista saía vazia e o catálogo não baixava
+ * (Ezequias 13/09: 'api não respondeu nada, mídias baixaram'). As defaults
+ * são URLs públicas, não segredo; env sobrepõe quando presente.
  *
  * Mesma semantica do ApiConfig do APK (Flutter) — paridade entre clientes.
  */
 
-/** Fallbacks: vêm EXCLUSIVAMENTE da env VITE_API_FALLBACK_URLS.
- * Sem hardcoded, sem default — env vazia/ausente = sem fallback.
- * A referência das URLs mora no .env.example (e no .env de cada build). */
+/** Fallbacks default, em ordem de prioridade. A primária NÃO está aqui. */
+const DEFAULT_FALLBACK_HOSTS = [
+  'https://api.louvorja.com.br',
+  'https://api.louvorja.workers.dev',
+]
+
+/** Fallbacks: env sobrepõe; sem env = lista default. */
 function fallbackHosts(): string[] {
   const env = import.meta.env.VITE_API_FALLBACK_URLS
-  if (typeof env !== 'string' || !env.trim()) return []
+  if (typeof env !== 'string' || !env.trim()) return [...DEFAULT_FALLBACK_HOSTS]
   return env
     .split(',')
     .map((h) => h.trim().replace(/\/+$/, ''))
@@ -31,8 +39,11 @@ const ENV_KEYS: Record<ApiKind, string> = {
   files: 'VITE_URL_FILES',
 }
 
-// Primária: EXCLUSIVAMENTE da env (VITE_URL_DATABASE/VITE_URL_FILES).
-// Sem hardcoded, sem default — env vazia = sem base primária.
+// Primária: env sobrepõe; sem env = default da nossa API (URL pública).
+const DEFAULT_PRIMARY_BASES: Record<ApiKind, string> = {
+  database: 'https://api.pianolouvorja.com.br/json_db',
+  files: 'https://api.pianolouvorja.com.br/file',
+}
 
 /** Extrai o host (origem) de uma base tipo https://host/json_db */
 function baseToHost(base: string): string {
@@ -52,7 +63,8 @@ function kindToPath(kind: ApiKind): string {
  */
 export function apiCandidateBases(kind: ApiKind): string[] {
   const env = import.meta.env[ENV_KEYS[kind]]
-  const primary = typeof env === 'string' && env.trim() ? env.trim() : ''
+  const primary =
+    typeof env === 'string' && env.trim() ? env.trim() : DEFAULT_PRIMARY_BASES[kind]
   const primaryHost = baseToHost(primary)
   const path = kindToPath(kind)
   const candidates: string[] = []
