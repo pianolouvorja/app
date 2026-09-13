@@ -52,6 +52,9 @@ export default {
     close: 'Cerrar',
     project: 'Proyectar',
     clearProjection: 'Quitar de la proyección',
+    inAppProjection: 'Vista previa del sorteo',
+    projectionHotkeyHint:
+      'ESC finaliza la proyección  ·  Ctrl+Alt+P alterna con la pantalla del operador',
     projecting: 'En proyección',
     decreaseFont: 'Disminuir fuente',
     increaseFont: 'Aumentar fuente',

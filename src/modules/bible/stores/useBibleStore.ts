@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 
 import {
   closeProjectionModule,
+  hasSelectedExtendedProjectionTargets,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -57,6 +58,10 @@ export const useBibleStore = defineStore('bible', () => {
   const isLoadingVerses = ref(false)
   const lastErrorKey = ref<string | null>(null)
   const isProjecting = ref(false)
+  /** Preview no operador (1 monitor / sem tela de projeção marcada). */
+  const inAppPreview = ref(false)
+  /** Projetando somente nas TVs (sem janela cabeada). */
+  const projectingTvsOnly = ref(false)
 
   const projection = ref<BibleSelection>(emptySelection())
 
@@ -71,7 +76,8 @@ export const useBibleStore = defineStore('bible', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
-      if (projectingTvsOnly.value) return // só-TVs: sem janela pra vigiar
+      // só-TVs / in-app: sem janela popup pra vigiar
+      if (projectingTvsOnly.value || inAppPreview.value) return
       if (!isProjectionModuleOpen('bible')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -209,9 +215,24 @@ export const useBibleStore = defineStore('bible', () => {
     if (tvsOnly) {
       isProjecting.value = true
       projectingTvsOnly.value = true // guard do watch: sem janela pra vigiar
+      inAppPreview.value = false
       startProjectionWatch()
       return true
     }
+
+    // Sem monitor estendido marcado (ou só 1 tela): preview in-app com
+    // chrome de fechar — evita fullscreen alwaysOnTop no primário (ESC preso).
+    const hasExternal = await hasSelectedExtendedProjectionTargets()
+    if (!hasExternal) {
+      closeProjectionModule()
+      isProjecting.value = true
+      projectingTvsOnly.value = false
+      inAppPreview.value = true
+      startProjectionWatch()
+      return true
+    }
+
+    inAppPreview.value = false
     const opened = await openProjectionModule('bible')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -219,19 +240,18 @@ export const useBibleStore = defineStore('bible', () => {
     return opened
   }
 
-  /** Projetando somente nas TVs (sem janela cabheada). */
-  const projectingTvsOnly = ref(false)
-
   function clearProjectionWindow() {
     isProjecting.value = false
     projectingTvsOnly.value = false
+    inAppPreview.value = false
     stopProjectionWatch()
+    closeProjectionModule()
     publishProjectionState(emptySelection())
     publishBibleRuntimeOff()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && (isProjectionModuleOpen('bible') || projectingTvsOnly.value)) {
+    if (isProjecting.value && (isProjectionModuleOpen('bible') || projectingTvsOnly.value || inAppPreview.value)) {
       clearProjectionWindow()
       return false
     }
@@ -248,6 +268,7 @@ export const useBibleStore = defineStore('bible', () => {
       // já projetando no cabo → migra para só-TVs fechando a janela
       closeProjectionModule()
     }
+    inAppPreview.value = false
     const ok = await openProjection({ targets: 'tvs-only' })
     projectingTvsOnly.value = ok
     return ok
@@ -494,6 +515,7 @@ export const useBibleStore = defineStore('bible', () => {
     isLoadingVerses,
     lastErrorKey,
     isProjecting,
+    inAppPreview,
     projection,
     selectedBook,
     selectedVersion,

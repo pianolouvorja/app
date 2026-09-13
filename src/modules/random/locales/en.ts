@@ -52,6 +52,9 @@ export default {
     close: 'Close',
     project: 'Project',
     clearProjection: 'Remove from projection',
+    inAppProjection: 'Draw preview',
+    projectionHotkeyHint:
+      'ESC ends projection  ·  Ctrl+Alt+P toggles with the operator screen',
     projecting: 'Projecting',
     decreaseFont: 'Decrease font',
     increaseFont: 'Increase font',

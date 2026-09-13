@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import {
+  closeProjectionModule,
+  hasSelectedExtendedProjectionTargets,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -75,6 +77,8 @@ export const useRandomStore = defineStore('random', () => {
   // Rota individual do Palco não abre janela cabo; impede o watch de
   // encerrar a projeção em 400ms por não encontrar janela.
   const projectingTvsOnly = ref(false)
+  /** Preview no operador (1 monitor / sem tela de projeção marcada). */
+  const inAppPreview = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
   const rangeError = ref<'invalid' | 'tooLarge' | null>(null)
@@ -115,7 +119,7 @@ export const useRandomStore = defineStore('random', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
-      if (projectingTvsOnly.value) return
+      if (projectingTvsOnly.value || inAppPreview.value) return
       if (!isProjectionModuleOpen('random')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -398,10 +402,20 @@ export const useRandomStore = defineStore('random', () => {
     if (isPalcoTvOnlyRoute('random')) {
       isProjecting.value = true
       projectingTvsOnly.value = true
+      inAppPreview.value = false
       startProjectionWatch()
       return
     }
     projectingTvsOnly.value = false
+    const hasExternal = await hasSelectedExtendedProjectionTargets()
+    if (!hasExternal) {
+      closeProjectionModule()
+      isProjecting.value = true
+      inAppPreview.value = true
+      startProjectionWatch()
+      return
+    }
+    inAppPreview.value = false
     const opened = await openProjectionModule('random')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -411,13 +425,15 @@ export const useRandomStore = defineStore('random', () => {
   function clearProjection() {
     isProjecting.value = false
     projectingTvsOnly.value = false
+    inAppPreview.value = false
     runtime.value = { ...runtime.value, projecting: false }
     stopProjectionWatch()
+    closeProjectionModule()
     syncRuntime()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && (isProjectionModuleOpen('random') || projectingTvsOnly.value)) {
+    if (isProjecting.value && (isProjectionModuleOpen('random') || projectingTvsOnly.value || inAppPreview.value)) {
       clearProjection()
       return
     }
@@ -430,6 +446,7 @@ export const useRandomStore = defineStore('random', () => {
     runtime,
     draftName,
     isProjecting,
+    inAppPreview,
     configOpen,
     hydrated,
     rangeError,
