@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import MediaSlideStage from '../components/MediaSlideStage.vue'
 import MediaAccountBar from '../components/MediaAccountBar.vue'
+import AppConfirm from '@shared/components/AppConfirm.vue'
 import { getAuthSession } from '../services/auth-client'
+import { getLocalMusic as getLocalMusicById } from '../services/local-custom-store'
 import {
   addOfficialMusicToCollection,
   copyCustomMusic,
@@ -136,19 +138,19 @@ async function onCollectionChange(): Promise<void> {
 async function onCreateCollection(): Promise<void> {
   const name = newCollectionName.value.trim()
   if (!name) return
-  if (!getAuthSession()) {
-    notify('Entre com sua conta para criar coletâneas', true)
-    return
-  }
   saving.value = true
   try {
+    // Sem auth = cria LOCAL (ids negativos, só nesta máquina) — regra de
+    // produto 12/09. Com auth sobe pra API. O roteamento é interno do
+    // custom-catalog (createCustomCollection decide pelo getAuthSession).
+    const localOnly = !getAuthSession()
     const result = await createCustomCollection(name)
     if (result) {
       newCollectionName.value = ''
       await refreshCollections()
       selectedCollectionId.value = result.id
       await onCollectionChange()
-      notify('Coletânea criada')
+      notify(localOnly ? 'Coletânea criada localmente (entre com sua conta para publicar)' : 'Coletânea criada')
     } else {
       notify('Falha ao criar coletânea (API indisponível?)', true)
     }
@@ -371,6 +373,31 @@ async function onSelectMusic(id: number): Promise<void> {
   selectedMusicId.value = id
   loading.value = true
   notify('')
+  // Música LOCAL (id negativo, sem auth): carrega do localStorage, sem fetch.
+  if (id < 0) {
+    const local = getLocalMusicById(id)
+    if (!local) {
+      notify('Esta música não existe mais')
+      selectedMusicId.value = null
+      musicName.value = ''
+      lyrics.value = []
+      loadAudioForMusic(null)
+      await refreshCollections()
+      return
+    }
+    musicName.value = local.name
+    lyrics.value = local.lyrics.map((row) => ({
+      id: row.id,
+      lyric: row.lyric,
+      time: row.time ?? '00:00',
+      imageUrl: row.image_url ?? '',
+    }))
+    loadAudioForMusic(local.audioBase64 ? `local:${local.id}` : null)
+    if (local.officialMusicId != null) {
+      notify('Hino oficial vinculado — a letra/áudio são gerenciados no catálogo oficial')
+    }
+    return
+  }
   try {
     const response = await fetch(customApiUrl(`/musics/${id}`))
     if (response.ok) {
@@ -611,13 +638,49 @@ function timeToMs(time: string): number {
   return 0
 }
 
-/* ---------- Deleção (coletânea / música / estrofe) ---------- */
+/* ---------- Deleção (coletânea / música / estrofe) — via AppConfirm ---------- */
 
-async function onDeleteCollection(): Promise<void> {
+type ConfirmKind = 'collection' | 'music' | 'stanza'
+const confirmOpen = ref(false)
+const confirmKind = ref<ConfirmKind>('collection')
+const confirmPayload = ref<{ stanzaIndex?: number }>({})
+
+const confirmTitle = computed(() => {
+  if (confirmKind.value === 'collection') return 'Excluir coletânea'
+  if (confirmKind.value === 'music') return 'Excluir música'
+  return 'Excluir estrofe'
+})
+
+const confirmMessage = computed(() => {
+  if (confirmKind.value === 'collection') {
+    const current = collections.value.find((c) => c.id === selectedCollectionId.value)
+    return current
+      ? `Excluir a coletânea "${current.name}" e TODAS as suas músicas?`
+      : 'Excluir esta coletânea?'
+  }
+  if (confirmKind.value === 'music') {
+    return `Excluir a música "${musicName.value}"?`
+  }
+  return 'Excluir esta estrofe?'
+})
+
+function requestDelete(kind: ConfirmKind, payload: { stanzaIndex?: number } = {}): void {
+  confirmKind.value = kind
+  confirmPayload.value = payload
+  confirmOpen.value = true
+}
+
+async function onConfirmDelete(): Promise<void> {
+  confirmOpen.value = false
+  if (confirmKind.value === 'collection') await doDeleteCollection()
+  else if (confirmKind.value === 'music') await doDeleteMusic()
+  else await doDeleteStanza(confirmPayload.value.stanzaIndex ?? -1)
+}
+
+async function doDeleteCollection(): Promise<void> {
   const id = selectedCollectionId.value
   const current = collections.value.find((c) => c.id === id)
   if (id == null || !current) return
-  if (!window.confirm(`Excluir a coletânea "${current.name}" e TODAS as suas músicas?`)) return
   saving.value = true
   try {
     if (await deleteCustomCollection(id)) {
@@ -628,17 +691,16 @@ async function onDeleteCollection(): Promise<void> {
       await refreshCollections()
       notify(`Coletânea "${current.name}" excluída`)
     } else {
-      notify('Falha ao excluir coletânea')
+      notify('Falha ao excluir coletânea', true)
     }
   } finally {
     saving.value = false
   }
 }
 
-async function onDeleteMusic(): Promise<void> {
+async function doDeleteMusic(): Promise<void> {
   const id = selectedMusicId.value
   if (id == null) return
-  if (!window.confirm(`Excluir a música "${musicName.value}"?`)) return
   saving.value = true
   try {
     if (await deleteCustomMusic(id)) {
@@ -651,21 +713,20 @@ async function onDeleteMusic(): Promise<void> {
       }
       notify('Música excluída')
     } else {
-      notify('Falha ao excluir música')
+      notify('Falha ao excluir música', true)
     }
   } finally {
     saving.value = false
   }
 }
 
-async function onDeleteStanza(index: number): Promise<void> {
+async function doDeleteStanza(index: number): Promise<void> {
   const stanza = lyrics.value[index]
   if (!stanza) return
-  if (!window.confirm('Excluir esta estrofe?')) return
   saving.value = true
   try {
     if (stanza.id != null && !(await deleteCustomLyric(stanza.id))) {
-      notify('Falha ao excluir estrofe')
+      notify('Falha ao excluir estrofe', true)
       return
     }
     lyrics.value.splice(index, 1)
@@ -762,9 +823,16 @@ const activeStanza = computed(() => {
   return lyrics.value[idx] ?? null
 })
 
-/** Carrega o áudio vinculado à música (audio_url da API) */
+/** Carrega o áudio vinculado à música (audio_url da API ou local:<id>) */
 function loadAudioForMusic(audioPath: string | null): void {
-  audioSrc.value = audioPath ? customFileUrl(audioPath) : null
+  if (audioPath?.startsWith('local:')) {
+    const local = getLocalMusicById(Number(audioPath.slice('local:'.length)))
+    audioSrc.value = local?.audioBase64
+      ? `data:audio/mpeg;base64,${local.audioBase64}`
+      : null
+  } else {
+    audioSrc.value = audioPath ? customFileUrl(audioPath) : null
+  }
   audioUrl.value = audioPath
   currentTimeMs.value = 0
   activeStanzaIndex.value = -1
@@ -975,7 +1043,7 @@ onMounted(async () => {
           class="editor__btn editor__btn--danger"
           :disabled="saving"
           title="Excluir coletânea selecionada"
-          @click="onDeleteCollection"
+          @click="requestDelete('collection')"
         >
           <i
             class="ti ti-trash"
@@ -1134,7 +1202,7 @@ onMounted(async () => {
             class="editor__btn editor__btn--danger"
             :disabled="saving"
             title="Excluir música selecionada"
-            @click="onDeleteMusic"
+            @click="requestDelete('music')"
           >
             <i
               class="ti ti-trash"
@@ -1256,7 +1324,7 @@ onMounted(async () => {
                   class="editor__btn editor__btn--danger editor__btn--icon"
                   :disabled="saving"
                   title="Excluir estrofe"
-                  @click="onDeleteStanza(index)"
+                  @click="requestDelete('stanza', { stanzaIndex: index })"
                 >
                   <i
                     class="ti ti-trash"
@@ -1371,6 +1439,17 @@ onMounted(async () => {
     </div>
   </section>
 </template>
+
+<AppConfirm
+  :open="confirmOpen"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  confirm-label="Excluir"
+  cancel-label="Cancelar"
+  danger
+  @confirm="onConfirmDelete"
+  @cancel="confirmOpen = false"
+/>
 
 <style scoped>
 /*
