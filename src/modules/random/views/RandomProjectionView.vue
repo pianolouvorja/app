@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import { ProjectionBackground } from '@design-system/index'
 import { BROWSER_STORAGE_KEYS } from '@shared/constants/storage-keys'
@@ -19,12 +20,32 @@ import {
   normalizeRandomRuntime,
   readRandomRuntimeFromStorage,
 } from '../services/random-runtime'
+import { useRandomStore } from '../stores/useRandomStore'
 import {
   DEFAULT_RANDOM_DISPLAY_CONFIG,
   DEFAULT_RANDOM_RUNTIME,
   type RandomDisplayConfig,
   type RandomRuntimeState,
 } from '../types/random'
+
+const props = withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
+const randomStore = useRandomStore()
+const {
+  canDraw,
+  runtime: storeRuntime,
+  config: storeConfig,
+} = storeToRefs(randomStore)
+
+function onDraw() {
+  if (!props.embedded) return
+  randomStore.startDraw()
+}
 
 const config = ref<RandomDisplayConfig>({ ...DEFAULT_RANDOM_DISPLAY_CONFIG })
 const runtime = ref<RandomRuntimeState>({ ...DEFAULT_RANDOM_RUNTIME })
@@ -97,11 +118,19 @@ onUnmounted(() => {
   runtimeChannel = null
 })
 
+const liveRuntime = computed(() =>
+  props.embedded ? storeRuntime.value : runtime.value,
+)
+
+const liveConfig = computed(() =>
+  props.embedded ? storeConfig.value : config.value,
+)
+
 const stageStyle = computed(() => {
   const bgImage = resolveBackgroundImage(stage.value.backgroundImage)
   return {
     // Sem imagem do Palco, usa a cor do diálogo "Personalização da Projeção".
-    backgroundColor: bgImage ? stage.value.backgroundColor : config.value.bgColor,
+    backgroundColor: bgImage ? stage.value.backgroundColor : liveConfig.value.bgColor,
     backgroundImage: bgImage ? `url(${bgImage})` : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -113,25 +142,29 @@ const stageAlign = computed(() => stageFlexAlign(stage.value))
 // Personalização do diálogo do sorteio tem prioridade sobre o sub-bloco do Palco.
 const effectiveConfig = computed(() => {
   const mod = stage.value.random
-  return mod ? { ...mod, ...config.value } : { ...config.value }
+  return mod ? { ...mod, ...liveConfig.value } : { ...liveConfig.value }
 })
 </script>
 
 <template>
   <ProjectionBackground
     class="random-projection"
+    :class="{ 'random-projection--embedded': embedded }"
     :style="stageStyle"
   >
     <div
-      v-if="runtime.projecting !== false"
+      v-if="liveRuntime.projecting !== false"
       class="random-projection__stage"
       :style="stageAlign"
     >
       <RandomStage
         projection
+        :show-draw="embedded"
+        :can-draw="embedded ? canDraw : false"
         :config="effectiveConfig"
-        :runtime="runtime"
+        :runtime="liveRuntime"
         :stage="stage"
+        @draw="onDraw"
       />
     </div>
   </ProjectionBackground>
@@ -144,6 +177,11 @@ const effectiveConfig = computed(() => {
   overflow: hidden;
   /* container p/ unidades cqw do stage-settings */
   container-type: size;
+
+  &--embedded {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .random-projection__stage {

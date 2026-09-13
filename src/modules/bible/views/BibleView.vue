@@ -162,33 +162,34 @@ function onNextVerse() {
       :disabled="!hasProjection"
       :projecting="isProjecting"
       @project="onProject"
-          @clear="onClearProjection"
+      @clear="onClearProjection"
     />
   </section>
 </template>
 
 <style scoped lang="scss">
 .bible-view {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  box-sizing: border-box;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
-  padding: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
+  gap: 0.75rem;
+  /* Ocupa o main sem estourar — scroll só nas listas internas. */
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0.65rem var(--ds-spacing-page, 2rem) 0.35rem;
   overflow: hidden;
 
-  // Desktop médio / projetor 1024×768: menos gap e padding vertical.
   @media (max-width: 1280px) {
-    gap: 0.65rem;
-    padding-top: 0.5rem;
+    gap: 0.5rem;
+    padding-top: 0.45rem;
   }
 }
 
 .bible-view__body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 1rem;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -197,12 +198,10 @@ function onNextVerse() {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  // Desktop médio (ex.: 1024×768): mantém nav | reader lado a lado, com gap menor.
   @media (max-width: 1280px) {
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
-  // Empilha só em ≤960px — alinhado ao web (antes: 1100px).
   @media (max-width: 960px) {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 0.95fr) minmax(0, 1.05fr);
@@ -212,14 +211,23 @@ function onNextVerse() {
 .bible-view__nav,
 .bible-view__reader {
   min-height: 0;
+  min-width: 0;
   height: 100%;
   overflow: hidden;
+
+  :deep(.ds-glass-card) {
+    height: 100%;
+    min-height: 0;
+  }
 }
 
 .bible-view :deep(.bible-toolbar) {
   flex-shrink: 0;
 }
 
+.bible-view :deep(.palco-route) {
+  flex-shrink: 0;
+}
 
 .bible-view__state,
 .bible-view__alert {

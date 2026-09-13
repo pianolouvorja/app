@@ -391,9 +391,9 @@ async function onToggleFullscreen() {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height) - 1.75rem);
+  min-height: 0;
   margin: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
+  overflow: hidden;
 }
 
 .media-window {
@@ -690,15 +690,7 @@ async function onToggleFullscreen() {
 }
 
 @media (max-width: 1280px) {
-  .media-window {
-    height: calc(
-      100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5.5rem) -
-        var(--ds-dock-height) - 1rem
-    );
-    max-height: calc(
-      100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5.5rem) -
-        var(--ds-dock-height) - 1rem
-    );
+  .media-page {
     margin: 0.5rem 1rem 0.65rem;
   }
 

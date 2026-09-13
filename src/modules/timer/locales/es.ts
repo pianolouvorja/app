@@ -16,6 +16,9 @@ export default {
     close: 'Cerrar',
     project: 'Proyectar',
     clearProjection: 'Quitar de la proyección',
+    inAppProjection: 'Vista previa del cronómetro',
+    projectionHotkeyHint:
+      'ESC finaliza la proyección  ·  Ctrl+Alt+P alterna con la pantalla del operador',
     projecting: 'En proyección',
     backToUtilities: 'Volver al Temporizador',
     start: 'Iniciar',

@@ -350,19 +350,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  /* Compensa CSS zoom (<100%) para preencher até o dock — mesmo padrão do web */
-  height: calc(
-    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
-      var(--ds-header-height, 5rem) - var(--ds-dock-height)
-  );
-  max-height: calc(
-    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
-      var(--ds-header-height, 5rem) - var(--ds-dock-height)
-  );
-  min-height: calc(
-    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
-      var(--ds-header-height, 5rem) - var(--ds-dock-height)
-  );
+  min-height: 0;
   padding: 2rem;
   padding-bottom: 1.5rem;
   overflow: hidden;

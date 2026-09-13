@@ -8,7 +8,7 @@ import {
 } from 'vue'
 
 import {
-  computeRemainingMs,
+  computeCountdownRemainingMs,
   durationPartsFromMs,
   formatElapsedMs,
 } from '../services/countdown-format'
@@ -47,16 +47,12 @@ export function useCountdownDisplay(
   const store = useCountdownStore()
   const config = computed(() => toValue(configSource) ?? store.config)
   const runtime = computed(() => toValue(runtimeSource) ?? store.runtime)
-  const { now } = useCountdownTick(() => runtime.value.status === 'running')
+  const { now } = useCountdownTick(
+    () => runtime.value.status === 'running' || runtime.value.mode === 'until',
+  )
 
   const remainingMs = computed(() =>
-    computeRemainingMs(
-      runtime.value.durationMs,
-      runtime.value.accumulatedMs,
-      runtime.value.segmentStartedAt,
-      runtime.value.status,
-      now.value,
-    ),
+    computeCountdownRemainingMs(runtime.value, now.value),
   )
 
   const formattedTime = computed(() =>
@@ -67,11 +63,16 @@ export function useCountdownDisplay(
     () =>
       remainingMs.value > 0 &&
       remainingMs.value <= 60_000 &&
-      (runtime.value.status === 'running' || runtime.value.status === 'paused'),
+      (runtime.value.mode === 'until' ||
+        runtime.value.status === 'running' ||
+        runtime.value.status === 'paused'),
   )
 
   /** Zerou ou passou do tempo (overtime negativo). */
   const isFinished = computed(() => {
+    if (runtime.value.mode === 'until') {
+      return remainingMs.value <= 0
+    }
     if (runtime.value.durationMs <= 0) return false
     if (runtime.value.finished) return true
     return (
@@ -109,6 +110,7 @@ export function useCountdownFeature() {
     isRunning: computed(() => store.isRunning),
     isPaused: computed(() => store.isPaused),
     canStart: computed(() => store.canStart),
+    isUntilMode: computed(() => store.isUntilMode),
     setTimeFormat: store.setTimeFormat,
     setBgColor: store.setBgColor,
     setTextColor: store.setTextColor,
@@ -116,6 +118,8 @@ export function useCountdownFeature() {
     openConfig: store.openConfig,
     closeConfig: store.closeConfig,
     setDurationMs: store.setDurationMs,
+    setCountdownMode: store.setCountdownMode,
+    setUntilTime: store.setUntilTime,
     start: store.start,
     pause: store.pause,
     reset: store.reset,

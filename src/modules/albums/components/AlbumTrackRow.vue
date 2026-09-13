@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import MusicTrackActions from '@shared/components/MusicTrackActions.vue'
 import type { AlbumTrack } from '../types/albums'
 
-defineProps<{
+const props = defineProps<{
   track: AlbumTrack
   collectionName?: string
   artworkUrl?: string | null
@@ -30,14 +30,25 @@ const { t } = useI18n()
 function onDownloadProgress(progress: number | null) {
   downloadProgress.value = progress
 }
+
+function playSungFromRow() {
+  if (props.busy || isDownloading.value) return
+  emit('sung')
+}
 </script>
 
 <template>
   <div
     class="album-track-row"
     :class="{ 'album-track-row--downloading': isDownloading }"
+    role="button"
+    tabindex="0"
+    :aria-label="t('media.actions.sung')"
     @mouseenter="rowHovered = true"
     @mouseleave="rowHovered = false"
+    @click="playSungFromRow"
+    @keydown.enter.prevent="playSungFromRow"
+    @keydown.space.prevent="playSungFromRow"
   >
     <div
       v-if="isDownloading"
@@ -153,6 +164,7 @@ function onDownloadProgress(progress: number | null) {
   );
   color: var(--ds-color-on-surface);
   text-align: left;
+  cursor: pointer;
   overflow: hidden;
   backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
