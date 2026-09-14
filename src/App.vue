@@ -98,7 +98,7 @@ function handleViewNotes() {
 .app-frame {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -110,7 +110,7 @@ function handleViewNotes() {
   position: relative;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .app-frame--projection .app-frame__body {

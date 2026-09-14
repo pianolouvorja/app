@@ -16,6 +16,7 @@ describe('stage-settings (paridade APK)', () => {
     expect(DEFAULT_STAGE_SETTINGS.fontSize).toBe(96)
     expect(DEFAULT_STAGE_SETTINGS.shadowBlur).toBeCloseTo(2.2)
     expect(DEFAULT_STAGE_SETTINGS.shadowIntensity).toBeCloseTo(0.8)
+    expect(DEFAULT_STAGE_SETTINGS.textBox).toBe(true)
     expect(DEFAULT_STAGE_SETTINGS.boxOpacity).toBeCloseTo(0.45)
     expect(DEFAULT_STAGE_SETTINGS.footerRefColor).toBe('#FCCE02')
     expect(DEFAULT_STAGE_SETTINGS.bibleFontSize).toBe(84)

@@ -75,6 +75,8 @@ const props = withDefaults(
     canDraw?: boolean
     isProjecting?: boolean
     preview?: boolean
+    /** Botão Sortear no preview in-app (1 monitor). */
+    showDraw?: boolean
     /** Projeção em tela cheia: mesmo visual do operador, escala maior. */
     projection?: boolean
     /** Personalização Palco (cor/tamanho) na projeção. */
@@ -84,6 +86,7 @@ const props = withDefaults(
     canDraw: false,
     isProjecting: false,
     preview: false,
+    showDraw: false,
     projection: false,
     stage: null,
   },
@@ -375,10 +378,13 @@ onUnmounted(() => {
     </div>
 
     <button
-      v-if="preview"
+      v-if="preview || showDraw"
       type="button"
       class="random-stage__draw"
-      :class="{ 'random-stage__draw--spinning': runtime.isDrawing }"
+      :class="{
+        'random-stage__draw--spinning': runtime.isDrawing,
+        'random-stage__draw--overlay': projection && showDraw,
+      }"
       :disabled="!canDraw"
       :aria-label="t('random.drawButton')"
       @click="emit('draw')"
@@ -830,6 +836,16 @@ onUnmounted(() => {
 
   &:not(:disabled):active .random-stage__draw-circle {
     transform: scale(0.95);
+  }
+
+  &--overlay {
+    position: absolute;
+    right: clamp(1.25rem, 4vmin, 3rem);
+    top: 50%;
+    margin-top: 0;
+    transform: translateY(-10%);
+    z-index: 25;
+    pointer-events: auto;
   }
 }
 

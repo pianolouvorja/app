@@ -18,7 +18,11 @@ import {
   type LiturgyMusicOption,
 } from '../types/liturgy'
 import { probeMediaDurationMs } from '../services/media-probe'
-import { formatMomentDuration, isValidLiturgyUrl } from '../services/liturgy-item-helpers'
+import {
+  formatMomentDuration,
+  isLiturgyItemDraftValid,
+  isValidLiturgyUrl,
+} from '../services/liturgy-item-helpers'
 import { normalizeLiturgyTimeHHmm } from '../services/liturgy-format'
 
 const props = defineProps<{
@@ -270,12 +274,21 @@ function onNameInput(event: Event) {
   patch({ name: (event.target as HTMLInputElement).value })
 }
 
+function readTimeInput(id: string): string {
+  const input = document.getElementById(id) as HTMLInputElement | null
+  return input?.value ?? ''
+}
+
+function asDraftTime(raw: string): string {
+  return normalizeLiturgyTimeHHmm(raw) ?? raw.trim()
+}
+
 function onStartTimeInput(event: Event) {
-  patch({ startTime: (event.target as HTMLInputElement).value })
+  patch({ startTime: asDraftTime((event.target as HTMLInputElement).value) })
 }
 
 function onEndTimeInput(event: Event) {
-  patch({ endTime: (event.target as HTMLInputElement).value })
+  patch({ endTime: asDraftTime((event.target as HTMLInputElement).value) })
 }
 
 function onDetailsInput(event: Event) {
@@ -476,14 +489,29 @@ function clearMusic() {
 
 function onSubmit(event: Event) {
   event.preventDefault()
-  if (!props.isValid) {
+
+  const nextDraft = isCategory.value
+    ? {
+        ...props.draft,
+        startTime: asDraftTime(readTimeInput('moment-start-time') || props.draft.startTime),
+        endTime: asDraftTime(readTimeInput('moment-end-time') || props.draft.endTime),
+      }
+    : { ...props.draft }
+
+  emit('update:draft', nextDraft)
+
+  if (!isLiturgyItemDraftValid(nextDraft)) {
     showValidation.value = true
-    if (nameRequiredMissing.value) {
-      const input = document.getElementById('moment-name') as HTMLInputElement | null
-      input?.focus()
+    if (nextDraft.name.trim().length === 0) {
+      document.getElementById('moment-name')?.focus()
+    } else if (isCategory.value && !normalizeLiturgyTimeHHmm(nextDraft.startTime)) {
+      document.getElementById('moment-start-time')?.focus()
+    } else if (isCategory.value && !normalizeLiturgyTimeHHmm(nextDraft.endTime)) {
+      document.getElementById('moment-end-time')?.focus()
     }
     return
   }
+
   showValidation.value = false
   emit('save')
 }
@@ -538,6 +566,7 @@ function isLightDot(hex: string): boolean {
 
         <form
           class="moment-dialog__form"
+          novalidate
           @submit="onSubmit"
         >
           <div
@@ -817,13 +846,20 @@ function isLightDot(hex: string): boolean {
                   class="moment-dialog__input moment-dialog__input--time"
                   :class="{ 'moment-dialog__input--error': startTimeFieldError }"
                   type="time"
+                  step="60"
                   :value="draft.startTime"
                   :aria-label="t('liturgy.dialog.categoryStartTime')"
                   :aria-invalid="startTimeFieldError"
                   :aria-required="true"
-                  required
                   @input="onStartTimeInput"
+                  @change="onStartTimeInput"
                 >
+                <p
+                  v-if="startTimeFieldError"
+                  class="moment-dialog__field-error"
+                >
+                  {{ t('liturgy.dialog.categoryTimeRequired') }}
+                </p>
               </div>
 
               <div class="moment-dialog__section moment-dialog__section--end-time">
@@ -843,13 +879,20 @@ function isLightDot(hex: string): boolean {
                   class="moment-dialog__input moment-dialog__input--time"
                   :class="{ 'moment-dialog__input--error': endTimeFieldError }"
                   type="time"
+                  step="60"
                   :value="draft.endTime"
                   :aria-label="t('liturgy.dialog.categoryEndTime')"
                   :aria-invalid="endTimeFieldError"
                   :aria-required="true"
-                  required
                   @input="onEndTimeInput"
+                  @change="onEndTimeInput"
                 >
+                <p
+                  v-if="endTimeFieldError"
+                  class="moment-dialog__field-error"
+                >
+                  {{ t('liturgy.dialog.categoryTimeRequired') }}
+                </p>
               </div>
             </div>
 
@@ -1075,6 +1118,13 @@ function isLightDot(hex: string): boolean {
           </template>
 
           <footer class="moment-dialog__footer">
+            <p
+              v-if="showValidation"
+              class="moment-dialog__field-error moment-dialog__form-error"
+              role="alert"
+            >
+              {{ t('liturgy.dialog.formInvalid') }}
+            </p>
             <button
               type="button"
               class="moment-dialog__discard"
@@ -1724,6 +1774,10 @@ function isLightDot(hex: string): boolean {
   justify-content: flex-end;
   gap: 0.85rem;
   padding-top: 0.35rem;
+}
+
+.moment-dialog__form-error {
+  margin-right: auto;
 }
 
 .moment-dialog__discard {

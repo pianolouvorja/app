@@ -318,8 +318,7 @@ async function runAction(
   flex-direction: column;
   gap: 1rem;
   box-sizing: border-box;
-  height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
-  max-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
+  min-height: 0;
   padding: 0.75rem var(--ds-spacing-page, 2rem) 1rem;
   overflow: hidden;
 }

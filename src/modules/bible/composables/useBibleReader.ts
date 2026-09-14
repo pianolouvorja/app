@@ -58,6 +58,10 @@ export function useBibleReader() {
       event.preventDefault()
       void store.goToAdjacentVerse(1)
     } else if (event.key === 'Escape') {
+      if (store.inAppPreview) {
+        store.clearProjectionWindow()
+        return
+      }
       store.clearSelection()
     }
   }
@@ -112,6 +116,7 @@ export function useBibleReader() {
     toggleProjection: store.toggleProjection,
     projectTvsOnly: store.projectTvsOnly,
     projectingTvsOnly: toRef(store, 'projectingTvsOnly'),
+    inAppPreview: toRef(store, 'inAppPreview'),
     clearProjectionWindow: store.clearProjectionWindow,
     refresh: store.bootstrap,
   }

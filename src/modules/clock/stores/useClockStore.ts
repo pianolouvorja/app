@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import {
   closeProjectionModule,
+  hasSelectedExtendedProjectionTargets,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -23,6 +24,8 @@ export const useClockStore = defineStore('clock', () => {
   const config = ref<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG })
   const isProjecting = ref(false)
   const projectingTvsOnly = ref(false)
+  /** Preview no operador (1 monitor / sem tela de projeção marcada). */
+  const inAppPreview = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -39,7 +42,7 @@ export const useClockStore = defineStore('clock', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
-      if (projectingTvsOnly.value) return
+      if (projectingTvsOnly.value || inAppPreview.value) return
       if (!isProjectionModuleOpen('clock')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -104,10 +107,20 @@ export const useClockStore = defineStore('clock', () => {
     if (isPalcoTvOnlyRoute('clock')) {
       isProjecting.value = true
       projectingTvsOnly.value = true
+      inAppPreview.value = false
       startProjectionWatch()
       return
     }
     projectingTvsOnly.value = false
+    const hasExternal = await hasSelectedExtendedProjectionTargets()
+    if (!hasExternal) {
+      closeProjectionModule()
+      isProjecting.value = true
+      inAppPreview.value = true
+      startProjectionWatch()
+      return
+    }
+    inAppPreview.value = false
     const opened = await openProjectionModule('clock')
     isProjecting.value = opened
     if (opened) startProjectionWatch()
@@ -119,11 +132,12 @@ export const useClockStore = defineStore('clock', () => {
     palcoClockOff()
     isProjecting.value = false
     projectingTvsOnly.value = false
+    inAppPreview.value = false
     stopProjectionWatch()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && (isProjectionModuleOpen('clock') || projectingTvsOnly.value)) {
+    if (isProjecting.value && (isProjectionModuleOpen('clock') || projectingTvsOnly.value || inAppPreview.value)) {
       clearProjection()
       return
     }
@@ -133,6 +147,7 @@ export const useClockStore = defineStore('clock', () => {
   return {
     config,
     isProjecting,
+    inAppPreview,
     configOpen,
     hydrated,
     isAnalog,

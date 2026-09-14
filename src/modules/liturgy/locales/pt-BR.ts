@@ -143,6 +143,8 @@ export default {
       categoryMomentName: 'Nome do momento da programação',
       categoryStartTime: 'Hora de Início',
       categoryEndTime: 'Hora término',
+      categoryTimeRequired: 'Informe o horário no formato HH:MM.',
+      formInvalid: 'Preencha os campos obrigatórios para adicionar.',
       categoryField: 'Categoria',
       categoryPlaceholder: 'Selecione uma categoria',
       categoryEmpty: 'Crie uma Categoria/Separador antes de adicionar outros itens.',

@@ -143,6 +143,8 @@ export default {
       categoryMomentName: 'Program moment name',
       categoryStartTime: 'Start Time',
       categoryEndTime: 'End Time',
+      categoryTimeRequired: 'Enter the time as HH:MM.',
+      formInvalid: 'Fill in the required fields to add this item.',
       categoryField: 'Category',
       categoryPlaceholder: 'Select a category',
       categoryEmpty: 'Create a Category/Divider before adding other items.',

@@ -6,6 +6,9 @@ export type CountdownTimeFormat =
 
 export type CountdownStatus = 'idle' | 'running' | 'paused'
 
+/** Duração fixa ou relógio de parede (parar às HH:MM). */
+export type CountdownMode = 'duration' | 'until'
+
 export interface CountdownDisplayConfig {
   timeFormat: CountdownTimeFormat
   bgColor: string
@@ -24,6 +27,13 @@ export interface CountdownRuntimeState {
   durationMs: number
   savedTimesMs: number[]
   finished: boolean
+  mode?: CountdownMode
+  /** Hora-alvo 0–23 no modo "until". */
+  untilHour?: number
+  /** Minuto-alvo 0–59 no modo "until". */
+  untilMinute?: number
+  /** Remaining congelado ao pausar no modo "until". */
+  pausedRemainingMs?: number | null
 }
 
 export interface CountdownDurationParts {
@@ -57,6 +67,10 @@ export const DEFAULT_COUNTDOWN_RUNTIME: CountdownRuntimeState = {
   durationMs: DEFAULT_COUNTDOWN_DURATION_MS,
   savedTimesMs: [],
   finished: false,
+  mode: 'duration',
+  untilHour: 18,
+  untilMinute: 0,
+  pausedRemainingMs: null,
 }
 
 export const COUNTDOWN_TIME_FORMATS: CountdownTimeFormat[] = [

@@ -702,7 +702,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     const next = [...currentItems.value]
     if (editingIndex.value != null) {
-      if (item.type !== 'category' && item.categoryId) {
+      const previous = next[editingIndex.value]
+      const movedToAnotherCategory =
+        item.type !== 'category' &&
+        Boolean(item.categoryId) &&
+        previous?.categoryId !== item.categoryId
+
+      if (movedToAnotherCategory && item.categoryId) {
         const without = next.filter((_, i) => i !== editingIndex.value)
         const insertAt = findCategoryInsertIndex(without, item.categoryId)
         without.splice(insertAt, 0, item)

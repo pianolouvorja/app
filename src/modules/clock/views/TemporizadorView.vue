@@ -82,13 +82,16 @@ function goBack() {
 <style scoped lang="scss">
 .temporizador-view {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height, 5.5rem));
+  box-sizing: border-box;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2rem;
   padding: var(--ds-spacing-page, 1.5rem);
-  padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 2rem);
+  padding-bottom: 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .temporizador-view__header {
@@ -155,7 +158,7 @@ function goBack() {
 @media (max-width: 1280px) {
   .temporizador-view {
     gap: 1.15rem;
-    padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 1.25rem);
+    padding-bottom: 1.25rem;
   }
 
   .temporizador-view__title {

@@ -1,6 +1,7 @@
 import { getCurrentApiPrefix } from './library-catalog'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
-import { readCatalogRecord } from '@shared/services/workspace-api'
+import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
+import { readCatalogRecord, writeCatalogRecord } from '@shared/services/workspace-api'
 
 import type {
   CatalogAlbumRecord,
@@ -18,6 +19,21 @@ import { toRelativeMediaPath } from './media-paths'
 
 const DOWNLOAD_BATCH_SIZE = 5
 const MAX_CONSECUTIVE_ERRORS = 3
+
+/** Lê registro local; se faltar, busca na API Piano e cacheia em .sysdata. */
+async function readOrFetchCatalogRecord<T>(filename: string): Promise<T | null> {
+  const local = await readCatalogRecord<T>(filename)
+  if (local != null) return local
+
+  try {
+    const remote = await fetchRemoteCatalogJson<T>(filename)
+    await writeCatalogRecord(filename, remote)
+    return remote
+  } catch (error) {
+    console.warn(`[sync] falha ao obter catálogo ${filename}`, error)
+    return null
+  }
+}
 
 function collectLyricImageUrls(music: CatalogMusicRecord): string[] {
   if (!music.lyric) return []
@@ -59,13 +75,17 @@ async function collectMediaForAlbum(
 
   if (album.isHymnal) {
     const langPrefix = getCurrentApiPrefix()
-    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(`${langPrefix}_${album.id}`)
+    const hymnalData = await readOrFetchCatalogRecord<CatalogHymnalEntry[]>(
+      `${langPrefix}_${album.id}`,
+    )
     if (!hymnalData || !Array.isArray(hymnalData)) {
       return { items: [], found: false }
     }
     songRefs = hymnalData
   } else {
-    const albumData = await readCatalogRecord<CatalogAlbumRecord>(`album_${album.id}`)
+    const albumData = await readOrFetchCatalogRecord<CatalogAlbumRecord>(
+      `album_${album.id}`,
+    )
     if (!albumData?.musics || !Array.isArray(albumData.musics)) {
       return { items: [], found: false }
     }
@@ -79,7 +99,9 @@ async function collectMediaForAlbum(
     fetched += 1
     onSongFetched?.(fetched, total)
 
-    const musicData = await readCatalogRecord<CatalogMusicRecord>(`music_${song.id_music}`)
+    const musicData = await readOrFetchCatalogRecord<CatalogMusicRecord>(
+      `music_${song.id_music}`,
+    )
     if (!musicData) continue
 
     if (musicData.url_music) musicFiles.add(musicData.url_music)
@@ -112,13 +134,13 @@ export async function listAlbumMusicIds(
 
   if (album.isHymnal) {
     const langPrefix = getCurrentApiPrefix()
-    const hymnalData = await readCatalogRecord<CatalogHymnalEntry[]>(
+    const hymnalData = await readOrFetchCatalogRecord<CatalogHymnalEntry[]>(
       `${langPrefix}_${album.id}`,
     )
     if (!hymnalData || !Array.isArray(hymnalData)) return []
     songRefs = hymnalData
   } else {
-    const albumData = await readCatalogRecord<CatalogAlbumRecord>(
+    const albumData = await readOrFetchCatalogRecord<CatalogAlbumRecord>(
       `album_${album.id}`,
     )
     if (!albumData?.musics || !Array.isArray(albumData.musics)) return []
@@ -143,7 +165,7 @@ export async function resolveAlbumIdsForMusic(
     albums?: Array<{ id_album?: number | string }>
   }
 
-  const music = await readCatalogRecord<MusicAlbumsRow>(`music_${musicId}`)
+  const music = await readOrFetchCatalogRecord<MusicAlbumsRow>(`music_${musicId}`)
   if (!music?.albums || !Array.isArray(music.albums)) return []
 
   const ids: Array<string | number> = []

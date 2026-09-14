@@ -29,6 +29,13 @@ import {
   DEFAULT_TIMER_RUNTIME,
 } from '../types/timer'
 
+withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
 const config = ref<TimerDisplayConfig>({ ...DEFAULT_TIMER_DISPLAY_CONFIG })
 const runtime = ref<TimerRuntimeState>({
   ...DEFAULT_TIMER_RUNTIME,
@@ -125,6 +132,7 @@ const effectiveConfig = computed(() => {
 <template>
   <ProjectionBackground
     class="timer-projection"
+    :class="{ 'timer-projection--embedded': embedded }"
     :style="stageStyle"
   >
     <div
@@ -146,6 +154,12 @@ const effectiveConfig = computed(() => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  container-type: size;
+
+  &--embedded {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .timer-projection__stage {

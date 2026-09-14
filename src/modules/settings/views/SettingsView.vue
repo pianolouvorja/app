@@ -66,10 +66,15 @@ function goBack() {
 
 <style scoped lang="scss">
 .settings-view {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 80rem;
   margin: 0 auto;
   padding: 1.5rem var(--ds-spacing-page) 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
 
   &--appearance {
     max-width: 90rem;
