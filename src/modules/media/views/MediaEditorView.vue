@@ -6,7 +6,11 @@ import MediaSlideStage from '../components/MediaSlideStage.vue'
 import MediaAccountBar from '../components/MediaAccountBar.vue'
 import AppConfirm from '@shared/components/AppConfirm.vue'
 import { getAuthSession } from '../services/auth-client'
-import { getLocalMusic as getLocalMusicById } from '../services/local-custom-store'
+import {
+  getLocalMusic as getLocalMusicById,
+  isLocalId,
+  updateLocalMusic,
+} from '../services/local-custom-store'
 import {
   addOfficialMusicToCollection,
   copyCustomMusic,
@@ -839,6 +843,86 @@ function loadAudioForMusic(audioPath: string | null): void {
   activeStanzaIndexOverride.value = null
 }
 
+/* ---------- Upload/seleção de MP3 para a música selecionada ---------- */
+
+const audioInputEl = ref<HTMLInputElement | null>(null)
+
+function onPickAudio(): void {
+  audioInputEl.value?.click()
+}
+
+/**
+ * MP3 avulso na música: logado → upload pra API (id_file_audio);
+ * deslogado → guarda base64 no store local (o player já lê data: URL).
+ */
+async function onAudioFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  const musicId = selectedMusicId.value
+  if (!file || musicId == null) return
+  saving.value = true
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    if (isLocalId(musicId)) {
+      updateLocalMusic(musicId, {
+        audioBase64: bytesToBase64(bytes),
+        audioName: file.name,
+      })
+      loadAudioForMusic(`local:${musicId}`)
+      notify(`Áudio "${file.name}" vinculado (local)`)
+      return
+    }
+
+    const uploaded = await uploadCustomFile(bytes, file.name, 'audio')
+    if (!uploaded) {
+      notify('Falha no upload do áudio', true)
+      return
+    }
+    const ok = await updateCustomMusic(musicId, { id_file_audio: uploaded.idFile })
+    if (!ok) {
+      notify('Falha ao vincular o áudio à música', true)
+      return
+    }
+    loadAudioForMusic(uploaded.url)
+    notify(`Áudio "${file.name}" vinculado`)
+  } finally {
+    saving.value = false
+  }
+}
+
+/** Remover o áudio da música selecionada. */
+async function onRemoveAudio(): Promise<void> {
+  const musicId = selectedMusicId.value
+  if (musicId == null) return
+  saving.value = true
+  try {
+    if (isLocalId(musicId)) {
+      updateLocalMusic(musicId, { audioBase64: null, audioName: null })
+    } else {
+      const ok = await updateCustomMusic(musicId, { id_file_audio: null })
+      if (!ok) {
+        notify('Falha ao remover o áudio', true)
+        return
+      }
+    }
+    loadAudioForMusic(null)
+    notify('Áudio removido')
+  } finally {
+    saving.value = false
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
 onMounted(async () => {
   // Query params vindos da Central de Mídia (?collection=ID&new=1|import=1)
   const collectionParam = route.query.collection
@@ -1266,9 +1350,50 @@ onMounted(async () => {
                 v-if="!audioSrc && activeStanza"
                 class="editor__hint editor__hint--compact"
               >
-                Esta música não tem áudio vinculado. Importe um .slja com áudio ou o áudio
-                ficará disponível na próxima importação.
+                Esta música não tem áudio vinculado.
               </p>
+
+              <!-- MP3 avulso: adicionar/remover (logado = API, deslogado = local) -->
+              <input
+                ref="audioInputEl"
+                type="file"
+                accept="audio/mpeg,audio/*"
+                class="editor__file-input"
+                @change="onAudioFile"
+              >
+              <div
+                v-if="activeStanza"
+                class="editor__row"
+              >
+                <button
+                  v-if="!audioSrc"
+                  type="button"
+                  class="editor__btn"
+                  :disabled="saving"
+                  title="Vincular um arquivo de áudio (MP3) à música"
+                  @click="onPickAudio"
+                >
+                  <i
+                    class="ti ti-music"
+                    aria-hidden="true"
+                  />
+                  Adicionar áudio (MP3)
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="editor__btn editor__btn--danger"
+                  :disabled="saving"
+                  title="Remover o áudio vinculado"
+                  @click="onRemoveAudio"
+                >
+                  <i
+                    class="ti ti-music-off"
+                    aria-hidden="true"
+                  />
+                  Remover áudio
+                </button>
+              </div>
             </div>
           </div>
 
