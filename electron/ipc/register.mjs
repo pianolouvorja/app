@@ -809,7 +809,7 @@ export function registerWorkspaceIpc() {
   ipcMain.handle('external-player:remove-custom', (_event, binPath) =>
     removeCustomExternalPlayer(String(binPath ?? '')),
   )
-  ipcMain.handle('external-player:play', async (_event, filePath) =>
-    playInExternalPlayer(String(filePath ?? '')),
+  ipcMain.handle('external-player:play', async (_event, filePath, player) =>
+    playInExternalPlayer(String(filePath ?? ''), player),
   )
 }

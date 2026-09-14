@@ -2,6 +2,7 @@ import { useBibleStore } from '@modules/bible/stores/useBibleStore'
 import { openMusicPlayer } from '@modules/media/services/open-music-player'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import type { ExternalPlayerPreference } from '@shared/types/desktop-bridge'
 import type { Router } from 'vue-router'
 
 import type { LiturgyItem } from '../types/liturgy'
@@ -22,8 +23,6 @@ import {
   playLiturgyLocalVideoOnScreens,
   playLiturgyWebOnConfiguredScreens,
 } from './liturgy-web-projection'
-import { palcoSession } from '../../settings/services/palco-session'
-
 export type LiturgyActionResult =
   | { ok: true; messageKey?: string }
   | { ok: false; messageKey: string }
@@ -154,7 +153,10 @@ export async function executeLiturgyItem(
           pref = await bridge?.externalPlayer?.get?.()
         }
         if (pref && pref !== 'associated') {
-          const result = await bridge?.externalPlayer?.play?.(filePath)
+          const result = await bridge?.externalPlayer?.play?.(
+            filePath,
+            pref as ExternalPlayerPreference,
+          )
           if (result?.ok) {
             return { ok: true }
           }
@@ -170,16 +172,6 @@ export async function executeLiturgyItem(
       )
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
-      }
-      // Áudio externo: espelha pra TODAS as TVs conectadas (rota mirror
-      // padrão do módulo liturgy). Projetor via cabo não recebe — não há
-      // imagem, só o som na TV.
-      if (item.type === 'audio' && filePath) {
-        void palcoSession.audioRouted({
-          url: filePath,
-          title: item.name?.trim() || undefined,
-          action: 'play',
-        })
       }
       return { ok: true }
     }
@@ -298,31 +290,10 @@ export async function playLiturgyItemOnScreens(
     return openLiturgyMusicOnScreens(item)
   }
 
-  if (item.type === 'audio' || item.type === 'video') {
+  if (item.type === 'video') {
     const filePath = item.filePath?.trim()
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
-    }
-    // Player externo SÓ para áudio (áudio não projeta imagem). Vídeo volta
-    // 100% pro controle interno — é ele que espelha nas telas estendidas.
-    const bridge = getDesktopBridge()
-    if (item.type === 'audio') {
-      let playerId: string | undefined = item.playerId
-      if (!playerId || playerId === 'default') {
-        playerId = await bridge?.externalPlayer?.get?.()
-      }
-      if (playerId && playerId !== 'associated') {
-        const result = await bridge?.externalPlayer?.play?.(filePath)
-        if (result?.ok) {
-          void palcoSession.audioRouted({
-            url: filePath,
-            title: item.name?.trim() || undefined,
-            action: 'play',
-          })
-          return { ok: true }
-        }
-        // player não encontrado etc → cai no interno (controle de projeção)
-      }
     }
     const ok = await playLiturgyLocalVideoOnScreens(
       filePath,
@@ -330,14 +301,6 @@ export async function playLiturgyItemOnScreens(
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
-    }
-    // Áudio externo: espelha o som pra todas as TVs conectadas (mirror).
-    if (item.type === 'audio') {
-      void palcoSession.audioRouted({
-        url: filePath,
-        title: item.name?.trim() || undefined,
-        action: 'play',
-      })
     }
     return { ok: true }
   }

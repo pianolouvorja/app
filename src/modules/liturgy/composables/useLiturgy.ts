@@ -425,6 +425,7 @@ export function useLiturgy() {
     openEditDialog: onOpenEditDialog,
     closeItemDialog: store.closeItemDialog,
     saveItemDraft: store.saveItemDraft,
+    setItemPlayer: store.setItemPlayer,
     setItemDraft: store.setItemDraft,
     setMusicSearchQuery: store.setMusicSearchQuery,
     confirmRemoveItem,

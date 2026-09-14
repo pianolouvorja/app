@@ -34,6 +34,7 @@ const emit = defineEmits<{
   musicInstrumental: [index: number]
   musicSlides: [index: number]
   musicLyric: [index: number]
+  setPlayer: [index: number, playerId: string]
 }>()
 
 function musicHasInstrumental(item: LiturgyItem): boolean {
@@ -295,6 +296,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
           @music-instrumental="emit('musicInstrumental', segment.entry.index)"
           @music-slides="emit('musicSlides', segment.entry.index)"
           @music-lyric="emit('musicLyric', segment.entry.index)"
+          @set-player="emit('setPlayer', segment.entry.index, $event)"
           @drag-start="onDragStart"
           @drag-end="onDragEnd"
           @drop="onDrop"
@@ -333,6 +335,7 @@ function isCategorySectionInProgress(categoryId: string): boolean {
             @music-instrumental="emit('musicInstrumental', child.index)"
             @music-slides="emit('musicSlides', child.index)"
             @music-lyric="emit('musicLyric', child.index)"
+            @set-player="emit('setPlayer', child.index, $event)"
             @drag-start="onDragStart"
             @drag-end="onDragEnd"
             @drop="onDrop"

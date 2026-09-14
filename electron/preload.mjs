@@ -172,7 +172,8 @@ contextBridge.exposeInMainWorld('louvorja', {
     listCustom: () => ipcRenderer.invoke('external-player:list-custom'),
     set: (player) => ipcRenderer.invoke('external-player:set', player),
     removeCustom: (binPath) => ipcRenderer.invoke('external-player:remove-custom', binPath),
-    play: (filePath) => ipcRenderer.invoke('external-player:play', filePath),
+    play: (filePath, player) =>
+      ipcRenderer.invoke('external-player:play', filePath, player),
   },
 
   displays: {

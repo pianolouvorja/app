@@ -175,8 +175,9 @@ export default {
     customAppTitle: 'Escolha o aplicativo de apresentação (Keynote, OnlyOffice, WPS…)',
     playerSelect: 'Reproduzir no player',
     playerDefault: 'Padrão das Configurações',
-    playerAssociated: 'Player do app (interno)',
-    playerSelectHint: 'Sem override, vale o player definido em Configurações → Mídia & Player. Projeção nas telas continua pelo app.',
+    playerDefaultNamed: '{name} (padrão)',
+    playerAssociated: 'Player do sistema Piano',
+    playerSelectHint: 'O padrão é o player escolhido em Configurações → Mídia & Player. Só este item muda se você escolher outro aqui.',
     engine: {
       auto: 'Automático',
       powerpoint: 'PowerPoint',

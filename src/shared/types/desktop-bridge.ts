@@ -250,7 +250,10 @@ export type ExternalPlayerApi = {
   removeCustom: (
     binPath: string,
   ) => Promise<{ player: ExternalPlayerPreference; customPlayers: string[] }>
-  play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
+  play: (
+    filePath: string,
+    player?: ExternalPlayerPreference,
+  ) => Promise<{ ok: boolean; player: string; error?: string }>
 }
 
 export type PresentationEngine =

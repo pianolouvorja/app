@@ -74,6 +74,7 @@ const {
   openEditDialog,
   closeItemDialog,
   saveItemDraft,
+  setItemPlayer,
   confirmRemoveItem,
   confirmClearLiturgy,
   reorderItems,
@@ -293,6 +294,7 @@ const liturgyAlertKey = computed(() => lastActionMessageKey.value || null)
           @music-instrumental="onMusicInstrumental"
           @music-slides="onMusicSlides"
           @music-lyric="onMusicLyric"
+          @set-player="setItemPlayer"
         />
       </div>
     </div>

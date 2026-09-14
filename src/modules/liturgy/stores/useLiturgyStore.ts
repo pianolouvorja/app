@@ -678,6 +678,20 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     itemDialogHideTypePicker.value = false
   }
 
+  function setItemPlayer(index: number, playerId: string) {
+    const item = currentItems.value[index]
+    if (!item || (item.type !== 'audio' && item.type !== 'video')) return
+    currentItems.value = currentItems.value.map((entry, i) => {
+      if (i !== index) return entry
+      if (!playerId || playerId === 'default') {
+        const next = { ...entry }
+        delete next.playerId
+        return next
+      }
+      return { ...entry, playerId }
+    })
+  }
+
   function saveItemDraft() {
     if (!isDraftValid.value) return false
 
@@ -1282,6 +1296,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     openEditDialog,
     closeItemDialog,
     saveItemDraft,
+    setItemPlayer,
     removeItem,
     clearAllItems,
     toggleDeletionLock,

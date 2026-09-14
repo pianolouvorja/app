@@ -463,11 +463,16 @@ function toLocalAppUrl(filePath) {
   return `local://app${encoded}`
 }
 
-function resolveLocalVideoPlayerUrl(filePath) {
+const AUDIO_FILE_EXT = /\.(mp3|m4a|aac|wav|ogg|flac|wma|opus)$/i
+
+function resolveLocalVideoPlayerUrl(filePath, title = '') {
   const mediaUrl = toLocalAppUrl(filePath)
-  if (!mediaUrl) return null
-  const playerUrl = new URL(pathToFileURL(LOCAL_VIDEO_PLAYER_HTML).href)
+  const playerPage = toLocalAppUrl(LOCAL_VIDEO_PLAYER_HTML)
+  if (!mediaUrl || !playerPage) return null
+  const playerUrl = new URL(playerPage)
   playerUrl.searchParams.set('src', mediaUrl)
+  if (title) playerUrl.searchParams.set('title', title)
+  if (AUDIO_FILE_EXT.test(filePath)) playerUrl.searchParams.set('audio', '1')
   return playerUrl.toString()
 }
 
@@ -510,6 +515,7 @@ function resolveSourceUrl(payload) {
 
   const filePath =
     typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
+  const title = typeof payload?.title === 'string' ? payload.title.trim() : ''
   if (filePath) {
     if (mode === 'pdf') {
       return resolveLocalPdfPlayerUrl(filePath)
@@ -517,7 +523,7 @@ function resolveSourceUrl(payload) {
     if (mode === 'presentation') {
       return resolveLocalPptPlayerUrl(filePath)
     }
-    return resolveLocalVideoPlayerUrl(filePath)
+    return resolveLocalVideoPlayerUrl(filePath, title)
   }
 
   const url = typeof payload?.url === 'string' ? payload.url.trim() : ''
@@ -536,7 +542,7 @@ function resolveSourceUrl(payload) {
       if (process.platform === 'win32' && absolute.match(/^\/[a-zA-Z]:\//)) {
         absolute = absolute.slice(1)
       }
-      return resolveLocalVideoPlayerUrl(absolute)
+      return resolveLocalVideoPlayerUrl(absolute, title)
     }
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
     return parsed.toString()
@@ -1616,15 +1622,11 @@ function resolveExtendedTargets(monitorIds) {
 
   /** @type {import('electron').Display[]} */
   const targets = []
-  if (ids.length > 0) {
-    for (const id of ids) {
-      const display = displays.find((item) => item.id === id && item.id !== primaryId)
-      if (display) targets.push(display)
-    }
-    return targets
+  for (const id of ids) {
+    const display = displays.find((item) => item.id === id && item.id !== primaryId)
+    if (display) targets.push(display)
   }
-
-  return displays.filter((item) => item.id !== primaryId)
+  return targets
 }
 
 function openSiteScreensOnTargets(loadUrl, targets) {
@@ -1983,8 +1985,8 @@ const GET_PLAYBACK_STATE_SCRIPT = `
   const volume = Math.min(1, Math.max(0, Number(video.volume) || 0));
   return {
     paused: Boolean(video.paused),
-    currentTime: Number(video.currentTime) || 0,
-    duration: Number(video.duration) || 0,
+    currentTime: Number.isFinite(Number(video.currentTime)) ? Number(video.currentTime) : 0,
+    duration: Number.isFinite(Number(video.duration)) ? Number(video.duration) : 0,
     muted: Boolean(video.muted) || volume === 0,
     volume,
   };

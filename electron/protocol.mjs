@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { Readable } from 'node:stream'
 import { app, net, protocol } from 'electron'
 
 import { API_BASE_URL } from './constants.mjs'
@@ -61,7 +61,57 @@ function mimeFromExtension(filePath) {
   if (ext === '.webp') return 'image/webp'
   if (ext === '.bmp') return 'image/bmp'
   if (ext === '.ico') return 'image/x-icon'
+  if (ext === '.html' || ext === '.htm') return 'text/html; charset=utf-8'
+  if (ext === '.js' || ext === '.mjs') return 'text/javascript; charset=utf-8'
+  if (ext === '.css') return 'text/css; charset=utf-8'
+  if (ext === '.mp3') return 'audio/mpeg'
+  if (ext === '.m4a') return 'audio/mp4'
+  if (ext === '.aac') return 'audio/aac'
+  if (ext === '.wav') return 'audio/wav'
+  if (ext === '.ogg') return 'audio/ogg'
+  if (ext === '.flac') return 'audio/flac'
+  if (ext === '.opus') return 'audio/opus'
+  if (ext === '.mp4') return 'video/mp4'
+  if (ext === '.webm') return 'video/webm'
+  if (ext === '.mkv') return 'video/x-matroska'
+  if (ext === '.mov') return 'video/quicktime'
+  if (ext === '.pdf') return 'application/pdf'
   return 'application/octet-stream'
+}
+
+function parseByteRange(header, size) {
+  if (!header || !Number.isFinite(size) || size <= 0) return null
+  const match = String(header).match(/bytes=(\d*)-(\d*)/)
+  if (!match) return null
+  const start = match[1] === '' ? 0 : Number(match[1])
+  const end = match[2] === '' ? size - 1 : Number(match[2])
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end) return null
+  return {
+    start: Math.max(0, start),
+    end: Math.min(size - 1, end),
+  }
+}
+
+/** Serve arquivo local com Content-Length + Range — senão o <video> fica com duration Infinity. */
+function serveDiskFile(filePath, request) {
+  if (!existsSync(filePath)) return new Response(null, { status: 404 })
+  const { size } = statSync(filePath)
+  const mime = mimeFromExtension(filePath)
+  const range = parseByteRange(request.headers.get('range'), size)
+  const streamOpts = range ? { start: range.start, end: range.end } : undefined
+  const body = Readable.toWeb(createReadStream(filePath, streamOpts))
+  const length = range ? range.end - range.start + 1 : size
+  return new Response(body, {
+    status: range ? 206 : 200,
+    headers: {
+      'Content-Type': mime,
+      'Content-Length': String(length),
+      'Accept-Ranges': 'bytes',
+      ...(range
+        ? { 'Content-Range': `bytes ${range.start}-${range.end}/${size}` }
+        : {}),
+    },
+  })
 }
 
 /**
@@ -122,7 +172,7 @@ export function registerLocalFileProtocol() {
     }
 
     if (resolved.kind === 'app') {
-      return net.fetch(pathToFileURL(resolved.filePath).href)
+      return serveDiskFile(resolved.filePath, request)
     }
 
     if (!existsSync(resolved.filePath)) {
@@ -155,6 +205,6 @@ export function registerLocalFileProtocol() {
       }
     }
 
-    return net.fetch(pathToFileURL(resolved.filePath).href)
+    return serveDiskFile(resolved.filePath, request)
   })
 }

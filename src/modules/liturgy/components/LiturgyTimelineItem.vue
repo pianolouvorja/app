@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isElectronShell } from '@shared/services/desktop-bridge'
+import { useExternalPlayerChoices } from '../composables/useExternalPlayerChoices'
 import {
   readAudioDuration,
   readVideoDuration,
@@ -56,6 +57,7 @@ const emit = defineEmits<{
   musicInstrumental: []
   musicSlides: []
   musicLyric: []
+  setPlayer: [playerId: string]
   videoFileSelected: [durationSec: number]
   dragStart: [index: number]
   dragEnd: []
@@ -102,9 +104,117 @@ async function onVideoFileChange(event: Event) {
       : await readVideoDuration(file)
   emit('videoFileSelected', duration)
 }
-const isLocalVideo = computed(
-  () => props.item.type === 'video' || props.item.type === 'audio',
+const isAudioItem = computed(() => props.item.type === 'audio')
+const isLocalVideo = computed(() => props.item.type === 'video')
+const showPlayerSelect = computed(
+  () => isAudioItem.value || isLocalVideo.value,
 )
+
+const {
+  globalPlayer,
+  playerOptions,
+  loadPlayerChoices,
+  selectedPlayerId: resolvePlayerId,
+} = useExternalPlayerChoices()
+
+const rowPlayerId = computed(() => resolvePlayerId(props.item.playerId))
+const playerMenuOpen = ref(false)
+const playerTriggerEl = ref<HTMLButtonElement | null>(null)
+const playerMenuEl = ref<HTMLElement | null>(null)
+const playerMenuPos = ref({ top: 0, left: 0, minWidth: 0 })
+
+const rowPlayerLabel = computed(() => {
+  const player = playerOptions.value.find((option) => option.id === rowPlayerId.value)
+  if (!player) return t('liturgy.fields.playerSelect')
+  return playerOptionLabel(player)
+})
+
+function playerOptionLabel(player: { id: string; label: string }) {
+  return player.id === globalPlayer.value
+    ? t('liturgy.fields.playerDefaultNamed', { name: player.label })
+    : player.label
+}
+
+function updatePlayerMenuPosition() {
+  const trigger = playerTriggerEl.value
+  if (!trigger) return
+
+  const rect = trigger.getBoundingClientRect()
+  const minWidth = Math.max(rect.width, 168)
+  const estimatedHeight = Math.min(13.5 * 16, playerOptions.value.length * 36 + 16)
+  const spaceBelow = window.innerHeight - rect.bottom - 8
+  const top =
+    spaceBelow >= estimatedHeight || rect.top < estimatedHeight
+      ? rect.bottom + 6
+      : Math.max(8, rect.top - estimatedHeight - 6)
+  const maxLeft = window.innerWidth - minWidth - 12
+  const left = Math.min(Math.max(12, rect.left), Math.max(12, maxLeft))
+  playerMenuPos.value = { top, left, minWidth }
+}
+
+function bindPlayerMenuListeners() {
+  document.addEventListener('pointerdown', onPlayerMenuPointerDown)
+  document.addEventListener('keydown', onPlayerMenuKeydown)
+  window.addEventListener('resize', onPlayerMenuViewport)
+  window.addEventListener('scroll', onPlayerMenuViewport, true)
+}
+
+function unbindPlayerMenuListeners() {
+  document.removeEventListener('pointerdown', onPlayerMenuPointerDown)
+  document.removeEventListener('keydown', onPlayerMenuKeydown)
+  window.removeEventListener('resize', onPlayerMenuViewport)
+  window.removeEventListener('scroll', onPlayerMenuViewport, true)
+}
+
+function closePlayerMenu() {
+  if (!playerMenuOpen.value) return
+  playerMenuOpen.value = false
+  unbindPlayerMenuListeners()
+}
+
+async function togglePlayerMenu() {
+  if (props.item.done) return
+  if (playerMenuOpen.value) {
+    closePlayerMenu()
+    return
+  }
+  playerMenuOpen.value = true
+  await nextTick()
+  updatePlayerMenuPosition()
+  bindPlayerMenuListeners()
+}
+
+function chooseRowPlayer(playerId: string) {
+  closePlayerMenu()
+  emit('setPlayer', playerId)
+}
+
+function onPlayerMenuPointerDown(event: PointerEvent) {
+  const target = event.target as Node | null
+  if (!target) return
+  if (playerTriggerEl.value?.contains(target) || playerMenuEl.value?.contains(target)) {
+    return
+  }
+  closePlayerMenu()
+}
+
+function onPlayerMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') closePlayerMenu()
+}
+
+function onPlayerMenuViewport() {
+  if (playerMenuOpen.value) updatePlayerMenuPosition()
+}
+
+onMounted(() => {
+  if (showPlayerSelect.value) {
+    void loadPlayerChoices([props.item.playerId])
+  }
+})
+
+onUnmounted(() => {
+  closePlayerMenu()
+})
 const isLocalImages = computed(() => props.item.type === 'images')
 const isLocalPdf = computed(() => props.item.type === 'pdf')
 const isLocalPresentation = computed(() => props.item.type === 'presentation')
@@ -368,6 +478,7 @@ const rowHovered = ref(false)
               isVideoRemote ||
               isSiteItem ||
               isMusicItem ||
+              isAudioItem ||
               isLocalMediaUpload,
           }"
           @click.stop
@@ -419,6 +530,66 @@ const rowHovered = ref(false)
               aria-hidden="true"
             />
           </button>
+          <div
+            v-if="showPlayerSelect && playerOptions.length > 0"
+            class="liturgy-item__player"
+            :class="{
+              'liturgy-item__player--disabled': item.done,
+              'liturgy-item__player--open': playerMenuOpen,
+            }"
+          >
+            <button
+              ref="playerTriggerEl"
+              type="button"
+              class="liturgy-item__player-trigger"
+              :title="t('liturgy.fields.playerSelect')"
+              :aria-label="t('liturgy.fields.playerSelect')"
+              :aria-expanded="playerMenuOpen"
+              aria-haspopup="listbox"
+              :disabled="item.done"
+              data-test="liturgy-row-player"
+              @click="togglePlayerMenu"
+            >
+              <i
+                class="ti ti-device-speaker"
+                aria-hidden="true"
+              />
+              <span>{{ rowPlayerLabel }}</span>
+              <i
+                class="ti ti-chevron-down"
+                aria-hidden="true"
+              />
+            </button>
+            <Teleport to="body">
+              <div
+                v-if="playerMenuOpen"
+                ref="playerMenuEl"
+                class="liturgy-item__player-menu"
+                role="listbox"
+                :aria-label="t('liturgy.fields.playerSelect')"
+                :style="{
+                  top: `${playerMenuPos.top}px`,
+                  left: `${playerMenuPos.left}px`,
+                  minWidth: `${playerMenuPos.minWidth}px`,
+                }"
+              >
+                <button
+                  v-for="player in playerOptions"
+                  :key="player.id"
+                  type="button"
+                  role="option"
+                  class="liturgy-item__player-option"
+                  :class="{
+                    'liturgy-item__player-option--active': player.id === rowPlayerId,
+                  }"
+                  :aria-selected="player.id === rowPlayerId"
+                  @click="chooseRowPlayer(player.id)"
+                >
+                  {{ playerOptionLabel(player) }}
+                </button>
+              </div>
+            </Teleport>
+          </div>
           <MusicTrackActions
             v-if="isMusicItem && item.musicId != null"
             :music-id="item.musicId"
@@ -1095,6 +1266,85 @@ const rowHovered = ref(false)
   display: none;
 }
 
+.liturgy-item__player {
+  position: relative;
+  min-width: 8.5rem;
+  max-width: 13.5rem;
+  height: 1.7rem;
+  margin-right: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--ds-color-on-surface) 12%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--ds-color-on-surface) 7%, transparent);
+  color: var(--ds-color-on-surface);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+
+  &:hover:not(.liturgy-item__player--disabled) {
+    border-color: color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
+    background: color-mix(in srgb, var(--ds-color-primary) 12%, transparent);
+  }
+
+  &--open {
+    border-color: var(--ds-color-primary);
+    background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
+
+    .ti-chevron-down {
+      transform: rotate(180deg);
+    }
+  }
+
+  &--disabled {
+    opacity: 0.5;
+  }
+}
+
+.liturgy-item__player-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  height: 100%;
+  padding: 0 0.55rem 0 0.45rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+
+  span {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  i {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    opacity: 0.7;
+  }
+
+  .ti-chevron-down {
+    font-size: 0.75rem;
+    opacity: 0.55;
+    transition: transform 160ms ease;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
 .liturgy-item__duration {
   margin: 0.08rem 0 0;
   font-size: 0.65rem;
@@ -1345,6 +1595,54 @@ const rowHovered = ref(false)
   .liturgy-item__card {
     gap: 0.5rem;
     padding: 0.45rem 0.65rem;
+  }
+}
+</style>
+
+<style lang="scss">
+.liturgy-item__player-menu {
+  position: fixed;
+  z-index: 2400;
+  max-width: min(18rem, calc(100vw - 24px));
+  max-height: min(13.5rem, calc(100vh - 24px));
+  overflow-y: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--ds-color-outline-strong, rgba(255, 255, 255, 0.1));
+  border-radius: 0.7rem;
+  background: var(--ds-color-surface-elevated, #1e1e1e);
+  box-shadow: 0 14px 32px rgb(0 0 0 / 0.5);
+  color: var(--ds-color-on-surface, #e5e2e1);
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ds-color-outline, rgba(255, 255, 255, 0.08));
+    border-radius: 999px;
+  }
+}
+
+.liturgy-item__player-option {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--ds-color-on-surface, #e5e2e1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--ds-color-primary) 14%, transparent);
+  }
+
+  &--active {
+    background: color-mix(in srgb, var(--ds-color-primary) 20%, transparent);
+    color: var(--ds-color-primary-soft, #9ecaff);
   }
 }
 </style>

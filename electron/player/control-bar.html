@@ -165,8 +165,12 @@
         justify-content: center;
         cursor: pointer;
       }
-      button:hover {
+      button:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.1);
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
       }
       button.is-active {
         background: rgba(234, 88, 12, 0.28);
@@ -343,8 +347,15 @@
         var ARROW_PATH = 'M5 17.59 15.59 7H9V5h10v10h-2V8.41L6.41 19 5 17.59z'
         var STOP_PATH = 'M6 6h12v12H6z'
 
+        function finiteTime(sec) {
+          var value = Number(sec)
+          return Number.isFinite(value) && value > 0 ? value : 0
+        }
+
         function fmt(sec) {
-          sec = Math.max(0, Math.floor(Number(sec) || 0))
+          var value = Number(sec)
+          if (!Number.isFinite(value) || value < 0) value = 0
+          sec = Math.floor(value)
           var m = Math.floor(sec / 60)
           var s = sec % 60
           return m + ':' + String(s).padStart(2, '0')
@@ -367,6 +378,8 @@
         }
 
         function setProjectingUi(projecting) {
+          var canProject = selectedIds.length > 0
+          projectBtn.disabled = !projecting && !canProject
           if (projecting) {
             projectBtn.classList.add('is-active')
             projectBtn.title = 'Retirar projeção'
@@ -375,8 +388,11 @@
             projectIcon.innerHTML = '<path d="' + STOP_PATH + '" />'
           } else {
             projectBtn.classList.remove('is-active')
-            projectBtn.title = 'Projetar nas telas'
-            projectBtn.setAttribute('aria-label', 'Projetar nas telas')
+            var label = canProject
+              ? 'Projetar nas telas'
+              : 'Nenhuma tela disponível para projeção'
+            projectBtn.title = label
+            projectBtn.setAttribute('aria-label', label)
             projectBtn.setAttribute('aria-pressed', 'false')
             projectIcon.innerHTML = '<path d="' + ARROW_PATH + '" />'
           }
@@ -599,6 +615,7 @@
           }
           updateMonitorBadge()
           renderMonitorList()
+          await refresh()
         }
 
         async function setPanelOpen(open) {
@@ -638,6 +655,7 @@
               selectedIds.slice(),
             )
           }
+          await refresh()
         }
 
         async function refresh() {
@@ -654,11 +672,11 @@
           if (typeof state.projecting === 'boolean') {
             setProjectingUi(state.projecting)
           }
-          if (!seeking && state.duration > 0) {
-            seek.value = String(Math.round((state.currentTime / state.duration) * 1000))
+          var duration = finiteTime(state.duration)
+          if (!seeking && duration > 0) {
+            seek.value = String(Math.round((state.currentTime / duration) * 1000))
           }
-          timeEl.textContent =
-            fmt(state.currentTime) + ' / ' + fmt(state.duration || 0)
+          timeEl.textContent = fmt(state.currentTime) + ' / ' + fmt(duration)
         }
 
         playBtn.addEventListener('click', async function () {
@@ -691,6 +709,7 @@
         })
 
         projectBtn.addEventListener('click', async function () {
+          if (projectBtn.disabled) return
           if (!window.louvorja || !window.louvorja.projection) return
           if (typeof window.louvorja.projection.toggleVideoScreens !== 'function') {
             return
@@ -774,8 +793,9 @@
           seeking = false
           if (!window.louvorja || !window.louvorja.projection) return
           var state = await window.louvorja.projection.getPlaybackState()
-          if (!state || !(state.duration > 0)) return
-          var t = (Number(seek.value) / 1000) * state.duration
+          var duration = finiteTime(state && state.duration)
+          if (!duration) return
+          var t = (Number(seek.value) / 1000) * duration
           await window.louvorja.projection.remoteSeek(t)
           await tvBroadcast('seek', { position: t })
           refresh()

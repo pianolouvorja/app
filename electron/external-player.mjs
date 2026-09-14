@@ -443,15 +443,18 @@ export function removeCustomExternalPlayer(binPath) {
 /**
  * Reproduz o arquivo local no player externo escolhido.
  * @param {string} filePath caminho local absoluto do arquivo de mídia
+ * @param {string} [playerOverride] id do item (senão usa o global das Configurações)
  * @returns {Promise<{ok: boolean, player: string, error?: string}>}
  */
-export async function playInExternalPlayer(filePath) {
+export async function playInExternalPlayer(filePath, playerOverride) {
   const absolute = path.resolve(String(filePath ?? '').trim())
   if (!absolute || !existsSync(absolute)) {
     return { ok: false, player: 'none', error: 'file-missing' }
   }
 
-  const preference = getExternalPlayerPreference()
+  const preference = isValidPlayerPreference(playerOverride)
+    ? playerOverride
+    : getExternalPlayerPreference()
 
   if (preference === 'associated') {
     // associated: abre com o player padrão do SO
