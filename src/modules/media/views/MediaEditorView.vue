@@ -1437,19 +1437,18 @@ onMounted(async () => {
         />
       </button>
     </div>
+    <AppConfirm
+      :open="confirmOpen"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      confirm-label="Excluir"
+      cancel-label="Cancelar"
+      danger
+      @confirm="onConfirmDelete"
+      @cancel="confirmOpen = false"
+    />
   </section>
 </template>
-
-<AppConfirm
-  :open="confirmOpen"
-  :title="confirmTitle"
-  :message="confirmMessage"
-  confirm-label="Excluir"
-  cancel-label="Cancelar"
-  danger
-  @confirm="onConfirmDelete"
-  @cancel="confirmOpen = false"
-/>
 
 <style scoped>
 /*
