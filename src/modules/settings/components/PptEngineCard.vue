@@ -2,7 +2,10 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { PresentationEngine } from '@/shared/types/desktop-bridge'
+import type {
+  DetectedPresentationEngine,
+  PresentationEngine,
+} from '@/shared/types/desktop-bridge'
 
 const { t } = useI18n()
 
@@ -10,20 +13,40 @@ const bridge = window.louvorja
 const hasApi = Boolean(bridge?.isElectron && bridge.presentation?.getEngine)
 
 const engine = ref<PresentationEngine>('auto')
+const installed = ref<DetectedPresentationEngine[]>([])
 const busy = ref(false)
+const detecting = ref(false)
+const scanned = ref(false)
 
-onMounted(async () => {
+async function loadPreference() {
   if (!hasApi) return
   try {
     engine.value = await bridge!.presentation!.getEngine!()
   } catch {
     engine.value = 'auto'
   }
+}
+
+async function detectInstalled() {
+  if (!hasApi || detecting.value || !bridge?.presentation?.detectEngines) return
+  detecting.value = true
+  try {
+    installed.value = (await bridge.presentation.detectEngines()) ?? []
+  } catch {
+    installed.value = []
+  } finally {
+    detecting.value = false
+    scanned.value = true
+  }
+}
+
+onMounted(async () => {
+  await loadPreference()
+  await detectInstalled()
 })
 
 async function setEngine(next: PresentationEngine) {
   if (!hasApi || busy.value) return
-  // 'custom' exige um executável escolhido antes de virar o global.
   if (next === 'custom') {
     await pickCustomApp()
     return
@@ -41,7 +64,7 @@ async function setEngine(next: PresentationEngine) {
   }
 }
 
-/** Seletor de aplicativo externo custom (Keynote, OnlyOffice, WPS...). */
+/** Seletor de aplicativo externo (Keynote, OnlyOffice, WPS...). */
 async function pickCustomApp() {
   try {
     const picked = await bridge!.dialog!.openFile!({
@@ -74,18 +97,31 @@ async function pickCustomApp() {
       :aria-label="t('settings.presentation.title')"
     >
       <button
-        v-for="option in (['auto', 'powerpoint', 'libreoffice'] as const)"
-        :key="option"
         type="button"
         role="radio"
-        :aria-checked="engine === option"
-        :class="{ selected: engine === option }"
-        :data-test="`ppt-engine-${option}`"
+        :aria-checked="engine === 'auto'"
+        :class="{ selected: engine === 'auto' }"
+        data-test="ppt-engine-auto"
         :disabled="busy"
-        @click="setEngine(option)"
+        @click="setEngine('auto')"
       >
-        {{ t(`settings.presentation.engine.${option}`) }}
+        {{ t('settings.presentation.engine.auto') }}
       </button>
+
+      <button
+        type="button"
+        class="detect"
+        data-test="ppt-engine-detect"
+        :disabled="busy || detecting"
+        @click="detectInstalled"
+      >
+        {{
+          detecting
+            ? t('settings.presentation.detecting')
+            : t('settings.presentation.detect')
+        }}
+      </button>
+
       <button
         type="button"
         role="radio"
@@ -102,7 +138,44 @@ async function pickCustomApp() {
         }}
       </button>
     </div>
-    <p v-else class="hint">{{ t('settings.presentation.desktopOnly') }}</p>
+
+    <template v-if="hasApi && scanned">
+      <p
+        v-if="installed.length > 0"
+        class="hint"
+      >
+        {{ t('settings.presentation.detectFound') }}
+      </p>
+      <p
+        v-else
+        class="hint"
+      >
+        {{ t('settings.presentation.detectEmpty') }}
+      </p>
+
+      <div
+        v-if="installed.length > 0"
+        class="options"
+        role="radiogroup"
+        :aria-label="t('settings.presentation.detectFound')"
+      >
+        <button
+          v-for="option in installed"
+          :key="option.id"
+          type="button"
+          role="radio"
+          :aria-checked="engine === option.id"
+          :class="{ selected: engine === option.id }"
+          :data-test="`ppt-engine-${option.id}`"
+          :disabled="busy"
+          @click="setEngine(option.id as PresentationEngine)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </template>
+
+    <p v-else-if="!hasApi" class="hint">{{ t('settings.presentation.desktopOnly') }}</p>
 
     <p class="hint small">{{ t('settings.presentation.hint') }}</p>
   </section>
@@ -145,6 +218,9 @@ button.selected {
   background: var(--ds-color-primary, #04549b);
   border-color: transparent;
   color: #fff;
+}
+button.detect {
+  border-color: color-mix(in srgb, var(--ds-color-primary, #f2994a) 45%, transparent);
 }
 button:disabled {
   opacity: 0.55;

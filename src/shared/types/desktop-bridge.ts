@@ -232,6 +232,10 @@ export type ExternalPlayerPreference =
   | 'celluloid'
   | 'smplayer'
   | 'totem'
+  | 'haruna'
+  | 'clapper'
+  | 'iina'
+  | 'mpc'
   | `custom:${string}`
 
 export type DetectedPlayer = { id: string; label: string }
@@ -240,22 +244,39 @@ export type ExternalPlayerApi = {
   get: () => Promise<ExternalPlayerPreference>
   /** Players conhecidos instalados nesta máquina (além do "player do sistema"). */
   detect: () => Promise<DetectedPlayer[]>
+  /** Players adicionados em “Escolher outro player…”, persistidos na lista. */
+  listCustom: () => Promise<string[]>
   set: (player: ExternalPlayerPreference) => Promise<boolean>
+  removeCustom: (
+    binPath: string,
+  ) => Promise<{ player: ExternalPlayerPreference; customPlayers: string[] }>
   play: (filePath: string) => Promise<{ ok: boolean; player: string; error?: string }>
 }
 
-export type PresentationEngine = 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
+export type PresentationEngine =
+  | 'auto'
+  | 'powerpoint'
+  | 'libreoffice'
+  | 'onlyoffice'
+  | 'wps'
+  | 'keynote'
+  | 'calligra'
+  | 'custom'
+
+export type DetectedPresentationEngine = { id: string; label: string }
 
 export type PresentationApi = {
   /** True se LibreOffice/soffice estiver disponível para converter PPT. */
   detectOffice?: () => Promise<boolean>
-  /** Engine de conversão de apresentações: auto (default), powerpoint, libreoffice. */
+  /** PowerPoint / LibreOffice instalados nesta máquina. */
+  detectEngines?: () => Promise<DetectedPresentationEngine[]>
+  /** Engine de conversão: auto (padrão) até o usuário escolher outro. */
   getEngine?: () => Promise<PresentationEngine>
   setEngine?: (engine: PresentationEngine) => Promise<boolean>
   /** Abre o .pptx no aplicativo externo (PowerPoint/Impress) em modo slideshow. */
   openExternal?: (
     filePath: string,
-    engine: 'powerpoint' | 'libreoffice' | 'custom',
+    engine: Exclude<PresentationEngine, 'auto'>,
   ) => Promise<{ ok: boolean; error?: string }>
   /** Define o app externo custom de apresentação (executável escolhido). */
   setCustomApp?: (appPath: string) => Promise<boolean>

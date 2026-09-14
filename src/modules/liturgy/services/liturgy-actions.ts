@@ -232,11 +232,7 @@ export async function executeLiturgyItem(
       if (!engine) {
         engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
       }
-      if (
-        engine === 'powerpoint' ||
-        engine === 'libreoffice' ||
-        engine === 'custom'
-      ) {
+      if (engine && engine !== 'auto') {
         const result = await bridge?.presentation?.openExternal?.(
           filePath,
           engine,
@@ -388,11 +384,7 @@ export async function playLiturgyItemOnScreens(
     if (!engine) {
       engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
     }
-    if (
-      engine === 'powerpoint' ||
-      engine === 'libreoffice' ||
-      engine === 'custom'
-    ) {
+    if (engine && engine !== 'auto') {
       const result = await bridge?.presentation?.openExternal?.(
         filePath,
         engine,
