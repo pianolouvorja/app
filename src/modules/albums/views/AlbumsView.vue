@@ -30,12 +30,14 @@ import {
   type Playlist,
 } from '../services/playlist-storage'
 import { parsePlaylistsImport, serializePlaylists } from '../services/playlist-io'
+import { SHOW_CUSTOM_COLLECTIONS } from '../constants'
 
 const { t } = useI18n()
 const router = useRouter()
 const mediaStore = useMediaStore()
 const playlists = ref<Playlist[]>(listPlaylists())
 const newPlaylistName = ref('')
+const showCustomCollections = SHOW_CUSTOM_COLLECTIONS
 
 const {
   categories,
@@ -321,6 +323,7 @@ async function runAction(
           >{{ playlists.length }}</span>
         </button>
         <button
+          v-if="showCustomCollections"
           type="button"
           class="albums-view__toolbar-btn"
           :aria-label="t('albums.custom.title')"
@@ -553,10 +556,10 @@ async function runAction(
       </div>
     </Teleport>
 
-    <!-- Modal: Minhas Coletâneas -->
+    <!-- Modal: Minhas Coletâneas (oculto enquanto SHOW_CUSTOM_COLLECTIONS=false) -->
     <Teleport to="body">
       <div
-        v-if="customModalOpen"
+        v-if="showCustomCollections && customModalOpen"
         class="albums-view__modal"
         role="dialog"
         aria-modal="true"
@@ -722,7 +725,7 @@ async function runAction(
             </p>
           </div>
           <button
-            v-if="isCustomCategory(category)"
+            v-if="showCustomCollections && isCustomCategory(category)"
             type="button"
             class="albums-view__editor-btn"
             @click="router.push('/media/editor')"
