@@ -94,6 +94,7 @@ body,
   min-height: 100%;
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 
 body {
@@ -191,4 +192,12 @@ body {
     --ds-dock-height: 60px;
     --ds-header-height: 4.25rem;
   }
+}
+
+/*
+ * Toast do editor de letras: centro inferior, acima do dock.
+ * VSnackbar teleporta para o body — estilo precisa ser global.
+ */
+.editor__snackbar.v-snackbar--bottom {
+  padding-bottom: calc(var(--ds-dock-height, 72px) + 1.25rem) !important;
 }

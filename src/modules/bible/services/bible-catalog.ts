@@ -14,6 +14,75 @@ import type {
 const BOOKS_FILE = 'pt_bible_book'
 const VERSIONS_FILE = 'pt_bible_version'
 
+/** Abreviações conhecidas quando o catálogo/API vem com abbreviation vazia/null. */
+const VERSION_ABBREVIATION_BY_NAME: Array<{ match: RegExp; abbr: string }> = [
+  { match: /nova\s+almeida\s+atualizada/i, abbr: 'NAA' },
+  { match: /almeida\s+corrigida\s+e\s+revisada\s+fiel/i, abbr: 'ACRF' },
+  { match: /almeida\s+corrigida\s+e\s+fiel/i, abbr: 'ACF' },
+  { match: /almeida\s+revisada\s+imprensa/i, abbr: 'ARIB' },
+  { match: /almeida\s+revista\s+e\s+atualizada/i, abbr: 'ARA' },
+  { match: /almeida\s+revista\s+e\s+corrigida/i, abbr: 'ARC' },
+  { match: /king\s+james\s+atualizada/i, abbr: 'KJA' },
+  { match: /nova\s+vers[aã]o\s+internacional/i, abbr: 'NVI' },
+  { match: /sagradas\s+escrituras/i, abbr: 'SEV' },
+  { match: /reina[-\s]?valera\s*1989/i, abbr: 'RVA' },
+  { match: /reina[-\s]?valera/i, abbr: 'RV' },
+]
+
+function cleanCatalogText(value: unknown): string {
+  if (value == null) return ''
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') {
+    return ''
+  }
+  return text
+}
+
+/** Evita `String(null) === "null"` e completa abreviação a partir do nome/id. */
+export function resolveVersionAbbreviation(
+  abbreviation: unknown,
+  name: unknown,
+  versionId?: unknown,
+): string {
+  const fromField = cleanCatalogText(abbreviation)
+  if (fromField) return fromField
+
+  const versionName = cleanCatalogText(name)
+  for (const entry of VERSION_ABBREVIATION_BY_NAME) {
+    if (entry.match.test(versionName)) return entry.abbr
+  }
+
+  const idText = cleanCatalogText(versionId)
+  if (/^[a-z]{2,6}$/i.test(idText)) return idText.toUpperCase()
+
+  return ''
+}
+
+function mapBook(row: CatalogBibleBookRow): BibleBook {
+  return {
+    id: Number(row.id_bible_book),
+    name: cleanCatalogText(row.name) || String(row.name ?? ''),
+    abbreviation: cleanCatalogText(row.abbreviation),
+    chapters: Number(row.chapters) || 0,
+    bookNumber: Number(row.book_number) || 0,
+    languageId: cleanCatalogText(row.id_language) || 'pt',
+  }
+}
+
+function mapVersion(row: CatalogBibleVersionRow): BibleVersion {
+  const name = cleanCatalogText(row.name) || String(row.name ?? '')
+  return {
+    id: Number(row.id_bible_version),
+    abbreviation: resolveVersionAbbreviation(
+      row.abbreviation,
+      name,
+      row.id_bible_version,
+    ),
+    name,
+    languageId: cleanCatalogText(row.id_language) || 'pt',
+  }
+}
+
 async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
   const local = await readCatalogRecord<T>(filename)
   if (local != null) return local
@@ -23,26 +92,6 @@ async function readOrFetchCatalog<T>(filename: string): Promise<T | null> {
   } catch (error) {
     console.warn(`[bible] falha ao obter catálogo ${filename}`, error)
     return null
-  }
-}
-
-function mapBook(row: CatalogBibleBookRow): BibleBook {
-  return {
-    id: Number(row.id_bible_book),
-    name: String(row.name),
-    abbreviation: String(row.abbreviation),
-    chapters: Number(row.chapters) || 0,
-    bookNumber: Number(row.book_number) || 0,
-    languageId: String(row.id_language ?? 'pt'),
-  }
-}
-
-function mapVersion(row: CatalogBibleVersionRow): BibleVersion {
-  return {
-    id: Number(row.id_bible_version),
-    abbreviation: String(row.abbreviation),
-    name: String(row.name),
-    languageId: String(row.id_language ?? 'pt'),
   }
 }
 

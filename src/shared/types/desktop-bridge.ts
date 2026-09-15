@@ -44,6 +44,22 @@ export type ClassoApi = {
   detect: () => Promise<ClassoDetectionResult>
 }
 
+export type YoutubeAuthStatus = {
+  signedIn: boolean
+  premium: boolean | null
+}
+
+export type YoutubeAuthApi = {
+  status: () => Promise<YoutubeAuthStatus>
+  login: () => Promise<{ ok: boolean; signedIn: boolean }>
+  logout: () => Promise<{ ok: boolean }>
+}
+
+export type YoutubeAdblockApi = {
+  status: () => Promise<{ enabled: boolean }>
+  set: (enabled: boolean) => Promise<{ ok: boolean }>
+}
+
 export type LegacyMediaCounts = {
   covers: number
   music: number
@@ -209,9 +225,64 @@ export type DialogApi = {
   ) => Promise<string | string[] | null>
 }
 
+export type ExternalPlayerPreference =
+  | 'associated'
+  | 'vlc'
+  | 'mpv'
+  | 'celluloid'
+  | 'smplayer'
+  | 'totem'
+  | 'haruna'
+  | 'clapper'
+  | 'iina'
+  | 'mpc'
+  | `custom:${string}`
+
+export type DetectedPlayer = { id: string; label: string }
+
+export type ExternalPlayerApi = {
+  get: () => Promise<ExternalPlayerPreference>
+  /** Players conhecidos instalados nesta máquina (além do "player do sistema"). */
+  detect: () => Promise<DetectedPlayer[]>
+  /** Players adicionados em “Escolher outro player…”, persistidos na lista. */
+  listCustom: () => Promise<string[]>
+  set: (player: ExternalPlayerPreference) => Promise<boolean>
+  removeCustom: (
+    binPath: string,
+  ) => Promise<{ player: ExternalPlayerPreference; customPlayers: string[] }>
+  play: (
+    filePath: string,
+    player?: ExternalPlayerPreference,
+  ) => Promise<{ ok: boolean; player: string; error?: string }>
+}
+
+export type PresentationEngine =
+  | 'auto'
+  | 'powerpoint'
+  | 'libreoffice'
+  | 'onlyoffice'
+  | 'wps'
+  | 'keynote'
+  | 'calligra'
+  | 'custom'
+
+export type DetectedPresentationEngine = { id: string; label: string }
+
 export type PresentationApi = {
   /** True se LibreOffice/soffice estiver disponível para converter PPT. */
   detectOffice?: () => Promise<boolean>
+  /** PowerPoint / LibreOffice instalados nesta máquina. */
+  detectEngines?: () => Promise<DetectedPresentationEngine[]>
+  /** Engine de conversão: auto (padrão) até o usuário escolher outro. */
+  getEngine?: () => Promise<PresentationEngine>
+  setEngine?: (engine: PresentationEngine) => Promise<boolean>
+  /** Abre o .pptx no aplicativo externo (PowerPoint/Impress) em modo slideshow. */
+  openExternal?: (
+    filePath: string,
+    engine: Exclude<PresentationEngine, 'auto'>,
+  ) => Promise<{ ok: boolean; error?: string }>
+  /** Define o app externo custom de apresentação (executável escolhido). */
+  setCustomApp?: (appPath: string) => Promise<boolean>
 }
 
 export type OpenUrlProjectionPayload = {
@@ -225,6 +296,8 @@ export type OpenUrlProjectionPayload = {
   fullscreenOnPrimary?: boolean
   mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
+  /** Engine de conversão para este item (sobrepõe o setting global). */
+  presentationEngine?: PresentationEngine
 }
 
 export type PlaybackSyncPayload = {
@@ -327,6 +400,24 @@ export type ZoomApi = {
   onChanged: (callback: (payload: ZoomChangedPayload) => void) => () => void
 }
 
+export type RandomAudioApi = {
+  ensureDefaultAudio: () => Promise<{
+    ok: boolean
+    relativePath?: string
+    filePath?: string
+  }>
+  importAudio: () => Promise<{
+    ok: boolean
+    fileName?: string
+    relativePath?: string
+    reason?: string
+  }>
+  deleteAudio: (fileName: string) => Promise<{
+    ok: boolean
+    reason?: string
+  }>
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
@@ -335,6 +426,9 @@ export type LouvorJaBridge = {
   workspace: WorkspaceApi
   catalog: CatalogApi
   classo?: ClassoApi
+  ytAuth?: YoutubeAuthApi
+  ytAdblock?: YoutubeAdblockApi
+  externalPlayer?: ExternalPlayerApi
   legacyMedia?: LegacyMediaApi
   mediaFolder?: MediaFolderApi
   backup?: BackupApi
@@ -344,4 +438,5 @@ export type LouvorJaBridge = {
   presentation?: PresentationApi
   projection: ProjectionApi
   remote?: RemoteApi
+  random?: RandomAudioApi
 }

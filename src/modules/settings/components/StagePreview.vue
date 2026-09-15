@@ -72,6 +72,7 @@ const footerStyle = computed(() => ({
 <template>
   <div
     class="stage-preview"
+    :class="{ 'stage-preview--bible': module === 'bible' }"
     :style="containerStyle"
   >
     <div
@@ -110,9 +111,15 @@ const footerStyle = computed(() => ({
 
 .stage-preview__box {
   display: flex;
-  max-width: calc(100% - 12.5cqw); /* margin 120px @1920 */
+  max-width: calc(100% - 12.5cqw); /* margin 120px @1920 — hinos/geral */
   padding: 2cqw;
   /* radius (padrão folha) vem inline do boxStyle quando textBox ativo */
+}
+
+/* Bíblia: usa quase toda a largura (paridade com BibleProjectionView). */
+.stage-preview--bible .stage-preview__box {
+  max-width: calc(100% - 2cqw);
+  width: 100%;
 }
 
 .stage-preview__text {
@@ -122,6 +129,10 @@ const footerStyle = computed(() => ({
   /* alinhamento horizontal vem inline (textStyle); largura mínima
      para o box acompanhar o texto quando não estica (left/right) */
   width: fit-content;
+}
+
+.stage-preview--bible .stage-preview__text {
+  width: 100%;
 }
 
 .stage-preview__footer {

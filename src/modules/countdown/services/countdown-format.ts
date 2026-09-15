@@ -1,5 +1,6 @@
 import type {
   CountdownDurationParts,
+  CountdownRuntimeState,
   CountdownStatus,
   CountdownTimeFormat,
 } from '../types/countdown'
@@ -83,6 +84,52 @@ export function durationMsFromParts(parts: CountdownDurationParts): number {
   const minutes = Math.min(59, Math.max(0, Math.floor(parts.minutes) || 0))
   const seconds = Math.min(59, Math.max(0, Math.floor(parts.seconds) || 0))
   return hours * 3_600_000 + minutes * 60_000 + seconds * 1000
+}
+
+/** Remaining até HH:MM de hoje (negativo se o horário já passou). */
+export function wallClockUntilRemainingMs(
+  untilHour: number,
+  untilMinute: number,
+  nowMs: number,
+): number {
+  const hour = Math.min(23, Math.max(0, Math.floor(untilHour) || 0))
+  const minute = Math.min(59, Math.max(0, Math.floor(untilMinute) || 0))
+  const target = new Date(nowMs)
+  target.setHours(hour, minute, 0, 0)
+  return target.getTime() - nowMs
+}
+
+export function computeCountdownRemainingMs(
+  runtime: Pick<
+    CountdownRuntimeState,
+    | 'mode'
+    | 'untilHour'
+    | 'untilMinute'
+    | 'pausedRemainingMs'
+    | 'durationMs'
+    | 'accumulatedMs'
+    | 'segmentStartedAt'
+    | 'status'
+  >,
+  nowMs: number,
+): number {
+  if (runtime.mode === 'until') {
+    if (runtime.status === 'paused' && runtime.pausedRemainingMs != null) {
+      return runtime.pausedRemainingMs
+    }
+    return wallClockUntilRemainingMs(
+      runtime.untilHour ?? 18,
+      runtime.untilMinute ?? 0,
+      nowMs,
+    )
+  }
+  return computeRemainingMs(
+    runtime.durationMs,
+    runtime.accumulatedMs,
+    runtime.segmentStartedAt,
+    runtime.status,
+    nowMs,
+  )
 }
 
 export function clampDurationPart(value: unknown, max?: number): number {

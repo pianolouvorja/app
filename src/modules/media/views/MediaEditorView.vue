@@ -4,7 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import MediaSlideStage from '../components/MediaSlideStage.vue'
 import MediaAccountBar from '../components/MediaAccountBar.vue'
+import AppConfirm from '@shared/components/AppConfirm.vue'
 import { getAuthSession } from '../services/auth-client'
+import {
+  getLocalMusic as getLocalMusicById,
+  isLocalId,
+  updateLocalMusic,
+} from '../services/local-custom-store'
 import {
   addOfficialMusicToCollection,
   copyCustomMusic,
@@ -32,7 +38,7 @@ import {
 } from '../services/custom-catalog'
 import type { CustomCollectionSummary, CustomMusicSummary } from '../services/custom-catalog'
 import { customApiUrl } from '../services/custom-catalog'
-import { buildSlja, parseSlja } from '../../../shared/services/slja'
+import { buildSlja, parseSljaFile } from '../../../shared/services/slja'
 
 /**
  * Editor de letras v1 (web)
@@ -69,11 +75,12 @@ const saving = ref(false)
 const statusMessage = ref('')
 const snackbarOpen = ref(false)
 
-/** statusMessage + snackbar juntos (toast). */
+/** statusMessage + snackbar juntos (toast). Mensagem vazia só limpa, sem abrir toast. */
 function notify(message: string, isError = false): void {
-  statusMessage.value = message
+  const text = message.trim()
+  statusMessage.value = text
   isErrorFlag.value = isError
-  snackbarOpen.value = true
+  snackbarOpen.value = text.length > 0
 }
 
 /** Status de erro ganha ícone/cor distintos no toast (regex OU flag explícita). */
@@ -136,19 +143,19 @@ async function onCollectionChange(): Promise<void> {
 async function onCreateCollection(): Promise<void> {
   const name = newCollectionName.value.trim()
   if (!name) return
-  if (!getAuthSession()) {
-    notify('Entre com sua conta para criar coletâneas', true)
-    return
-  }
   saving.value = true
   try {
+    // Sem auth = cria LOCAL (ids negativos, só nesta máquina) — regra de
+    // produto 12/09. Com auth sobe pra API. O roteamento é interno do
+    // custom-catalog (createCustomCollection decide pelo getAuthSession).
+    const localOnly = !getAuthSession()
     const result = await createCustomCollection(name)
     if (result) {
       newCollectionName.value = ''
       await refreshCollections()
       selectedCollectionId.value = result.id
       await onCollectionChange()
-      notify('Coletânea criada')
+      notify(localOnly ? 'Coletânea criada localmente (entre com sua conta para publicar)' : 'Coletânea criada')
     } else {
       notify('Falha ao criar coletânea (API indisponível?)', true)
     }
@@ -371,6 +378,35 @@ async function onSelectMusic(id: number): Promise<void> {
   selectedMusicId.value = id
   loading.value = true
   notify('')
+  // Música LOCAL (id negativo, sem auth): carrega do localStorage, sem fetch.
+  if (id < 0) {
+    try {
+      const local = getLocalMusicById(id)
+      if (!local) {
+        notify('Esta música não existe mais')
+        selectedMusicId.value = null
+        musicName.value = ''
+        lyrics.value = []
+        loadAudioForMusic(null)
+        await refreshCollections()
+        return
+      }
+      musicName.value = local.name
+      lyrics.value = local.lyrics.map((row) => ({
+        id: row.id,
+        lyric: row.lyric,
+        time: row.time ?? '00:00',
+        imageUrl: row.image_url ?? '',
+      }))
+      loadAudioForMusic(local.audioBase64 ? `local:${local.id}` : null)
+      if (local.officialMusicId != null) {
+        notify('Hino oficial vinculado — a letra/áudio são gerenciados no catálogo oficial')
+      }
+    } finally {
+      loading.value = false
+    }
+    return
+  }
   try {
     const response = await fetch(customApiUrl(`/musics/${id}`))
     if (response.ok) {
@@ -417,7 +453,7 @@ async function onSelectMusic(id: number): Promise<void> {
 }
 
 function onBack(): void {
-  void router.push('/media')
+  void router.push({ name: 'albums' })
 }
 
 /* ---------- Import / Export .slja ---------- */
@@ -437,13 +473,15 @@ async function onImportFile(event: Event): Promise<void> {
   notify('')
   try {
     const buffer = await file.arrayBuffer()
-    const archive = await parseSlja(buffer)
+    // Aceita .slja direto OU .slja.zip (wrapper que o WhatsApp cria)
+    const archive = await parseSljaFile(buffer, file.name)
+    const innerName = (archive as { innerName?: string }).innerName
 
     // Nome da música: título do arquivo .slja, mas ignora fallbacks genéricos do
     // parser (v<versao> / "Sem título") — nesses casos usa o nome do arquivo.
     const genericTitle = /^v[\d.]+$/.test(archive.title?.trim() ?? '') || !archive.title?.trim()
     const name = genericTitle
-      ? file.name.replace(/\.slja$/i, '')
+      ? (innerName ?? file.name).replace(/\.slja(\.zip)?$/i, '')
       : archive.title.trim()
 
     // Garante coletânea de importação: reaproveita a primeira "Importações .slja"
@@ -609,13 +647,49 @@ function timeToMs(time: string): number {
   return 0
 }
 
-/* ---------- Deleção (coletânea / música / estrofe) ---------- */
+/* ---------- Deleção (coletânea / música / estrofe) — via AppConfirm ---------- */
 
-async function onDeleteCollection(): Promise<void> {
+type ConfirmKind = 'collection' | 'music' | 'stanza'
+const confirmOpen = ref(false)
+const confirmKind = ref<ConfirmKind>('collection')
+const confirmPayload = ref<{ stanzaIndex?: number }>({})
+
+const confirmTitle = computed(() => {
+  if (confirmKind.value === 'collection') return 'Excluir coletânea'
+  if (confirmKind.value === 'music') return 'Excluir música'
+  return 'Excluir estrofe'
+})
+
+const confirmMessage = computed(() => {
+  if (confirmKind.value === 'collection') {
+    const current = collections.value.find((c) => c.id === selectedCollectionId.value)
+    return current
+      ? `Excluir a coletânea "${current.name}" e TODAS as suas músicas?`
+      : 'Excluir esta coletânea?'
+  }
+  if (confirmKind.value === 'music') {
+    return `Excluir a música "${musicName.value}"?`
+  }
+  return 'Excluir esta estrofe?'
+})
+
+function requestDelete(kind: ConfirmKind, payload: { stanzaIndex?: number } = {}): void {
+  confirmKind.value = kind
+  confirmPayload.value = payload
+  confirmOpen.value = true
+}
+
+async function onConfirmDelete(): Promise<void> {
+  confirmOpen.value = false
+  if (confirmKind.value === 'collection') await doDeleteCollection()
+  else if (confirmKind.value === 'music') await doDeleteMusic()
+  else await doDeleteStanza(confirmPayload.value.stanzaIndex ?? -1)
+}
+
+async function doDeleteCollection(): Promise<void> {
   const id = selectedCollectionId.value
   const current = collections.value.find((c) => c.id === id)
   if (id == null || !current) return
-  if (!window.confirm(`Excluir a coletânea "${current.name}" e TODAS as suas músicas?`)) return
   saving.value = true
   try {
     if (await deleteCustomCollection(id)) {
@@ -626,17 +700,16 @@ async function onDeleteCollection(): Promise<void> {
       await refreshCollections()
       notify(`Coletânea "${current.name}" excluída`)
     } else {
-      notify('Falha ao excluir coletânea')
+      notify('Falha ao excluir coletânea', true)
     }
   } finally {
     saving.value = false
   }
 }
 
-async function onDeleteMusic(): Promise<void> {
+async function doDeleteMusic(): Promise<void> {
   const id = selectedMusicId.value
   if (id == null) return
-  if (!window.confirm(`Excluir a música "${musicName.value}"?`)) return
   saving.value = true
   try {
     if (await deleteCustomMusic(id)) {
@@ -649,21 +722,20 @@ async function onDeleteMusic(): Promise<void> {
       }
       notify('Música excluída')
     } else {
-      notify('Falha ao excluir música')
+      notify('Falha ao excluir música', true)
     }
   } finally {
     saving.value = false
   }
 }
 
-async function onDeleteStanza(index: number): Promise<void> {
+async function doDeleteStanza(index: number): Promise<void> {
   const stanza = lyrics.value[index]
   if (!stanza) return
-  if (!window.confirm('Excluir esta estrofe?')) return
   saving.value = true
   try {
     if (stanza.id != null && !(await deleteCustomLyric(stanza.id))) {
-      notify('Falha ao excluir estrofe')
+      notify('Falha ao excluir estrofe', true)
       return
     }
     lyrics.value.splice(index, 1)
@@ -760,13 +832,100 @@ const activeStanza = computed(() => {
   return lyrics.value[idx] ?? null
 })
 
-/** Carrega o áudio vinculado à música (audio_url da API) */
+/** Carrega o áudio vinculado à música (audio_url da API ou local:<id>) */
 function loadAudioForMusic(audioPath: string | null): void {
-  audioSrc.value = audioPath ? customFileUrl(audioPath) : null
+  if (audioPath?.startsWith('local:')) {
+    const local = getLocalMusicById(Number(audioPath.slice('local:'.length)))
+    audioSrc.value = local?.audioBase64
+      ? `data:audio/mpeg;base64,${local.audioBase64}`
+      : null
+  } else {
+    audioSrc.value = audioPath ? customFileUrl(audioPath) : null
+  }
   audioUrl.value = audioPath
   currentTimeMs.value = 0
   activeStanzaIndex.value = -1
   activeStanzaIndexOverride.value = null
+}
+
+/* ---------- Upload/seleção de MP3 para a música selecionada ---------- */
+
+const audioInputEl = ref<HTMLInputElement | null>(null)
+
+function onPickAudio(): void {
+  audioInputEl.value?.click()
+}
+
+/**
+ * MP3 avulso na música: logado → upload pra API (id_file_audio);
+ * deslogado → guarda base64 no store local (o player já lê data: URL).
+ */
+async function onAudioFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  const musicId = selectedMusicId.value
+  if (!file || musicId == null) return
+  saving.value = true
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    if (isLocalId(musicId)) {
+      updateLocalMusic(musicId, {
+        audioBase64: bytesToBase64(bytes),
+        audioName: file.name,
+      })
+      loadAudioForMusic(`local:${musicId}`)
+      notify(`Áudio "${file.name}" vinculado (local)`)
+      return
+    }
+
+    const uploaded = await uploadCustomFile(bytes, file.name, 'audio')
+    if (!uploaded) {
+      notify('Falha no upload do áudio', true)
+      return
+    }
+    const ok = await updateCustomMusic(musicId, { id_file_audio: uploaded.idFile })
+    if (!ok) {
+      notify('Falha ao vincular o áudio à música', true)
+      return
+    }
+    loadAudioForMusic(uploaded.url)
+    notify(`Áudio "${file.name}" vinculado`)
+  } finally {
+    saving.value = false
+  }
+}
+
+/** Remover o áudio da música selecionada. */
+async function onRemoveAudio(): Promise<void> {
+  const musicId = selectedMusicId.value
+  if (musicId == null) return
+  saving.value = true
+  try {
+    if (isLocalId(musicId)) {
+      updateLocalMusic(musicId, { audioBase64: null, audioName: null })
+    } else {
+      const ok = await updateCustomMusic(musicId, { id_file_audio: null })
+      if (!ok) {
+        notify('Falha ao remover o áudio', true)
+        return
+      }
+    }
+    loadAudioForMusic(null)
+    notify('Áudio removido')
+  } finally {
+    saving.value = false
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
 }
 
 onMounted(async () => {
@@ -818,7 +977,7 @@ onMounted(async () => {
       <input
         ref="fileInputEl"
         type="file"
-        accept=".slja"
+        accept=".slja,.zip"
         class="editor__file-input"
         @change="onImportFile"
       >
@@ -852,14 +1011,14 @@ onMounted(async () => {
     <v-snackbar
       v-model="snackbarOpen"
       :timeout="2600"
-      location="top right"
+      location="bottom center"
       variant="text"
       class="editor__snackbar"
       :content-class="'editor__snackbar-content'"
     >
       <div class="editor__toast">
         <i
-          class="editor__toast-icon"
+          class="ti editor__toast-icon"
           :class="isErrorStatus ? 'ti-alert-circle' : 'ti-circle-check'"
           aria-hidden="true"
         />
@@ -871,7 +1030,7 @@ onMounted(async () => {
       <button
         type="button"
         class="editor__aside-toggle"
-        :title="asideCollapsed ? 'Mostrar coletâneas' : 'Ocultar coletâneas'"
+        :title="asideCollapsed ? 'Mostrar painéis' : 'Ocultar painéis'"
         @click="asideCollapsed = !asideCollapsed"
       >
         <i
@@ -881,7 +1040,7 @@ onMounted(async () => {
         />
       </button>
       <aside
-        class="editor__aside"
+        class="editor__aside editor__aside--collections"
         :class="{ 'editor__aside--collapsed': asideCollapsed }"
         v-show="!asideCollapsed"
       >
@@ -973,7 +1132,7 @@ onMounted(async () => {
           class="editor__btn editor__btn--danger"
           :disabled="saving"
           title="Excluir coletânea selecionada"
-          @click="onDeleteCollection"
+          @click="requestDelete('collection')"
         >
           <i
             class="ti ti-trash"
@@ -987,7 +1146,13 @@ onMounted(async () => {
         >
           Nenhuma coletânea ainda. Crie a primeira acima.
         </p>
+      </aside>
 
+      <aside
+        class="editor__aside editor__aside--musics"
+        :class="{ 'editor__aside--collapsed': asideCollapsed }"
+        v-show="!asideCollapsed"
+      >
         <template v-if="selectedCollectionId != null">
           <h2 class="editor__section-title">
             Músicas
@@ -1105,7 +1270,7 @@ onMounted(async () => {
             </ul>
           </div>
 
-          <ul class="editor__list">
+          <ul class="editor__list editor__list--musics">
             <li
               v-for="music in musics"
               :key="music.id"
@@ -1132,7 +1297,7 @@ onMounted(async () => {
             class="editor__btn editor__btn--danger"
             :disabled="saving"
             title="Excluir música selecionada"
-            @click="onDeleteMusic"
+            @click="requestDelete('music')"
           >
             <i
               class="ti ti-trash"
@@ -1140,7 +1305,19 @@ onMounted(async () => {
             />
             Excluir música
           </button>
+          <p
+            v-if="!loading && musics.length === 0"
+            class="editor__hint"
+          >
+            Nenhuma música nesta coletânea. Crie ou adicione acima.
+          </p>
         </template>
+        <p
+          v-else
+          class="editor__hint editor__hint--column"
+        >
+          Selecione uma coletânea à esquerda para ver as músicas.
+        </p>
       </aside>
 
       <div class="editor__main">
@@ -1196,9 +1373,50 @@ onMounted(async () => {
                 v-if="!audioSrc && activeStanza"
                 class="editor__hint editor__hint--compact"
               >
-                Esta música não tem áudio vinculado. Importe um .slja com áudio ou o áudio
-                ficará disponível na próxima importação.
+                Esta música não tem áudio vinculado.
               </p>
+
+              <!-- MP3 avulso: adicionar/remover (logado = API, deslogado = local) -->
+              <input
+                ref="audioInputEl"
+                type="file"
+                accept="audio/mpeg,audio/*"
+                class="editor__file-input"
+                @change="onAudioFile"
+              >
+              <div
+                v-if="activeStanza"
+                class="editor__row"
+              >
+                <button
+                  v-if="!audioSrc"
+                  type="button"
+                  class="editor__btn"
+                  :disabled="saving"
+                  title="Vincular um arquivo de áudio (MP3) à música"
+                  @click="onPickAudio"
+                >
+                  <i
+                    class="ti ti-music"
+                    aria-hidden="true"
+                  />
+                  Adicionar áudio (MP3)
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="editor__btn editor__btn--danger"
+                  :disabled="saving"
+                  title="Remover o áudio vinculado"
+                  @click="onRemoveAudio"
+                >
+                  <i
+                    class="ti ti-music-off"
+                    aria-hidden="true"
+                  />
+                  Remover áudio
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1254,7 +1472,7 @@ onMounted(async () => {
                   class="editor__btn editor__btn--danger editor__btn--icon"
                   :disabled="saving"
                   title="Excluir estrofe"
-                  @click="onDeleteStanza(index)"
+                  @click="requestDelete('stanza', { stanzaIndex: index })"
                 >
                   <i
                     class="ti ti-trash"
@@ -1367,6 +1585,16 @@ onMounted(async () => {
         />
       </button>
     </div>
+    <AppConfirm
+      :open="confirmOpen"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      confirm-label="Excluir"
+      cancel-label="Cancelar"
+      danger
+      @confirm="onConfirmDelete"
+      @cancel="confirmOpen = false"
+    />
   </section>
 </template>
 
@@ -1382,18 +1610,20 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: var(--ds-spacing-4, 1rem);
-  gap: var(--ds-spacing-4, 1rem);
+  /* Quase full-bleed: só um respiro mínimo nas laterais */
+  padding: 0.45rem 0.2rem 0.5rem;
+  gap: 0.45rem;
+  font-size: 0.875rem;
 }
 
 .editor__toolbar {
   display: flex;
   align-items: center;
-  gap: var(--ds-spacing-3, 0.75rem);
+  gap: 0.5rem;
 }
 
 .editor__title {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ds-color-on-surface);
@@ -1442,14 +1672,14 @@ onMounted(async () => {
 
 /* Painel "Letra" — espelho da playlist da /media: é a LETRA que anda, estrofes fixas */
 .editor__lyric-pane {
-  width: 17rem;
+  width: 15rem;
   flex-shrink: 0;
   min-height: 0;
   overflow-y: auto;
   background: rgb(12 12 12 / 0.92);
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
-  padding: 1rem 0.75rem;
+  padding: 0.7rem 0.55rem;
 }
 
 .editor__lyric-pane-head {
@@ -1461,9 +1691,9 @@ onMounted(async () => {
 
 .editor__lyric-pane-title {
   margin: 0;
-  padding: 0 0.4rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgb(255 255 255 / 0.55);
 }
@@ -1556,7 +1786,7 @@ onMounted(async () => {
 }
 
 .editor__lyric-text {
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   line-height: 1.35;
   white-space: pre-line;
   word-break: break-word;
@@ -1568,7 +1798,7 @@ onMounted(async () => {
 
 .editor__body {
   display: flex;
-  gap: var(--ds-spacing-4, 1rem);
+  gap: 0.4rem;
   flex: 1;
   min-height: 0;
 }
@@ -1597,13 +1827,14 @@ onMounted(async () => {
 }
 
 .editor__aside {
-  width: 280px;
+  width: 240px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  overflow-y: auto;
-  padding: var(--ds-spacing-4, 16px);
+  gap: 0.3rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.7rem 0.75rem;
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
@@ -1615,11 +1846,35 @@ onMounted(async () => {
   -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
 }
 
+.editor__aside--collections,
+.editor__aside--musics {
+  overflow-y: auto;
+}
+
+.editor__aside--musics {
+  width: 260px;
+}
+
+.editor__aside .editor__section-title:first-child {
+  margin-top: 0;
+}
+
+.editor__list--musics {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor__hint--column {
+  margin: auto 0;
+  text-align: center;
+  padding: 0.75rem 0.4rem;
+}
+
 .editor__main {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
-  padding: var(--ds-spacing-5, 20px);
+  padding: 0.75rem 0.9rem;
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
@@ -1632,12 +1887,12 @@ onMounted(async () => {
 }
 
 .editor__section-title {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ds-color-on-surface-variant);
-  margin: 0.75rem 0 0.375rem;
+  margin: 0.55rem 0 0.3rem;
 }
 
 .editor__row {
@@ -1648,12 +1903,13 @@ onMounted(async () => {
 .editor__input {
   flex: 1;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
+  padding: 0.38rem 0.5rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(in srgb, var(--ds-color-surface) 55%, transparent);
   color: var(--ds-color-on-surface);
   font: inherit;
+  font-size: 0.8rem;
   transition:
     border-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
     box-shadow var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease);
@@ -1674,8 +1930,8 @@ onMounted(async () => {
 .editor__btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.45rem 0.75rem;
+  gap: 0.3rem;
+  padding: 0.38rem 0.65rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(
@@ -1686,7 +1942,7 @@ onMounted(async () => {
   color: var(--ds-color-on-surface);
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   transition:
     background-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
@@ -1731,14 +1987,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.5rem 0.625rem;
+  padding: 0.4rem 0.5rem;
   border: 1px solid transparent;
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: transparent;
   color: var(--ds-color-on-surface);
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   text-align: left;
   transition:
     background-color var(--ds-motion-duration, 160ms) var(--ds-motion-easing, ease),
@@ -1756,13 +2012,13 @@ onMounted(async () => {
 }
 
 .editor__count {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--ds-color-on-surface-variant);
 }
 
 .editor__hint,
 .editor__empty {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--ds-color-on-surface-variant);
 }
 
@@ -1859,15 +2115,15 @@ onMounted(async () => {
 
 .editor__textarea {
   width: 100%;
-  min-height: 80px;
-  padding: 0.5rem 0.625rem;
+  min-height: 72px;
+  padding: 0.45rem 0.55rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(in srgb, var(--ds-color-surface) 55%, transparent);
   color: var(--ds-color-on-surface);
   font-family: inherit;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.45;
   resize: vertical;
   transition:
     border-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
@@ -1881,13 +2137,23 @@ onMounted(async () => {
     color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
 }
 
+@media (max-width: 1100px) {
+  .editor__aside--collections,
+  .editor__aside--musics {
+    width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .editor__body {
     flex-direction: column;
   }
 
-  .editor__aside {
+  .editor__aside,
+  .editor__aside--collections,
+  .editor__aside--musics {
     width: 100%;
+    max-height: 40vh;
   }
 }
 
@@ -1998,10 +2264,10 @@ onMounted(async () => {
   gap: 0.5rem;
   background: rgb(255 255 255 / 0.03);
   color: var(--ds-color-on-surface-variant, rgb(255 255 255 / 0.55));
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 
   > i {
-    font-size: 2rem;
+    font-size: 1.65rem;
     opacity: 0.5;
   }
 }

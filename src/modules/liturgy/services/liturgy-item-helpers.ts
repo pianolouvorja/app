@@ -164,6 +164,21 @@ export function isExecutableItem(item: Pick<LiturgyItem, 'type'>): boolean {
   return EXECUTABLE_ITEM_TYPES.includes(item.type)
 }
 
+/** Tipos de mídia que, ao tocar, marcam a linha da liturgia como concluída. */
+const MEDIA_PLAY_DONE_TYPES: readonly LiturgyItemType[] = [
+  'music',
+  'audio',
+  'video',
+  'online_video',
+  'images',
+  'pdf',
+  'presentation',
+]
+
+export function isLiturgyMediaPlayType(type: LiturgyItemType): boolean {
+  return MEDIA_PLAY_DONE_TYPES.includes(type)
+}
+
 export function getItemTypeIcon(type: LiturgyItemType): string {
   return LITURGY_ITEM_TYPE_META.find((entry) => entry.value === type)?.icon ?? 'ti-help'
 }
@@ -351,6 +366,27 @@ export function buildLiturgyItemFromDraft(
           : []
 
     item.filePath = paths[0] ?? ''
+    if (type === 'presentation') {
+      // Mesma semântica do player: só persiste engine se for escolha
+      // EXPLÍCITA do usuário no modal. 'auto' no select = sem override —
+      // o global das Configurações vale na execução.
+      if (
+        draft.presentationEngine &&
+        draft.presentationEngine !== 'auto'
+      ) {
+        item.presentationEngine = draft.presentationEngine
+      } else {
+        delete item.presentationEngine
+      }
+    }
+    if (type === 'video' || type === 'audio') {
+      // 'default' = herda o global das Configurações; não persiste no item.
+      if (draft.playerId && draft.playerId !== 'default') {
+        item.playerId = draft.playerId
+      } else {
+        delete item.playerId
+      }
+    }
     if (type === 'images' && paths.length > 0) {
       item.filePaths = paths
       if (!details) {
@@ -414,7 +450,9 @@ export function draftFromLiturgyItem(item: LiturgyItem): LiturgyItemDraft {
         : item.filePath
           ? [item.filePath]
           : [],
+    playerId: item.playerId ?? 'default',
     url: item.url ?? '',
+    presentationEngine: item.presentationEngine ?? 'auto',
   }
 }
 

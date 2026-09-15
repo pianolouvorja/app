@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import {
+  closeProjectionModule,
+  hasSelectedExtendedProjectionTargets,
   isProjectionModuleOpen,
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
@@ -32,6 +34,8 @@ export const useTimerStore = defineStore('timer', () => {
   })
   const isProjecting = ref(false)
   const projectingTvsOnly = ref(false)
+  /** Preview no operador (1 monitor / sem tela de projeção marcada). */
+  const inAppPreview = ref(false)
   const configOpen = ref(false)
   const hydrated = ref(false)
 
@@ -49,7 +53,7 @@ export const useTimerStore = defineStore('timer', () => {
   function startProjectionWatch() {
     stopProjectionWatch()
     projectionWatchTimer = setInterval(() => {
-      if (projectingTvsOnly.value) return
+      if (projectingTvsOnly.value || inAppPreview.value) return
       if (!isProjectionModuleOpen('timer')) {
         isProjecting.value = false
         stopProjectionWatch()
@@ -182,11 +186,22 @@ export const useTimerStore = defineStore('timer', () => {
     if (isPalcoTvOnlyRoute('timer')) {
       isProjecting.value = true
       projectingTvsOnly.value = true
+      inAppPreview.value = false
       syncRuntime() // publica owner=true após definir o modo
       startProjectionWatch()
       return
     }
     projectingTvsOnly.value = false
+    const hasExternal = await hasSelectedExtendedProjectionTargets()
+    if (!hasExternal) {
+      closeProjectionModule()
+      isProjecting.value = true
+      inAppPreview.value = true
+      syncRuntime()
+      startProjectionWatch()
+      return
+    }
+    inAppPreview.value = false
     const opened = await openProjectionModule('timer')
     isProjecting.value = opened
     syncRuntime() // owner segue a projeção, não o status do cronômetro
@@ -197,12 +212,14 @@ export const useTimerStore = defineStore('timer', () => {
   function clearProjection() {
     isProjecting.value = false
     projectingTvsOnly.value = false
+    inAppPreview.value = false
     syncRuntime()
     stopProjectionWatch()
+    closeProjectionModule()
   }
 
   async function toggleProjection() {
-    if (isProjecting.value && (isProjectionModuleOpen('timer') || projectingTvsOnly.value)) {
+    if (isProjecting.value && (isProjectionModuleOpen('timer') || projectingTvsOnly.value || inAppPreview.value)) {
       clearProjection()
       return
     }
@@ -213,6 +230,7 @@ export const useTimerStore = defineStore('timer', () => {
     config,
     runtime,
     isProjecting,
+    inAppPreview,
     configOpen,
     hydrated,
     isRunning,

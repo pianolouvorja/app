@@ -148,7 +148,8 @@
         justify-content: center;
         cursor: pointer;
       }
-      button:hover { background: rgba(255, 255, 255, 0.1); }
+      button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+      button:disabled { opacity: 0.35; cursor: not-allowed; }
       button:disabled { opacity: 0.35; cursor: default; }
       button.is-active {
         background: rgba(234, 88, 12, 0.28);
@@ -221,6 +222,8 @@
         var STOP_PATH = 'M6 6h12v12H6z'
 
         function setProjectingUi(projecting) {
+          var canProject = selectedIds.length > 0
+          projectBtn.disabled = !projecting && !canProject
           if (projecting) {
             projectBtn.classList.add('is-active')
             projectBtn.title = 'Retirar projeção'
@@ -228,7 +231,9 @@
             projectIcon.innerHTML = '<path d="' + STOP_PATH + '"/>'
           } else {
             projectBtn.classList.remove('is-active')
-            projectBtn.title = 'Projetar nas telas'
+            projectBtn.title = canProject
+              ? 'Projetar nas telas'
+              : 'Nenhuma tela disponível para projeção'
             projectBtn.setAttribute('aria-pressed', 'false')
             projectIcon.innerHTML = '<path d="' + ARROW_PATH + '"/>'
           }
@@ -331,6 +336,7 @@
           }
           updateMonitorBadge()
           renderMonitorList()
+          await refresh()
         }
 
         async function setPanelOpen(open) {
@@ -357,6 +363,7 @@
           if (window.louvorja && window.louvorja.projection && window.louvorja.projection.setVideoTargetMonitors) {
             await window.louvorja.projection.setVideoTargetMonitors(selectedIds.slice())
           }
+          await refresh()
         }
 
         async function refresh() {
@@ -424,6 +431,7 @@
         })
 
         projectBtn.addEventListener('click', async function () {
+          if (projectBtn.disabled) return
           if (window.louvorja && window.louvorja.projection && window.louvorja.projection.toggleVideoScreens) {
             await window.louvorja.projection.toggleVideoScreens()
             await refresh()

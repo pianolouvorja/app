@@ -57,7 +57,9 @@ const { formattedTime } = useHomeClock()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height));
+  box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
   padding: var(--ds-spacing-page);
 }
 

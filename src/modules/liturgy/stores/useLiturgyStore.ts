@@ -3,6 +3,19 @@ import { computed, ref } from 'vue'
 import type { Router } from 'vue-router'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+
+/** Motor PPTX global (Configurações → Mídia & Player): auto|powerpoint|libreoffice. */
+async function getPresentationEnginePref(): Promise<
+  'auto' | 'powerpoint' | 'libreoffice'
+> {
+  try {
+    const engine = await getDesktopBridge()?.presentation?.getEngine?.()
+    if (engine === 'powerpoint' || engine === 'libreoffice') return engine
+  } catch {
+    // default
+  }
+  return 'auto'
+}
 import { closeProjectionModule } from '@shared/composables/useProjectionWindow'
 
 import type { MediaPlaybackMode } from '@modules/media/types/media'
@@ -25,6 +38,7 @@ import {
   draftFromLiturgyItem,
   findCategoryInsertIndex,
   isLiturgyItemDraftValid,
+  isLiturgyMediaPlayType,
   reconcileMusicItemTitles,
   reorderLiturgyItems,
 } from '../services/liturgy-item-helpers'
@@ -648,6 +662,12 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     itemDialogLockedCategory.value = false
     itemDialogHideTypePicker.value = item.type === 'category'
     itemDraft.value = draftFromLiturgyItem(item)
+    // Motor PPTX: sem override no item, mostra o global das Configurações.
+    if (item.type === 'presentation' && !item.presentationEngine) {
+      void getPresentationEnginePref().then((engine) => {
+        itemDraft.value = { ...itemDraft.value, presentationEngine: engine }
+      })
+    }
     musicSearchQuery.value = ''
     itemDialogOpen.value = true
   }
@@ -657,6 +677,20 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     editingIndex.value = null
     itemDialogLockedCategory.value = false
     itemDialogHideTypePicker.value = false
+  }
+
+  function setItemPlayer(index: number, playerId: string) {
+    const item = currentItems.value[index]
+    if (!item || (item.type !== 'audio' && item.type !== 'video')) return
+    currentItems.value = currentItems.value.map((entry, i) => {
+      if (i !== index) return entry
+      if (!playerId || playerId === 'default') {
+        const next = { ...entry }
+        delete next.playerId
+        return next
+      }
+      return { ...entry, playerId }
+    })
   }
 
   function saveItemDraft() {
@@ -683,7 +717,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     const next = [...currentItems.value]
     if (editingIndex.value != null) {
-      if (item.type !== 'category' && item.categoryId) {
+      const previous = next[editingIndex.value]
+      const movedToAnotherCategory =
+        item.type !== 'category' &&
+        Boolean(item.categoryId) &&
+        previous?.categoryId !== item.categoryId
+
+      if (movedToAnotherCategory && item.categoryId) {
         const without = next.filter((_, i) => i !== editingIndex.value)
         const insertAt = findCategoryInsertIndex(without, item.categoryId)
         without.splice(insertAt, 0, item)
@@ -806,6 +846,24 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     }
   }
 
+  /** Marca item de mídia como concluído ao tocar (não desmarca). */
+  function markItemDone(index: number) {
+    const target = currentItems.value[index]
+    if (!target || target.done || target.type === 'category') return
+    if (!isLiturgyMediaPlayType(target.type)) return
+
+    const next = currentItems.value.map((item, i) =>
+      i === index ? { ...item, done: true } : item,
+    )
+    currentItems.value = syncCategoryDoneFromChildren(next)
+
+    clearSelectionIfMatches((_, i) => i === index)
+    if (target.categoryId) {
+      const categoryId = target.categoryId
+      clearSelectionIfMatches((item) => item.id === categoryId && item.done)
+    }
+  }
+
   function reorderItems(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return
 
@@ -858,6 +916,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
+    if (result.ok) markItemDone(index)
   }
 
   /** Atualiza a duração de um item (ex.: vídeo local lido do arquivo no web). */
@@ -891,6 +950,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey.value = result.messageKey ?? null
     if (!result.ok) return false
 
+    markItemDone(index)
     await router.push({ name: 'media' })
     return true
   }
@@ -937,8 +997,10 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       if (state) {
         const toggled = await projection?.toggleVideoScreens?.()
         if (toggled) {
-          videoProjectionItemId.value = state.projecting ? null : item.id
+          const turningOn = !state.projecting
+          videoProjectionItemId.value = turningOn ? item.id : null
           lastActionMessageKey.value = null
+          if (turningOn) markItemDone(index)
           return
         }
       }
@@ -961,6 +1023,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
+    if (result.ok) markItemDone(index)
   }
 
   /** Encerra projeção web da liturgia (header global / sync). */
@@ -1257,6 +1320,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     openEditDialog,
     closeItemDialog,
     saveItemDraft,
+    setItemPlayer,
     removeItem,
     clearAllItems,
     toggleDeletionLock,

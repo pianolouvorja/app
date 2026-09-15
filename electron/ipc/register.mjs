@@ -24,6 +24,11 @@ import {
   writeWorkspaceRecord,
 } from '../workspace.mjs'
 import { ensureWorkspaceDirectories, getWorkspacePaths } from '../paths.mjs'
+import {
+  ensureSorteioDefaultAudio,
+  importSorteioCustomAudio,
+  deleteSorteioCustomAudio,
+} from '../sorteio-audio.mjs'
 import { writeWindowsMediaRootOverride } from '../windows-media-root.mjs'
 import {
   buildBackupFileName,
@@ -36,6 +41,20 @@ import {
 import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
+import {
+  detectInstalledPresentationEngines,
+  EXTERNAL_PRESENTATION_ENGINES,
+  openPresentationExternal,
+  setCustomPresentationApp,
+} from './presentation-external.mjs'
+import {
+  getExternalPlayerPreference,
+  setExternalPlayerPreference,
+  getCustomExternalPlayers,
+  removeCustomExternalPlayer,
+  playInExternalPlayer,
+  detectInstalledPlayers,
+} from '../external-player.mjs'
 import {
   hasPresentationOffice,
 } from './presentation-convert.mjs'
@@ -124,6 +143,45 @@ export function registerWorkspaceIpc() {
       return false
     }
   })
+
+  ipcMain.handle('presentation:detect-engines', () => detectInstalledPresentationEngines())
+
+  // Engine de apresentações: 'auto' (padrão Piano) até o usuário escolher outro.
+  ipcMain.handle('presentation:get-engine', () => {
+    try {
+      const rec = readWorkspaceRecord('ppt-engine')
+      const engine = rec?.engine
+      if (engine === 'auto' || EXTERNAL_PRESENTATION_ENGINES.includes(engine)) {
+        return engine
+      }
+      return 'auto'
+    } catch {
+      return 'auto'
+    }
+  })
+  ipcMain.handle('presentation:set-engine', (_event, engine) => {
+    if (engine !== 'auto' && !EXTERNAL_PRESENTATION_ENGINES.includes(engine)) {
+      return false
+    }
+    return writeWorkspaceRecord('ppt-engine', { engine })
+  })
+
+  // Abre a apresentação no aplicativo externo (PowerPoint/Impress) em
+  // modo slideshow — escolha explícita do usuário no item da liturgia.
+  ipcMain.handle('presentation:open-external', async (_event, filePath, engine) => {
+    try {
+      return await openPresentationExternal(String(filePath ?? ''), engine)
+    } catch (error) {
+      console.error('[ipc] presentation:open-external', error)
+      return { ok: false, error: 'unexpected' }
+    }
+  })
+
+  // App externo custom de apresentação (Keynote, OnlyOffice, WPS...)
+  ipcMain.handle(
+    'presentation:set-custom-app',
+    (_event, appPath) => setCustomPresentationApp(String(appPath ?? '')),
+  )
 
   // Player HTML avisou que o vídeo acabou → fecha projeção (autoclose).
   ipcMain.on('projection:video-ended', () => {
@@ -448,6 +506,51 @@ export function registerWorkspaceIpc() {
     }
   })
 
+  ipcMain.handle('random:ensure-default-audio', () => {
+    try {
+      const { media } = getWorkspacePaths()
+      const filePath = ensureSorteioDefaultAudio(media)
+      return { ok: true, relativePath: 'modulos/sorteios/sorteio-default-piano.mp3', filePath }
+    } catch (error) {
+      console.error('[ipc] random:ensure-default-audio', error)
+      return { ok: false }
+    }
+  })
+
+  ipcMain.handle('random:import-audio', async (event) => {
+    try {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: 'Escolher áudio do sorteio',
+        filters: [
+          {
+            name: 'Áudio',
+            extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'],
+          },
+        ],
+        properties: ['openFile'],
+      })
+      if (result.canceled || !result.filePaths?.[0]) {
+        return { ok: false, reason: 'cancelled' }
+      }
+      const { media } = getWorkspacePaths()
+      return importSorteioCustomAudio(media, result.filePaths[0])
+    } catch (error) {
+      console.error('[ipc] random:import-audio', error)
+      return { ok: false, reason: 'error' }
+    }
+  })
+
+  ipcMain.handle('random:delete-audio', (_event, fileName) => {
+    try {
+      const { media } = getWorkspacePaths()
+      return deleteSorteioCustomAudio(media, fileName)
+    } catch (error) {
+      console.error('[ipc] random:delete-audio', error)
+      return { ok: false, reason: 'error' }
+    }
+  })
+
   ipcMain.handle('catalog:download-database', async (event) => {
     try {
       return await downloadCatalogDatabase((data) => {
@@ -745,4 +848,18 @@ export function registerWorkspaceIpc() {
       return 0
     }
   })
+
+  // Player externo (app#177): preferência + play no player do usuário
+  ipcMain.handle('external-player:get', () => getExternalPlayerPreference())
+  ipcMain.handle('external-player:detect', () => detectInstalledPlayers())
+  ipcMain.handle('external-player:list-custom', () => getCustomExternalPlayers())
+  ipcMain.handle('external-player:set', (_event, player) =>
+    setExternalPlayerPreference(String(player ?? 'associated')),
+  )
+  ipcMain.handle('external-player:remove-custom', (_event, binPath) =>
+    removeCustomExternalPlayer(String(binPath ?? '')),
+  )
+  ipcMain.handle('external-player:play', async (_event, filePath, player) =>
+    playInExternalPlayer(String(filePath ?? ''), player),
+  )
 }

@@ -2,6 +2,7 @@ import { useBibleStore } from '@modules/bible/stores/useBibleStore'
 import { openMusicPlayer } from '@modules/media/services/open-music-player'
 import type { MediaPlaybackMode } from '@modules/media/types/media'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import type { ExternalPlayerPreference } from '@shared/types/desktop-bridge'
 import type { Router } from 'vue-router'
 
 import type { LiturgyItem } from '../types/liturgy'
@@ -22,8 +23,6 @@ import {
   playLiturgyLocalVideoOnScreens,
   playLiturgyWebOnConfiguredScreens,
 } from './liturgy-web-projection'
-import { palcoSession } from '../../settings/services/palco-session'
-
 export type LiturgyActionResult =
   | { ok: true; messageKey?: string }
   | { ok: false; messageKey: string }
@@ -144,6 +143,27 @@ export async function executeLiturgyItem(
         return { ok: false, messageKey: 'liturgy.messages.videoSelectFile' }
       }
 
+      // Player externo SÓ para áudio (Ezequias 13/09: "mp3 blz, não é preciso
+      // projetar"). Vídeo PRECISA do player interno: é ele que projeta nas
+      // telas — VLC/mpv não comandam a projeção.
+      const bridge = getDesktopBridge()
+      if (item.type === 'audio' && filePath && !objectUrl) {
+        let pref: string | undefined = item.playerId
+        if (!pref || pref === 'default') {
+          pref = await bridge?.externalPlayer?.get?.()
+        }
+        if (pref && pref !== 'associated') {
+          const result = await bridge?.externalPlayer?.play?.(
+            filePath,
+            pref as ExternalPlayerPreference,
+          )
+          if (result?.ok) {
+            return { ok: true }
+          }
+          // player não encontrado etc → cai no interno com snackbar padrão
+        }
+      }
+
       const fallbackLabel = item.type === 'audio' ? 'Áudio' : 'Vídeo'
       const opened = await openLiturgyLocalVideoControl(
         filePath || item.name?.trim() || fallbackLabel,
@@ -152,16 +172,6 @@ export async function executeLiturgyItem(
       )
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
-      }
-      // Áudio externo: espelha pra TODAS as TVs conectadas (rota mirror
-      // padrão do módulo liturgy). Projetor via cabo não recebe — não há
-      // imagem, só o som na TV.
-      if (item.type === 'audio' && filePath) {
-        void palcoSession.audioRouted({
-          url: filePath,
-          title: item.name?.trim() || undefined,
-          action: 'play',
-        })
       }
       return { ok: true }
     }
@@ -205,6 +215,26 @@ export async function executeLiturgyItem(
       }
 
       const bridge = getDesktopBridge()
+
+      // Engine efetivo: override explícito do item > global das Configurações.
+      // Explícito (powerpoint/libreoffice/custom) = APLICATIVO externo em
+      // modo slideshow (fidelidade total). 'auto' = conversão interna do app
+      // (projeção multi-tela).
+      let engine = item.presentationEngine
+      if (!engine) {
+        engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+      }
+      if (engine && engine !== 'auto') {
+        const result = await bridge?.presentation?.openExternal?.(
+          filePath,
+          engine,
+        )
+        if (!result?.ok) {
+          return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+        }
+        return { ok: true }
+      }
+
       const hasOffice = await bridge?.presentation?.detectOffice?.()
       if (hasOffice === false) {
         return {
@@ -216,6 +246,7 @@ export async function executeLiturgyItem(
       const opened = await openLiturgyLocalPresentationControl(
         filePath,
         item.name?.trim() || filePath,
+        item.presentationEngine,
       )
       if (!opened) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
@@ -259,7 +290,7 @@ export async function playLiturgyItemOnScreens(
     return openLiturgyMusicOnScreens(item)
   }
 
-  if (item.type === 'audio' || item.type === 'video') {
+  if (item.type === 'video') {
     const filePath = item.filePath?.trim()
     if (!filePath) {
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
@@ -270,14 +301,6 @@ export async function playLiturgyItemOnScreens(
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
-    }
-    // Áudio externo: espelha o som pra todas as TVs conectadas (mirror).
-    if (item.type === 'audio') {
-      void palcoSession.audioRouted({
-        url: filePath,
-        title: item.name?.trim() || undefined,
-        action: 'play',
-      })
     }
     return { ok: true }
   }
@@ -318,6 +341,23 @@ export async function playLiturgyItemOnScreens(
       return { ok: false, messageKey: 'liturgy.messages.mediaDesktopOnly' }
     }
     const bridge = getDesktopBridge()
+
+    // Engine efetivo: override do item > global (ver executeLiturgyItem).
+    let engine = item.presentationEngine
+    if (!engine) {
+      engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+    }
+    if (engine && engine !== 'auto') {
+      const result = await bridge?.presentation?.openExternal?.(
+        filePath,
+        engine,
+      )
+      if (!result?.ok) {
+        return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
+      }
+      return { ok: true }
+    }
+
     const hasOffice = await bridge?.presentation?.detectOffice?.()
     if (hasOffice === false) {
       return {
@@ -325,9 +365,11 @@ export async function playLiturgyItemOnScreens(
         messageKey: 'liturgy.messages.presentationOfficeMissing',
       }
     }
+    // Chegou aqui com engine 'auto' (interno): converte e projeta multi-tela.
     const ok = await playLiturgyLocalPresentationOnScreens(
       filePath,
       item.name?.trim() || filePath,
+      'auto',
     )
     if (!ok) {
       return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }

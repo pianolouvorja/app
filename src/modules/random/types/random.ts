@@ -4,12 +4,24 @@ export type RandomAnimationSpeed = 'fast' | 'normal' | 'slow'
 
 export type RandomTextTransform = 'none' | 'uppercase' | 'lowercase'
 
+export type RandomAudioSource = 'default' | 'custom'
+
 export interface RandomDisplayConfig {
   bgColor: string
   textColor: string
   fontSizePc: number
   textTransform: RandomTextTransform
   animationSpeed: RandomAnimationSpeed
+  /** Áudio padrão do sistema ou arquivo escolhido pelo usuário. */
+  audioSource: RandomAudioSource
+  /** Áudios personalizados em Media/modulos/sorteios (nomes de arquivo). */
+  customAudioFiles: string[]
+  /** Arquivo custom ativo (quando audioSource = custom). */
+  customAudioFile: string | null
+  /** Volume do áudio do sorteio (0–1). */
+  audioVolume: number
+  /** Mudo independente do volume. */
+  audioMuted: boolean
 }
 
 export interface RandomRuntimeState {
@@ -51,6 +63,11 @@ export const DEFAULT_RANDOM_DISPLAY_CONFIG: RandomDisplayConfig = {
   fontSizePc: 8,
   textTransform: 'none',
   animationSpeed: 'normal',
+  audioSource: 'default',
+  customAudioFiles: [],
+  customAudioFile: null,
+  audioVolume: 0.85,
+  audioMuted: false,
 }
 
 export const DEFAULT_RANDOM_RUNTIME: RandomRuntimeState = {
@@ -132,6 +149,10 @@ export const RANDOM_TEXT_PRESETS = [
   '#96CEB4',
   '#FFEAA7',
 ] as const
+
+export const RANDOM_DEFAULT_AUDIO_FILE = 'sorteio-default-piano.mp3'
+export const RANDOM_EFFECT_AUDIO_FILE = 'sorteio-efeito.mp3'
+export const RANDOM_AUDIO_REL_DIR = 'modulos/sorteios'
 
 /** Limite de nomes gerados por intervalo numérico. */
 export const RANDOM_MAX_RANGE_SIZE = 100_000

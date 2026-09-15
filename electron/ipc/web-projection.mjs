@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { convertPresentationToPdf } from './presentation-convert.mjs'
+import { readWorkspaceRecord, writeWorkspaceRecord } from '../workspace.mjs'
 import { getPalcoManager } from '../palco-server.mjs'
 import { addProjectionWindowProvider, ensureProjectionHotkey, releaseProjectionHotkey } from '../projection-hotkey.mjs'
 
@@ -462,11 +463,16 @@ function toLocalAppUrl(filePath) {
   return `local://app${encoded}`
 }
 
-function resolveLocalVideoPlayerUrl(filePath) {
+const AUDIO_FILE_EXT = /\.(mp3|m4a|aac|wav|ogg|flac|wma|opus)$/i
+
+function resolveLocalVideoPlayerUrl(filePath, title = '') {
   const mediaUrl = toLocalAppUrl(filePath)
-  if (!mediaUrl) return null
-  const playerUrl = new URL(pathToFileURL(LOCAL_VIDEO_PLAYER_HTML).href)
+  const playerPage = toLocalAppUrl(LOCAL_VIDEO_PLAYER_HTML)
+  if (!mediaUrl || !playerPage) return null
+  const playerUrl = new URL(playerPage)
   playerUrl.searchParams.set('src', mediaUrl)
+  if (title) playerUrl.searchParams.set('title', title)
+  if (AUDIO_FILE_EXT.test(filePath)) playerUrl.searchParams.set('audio', '1')
   return playerUrl.toString()
 }
 
@@ -509,6 +515,7 @@ function resolveSourceUrl(payload) {
 
   const filePath =
     typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
+  const title = typeof payload?.title === 'string' ? payload.title.trim() : ''
   if (filePath) {
     if (mode === 'pdf') {
       return resolveLocalPdfPlayerUrl(filePath)
@@ -516,7 +523,7 @@ function resolveSourceUrl(payload) {
     if (mode === 'presentation') {
       return resolveLocalPptPlayerUrl(filePath)
     }
-    return resolveLocalVideoPlayerUrl(filePath)
+    return resolveLocalVideoPlayerUrl(filePath, title)
   }
 
   const url = typeof payload?.url === 'string' ? payload.url.trim() : ''
@@ -535,7 +542,7 @@ function resolveSourceUrl(payload) {
       if (process.platform === 'win32' && absolute.match(/^\/[a-zA-Z]:\//)) {
         absolute = absolute.slice(1)
       }
-      return resolveLocalVideoPlayerUrl(absolute)
+      return resolveLocalVideoPlayerUrl(absolute, title)
     }
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
     return parsed.toString()
@@ -725,6 +732,12 @@ function createSourceWindow(loadUrl, title) {
 
   const win = new BrowserWindow(options)
   win.setTitle(title || SOURCE_WINDOW_TITLE)
+  // O <title> do player HTML sobrescreve o título no load — trava no nome do
+  // item (ex: 'Casamento — apresentação') em vez de 'PDF — LouvorJA'.
+  win.webContents.on('page-title-updated', (event) => {
+    event.preventDefault()
+    win.setTitle(title || SOURCE_WINDOW_TITLE)
+  })
   win.setMinimumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
   win.setMaximumSize(CONTROL_WIDTH, CONTROL_HEIGHT)
   win.setResizable(false)
@@ -1609,15 +1622,11 @@ function resolveExtendedTargets(monitorIds) {
 
   /** @type {import('electron').Display[]} */
   const targets = []
-  if (ids.length > 0) {
-    for (const id of ids) {
-      const display = displays.find((item) => item.id === id && item.id !== primaryId)
-      if (display) targets.push(display)
-    }
-    return targets
+  for (const id of ids) {
+    const display = displays.find((item) => item.id === id && item.id !== primaryId)
+    if (display) targets.push(display)
   }
-
-  return displays.filter((item) => item.id !== primaryId)
+  return targets
 }
 
 function openSiteScreensOnTargets(loadUrl, targets) {
@@ -1645,21 +1654,69 @@ export async function openWebProjectionWindows(payload) {
     typeof effective.title === 'string' ? effective.title.trim() : ''
 
   if (input.mode === 'presentation') {
-    const filePath =
-      typeof input.filePath === 'string' ? input.filePath.trim() : ''
-    if (!filePath) return false
-    try {
-      const pdfPath = await convertPresentationToPdf(filePath)
-      effective = {
-        ...input,
-        filePath: pdfPath,
-        // Player PDF; título/controles mantêm modo presentation.
-        __presentationPdf: true,
+      const filePath =
+        typeof input.filePath === 'string' ? input.filePath.trim() : ''
+      if (!filePath) return false
+
+      // Engine: payload do item (escolha no dialog da liturgia) sobrepõe o
+      // setting global. PowerPoint exporta PNGs pixel-perfect (LibreOffice
+      // quebra formatação); PNGs alimentam o player de imagens (multi-tela).
+      let preference = 'auto'
+      if (
+        input.presentationEngine === 'powerpoint' ||
+        input.presentationEngine === 'libreoffice'
+      ) {
+        preference = input.presentationEngine
+      } else {
+        try {
+          const rec = readWorkspaceRecord('ppt-engine')
+          if (rec?.engine === 'powerpoint' || rec?.engine === 'libreoffice') {
+            preference = rec.engine
+          }
+        } catch { /* default auto */ }
       }
-    } catch (error) {
-      console.error('[projection] presentation convert', error)
-      return false
-    }
+
+      try {
+        const { resolvePresentationEngine, exportPptxToPngs } = await import(
+          './presentation-powerpoint.mjs'
+        )
+        let usedEngine = 'libreoffice'
+        try {
+          const { engine } = resolvePresentationEngine(preference)
+          usedEngine = engine
+        } catch (engineError) {
+          // powerpoint pedida mas não instalada → fallback com aviso no log
+          console.error('[projection] engine pedido indisponível:', engineError.message)
+        }
+
+        if (usedEngine === 'powerpoint') {
+          try {
+            const pngs = await exportPptxToPngs(filePath)
+            effective = {
+              ...input,
+              mode: 'image',
+              filePaths: pngs,
+              __presentationEngine: 'powerpoint',
+            }
+          } catch (exportError) {
+            console.error('[projection] export PowerPoint falhou, cai p/ LibreOffice:', exportError.message)
+            usedEngine = 'libreoffice'
+          }
+        }
+
+        if (usedEngine === 'libreoffice') {
+          const pdfPath = await convertPresentationToPdf(filePath)
+          effective = {
+            ...input,
+            filePath: pdfPath,
+            // Player PDF; título/controles mantêm modo presentation.
+            __presentationPdf: true,
+          }
+        }
+      } catch (error) {
+        console.error('[projection] presentation convert', error)
+        return false
+      }
   }
 
   const loadUrl =
@@ -1928,8 +1985,8 @@ const GET_PLAYBACK_STATE_SCRIPT = `
   const volume = Math.min(1, Math.max(0, Number(video.volume) || 0));
   return {
     paused: Boolean(video.paused),
-    currentTime: Number(video.currentTime) || 0,
-    duration: Number(video.duration) || 0,
+    currentTime: Number.isFinite(Number(video.currentTime)) ? Number(video.currentTime) : 0,
+    duration: Number.isFinite(Number(video.duration)) ? Number(video.duration) : 0,
     muted: Boolean(video.muted) || volume === 0,
     volume,
   };
