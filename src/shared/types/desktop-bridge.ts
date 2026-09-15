@@ -376,6 +376,24 @@ export type ZoomApi = {
   onChanged: (callback: (payload: ZoomChangedPayload) => void) => () => void
 }
 
+export type RandomAudioApi = {
+  ensureDefaultAudio: () => Promise<{
+    ok: boolean
+    relativePath?: string
+    filePath?: string
+  }>
+  importAudio: () => Promise<{
+    ok: boolean
+    fileName?: string
+    relativePath?: string
+    reason?: string
+  }>
+  deleteAudio: (fileName: string) => Promise<{
+    ok: boolean
+    reason?: string
+  }>
+}
+
 export type LouvorJaBridge = {
   platform: string
   isElectron: boolean
@@ -396,4 +414,5 @@ export type LouvorJaBridge = {
   presentation?: PresentationApi
   projection: ProjectionApi
   remote?: RemoteApi
+  random?: RandomAudioApi
 }

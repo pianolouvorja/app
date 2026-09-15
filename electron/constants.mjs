@@ -17,6 +17,9 @@ export const WORKSPACE_DIRS = {
   covers: 'covers',
   music: 'music',
   images: 'images',
+  /** Mídias de módulos utilitários (ex.: áudio do sorteio). */
+  modulos: 'modulos',
+  sorteios: 'sorteios',
 }
 
 /** Arquivo SQLite temporário (legado FTP — não usado no first-boot HTTP). */

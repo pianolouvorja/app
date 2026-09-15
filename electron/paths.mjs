@@ -8,6 +8,7 @@ import {
   TEMP_DATABASE_FILE,
   WORKSPACE_DIRS,
 } from './constants.mjs'
+import { ensureSorteioDefaultAudio } from './sorteio-audio.mjs'
 import { resolveMediaRoot } from './windows-media-root.mjs'
 
 /**
@@ -18,6 +19,8 @@ import { resolveMediaRoot } from './windows-media-root.mjs'
  * @property {string} covers
  * @property {string} music
  * @property {string} images
+ * @property {string} modulos
+ * @property {string} sorteios
  * @property {string} tempDatabase
  * @property {string} downloadCompleteFlag
  */
@@ -28,6 +31,7 @@ import { resolveMediaRoot } from './windows-media-root.mjs'
 export function getWorkspacePaths() {
   const root = app.getPath('userData')
   const media = resolveMediaRoot(root)
+  const modulos = path.join(media, WORKSPACE_DIRS.modulos)
 
   return {
     root,
@@ -36,6 +40,8 @@ export function getWorkspacePaths() {
     covers: path.join(media, WORKSPACE_DIRS.covers),
     music: path.join(media, WORKSPACE_DIRS.music),
     images: path.join(media, WORKSPACE_DIRS.images),
+    modulos,
+    sorteios: path.join(modulos, WORKSPACE_DIRS.sorteios),
     tempDatabase: path.join(root, TEMP_DATABASE_FILE),
     downloadCompleteFlag: path.join(root, DB_DOWNLOAD_COMPLETE_FLAG),
   }
@@ -51,7 +57,7 @@ function ensureDir(dir) {
 }
 
 /**
- * Cria a árvore `.sysdata` + `Media/{covers,music,images}` em userData.
+ * Cria a árvore `.sysdata` + `Media/{covers,music,images,modulos/sorteios}` em userData.
  */
 export function ensureWorkspaceDirectories() {
   const paths = getWorkspacePaths()
@@ -65,7 +71,18 @@ export function ensureWorkspaceDirectories() {
     }
   }
 
-  ;[paths.sysdata, paths.media, paths.covers, paths.music, paths.images].forEach(ensureDir)
+  ;[
+    paths.sysdata,
+    paths.media,
+    paths.covers,
+    paths.music,
+    paths.images,
+    paths.modulos,
+    paths.sorteios,
+  ].forEach(ensureDir)
+
+  ensureSorteioDefaultAudio(paths.media)
+
   return paths
 }
 

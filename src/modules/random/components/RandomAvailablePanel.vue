@@ -210,7 +210,7 @@ function onFileChange(event: Event) {
   display: flex;
   width: 18rem;
   max-width: 100%;
-  max-height: min(70vh, 36rem);
+  max-height: none;
   flex-direction: column;
   overflow: hidden;
   padding: 1.25rem;
@@ -251,6 +251,7 @@ function onFileChange(event: Event) {
   display: flex;
   width: 100%;
   min-width: 0;
+  flex-shrink: 0;
   flex-direction: column;
   gap: 0.75rem;
   margin-bottom: 1rem;
@@ -386,15 +387,15 @@ function onFileChange(event: Event) {
 }
 
 .random-available__list-wrap {
-  flex: 1;
-  min-height: 10rem;
+  flex: 1 1 auto;
+  min-height: 12rem;
   overflow: hidden;
   mask-image: linear-gradient(to bottom, transparent, black 8%, black 92%, transparent);
 }
 
 .random-available__list {
   height: 100%;
-  max-height: 16rem;
+  max-height: none;
   margin: 0;
   padding: 0.5rem 0.25rem;
   overflow-y: auto;
@@ -462,6 +463,7 @@ function onFileChange(event: Event) {
 
 .random-available__clear {
   margin-top: 1rem;
+  flex-shrink: 0;
   border: 0;
   background: transparent;
   color: var(--ds-color-on-surface-variant);
