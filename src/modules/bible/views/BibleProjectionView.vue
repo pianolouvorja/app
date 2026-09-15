@@ -15,6 +15,14 @@ import { readEffectiveStageSettings, subscribeStageSettings } from '../../settin
 import type { StageSettings } from '../../settings/types/stage-settings'
 import { resolveBackgroundImage, stageFlexAlign } from '../../settings/types/stage-settings'
 
+const props = withDefaults(
+  defineProps<{
+    /** Preview embutido no app (não usa 100vw/100vh da popup). */
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
 const runtime = ref<BibleProjectionRuntime>({ ...DEFAULT_BIBLE_RUNTIME })
 let runtimeChannel: BroadcastChannel | null = null
 
@@ -139,6 +147,7 @@ const referenceStyle = computed(() => ({
 <template>
   <ProjectionBackground
     class="bible-projection"
+    :class="{ 'bible-projection--embedded': embedded }"
     :style="stageStyle"
   >
     <div
@@ -186,6 +195,11 @@ const referenceStyle = computed(() => ({
   overflow: hidden;
   /* container p/ unidades cqw do stage-settings (font-size proporcional) */
   container-type: size;
+
+  &--embedded {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .bible-projection__stage {
@@ -195,7 +209,8 @@ const referenceStyle = computed(() => ({
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: clamp(1.5rem, 6vmin, 4rem);
+  /* Margens mínimas — o versículo usa quase toda a projeção. */
+  padding: clamp(0.75rem, 2.5vmin, 1.75rem) clamp(0.5rem, 1.5vmin, 1rem);
 }
 
 .bible-projection__content {
@@ -203,15 +218,14 @@ const referenceStyle = computed(() => ({
   flex-direction: column;
   gap: 0.6em;
   width: 100%;
-  // Bíblia pede linha mais longa que hinos: retangular, não quadrada.
-  max-width: min(92rem, 92%);
+  max-width: 100%;
 }
 
 .bible-projection__text {
   margin: 0;
   color: #fff;
   /* tamanho/peso/cor vêm do Palco via verseStyle (inline) */
-  line-height: 1.45;
+  line-height: 1.4;
   text-align: center;
   text-shadow: 0 1px 4px rgb(0 0 0 / 0.7);
   white-space: pre-wrap;

@@ -32,6 +32,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate SHA256SUMS and upload to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd dist-electron
+          find . -maxdepth 1 -type f -name '*.exe' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS-win-x64
+          cat SHA256SUMS-win-x64
+          if [ -n "$TAG" ]; then
+            gh release upload "$TAG" SHA256SUMS-win-x64 --clobber
+          fi
+
       - name: Upload x64 installer (artifact backup)
         uses: actions/upload-artifact@v4
         with:
@@ -39,5 +53,6 @@ jobs:
           path: |
             dist-electron/*Setup*.exe
             dist-electron/*.exe
+            dist-electron/SHA256SUMS-win-x64
           if-no-files-found: warn
           retention-days: 30

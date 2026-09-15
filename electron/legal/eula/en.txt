@@ -2,7 +2,7 @@
 
 LouvorJA Piano — Hymn Projection Software
 
-Version: 1.0 | Date: August 7, 2026
+Version: 2.0 | Date: September 12, 2026 (v2.0)
 
 
 1. Acceptance of License
@@ -77,20 +77,22 @@ The User acknowledges that the Software is free and open source, and that the Li
 
 8. Privacy
 
-The Software DOES NOT COLLECT, STORE, OR TRANSMIT personal data of the User.
+The Software does not collect, store, or transmit personal data of the User to Licensor servers.
 
 Explicit declaration:
 
-- No login/user account: The Software does not require registration, email, name, or identification.
+- Optional login (Google/YouTube): The User MAY optionally connect their Google/YouTube account to play videos without ads (YouTube Premium subscribers). This is an opt-in feature: without it, the Software works fully. Session data from this connection (cookies) is stored EXCLUSIVELY on the local device (Electron userData) and is never sent to Licensor servers. The User may revoke it at any time via "Sign out" in Settings, which removes 100% of session data from the device.
+- Optional collection account: community collection features may require an account (display name, email and password). Unlike the YouTube login, THIS data is stored on Licensor servers, exclusively for authentication and content authorship — never shared with third parties nor used for advertising. The User may request deletion of the account and associated data; published collections may be kept anonymously or removed, at the User's discretion.
 - No telemetry: The Software does not send usage data, statistics, or analytics to servers.
 - No tracking cookies: The Software does not use tracking cookies.
 - Local data: User preferences (language, theme, projection settings) are stored exclusively on the local device (browser storage / Electron userData).
 - Catalog cache: The Software downloads a hymn catalog (JSON) from the LouvorJA API and stores it in local cache for offline operation. This catalog contains no personal data.
 
-The only network communication performed by the Software is:
+Network communications performed by the Software are:
 
-1. LouvorJA API: Request for hymn catalog (public JSON, no personal authentication).
+1. LouvorJA API: Hymn catalog requests and community collection operations (authenticated when the User opts to use them).
 2. YouTube embed: Loading videos for projection (responsibility of Google/YouTube).
+3. Google/YouTube (optional): User account authentication when the ad-free playback login is enabled — data flows only between the User's device and Google.
 
 
 9. Third-Party Services

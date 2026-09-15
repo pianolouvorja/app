@@ -8,7 +8,13 @@ import { usePageTransition } from '@design-system/composables'
 import { DockFooter, GradientBackground } from '@design-system/index'
 import type { DockNavItem } from '@design-system/types/navigation'
 import { useBibleStore } from '@modules/bible/stores/useBibleStore'
+import BibleInAppProjection from '@modules/bible/components/BibleInAppProjection.vue'
+import ClockProjectionView from '@modules/clock/views/ClockProjectionView.vue'
 import { useClockStore } from '@modules/clock/stores/useClockStore'
+import CountdownProjectionView from '@modules/countdown/views/CountdownProjectionView.vue'
+import RandomProjectionView from '@modules/random/views/RandomProjectionView.vue'
+import TimerProjectionView from '@modules/timer/views/TimerProjectionView.vue'
+import InAppProjectionOverlay from '@shared/components/InAppProjectionOverlay.vue'
 import { useCountdownStore } from '@modules/countdown/stores/useCountdownStore'
 import { useLiturgyStore } from '@modules/liturgy/stores/useLiturgyStore'
 import MediaChrome from '@modules/media/components/MediaChrome.vue'
@@ -42,20 +48,35 @@ const {
 } = useMediaPlayer()
 
 const bibleStore = useBibleStore()
-const { isProjecting: isBibleProjecting, projection: bibleProjection } =
-  storeToRefs(bibleStore)
+const {
+  isProjecting: isBibleProjecting,
+  projection: bibleProjection,
+  inAppPreview: bibleInAppPreview,
+} = storeToRefs(bibleStore)
 
 const randomStore = useRandomStore()
-const { isProjecting: isRandomProjecting } = storeToRefs(randomStore)
+const {
+  isProjecting: isRandomProjecting,
+  inAppPreview: randomInAppPreview,
+} = storeToRefs(randomStore)
 
 const timerStore = useTimerStore()
-const { isProjecting: isTimerProjecting } = storeToRefs(timerStore)
+const {
+  isProjecting: isTimerProjecting,
+  inAppPreview: timerInAppPreview,
+} = storeToRefs(timerStore)
 
 const countdownStore = useCountdownStore()
-const { isProjecting: isCountdownProjecting } = storeToRefs(countdownStore)
+const {
+  isProjecting: isCountdownProjecting,
+  inAppPreview: countdownInAppPreview,
+} = storeToRefs(countdownStore)
 
 const clockStore = useClockStore()
-const { isProjecting: isClockProjecting } = storeToRefs(clockStore)
+const {
+  isProjecting: isClockProjecting,
+  inAppPreview: clockInAppPreview,
+} = storeToRefs(clockStore)
 
 const liturgyStore = useLiturgyStore()
 const {
@@ -396,6 +417,55 @@ function viewKey(viewRoute: typeof route) {
 
     <MediaChrome />
 
+    <BibleInAppProjection
+      v-if="bibleInAppPreview"
+      @close="bibleStore.clearProjectionWindow"
+    />
+
+    <InAppProjectionOverlay
+      v-if="randomInAppPreview"
+      scope="random"
+      :label="t('random.inAppProjection')"
+      :close-label="t('random.close')"
+      :hint="t('random.projectionHotkeyHint')"
+      @close="randomStore.clearProjection"
+    >
+      <RandomProjectionView embedded />
+    </InAppProjectionOverlay>
+
+    <InAppProjectionOverlay
+      v-if="timerInAppPreview"
+      scope="timer"
+      :label="t('timer.inAppProjection')"
+      :close-label="t('timer.close')"
+      :hint="t('timer.projectionHotkeyHint')"
+      @close="timerStore.clearProjection"
+    >
+      <TimerProjectionView embedded />
+    </InAppProjectionOverlay>
+
+    <InAppProjectionOverlay
+      v-if="countdownInAppPreview"
+      scope="countdown"
+      :label="t('countdown.inAppProjection')"
+      :close-label="t('countdown.close')"
+      :hint="t('countdown.projectionHotkeyHint')"
+      @close="countdownStore.clearProjection"
+    >
+      <CountdownProjectionView embedded />
+    </InAppProjectionOverlay>
+
+    <InAppProjectionOverlay
+      v-if="clockInAppPreview"
+      scope="clock"
+      :label="t('clock.inAppProjection')"
+      :close-label="t('clock.close')"
+      :hint="t('clock.projectionHotkeyHint')"
+      @close="clockStore.clearProjection"
+    >
+      <ClockProjectionView embedded />
+    </InAppProjectionOverlay>
+
     <DockFooter
       :items="navItems"
       :active-key="activeKey"
@@ -406,10 +476,19 @@ function viewKey(viewRoute: typeof route) {
 
 <style scoped lang="scss">
 .app-shell {
-  min-height: 100%;
-  /* Uma ÚNICA barra de rolagem: o body não rola — só o main rola
-      (header fixo por cima). Evita scrollbar dupla (26/08). */
-  height: calc(100vh / var(--ui-zoom, 1));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell :deep(.ds-gradient-bg__content) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -417,15 +496,10 @@ function viewKey(viewRoute: typeof route) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   height: var(--ds-header-height, 5rem);
   padding: 0 var(--ds-spacing-page);
   border-bottom: 1px solid var(--ds-color-outline);
-  /* Fixo no topo: o conteúdo rola embaixo, o header nunca sobe
-     (pedido 26/08 — header acompanhava o scroll da página). */
-  position: fixed;
-  top: var(--app-titlebar-height, 0px);
-  left: 0;
-  right: 0;
   background: var(--ds-color-surface, #10131a);
   z-index: 40;
 }
@@ -568,14 +642,19 @@ function viewKey(viewRoute: typeof route) {
 .app-shell__main {
   position: relative;
   z-index: 1;
-  /* Header fixo: main começa abaixo dele e rola SOZINHO. */
-  margin-top: calc(var(--app-titlebar-height, 0px) + var(--ds-header-height, 5rem));
-  height: calc(
-    100vh / var(--ui-zoom, 1) - var(--app-titlebar-height, 0px) -
-      var(--ds-header-height, 5rem)
-  );
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
   padding-bottom: var(--ds-dock-height);
+
+  /* View ativa (RouterView não cria wrapper) preenche a área útil. */
+  > * {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+  }
 }
 
 /* Desktop médio / 1024×768: chrome mais compacto */

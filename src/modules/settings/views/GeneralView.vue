@@ -315,6 +315,8 @@ async function clearAllLocalData() {
     <!-- Importação de mídia do Louvor JA legado (somente Windows) -->
     <LegacyMediaImportCard />
 
+    <!-- YouTube: agora na aba Mídia & Player (junto dos demais players) -->
+
     <!-- Pasta de mídia compartilhada (somente Windows, junto da importação) -->
     <MediaFolderCard />
 

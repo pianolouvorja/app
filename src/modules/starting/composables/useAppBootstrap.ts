@@ -3,11 +3,11 @@ import { onMounted, onUnmounted } from 'vue'
 
 import { useStartingStore } from '@modules/starting/stores/useStartingStore'
 import {
-  downloadAndExtractCatalog,
   isBootstrapComplete,
   mapBootstrapError,
   markBootstrapComplete,
   prepareFreshInstall,
+  syncEssentialCatalogFromApi,
   syncRemoteConfig,
 } from '@modules/starting/services/bootstrap-service'
 import {
@@ -102,18 +102,11 @@ export function useAppBootstrap() {
     store.setStatus('starting.status.downloading')
     store.setProgress(0)
 
-    await downloadAndExtractCatalog(
-      (value) => {
-        store.phase = 'downloading'
-        store.setStatus('starting.status.downloading')
-        store.setProgress(value)
-      },
-      (value) => {
-        store.phase = 'extracting'
-        store.setStatus('starting.status.extracting')
-        store.setProgress(value)
-      },
-    )
+    await syncEssentialCatalogFromApi((value) => {
+      store.phase = 'downloading'
+      store.setStatus('starting.status.downloading')
+      store.setProgress(value)
+    })
 
     store.phase = 'syncing-covers'
     store.setStatus('starting.status.syncingCovers')

@@ -22,6 +22,7 @@ import {
   type WeekdayNotes,
   type WeekdaySessionTimes,
 } from '../types/liturgy'
+import { normalizeLiturgyTimeHHmm } from './liturgy-format'
 import {
   clearDoneFlags,
   clampMomentDurationMs,
@@ -75,11 +76,11 @@ function normalizeItem(raw: unknown): LiturgyItem | null {
       type === 'category' ? null : asString(source.categoryId) || null,
     startTime:
       type === 'category'
-        ? normalizeTimeHHmm(source.startTime)
+        ? normalizeLiturgyTimeHHmm(source.startTime)
         : null,
     endTime:
       type === 'category'
-        ? normalizeTimeHHmm(source.endTime)
+        ? normalizeLiturgyTimeHHmm(source.endTime)
         : null,
     complementaryTitle: asString(source.complementaryTitle).trim() || undefined,
     notes: asString(source.notes).trim() || undefined,
@@ -121,20 +122,7 @@ function normalizeWeekdays(raw: unknown): WeekdayLiturgies {
 }
 
 function normalizeTimeHHmm(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null
-  const match = raw.trim().match(/^(\d{1,2}):(\d{2})$/)
-  if (!match) return null
-  const hours = Number(match[1])
-  const minutes = Number(match[2])
-  if (
-    !Number.isFinite(hours) ||
-    !Number.isFinite(minutes) ||
-    hours > 23 ||
-    minutes > 59
-  ) {
-    return null
-  }
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  return normalizeLiturgyTimeHHmm(raw)
 }
 
 function normalizeSessionTimes(raw: unknown): LiturgySessionTimes {

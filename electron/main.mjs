@@ -23,6 +23,9 @@ import { buildProjectionWindowBounds } from "./projection-display.mjs";
 import { initUpdater } from "./updater.mjs";
 import { loadWindowState, trackWindowState } from "./window-state.mjs";
 import { registerYoutubeEmbedHeaders } from "./youtube-embed.mjs";
+import { registerYoutubeAuthIpc } from "./youtube-auth.mjs";
+import { registerAdblockerIpc } from "./youtube-adblock.mjs";
+import { readWorkspaceRecord, writeWorkspaceRecord } from "./workspace.mjs";
 import { registerTunnelCorpBypass } from "./tunnel-corp-bypass.mjs";
 import {
   initProjectionHotkey,
@@ -571,8 +574,28 @@ function createWindow(locale = 'pt-BR') {
 	});
 
 	// Fallback: se a janela principal falhar ao carregar, mostra erro e fecha o splash
-	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+	let abortedRetries = 0;
+	mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
 		console.error(`[main] falha ao carregar: code=${errorCode} desc=${errorDescription}`);
+		// -3 (ABORTED) é transitório — Vite recompilando durante o load.
+		// Máximo 3 retries com backoff: loadURL novo aborta o anterior e cada
+		// aborto dispara did-fail-load de novo — sem teto, vira loop infinito
+		// de tela preta (relato 12/09).
+		if (isMainFrame && errorCode === -3 && abortedRetries < 3) {
+			abortedRetries += 1;
+			const delay = 800 * abortedRetries;
+			setTimeout(() => {
+				if (mainWindow && !mainWindow.isDestroyed()) {
+					console.error(`[main] retry ${abortedRetries}/3 do load após ABORTED`);
+					if (isDev && VITE_DEV_SERVER_URL) {
+						void mainWindow.loadURL(`${VITE_DEV_SERVER_URL}/?lang=${locale}`);
+					} else {
+						void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"), { query: { lang: locale } });
+					}
+				}
+			}, delay);
+			return;
+		}
 		closeSplash();
 		if (!mainWindow || mainWindow.isDestroyed()) return;
 		dialog.showMessageBoxSync(mainWindow, {
@@ -614,6 +637,15 @@ app.whenReady().then(async () => {
 		registerWindowIpc(() => mainWindow);
 		registerLocalFileProtocol();
 		registerYoutubeEmbedHeaders();
+		registerYoutubeAuthIpc();
+		// adblock YouTube (opt-in): estado persistido em workspace record
+		registerAdblockerIpc(
+			(enabled) => writeWorkspaceRecord("yt-adblock.json", { enabled }),
+			() => {
+				const rec = readWorkspaceRecord("yt-adblock.json");
+				return rec?.enabled === true;
+			},
+		);
 		registerTunnelCorpBypass();
 		createWindow(locale);
 		bootMark("mainWindow");

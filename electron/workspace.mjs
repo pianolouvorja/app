@@ -1,4 +1,3 @@
-import { Client } from 'basic-ftp'
 import {
   existsSync,
   mkdirSync,
@@ -6,15 +5,12 @@ import {
   writeFileSync,
   readFileSync,
   rmSync,
-  statSync,
 } from 'node:fs'
 import path from 'node:path'
 import { net } from 'electron'
 
 import { API_BASE_URL } from './constants.mjs'
 import { obfuscateText, revealText } from './crypto.mjs'
-import { getFtpParams } from './ftp.mjs'
-import { CatalogExtractor } from './catalog-extractor.mjs'
 import {
   ensureWorkspaceDirectories,
   getWorkspacePaths,
@@ -107,85 +103,23 @@ export function clearWorkspaceData(options = {}) {
 }
 
 /**
- * @param {(data: { progress: number }) => void} onProgress
+ * Legado FTP/SQLite removido — first-boot usa sync HTTP (`syncEssentialCatalogFromApi`).
+ * Mantido para não quebrar IPC antigo; sempre falha de propósito.
+ * @param {(data: { progress: number }) => void} _onProgress
  */
-export async function downloadCatalogDatabase(onProgress) {
-  const { tempDatabase, downloadCompleteFlag } = getWorkspacePaths()
-
-  if (existsSync(downloadCompleteFlag) && existsSync(tempDatabase)) {
-    console.log('[catalog] banco já baixado completamente — pulando FTP')
-    onProgress({ progress: 100 })
-    return true
-  }
-
-  const ftpParams = await getFtpParams()
-  const client = new Client()
-
-  try {
-    await client.access({
-      host: ftpParams.host,
-      user: ftpParams.username,
-      password: ftpParams.password,
-      port: Number.parseInt(ftpParams.port || '21', 10),
-      secure: false,
-    })
-
-    const langPrefix = (ftpParams.lang || 'pt').toLowerCase()
-    const root = ftpParams.root || '/'
-    const remotePath = `${root}${root.endsWith('/') ? '' : '/'}config/${langPrefix}_database.db`
-
-    // Check de tamanho secundário: retomada/overwrite quando a flag não existe
-    let size = 0
-    try {
-      size = await client.size(remotePath)
-    } catch (error) {
-      console.warn('[catalog] não foi possível obter tamanho FTP', error)
-    }
-
-    if (size > 0 && existsSync(tempDatabase)) {
-      const localStat = statSync(tempDatabase)
-      if (localStat.size === size) {
-        console.log('[catalog] banco local completo — pulando download e gravando flag')
-        writeFileSync(downloadCompleteFlag, '1')
-        onProgress({ progress: 100 })
-        return true
-      }
-    }
-
-    client.trackProgress((info) => {
-      if (size > 0) {
-        onProgress({ progress: Math.floor((info.bytesOverall / size) * 100) })
-      }
-    })
-
-    await client.downloadTo(tempDatabase, remotePath)
-    writeFileSync(downloadCompleteFlag, '1')
-    return true
-  } finally {
-    client.close()
-  }
+export async function downloadCatalogDatabase(_onProgress) {
+  throw new Error(
+    'catalog FTP removido — use sync HTTP da API Piano (/json_db)',
+  )
 }
 
 /**
- * @param {(data: { text: string, progress: number }) => void} onProgress
+ * @param {(data: { text: string, progress: number }) => void} _onProgress
  */
-export async function extractCatalogDatabase(onProgress) {
-  const { tempDatabase, downloadCompleteFlag } = getWorkspacePaths()
-  if (!existsSync(tempDatabase)) {
-    throw new Error(`Arquivo não encontrado em: ${tempDatabase}`)
-  }
-
-  const extractor = new CatalogExtractor(tempDatabase)
-  await extractor.extract(onProgress)
-
-  try {
-    unlinkSync(tempDatabase)
-    if (existsSync(downloadCompleteFlag)) unlinkSync(downloadCompleteFlag)
-  } catch (error) {
-    console.error('[catalog] erro ao excluir database.db após extração', error)
-  }
-
-  return true
+export async function extractCatalogDatabase(_onProgress) {
+  throw new Error(
+    'extração SQLite removida — use sync HTTP da API Piano (/json_db)',
+  )
 }
 
 /**
@@ -201,53 +135,6 @@ function buildApiMediaUrl(mediaType, filename) {
   return `${API_BASE_URL}/file/${urlFolder}/${encodeURIComponent(cleanFilename).replace(/%2F/g, '/')}`
 }
 
-/** @type {boolean} */
-let useFtpFallback = false
-/** @type {ReturnType<typeof setTimeout> | null} */
-let ftpFallbackTimer = null
-
-function resetFtpFallbackTimer() {
-  if (ftpFallbackTimer) clearTimeout(ftpFallbackTimer)
-  ftpFallbackTimer = setTimeout(() => {
-    useFtpFallback = false
-  }, 120_000)
-}
-
-/**
- * @param {'covers' | 'music' | 'slides'} mediaType
- * @param {string} filename
- * @param {string} filePath
- */
-async function downloadMediaViaFtp(mediaType, filename, filePath) {
-  const ftpParams = await getFtpParams()
-
-  let ftpFolder = 'config/capas'
-  if (mediaType === 'music') ftpFolder = 'config/musicas'
-  else if (mediaType === 'slides') ftpFolder = 'config/imagens'
-
-  let cleanFilename = filename
-  if (cleanFilename.startsWith('pt/') || cleanFilename.startsWith('es/')) {
-    cleanFilename = cleanFilename.slice(3)
-  }
-
-  const root = ftpParams.root || '/'
-  const remotePath = `${root}${root.endsWith('/') ? '' : '/'}${ftpFolder}/${cleanFilename}`
-
-  const client = new Client(12_000)
-  try {
-    await client.access({
-      host: ftpParams.host,
-      user: ftpParams.username,
-      password: ftpParams.password,
-      port: Number.parseInt(ftpParams.port || '21', 10),
-      secure: false,
-    })
-    await client.downloadTo(filePath, remotePath)
-  } finally {
-    client.close()
-  }
-}
-
 /**
  * @param {string} _url
  * @param {'covers' | 'music' | 'slides'} mediaType
@@ -258,31 +145,14 @@ export async function downloadMediaFile(_url, mediaType, filename) {
 
   /** @returns {Promise<boolean>} */
   const run = async () => {
-    await getFtpParams().catch((error) => {
-      console.warn('[media] pré-fetch FTP falhou:', error.message)
-    })
-
+    // Só HTTP na API Piano (`API_BASE_URL/file/...`). Sem FTP legado.
     const destFolder = resolveMediaDirectory(mediaType)
     const decodedFilename = decodeURIComponent(filename)
     const filePath = path.join(destFolder, decodedFilename)
     mkdirSync(path.dirname(filePath), { recursive: true })
 
-    if (useFtpFallback) {
-      resetFtpFallbackTimer()
-      await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
-      return true
-    }
-
     const apiUrl = buildApiMediaUrl(mediaType, decodedFilename)
     const response = await net.fetch(apiUrl)
-
-    if (response.status === 429) {
-      useFtpFallback = true
-      resetFtpFallbackTimer()
-      await downloadMediaViaFtp(mediaType, decodedFilename, filePath)
-      return true
-    }
-
     if (!response.ok) return false
 
     const buffer = Buffer.from(await response.arrayBuffer())
@@ -305,8 +175,6 @@ export async function downloadMediaFile(_url, mediaType, filename) {
     ])
   } catch (error) {
     console.warn('[media] download falhou/timeout:', error?.message || error)
-    // Se FTP travou, volta para API na próxima tentativa.
-    useFtpFallback = false
     return false
   } finally {
     if (timer) clearTimeout(timer)

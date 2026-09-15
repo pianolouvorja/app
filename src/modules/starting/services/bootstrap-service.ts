@@ -6,6 +6,7 @@ import {
   readCatalogRecord,
   writeCatalogRecord,
 } from '@shared/services/workspace-api'
+import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
 
 export type BootstrapCompleteFlag = {
   complete: boolean
@@ -25,7 +26,9 @@ export function mapBootstrapError(error: unknown): string {
   }
   if (
     message.includes('baixar banco') ||
-    message.includes('Falha ao baixar')
+    message.includes('Falha ao baixar') ||
+    message.includes('api-fallback') ||
+    message.includes('api-exhausted')
   ) {
     return 'starting.status.errorDownload'
   }
@@ -64,41 +67,42 @@ export async function syncRemoteConfig(): Promise<void> {
   await writeCatalogRecord(WORKSPACE_RECORD_KEYS.config, config)
 }
 
+/**
+ * First-boot via API Piano (`/json_db`): índices essenciais em disco.
+ * Substitui o pipeline legado FTP + SQLite + CatalogExtractor.
+ * Detalhes (`music_*`, `album_*`, capítulos bíblia) ficam on-demand.
+ */
+export async function syncEssentialCatalogFromApi(
+  onProgress: (progress: number) => void,
+): Promise<void> {
+  const lang = getCurrentApiPrefix()
+  const files = [
+    `${lang}_categories`,
+    `${lang}_hymnal`,
+    `${lang}_hymnal_1996`,
+    `${lang}_musics`,
+    `${lang}_bible_book`,
+    `${lang}_bible_version`,
+  ]
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    const data = await fetchRemoteCatalogJson(file)
+    const saved = await writeCatalogRecord(file, data)
+    if (!saved && !getDesktopBridge()) {
+      throw new Error('Bridge Electron indisponível')
+    }
+    if (!saved) {
+      throw new Error(`Falha ao gravar catálogo local: ${file}`)
+    }
+    onProgress(Math.round(((i + 1) / files.length) * 100))
+  }
+}
+
+/** @deprecated Use syncEssentialCatalogFromApi — mantido só por compat de imports. */
 export async function downloadAndExtractCatalog(
   onDownloadProgress: (progress: number) => void,
-  onExtractProgress: (progress: number, text?: string) => void,
+  _onExtractProgress: (progress: number, text?: string) => void,
 ): Promise<void> {
-  const bridge = getDesktopBridge()
-  if (!bridge) {
-    throw new Error('Bridge Electron indisponível')
-  }
-
-  const unsubscribeDownload = bridge.catalog.onDownloadProgress((payload) => {
-    onDownloadProgress(payload.progress)
-  })
-  const unsubscribeExtract = bridge.catalog.onExtractProgress((payload) => {
-    onExtractProgress(payload.progress, payload.text)
-  })
-
-  try {
-    try {
-      await bridge.catalog.downloadDatabase()
-    } catch {
-      throw new Error('Falha ao baixar banco de dados')
-    }
-
-    try {
-      const extracted = await bridge.catalog.extractDatabase()
-      if (!extracted) {
-        throw new Error('Falha desconhecida ao extrair banco de dados local')
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      if (message.includes('Falha desconhecida')) throw error
-      throw new Error('Erro na extração dos dados locais')
-    }
-  } finally {
-    unsubscribeDownload()
-    unsubscribeExtract()
-  }
+  await syncEssentialCatalogFromApi(onDownloadProgress)
 }

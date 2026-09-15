@@ -30,7 +30,8 @@ withDefaults(
 
   position: relative;
   isolation: isolate;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   width: 100%;
   background-color: var(--ds-color-background);
   color: var(--ds-color-on-surface);
@@ -87,6 +88,10 @@ withDefaults(
 .ds-gradient-bg__content {
   position: relative;
   z-index: 1;
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

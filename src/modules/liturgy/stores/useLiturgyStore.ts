@@ -3,6 +3,19 @@ import { computed, ref } from 'vue'
 import type { Router } from 'vue-router'
 
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+
+/** Motor PPTX global (Configurações → Mídia & Player): auto|powerpoint|libreoffice. */
+async function getPresentationEnginePref(): Promise<
+  'auto' | 'powerpoint' | 'libreoffice'
+> {
+  try {
+    const engine = await getDesktopBridge()?.presentation?.getEngine?.()
+    if (engine === 'powerpoint' || engine === 'libreoffice') return engine
+  } catch {
+    // default
+  }
+  return 'auto'
+}
 import { closeProjectionModule } from '@shared/composables/useProjectionWindow'
 
 import type { MediaPlaybackMode } from '@modules/media/types/media'
@@ -648,6 +661,12 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     itemDialogLockedCategory.value = false
     itemDialogHideTypePicker.value = item.type === 'category'
     itemDraft.value = draftFromLiturgyItem(item)
+    // Motor PPTX: sem override no item, mostra o global das Configurações.
+    if (item.type === 'presentation' && !item.presentationEngine) {
+      void getPresentationEnginePref().then((engine) => {
+        itemDraft.value = { ...itemDraft.value, presentationEngine: engine }
+      })
+    }
     musicSearchQuery.value = ''
     itemDialogOpen.value = true
   }
@@ -683,7 +702,13 @@ export const useLiturgyStore = defineStore('liturgy', () => {
 
     const next = [...currentItems.value]
     if (editingIndex.value != null) {
-      if (item.type !== 'category' && item.categoryId) {
+      const previous = next[editingIndex.value]
+      const movedToAnotherCategory =
+        item.type !== 'category' &&
+        Boolean(item.categoryId) &&
+        previous?.categoryId !== item.categoryId
+
+      if (movedToAnotherCategory && item.categoryId) {
         const without = next.filter((_, i) => i !== editingIndex.value)
         const insertAt = findCategoryInsertIndex(without, item.categoryId)
         without.splice(insertAt, 0, item)
