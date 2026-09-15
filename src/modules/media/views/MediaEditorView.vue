@@ -75,11 +75,12 @@ const saving = ref(false)
 const statusMessage = ref('')
 const snackbarOpen = ref(false)
 
-/** statusMessage + snackbar juntos (toast). */
+/** statusMessage + snackbar juntos (toast). Mensagem vazia só limpa, sem abrir toast. */
 function notify(message: string, isError = false): void {
-  statusMessage.value = message
+  const text = message.trim()
+  statusMessage.value = text
   isErrorFlag.value = isError
-  snackbarOpen.value = true
+  snackbarOpen.value = text.length > 0
 }
 
 /** Status de erro ganha ícone/cor distintos no toast (regex OU flag explícita). */
@@ -379,26 +380,30 @@ async function onSelectMusic(id: number): Promise<void> {
   notify('')
   // Música LOCAL (id negativo, sem auth): carrega do localStorage, sem fetch.
   if (id < 0) {
-    const local = getLocalMusicById(id)
-    if (!local) {
-      notify('Esta música não existe mais')
-      selectedMusicId.value = null
-      musicName.value = ''
-      lyrics.value = []
-      loadAudioForMusic(null)
-      await refreshCollections()
-      return
-    }
-    musicName.value = local.name
-    lyrics.value = local.lyrics.map((row) => ({
-      id: row.id,
-      lyric: row.lyric,
-      time: row.time ?? '00:00',
-      imageUrl: row.image_url ?? '',
-    }))
-    loadAudioForMusic(local.audioBase64 ? `local:${local.id}` : null)
-    if (local.officialMusicId != null) {
-      notify('Hino oficial vinculado — a letra/áudio são gerenciados no catálogo oficial')
+    try {
+      const local = getLocalMusicById(id)
+      if (!local) {
+        notify('Esta música não existe mais')
+        selectedMusicId.value = null
+        musicName.value = ''
+        lyrics.value = []
+        loadAudioForMusic(null)
+        await refreshCollections()
+        return
+      }
+      musicName.value = local.name
+      lyrics.value = local.lyrics.map((row) => ({
+        id: row.id,
+        lyric: row.lyric,
+        time: row.time ?? '00:00',
+        imageUrl: row.image_url ?? '',
+      }))
+      loadAudioForMusic(local.audioBase64 ? `local:${local.id}` : null)
+      if (local.officialMusicId != null) {
+        notify('Hino oficial vinculado — a letra/áudio são gerenciados no catálogo oficial')
+      }
+    } finally {
+      loading.value = false
     }
     return
   }
@@ -1025,7 +1030,7 @@ onMounted(async () => {
       <button
         type="button"
         class="editor__aside-toggle"
-        :title="asideCollapsed ? 'Mostrar coletâneas' : 'Ocultar coletâneas'"
+        :title="asideCollapsed ? 'Mostrar painéis' : 'Ocultar painéis'"
         @click="asideCollapsed = !asideCollapsed"
       >
         <i
@@ -1035,7 +1040,7 @@ onMounted(async () => {
         />
       </button>
       <aside
-        class="editor__aside"
+        class="editor__aside editor__aside--collections"
         :class="{ 'editor__aside--collapsed': asideCollapsed }"
         v-show="!asideCollapsed"
       >
@@ -1141,7 +1146,13 @@ onMounted(async () => {
         >
           Nenhuma coletânea ainda. Crie a primeira acima.
         </p>
+      </aside>
 
+      <aside
+        class="editor__aside editor__aside--musics"
+        :class="{ 'editor__aside--collapsed': asideCollapsed }"
+        v-show="!asideCollapsed"
+      >
         <template v-if="selectedCollectionId != null">
           <h2 class="editor__section-title">
             Músicas
@@ -1259,7 +1270,7 @@ onMounted(async () => {
             </ul>
           </div>
 
-          <ul class="editor__list">
+          <ul class="editor__list editor__list--musics">
             <li
               v-for="music in musics"
               :key="music.id"
@@ -1294,7 +1305,19 @@ onMounted(async () => {
             />
             Excluir música
           </button>
+          <p
+            v-if="!loading && musics.length === 0"
+            class="editor__hint"
+          >
+            Nenhuma música nesta coletânea. Crie ou adicione acima.
+          </p>
         </template>
+        <p
+          v-else
+          class="editor__hint editor__hint--column"
+        >
+          Selecione uma coletânea à esquerda para ver as músicas.
+        </p>
       </aside>
 
       <div class="editor__main">
@@ -1587,18 +1610,20 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: var(--ds-spacing-4, 1rem);
-  gap: var(--ds-spacing-4, 1rem);
+  /* Quase full-bleed: só um respiro mínimo nas laterais */
+  padding: 0.45rem 0.2rem 0.5rem;
+  gap: 0.45rem;
+  font-size: 0.875rem;
 }
 
 .editor__toolbar {
   display: flex;
   align-items: center;
-  gap: var(--ds-spacing-3, 0.75rem);
+  gap: 0.5rem;
 }
 
 .editor__title {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--ds-color-on-surface);
@@ -1647,14 +1672,14 @@ onMounted(async () => {
 
 /* Painel "Letra" — espelho da playlist da /media: é a LETRA que anda, estrofes fixas */
 .editor__lyric-pane {
-  width: 17rem;
+  width: 15rem;
   flex-shrink: 0;
   min-height: 0;
   overflow-y: auto;
   background: rgb(12 12 12 / 0.92);
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
-  padding: 1rem 0.75rem;
+  padding: 0.7rem 0.55rem;
 }
 
 .editor__lyric-pane-head {
@@ -1666,9 +1691,9 @@ onMounted(async () => {
 
 .editor__lyric-pane-title {
   margin: 0;
-  padding: 0 0.4rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgb(255 255 255 / 0.55);
 }
@@ -1761,7 +1786,7 @@ onMounted(async () => {
 }
 
 .editor__lyric-text {
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   line-height: 1.35;
   white-space: pre-line;
   word-break: break-word;
@@ -1773,7 +1798,7 @@ onMounted(async () => {
 
 .editor__body {
   display: flex;
-  gap: var(--ds-spacing-4, 1rem);
+  gap: 0.4rem;
   flex: 1;
   min-height: 0;
 }
@@ -1802,13 +1827,14 @@ onMounted(async () => {
 }
 
 .editor__aside {
-  width: 280px;
+  width: 240px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  overflow-y: auto;
-  padding: var(--ds-spacing-4, 16px);
+  gap: 0.3rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.7rem 0.75rem;
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
@@ -1820,11 +1846,35 @@ onMounted(async () => {
   -webkit-backdrop-filter: blur(var(--ds-blur-active, 16px)) saturate(140%);
 }
 
+.editor__aside--collections,
+.editor__aside--musics {
+  overflow-y: auto;
+}
+
+.editor__aside--musics {
+  width: 260px;
+}
+
+.editor__aside .editor__section-title:first-child {
+  margin-top: 0;
+}
+
+.editor__list--musics {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor__hint--column {
+  margin: auto 0;
+  text-align: center;
+  padding: 0.75rem 0.4rem;
+}
+
 .editor__main {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
-  padding: var(--ds-spacing-5, 20px);
+  padding: 0.75rem 0.9rem;
   border-radius: var(--ds-radius-lg, 16px 0 16px 0);
   background: color-mix(
     in srgb,
@@ -1837,12 +1887,12 @@ onMounted(async () => {
 }
 
 .editor__section-title {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ds-color-on-surface-variant);
-  margin: 0.75rem 0 0.375rem;
+  margin: 0.55rem 0 0.3rem;
 }
 
 .editor__row {
@@ -1853,12 +1903,13 @@ onMounted(async () => {
 .editor__input {
   flex: 1;
   min-width: 0;
-  padding: 0.45rem 0.6rem;
+  padding: 0.38rem 0.5rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(in srgb, var(--ds-color-surface) 55%, transparent);
   color: var(--ds-color-on-surface);
   font: inherit;
+  font-size: 0.8rem;
   transition:
     border-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
     box-shadow var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease);
@@ -1879,8 +1930,8 @@ onMounted(async () => {
 .editor__btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.45rem 0.75rem;
+  gap: 0.3rem;
+  padding: 0.38rem 0.65rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(
@@ -1891,7 +1942,7 @@ onMounted(async () => {
   color: var(--ds-color-on-surface);
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   transition:
     background-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
@@ -1936,14 +1987,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.5rem 0.625rem;
+  padding: 0.4rem 0.5rem;
   border: 1px solid transparent;
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: transparent;
   color: var(--ds-color-on-surface);
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   text-align: left;
   transition:
     background-color var(--ds-motion-duration, 160ms) var(--ds-motion-easing, ease),
@@ -1961,13 +2012,13 @@ onMounted(async () => {
 }
 
 .editor__count {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--ds-color-on-surface-variant);
 }
 
 .editor__hint,
 .editor__empty {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--ds-color-on-surface-variant);
 }
 
@@ -2064,15 +2115,15 @@ onMounted(async () => {
 
 .editor__textarea {
   width: 100%;
-  min-height: 80px;
-  padding: 0.5rem 0.625rem;
+  min-height: 72px;
+  padding: 0.45rem 0.55rem;
   border: 1px solid var(--ds-color-outline-strong);
   border-radius: var(--ds-radius-sm, 8px 0 8px 0);
   background: color-mix(in srgb, var(--ds-color-surface) 55%, transparent);
   color: var(--ds-color-on-surface);
   font-family: inherit;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.45;
   resize: vertical;
   transition:
     border-color var(--ds-motion-duration, 200ms) var(--ds-motion-easing, ease),
@@ -2086,13 +2137,23 @@ onMounted(async () => {
     color-mix(in srgb, var(--ds-color-primary) 45%, transparent);
 }
 
+@media (max-width: 1100px) {
+  .editor__aside--collections,
+  .editor__aside--musics {
+    width: 200px;
+  }
+}
+
 @media (max-width: 768px) {
   .editor__body {
     flex-direction: column;
   }
 
-  .editor__aside {
+  .editor__aside,
+  .editor__aside--collections,
+  .editor__aside--musics {
     width: 100%;
+    max-height: 40vh;
   }
 }
 
@@ -2203,10 +2264,10 @@ onMounted(async () => {
   gap: 0.5rem;
   background: rgb(255 255 255 / 0.03);
   color: var(--ds-color-on-surface-variant, rgb(255 255 255 / 0.55));
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 
   > i {
-    font-size: 2rem;
+    font-size: 1.65rem;
     opacity: 0.5;
   }
 }
