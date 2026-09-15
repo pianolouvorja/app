@@ -45,6 +45,12 @@ function loadReceiver(): void {
   }
   ;(w as unknown as { PalmSystem?: unknown }).PalmSystem = undefined
   stub('WebSocket')
+  // Boot do receiver lê appinfo.json/config.xml via fetch — jsdom não tem fetch.
+  Object.defineProperty(w, 'fetch', {
+    configurable: true,
+    value: () =>
+      Promise.reject(new Error('fetch stubbed in receiver-regression test')),
+  })
   w.localStorage.clear()
 
   // executa os <script> do receiver na ordem (fora do parsing automático)
