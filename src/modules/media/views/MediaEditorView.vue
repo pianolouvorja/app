@@ -1006,7 +1006,7 @@ onMounted(async () => {
     <v-snackbar
       v-model="snackbarOpen"
       :timeout="2600"
-      location="top right"
+      location="bottom center"
       variant="text"
       class="editor__snackbar"
       :content-class="'editor__snackbar-content'"
