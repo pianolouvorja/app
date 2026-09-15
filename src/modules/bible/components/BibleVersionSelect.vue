@@ -44,7 +44,8 @@ const menuStyle = computed(() => ({
 }))
 
 function formatVersionLabel(version: BibleVersion): string {
-  return `${version.name} (${version.abbreviation})`
+  const abbr = version.abbreviation?.trim()
+  return abbr ? `${version.name} (${abbr})` : version.name
 }
 
 function updateMenuPosition() {
@@ -168,7 +169,10 @@ onUnmounted(() => {
           :aria-selected="version.id === selectedVersionId"
           @click="choose(version.id)"
         >
-          <span class="bible-version-select__option-abbr">
+          <span
+            v-if="version.abbreviation"
+            class="bible-version-select__option-abbr"
+          >
             {{ version.abbreviation }}
           </span>
           <span class="bible-version-select__option-name">
