@@ -107,6 +107,10 @@
       {
         "from": "build/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "resources/midia/modulos/sorteios",
+        "to": "midia/modulos/sorteios"
       }
     ],
     "linux": {

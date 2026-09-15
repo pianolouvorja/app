@@ -311,6 +311,14 @@ function collectMediaTree(mediaRoot, entries, seen) {
     )
   }
 
+  // Mídias de módulos (ex.: áudio do sorteio em Media/modulos/sorteios).
+  walkFiles(
+    path.join(root, WORKSPACE_DIRS.modulos),
+    `${WORKSPACE_DIRS.media}/${WORKSPACE_DIRS.modulos}`,
+    entries,
+    seen,
+  )
+
   let items
   try {
     items = readdirSync(root, { withFileTypes: true })

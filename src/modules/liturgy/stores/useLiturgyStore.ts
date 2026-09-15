@@ -38,6 +38,7 @@ import {
   draftFromLiturgyItem,
   findCategoryInsertIndex,
   isLiturgyItemDraftValid,
+  isLiturgyMediaPlayType,
   reconcileMusicItemTitles,
   reorderLiturgyItems,
 } from '../services/liturgy-item-helpers'
@@ -831,6 +832,24 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     }
   }
 
+  /** Marca item de mídia como concluído ao tocar (não desmarca). */
+  function markItemDone(index: number) {
+    const target = currentItems.value[index]
+    if (!target || target.done || target.type === 'category') return
+    if (!isLiturgyMediaPlayType(target.type)) return
+
+    const next = currentItems.value.map((item, i) =>
+      i === index ? { ...item, done: true } : item,
+    )
+    currentItems.value = syncCategoryDoneFromChildren(next)
+
+    clearSelectionIfMatches((_, i) => i === index)
+    if (target.categoryId) {
+      const categoryId = target.categoryId
+      clearSelectionIfMatches((item) => item.id === categoryId && item.done)
+    }
+  }
+
   function reorderItems(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return
 
@@ -883,6 +902,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
+    if (result.ok) markItemDone(index)
   }
 
   /** Atualiza a duração de um item (ex.: vídeo local lido do arquivo no web). */
@@ -916,6 +936,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
     lastActionMessageKey.value = result.messageKey ?? null
     if (!result.ok) return false
 
+    markItemDone(index)
     await router.push({ name: 'media' })
     return true
   }
@@ -962,8 +983,10 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       if (state) {
         const toggled = await projection?.toggleVideoScreens?.()
         if (toggled) {
-          videoProjectionItemId.value = state.projecting ? null : item.id
+          const turningOn = !state.projecting
+          videoProjectionItemId.value = turningOn ? item.id : null
           lastActionMessageKey.value = null
+          if (turningOn) markItemDone(index)
           return
         }
       }
@@ -986,6 +1009,7 @@ export const useLiturgyStore = defineStore('liturgy', () => {
       videoProjectionItemId.value = null
     }
     lastActionMessageKey.value = result.messageKey ?? null
+    if (result.ok) markItemDone(index)
   }
 
   /** Encerra projeção web da liturgia (header global / sync). */

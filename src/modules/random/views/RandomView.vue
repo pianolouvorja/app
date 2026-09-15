@@ -29,6 +29,7 @@ const {
   rangeError,
   canDraw,
   drawnReversed,
+  audioPlaying,
   setMode,
   setNumberMin,
   setNumberMax,
@@ -48,6 +49,13 @@ const {
   setTextTransform,
   setAnimationSpeed,
   resetDisplayToDefault,
+  useDefaultDrawAudio,
+  useCustomDrawAudio,
+  chooseCustomDrawAudio,
+  removeCustomDrawAudio,
+  togglePreviewDrawAudio,
+  setAudioVolume,
+  toggleAudioMuted,
   openConfig,
   closeConfig,
   toggleProjection,
@@ -71,6 +79,17 @@ async function onResetAll() {
   if (confirmed) {
     resetAll()
   }
+}
+
+async function onRemoveCustomAudio(fileName: string) {
+  const confirmed = await appConfirm({
+    title: t('random.deleteAudioTitle'),
+    message: t('random.deleteAudioConfirm', { name: fileName }),
+    confirmLabel: t('random.deleteAudio'),
+    danger: true,
+  })
+  if (!confirmed) return
+  await removeCustomDrawAudio(fileName)
 }
 
 function onModeChange(mode: RandomDrawMode) {
@@ -205,8 +224,21 @@ const effectiveConfig = computed(() => {
         <RandomHistoryPanel
           :items="drawnReversed"
           :total-count="session.drawn.length"
+          :audio-source="config.audioSource"
+          :custom-audio-files="config.customAudioFiles"
+          :custom-audio-file="config.customAudioFile"
+          :audio-volume="config.audioVolume"
+          :audio-muted="config.audioMuted"
+          :audio-playing="audioPlaying"
           @undo="removeDrawn"
           @clear="clearHistory"
+          @use-default-audio="useDefaultDrawAudio"
+          @use-custom-audio="useCustomDrawAudio"
+          @choose-audio="chooseCustomDrawAudio"
+          @remove-custom-audio="onRemoveCustomAudio"
+          @toggle-audio="togglePreviewDrawAudio"
+          @toggle-mute="toggleAudioMuted"
+          @update:audio-volume="setAudioVolume"
         />
       </div>
     </div>
@@ -235,11 +267,11 @@ const effectiveConfig = computed(() => {
 .random-view {
   display: flex;
   box-sizing: border-box;
+  height: 100%;
   min-height: 0;
   flex-direction: column;
   align-items: center;
-  padding: var(--ds-spacing-page, 1.5rem);
-  padding-bottom: 5rem;
+  padding: 0.65rem clamp(1rem, 2vw, 1.5rem) 1rem;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -251,7 +283,7 @@ const effectiveConfig = computed(() => {
   flex-shrink: 0;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.65rem;
 }
 
 .random-view__back {
@@ -357,8 +389,8 @@ const effectiveConfig = computed(() => {
   display: flex;
   width: 100%;
   max-width: 80rem;
-  flex: 1;
-  align-items: center;
+  flex: 1 1 auto;
+  align-items: stretch;
   justify-content: space-between;
   gap: clamp(1.5rem, 3vw, 3rem);
   min-height: 0;
@@ -373,11 +405,20 @@ const effectiveConfig = computed(() => {
 .random-view__panel {
   position: relative;
   z-index: 1;
+  display: flex;
   flex: 0 0 auto;
+  align-self: stretch;
+  min-height: 0;
 
   &--available,
   &--history {
     transform: none;
+  }
+
+  :deep(.random-available),
+  :deep(.random-history) {
+    height: 100%;
+    max-height: none;
   }
 }
 
@@ -388,6 +429,7 @@ const effectiveConfig = computed(() => {
   flex: 1 1 auto;
   align-items: center;
   justify-content: center;
+  align-self: center;
   min-width: 18rem;
   max-width: 28rem;
   margin-inline: auto;
