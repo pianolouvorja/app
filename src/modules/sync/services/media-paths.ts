@@ -13,6 +13,9 @@ export function toRelativeMediaPath(urlPath: string): string {
 
 /** URL HTTP do arquivo remoto (capas ainda não baixadas). */
 export function resolveRemoteFileUrl(urlPath: string): string {
+  // API oficial (14/09/2026): url_image/url_music agora vêm como URL absoluta
+  // (host próprio do Mayco ou R2/Cloudflare) — usar na íntegra, sem remontar.
+  if (/^https?:\/\//i.test(urlPath)) return urlPath
   const cleanPath = urlPath.startsWith('/') ? urlPath.slice(1) : urlPath
   const base = import.meta.env.VITE_URL_FILES ?? 'https://api.louvorja.com.br/file'
   return `${base}/${cleanPath}`
