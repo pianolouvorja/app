@@ -84,10 +84,24 @@
     <div id="boot-splash" aria-live="polite" aria-busy="true" aria-label="LouvorJA - PIANO">
       <img class="boot-logo" src="./ico/favicon.svg" width="96" height="96" alt="">
       <p class="boot-title">LouvorJA - PIANO</p>
-      <p class="boot-message">Estamos configurando e preparando tudo para você.</p>
+      <p id="boot-message" class="boot-message">Estamos configurando e preparando tudo para você.</p>
       <div class="boot-spinner" aria-hidden="true"></div>
     </div>
     <div id="app"></div>
+    <script>
+      // Projeção (#/popup): mensagem curta. Inicialização do app: frase completa.
+      ;(function () {
+        var href = String(location.href || '')
+        var path = String(location.pathname || '')
+        var isProjection =
+          href.indexOf('#/popup') !== -1 ||
+          path.indexOf('/popup') !== -1 ||
+          href.indexOf('/popup?') !== -1
+        if (!isProjection) return
+        var msg = document.getElementById('boot-message')
+        if (msg) msg.textContent = 'carregando...'
+      })()
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

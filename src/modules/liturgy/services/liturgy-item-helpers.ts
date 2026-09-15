@@ -164,6 +164,21 @@ export function isExecutableItem(item: Pick<LiturgyItem, 'type'>): boolean {
   return EXECUTABLE_ITEM_TYPES.includes(item.type)
 }
 
+/** Tipos de mídia que, ao tocar, marcam a linha da liturgia como concluída. */
+const MEDIA_PLAY_DONE_TYPES: readonly LiturgyItemType[] = [
+  'music',
+  'audio',
+  'video',
+  'online_video',
+  'images',
+  'pdf',
+  'presentation',
+]
+
+export function isLiturgyMediaPlayType(type: LiturgyItemType): boolean {
+  return MEDIA_PLAY_DONE_TYPES.includes(type)
+}
+
 export function getItemTypeIcon(type: LiturgyItemType): string {
   return LITURGY_ITEM_TYPE_META.find((entry) => entry.value === type)?.icon ?? 'ti-help'
 }

@@ -35,9 +35,11 @@ export function formatScripturalReference(selection: {
 
   const versePart =
     selection.verses.length > 0 ? `:${formatVerseIntervals(selection.verses)}` : ''
-  const versionPart = selection.versionAbbreviation
-    ? ` (${selection.versionAbbreviation})`
-    : ''
+  const versionPart =
+    selection.versionAbbreviation &&
+    selection.versionAbbreviation.toLowerCase() !== 'null'
+      ? ` (${selection.versionAbbreviation})`
+      : ''
 
   return `${selection.bookName} ${selection.chapter}${versePart}${versionPart}`
 }

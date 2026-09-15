@@ -88,16 +88,6 @@ function onRemove(event: MouseEvent) {
         :class="collection.kind === 'hymnal' ? 'ti-book' : 'ti-disc'"
         aria-hidden="true"
       />
-      <span
-        v-if="isCustom"
-        class="album-collection-card__custom-badge"
-        :title="t('albums.custom.title')"
-      >
-        <i
-          class="ti ti-pencil"
-          aria-hidden="true"
-        />
-      </span>
 
       <div
         v-if="showDownloadControls && status === 'downloaded'"
@@ -256,7 +246,7 @@ function onRemove(event: MouseEvent) {
   color: color-mix(in srgb, #fff 70%, transparent);
 }
 
-/* Coletânea custom: gradiente de marca + badge ✏ (identifica editável) */
+/* Coletânea custom: gradiente de marca */
 .album-collection-card__cover--custom {
   background:
     linear-gradient(
@@ -269,23 +259,6 @@ function onRemove(event: MouseEvent) {
 
 .album-collection-card__cover--custom .album-collection-card__fallback {
   font-size: 2rem;
-}
-
-.album-collection-card__custom-badge {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--ds-color-primary, #2196f3) 85%, #000);
-  color: #fff;
-  font-size: 0.8rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .album-collection-card__check {

@@ -110,6 +110,12 @@ contextBridge.exposeInMainWorld('louvorja', {
     clear: (options) => ipcRenderer.invoke('workspace:clear', options),
   },
 
+  random: {
+    ensureDefaultAudio: () => ipcRenderer.invoke('random:ensure-default-audio'),
+    importAudio: () => ipcRenderer.invoke('random:import-audio'),
+    deleteAudio: (fileName) => ipcRenderer.invoke('random:delete-audio', fileName),
+  },
+
   catalog: {
     downloadDatabase: () => ipcRenderer.invoke('catalog:download-database'),
     extractDatabase: () => ipcRenderer.invoke('catalog:extract-database'),

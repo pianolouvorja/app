@@ -24,6 +24,11 @@ import {
   writeWorkspaceRecord,
 } from '../workspace.mjs'
 import { ensureWorkspaceDirectories, getWorkspacePaths } from '../paths.mjs'
+import {
+  ensureSorteioDefaultAudio,
+  importSorteioCustomAudio,
+  deleteSorteioCustomAudio,
+} from '../sorteio-audio.mjs'
 import { writeWindowsMediaRootOverride } from '../windows-media-root.mjs'
 import {
   buildBackupFileName,
@@ -498,6 +503,51 @@ export function registerWorkspaceIpc() {
     } catch (error) {
       console.error('[ipc] workspace:clear', error)
       return false
+    }
+  })
+
+  ipcMain.handle('random:ensure-default-audio', () => {
+    try {
+      const { media } = getWorkspacePaths()
+      const filePath = ensureSorteioDefaultAudio(media)
+      return { ok: true, relativePath: 'modulos/sorteios/sorteio-default-piano.mp3', filePath }
+    } catch (error) {
+      console.error('[ipc] random:ensure-default-audio', error)
+      return { ok: false }
+    }
+  })
+
+  ipcMain.handle('random:import-audio', async (event) => {
+    try {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const result = await dialog.showOpenDialog(win ?? undefined, {
+        title: 'Escolher áudio do sorteio',
+        filters: [
+          {
+            name: 'Áudio',
+            extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'],
+          },
+        ],
+        properties: ['openFile'],
+      })
+      if (result.canceled || !result.filePaths?.[0]) {
+        return { ok: false, reason: 'cancelled' }
+      }
+      const { media } = getWorkspacePaths()
+      return importSorteioCustomAudio(media, result.filePaths[0])
+    } catch (error) {
+      console.error('[ipc] random:import-audio', error)
+      return { ok: false, reason: 'error' }
+    }
+  })
+
+  ipcMain.handle('random:delete-audio', (_event, fileName) => {
+    try {
+      const { media } = getWorkspacePaths()
+      return deleteSorteioCustomAudio(media, fileName)
+    } catch (error) {
+      console.error('[ipc] random:delete-audio', error)
+      return { ok: false, reason: 'error' }
     }
   })
 

@@ -17,6 +17,18 @@ import {
   runDrawAnimation,
 } from '../services/random-draw'
 import {
+  applyRandomAudioOutput,
+  deleteRandomCustomAudio,
+  ensureRandomDefaultAudioInstalled,
+  isRandomDrawAudioPlaying,
+  pickAndImportRandomAudio,
+  playRandomDrawAudio,
+  playRandomWinnerEffect,
+  stopRandomDrawAudio,
+  subscribeRandomAudioPlaying,
+  toggleRandomDrawAudio,
+} from '../services/random-audio'
+import {
   loadRandomDisplayConfig,
   loadRandomSession,
   saveRandomDisplayConfig,
@@ -33,6 +45,7 @@ import {
   activeModePool,
   emptyModePool,
   type RandomAnimationSpeed,
+  type RandomAudioSource,
   type RandomDisplayConfig,
   type RandomDrawMode,
   type RandomModePool,
@@ -82,9 +95,11 @@ export const useRandomStore = defineStore('random', () => {
   const configOpen = ref(false)
   const hydrated = ref(false)
   const rangeError = ref<'invalid' | 'tooLarge' | null>(null)
+  const audioPlaying = ref(false)
 
   let projectionWatchTimer: ReturnType<typeof setInterval> | null = null
   let cancelAnimation: (() => void) | null = null
+  let unsubscribeAudioPlaying: (() => void) | null = null
 
   const activePool = computed(() => activeModePool(session.value))
 
@@ -145,6 +160,13 @@ export const useRandomStore = defineStore('random', () => {
     saveRandomDisplayConfig(config.value)
   }
 
+  function syncAudioOutput() {
+    applyRandomAudioOutput({
+      volume: config.value.audioVolume,
+      muted: config.value.audioMuted,
+    })
+  }
+
   function hydrate() {
     if (hydrated.value) return
     config.value = loadRandomDisplayConfig()
@@ -160,8 +182,14 @@ export const useRandomStore = defineStore('random', () => {
       mode: session.value.mode,
     }
     syncRuntime()
+    syncAudioOutput()
+    unsubscribeAudioPlaying?.()
+    unsubscribeAudioPlaying = subscribeRandomAudioPlaying((playing) => {
+      audioPlaying.value = playing
+    })
     isProjecting.value = isProjectionModuleOpen('random')
     if (isProjecting.value) startProjectionWatch()
+    void ensureRandomDefaultAudioInstalled()
     hydrated.value = true
   }
 
@@ -305,16 +333,24 @@ export const useRandomStore = defineStore('random', () => {
     return true
   }
 
-  function cancelDrawAnimation() {
+  function cancelDrawAnimation(options?: { stopAudio?: boolean }) {
     cancelAnimation?.()
     cancelAnimation = null
+    if (options?.stopAudio !== false) {
+      stopRandomDrawAudio()
+    }
   }
 
   function startDraw() {
     const pool = undrawn.value
     if (pool.length === 0 || runtime.value.isDrawing) return
 
-    cancelDrawAnimation()
+    // Não interrompe o áudio se já estiver tocando.
+    cancelDrawAnimation({ stopAudio: false })
+    syncAudioOutput()
+    if (!isRandomDrawAudioPlaying()) {
+      playRandomDrawAudio(config.value)
+    }
     runtime.value = {
       ...runtime.value,
       isDrawing: true,
@@ -335,6 +371,8 @@ export const useRandomStore = defineStore('random', () => {
       },
       onFinish: (winner) => {
         cancelAnimation = null
+        // Áudio de fundo continua; efeito curto marca o vencedor.
+        playRandomWinnerEffect()
         const nextDrawn = [...drawn.value, winner]
         session.value = patchActivePool(session.value, {
           drawn: nextDrawn,
@@ -382,8 +420,104 @@ export const useRandomStore = defineStore('random', () => {
   }
 
   function resetDisplayToDefault() {
-    config.value = { ...DEFAULT_RANDOM_DISPLAY_CONFIG }
+    config.value = {
+      ...DEFAULT_RANDOM_DISPLAY_CONFIG,
+      audioSource: config.value.audioSource,
+      customAudioFiles: [...config.value.customAudioFiles],
+      customAudioFile: config.value.customAudioFile,
+      audioVolume: config.value.audioVolume,
+      audioMuted: config.value.audioMuted,
+    }
     persistConfig()
+  }
+
+  function setAudioSource(audioSource: RandomAudioSource) {
+    config.value = { ...config.value, audioSource }
+    persistConfig()
+  }
+
+  async function useDefaultDrawAudio() {
+    await ensureRandomDefaultAudioInstalled()
+    config.value = {
+      ...config.value,
+      audioSource: 'default',
+    }
+    persistConfig()
+  }
+
+  function useCustomDrawAudio(fileName?: string) {
+    const target =
+      typeof fileName === 'string' && fileName.length > 0
+        ? fileName
+        : config.value.customAudioFile
+    if (!target || !config.value.customAudioFiles.includes(target)) return
+    config.value = {
+      ...config.value,
+      audioSource: 'custom',
+      customAudioFile: target,
+    }
+    persistConfig()
+  }
+
+  async function chooseCustomDrawAudio() {
+    const result = await pickAndImportRandomAudio()
+    if (!result.ok || !result.fileName) return false
+    const nextFiles = config.value.customAudioFiles.includes(result.fileName)
+      ? [...config.value.customAudioFiles]
+      : [...config.value.customAudioFiles, result.fileName]
+    config.value = {
+      ...config.value,
+      audioSource: 'custom',
+      customAudioFiles: nextFiles,
+      customAudioFile: result.fileName,
+    }
+    persistConfig()
+    return true
+  }
+
+  async function removeCustomDrawAudio(fileName: string) {
+    const result = await deleteRandomCustomAudio(fileName)
+    if (!result.ok) return false
+
+    const nextFiles = config.value.customAudioFiles.filter((name) => name !== fileName)
+    const wasSelected = config.value.customAudioFile === fileName
+    const nextSelected = wasSelected
+      ? (nextFiles[0] ?? null)
+      : config.value.customAudioFile && nextFiles.includes(config.value.customAudioFile)
+        ? config.value.customAudioFile
+        : (nextFiles[0] ?? null)
+
+    config.value = {
+      ...config.value,
+      customAudioFiles: nextFiles,
+      customAudioFile: nextSelected,
+      audioSource:
+        wasSelected && !nextSelected ? 'default' : config.value.audioSource,
+    }
+    persistConfig()
+    return true
+  }
+
+  function togglePreviewDrawAudio() {
+    syncAudioOutput()
+    toggleRandomDrawAudio(config.value)
+  }
+
+  function setAudioVolume(audioVolume: number) {
+    const next = Math.min(1, Math.max(0, audioVolume))
+    config.value = { ...config.value, audioVolume: next }
+    syncAudioOutput()
+    persistConfig()
+  }
+
+  function setAudioMuted(audioMuted: boolean) {
+    config.value = { ...config.value, audioMuted }
+    syncAudioOutput()
+    persistConfig()
+  }
+
+  function toggleAudioMuted() {
+    setAudioMuted(!config.value.audioMuted)
   }
 
   function openConfig() {
@@ -455,6 +589,7 @@ export const useRandomStore = defineStore('random', () => {
     undrawn,
     canDraw,
     drawnReversed,
+    audioPlaying,
     hydrate,
     setMode,
     setNumberMin,
@@ -476,6 +611,15 @@ export const useRandomStore = defineStore('random', () => {
     setTextTransform,
     setAnimationSpeed,
     resetDisplayToDefault,
+    setAudioSource,
+    useDefaultDrawAudio,
+    useCustomDrawAudio,
+    chooseCustomDrawAudio,
+    removeCustomDrawAudio,
+    togglePreviewDrawAudio,
+    setAudioVolume,
+    setAudioMuted,
+    toggleAudioMuted,
     openConfig,
     closeConfig,
     toggleProjection,

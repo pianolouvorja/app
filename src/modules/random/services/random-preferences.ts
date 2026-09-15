@@ -13,6 +13,7 @@ import {
   RANDOM_TEXT_TRANSFORMS,
   emptyModePool,
   type RandomAnimationSpeed,
+  type RandomAudioSource,
   type RandomDisplayConfig,
   type RandomDrawMode,
   type RandomModePool,
@@ -73,12 +74,57 @@ function asModePool(raw: unknown): RandomModePool {
   }
 }
 
+function asAudioSource(value: unknown): RandomAudioSource {
+  return value === 'custom' ? 'custom' : 'default'
+}
+
+function asCustomAudioFile(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const name = value.trim()
+  if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) {
+    return null
+  }
+  return name
+}
+
+function asCustomAudioFiles(value: unknown, legacySelected: string | null): string[] {
+  const fromArray = Array.isArray(value)
+    ? value
+        .map((item) => asCustomAudioFile(item))
+        .filter((item): item is string => Boolean(item))
+    : []
+
+  const merged = [...fromArray]
+  if (legacySelected && !merged.includes(legacySelected)) {
+    merged.unshift(legacySelected)
+  }
+
+  return [...new Set(merged)]
+}
+
+function asAudioVolume(value: unknown): number {
+  const n =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value)
+        : DEFAULT_RANDOM_DISPLAY_CONFIG.audioVolume
+  if (!Number.isFinite(n)) return DEFAULT_RANDOM_DISPLAY_CONFIG.audioVolume
+  return Math.min(1, Math.max(0, n))
+}
+
 export function normalizeRandomDisplayConfig(raw: unknown): RandomDisplayConfig {
   if (!raw || typeof raw !== 'object') {
     return { ...DEFAULT_RANDOM_DISPLAY_CONFIG }
   }
 
   const source = raw as Record<string, unknown>
+  const customAudioFile = asCustomAudioFile(source.customAudioFile)
+  const customAudioFiles = asCustomAudioFiles(source.customAudioFiles, customAudioFile)
+  const selectedCustom =
+    customAudioFile && customAudioFiles.includes(customAudioFile)
+      ? customAudioFile
+      : (customAudioFiles[0] ?? null)
 
   return {
     bgColor: asString(
@@ -92,6 +138,11 @@ export function normalizeRandomDisplayConfig(raw: unknown): RandomDisplayConfig 
     fontSizePc: asFontSize(source.fontSizePc),
     textTransform: asTextTransform(source.textTransform),
     animationSpeed: asAnimationSpeed(source.animationSpeed),
+    audioSource: asAudioSource(source.audioSource),
+    customAudioFiles,
+    customAudioFile: selectedCustom,
+    audioVolume: asAudioVolume(source.audioVolume),
+    audioMuted: source.audioMuted === true,
   }
 }
 
