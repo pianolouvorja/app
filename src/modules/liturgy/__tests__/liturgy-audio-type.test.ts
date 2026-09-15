@@ -8,7 +8,7 @@ import {
   LITURGY_TYPE_GROUPS,
   getTypeDotColor,
 } from '../types/liturgy'
-import { getItemTypeIcon } from '../services/liturgy-item-helpers'
+import { getItemTypeIcon, isLiturgyMediaPlayType } from '../services/liturgy-item-helpers'
 
 describe('liturgy item type: audio', () => {
   it('audio é um tipo válido de item', () => {
@@ -42,5 +42,14 @@ describe('liturgy item type: audio', () => {
   it('audio é executável e usa arquivo local (INTERNAL_FILE_TYPES)', () => {
     expect(EXECUTABLE_ITEM_TYPES).toContain('audio')
     expect(INTERNAL_FILE_TYPES).toContain('audio')
+  })
+
+  it('tipos de mídia marcam done ao tocar; versículo/site não', () => {
+    expect(isLiturgyMediaPlayType('audio')).toBe(true)
+    expect(isLiturgyMediaPlayType('video')).toBe(true)
+    expect(isLiturgyMediaPlayType('music')).toBe(true)
+    expect(isLiturgyMediaPlayType('verse')).toBe(false)
+    expect(isLiturgyMediaPlayType('site')).toBe(false)
+    expect(isLiturgyMediaPlayType('category')).toBe(false)
   })
 })
