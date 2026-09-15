@@ -19,10 +19,10 @@ export const WORKSPACE_DIRS = {
   images: 'images',
 }
 
-/** Arquivo SQLite temporário baixado no first-boot (removido após extração). */
+/** Arquivo SQLite temporário (legado FTP — não usado no first-boot HTTP). */
 export const TEMP_DATABASE_FILE = 'database.db'
 
-/** Marca download FTP concluído — evita re-download em retentativas do first-boot. */
+/** Flag legado do download FTP do catálogo (não usada no sync HTTP). */
 export const DB_DOWNLOAD_COMPLETE_FLAG = 'db_download_complete.flag'
 
 export const MEDIA_FOLDER_BY_TYPE = {
@@ -31,7 +31,7 @@ export const MEDIA_FOLDER_BY_TYPE = {
   slides: 'images',
 }
 
-/** Base da API usada pelo main-process (fallback de mídia no protocolo local://).
- * Override via PIANO_API_BASE_URL p/ testes com espelho/túnel (ver pitfall 60). */
+/** Base da API usada pelo main-process (download de mídia + fallback local://).
+ * Default = nossa API Piano. Override via PIANO_API_BASE_URL p/ túnel/dev. */
 export const API_BASE_URL =
-  process.env.PIANO_API_BASE_URL ?? 'https://api.louvorja.com.br'
+  process.env.PIANO_API_BASE_URL ?? 'https://api.pianolouvorja.com.br'

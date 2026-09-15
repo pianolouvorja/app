@@ -2,6 +2,9 @@
 /**
  * Conta de coletâneas custom — login/registro simples (e-mail + senha).
  * Compacto: quando logado mostra só nome + botão sair; senão formulário colapsável.
+ * Inclui fluxo "esqueci minha senha": pede token via /auth/forgot-password
+ * (o token chega pelo suporte quando sem SMTP) e troca a senha em
+ * /auth/reset-password.
  */
 import { computed, ref } from 'vue'
 import {
@@ -9,6 +12,8 @@ import {
   login,
   logout,
   register,
+  resetPassword,
+  requestPasswordReset,
   type AuthSession,
 } from '../services/auth-client'
 
@@ -19,13 +24,18 @@ const props = defineProps<{
 
 const session = ref<AuthSession | null>(getAuthSession())
 const formOpen = ref(false)
-const mode = ref<'login' | 'register'>('login')
+const mode = ref<'login' | 'register' | 'forgot' | 'reset'>('login')
 const email = ref('')
 const password = ref('')
 const displayName = ref('')
+const resetToken = ref('')
 const busy = ref(false)
 
 const isValid = computed(() => {
+  if (mode.value === 'forgot') return email.value.includes('@')
+  if (mode.value === 'reset') {
+    return resetToken.value.trim().length >= 16 && password.value.length >= 8
+  }
   if (email.value.includes('@') === false) return false
   if (password.value.length < 6) return false
   if (mode.value === 'register' && displayName.value.trim().length < 2) return false
@@ -36,6 +46,31 @@ async function onSubmit(): Promise<void> {
   if (!isValid.value || busy.value) return
   busy.value = true
   try {
+    if (mode.value === 'forgot') {
+      const token = await requestPasswordReset(email.value.trim())
+      if (token) {
+        resetToken.value = token
+        mode.value = 'reset'
+        props.notify?.('Token gerado — confirme a senha nova')
+      } else {
+        // Resposta neutra da API: não revela se o e-mail existe.
+        props.notify?.('Se o e-mail existir, o suporte tem o token de reset')
+        mode.value = 'login'
+      }
+      return
+    }
+    if (mode.value === 'reset') {
+      const ok = await resetPassword(resetToken.value.trim(), password.value)
+      if (ok) {
+        props.notify?.('Senha alterada! Entre com a senha nova')
+        mode.value = 'login'
+        password.value = ''
+        resetToken.value = ''
+      } else {
+        props.notify?.('Token inválido ou expirado', true)
+      }
+      return
+    }
     const result =
       mode.value === 'login'
         ? await login(email.value.trim(), password.value)
@@ -67,7 +102,11 @@ async function onLogout(): Promise<void> {
 
 function toggleForm(): void {
   formOpen.value = !formOpen.value
-  if (!formOpen.value) password.value = ''
+  if (!formOpen.value) {
+    password.value = ''
+    resetToken.value = ''
+    mode.value = 'login'
+  }
 }
 </script>
 
@@ -78,95 +117,185 @@ function toggleForm(): void {
       v-if="session"
       class="account__logged"
     >
-      <i
-        class="ti ti-user-check"
-        aria-hidden="true"
-      />
       <span
         class="account__name"
         :title="session.user.email"
-      >{{ session.user.displayName }}</span>
+      >
+        {{ session.user.displayName }}
+      </span>
       <button
         type="button"
-        class="account__btn account__btn--ghost"
-        title="Sair"
+        class="account__link"
         @click="onLogout"
       >
-        <i
-          class="ti ti-logout"
-          aria-hidden="true"
-        />
+        Sair
       </button>
     </div>
 
-    <!-- Deslogado: toggle + form compacto -->
+    <!-- Deslogado: formulário colapsável -->
     <template v-else>
-      <div class="account__row">
-        <span class="account__hint">Entre para criar e editar suas coletâneas</span>
-        <button
-          type="button"
-          class="account__btn"
-          @click="toggleForm"
-        >
-          <i
-            class="ti"
-            :class="formOpen ? 'ti-chevron-up' : 'ti-user'"
-            aria-hidden="true"
-          />
-          {{ formOpen ? 'Fechar' : 'Entrar' }}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="account__link"
+        @click="toggleForm"
+      >
+        {{ formOpen ? 'Fechar' : 'Entrar / Criar conta' }}
+      </button>
+
       <form
         v-if="formOpen"
         class="account__form"
         @submit.prevent="onSubmit"
       >
-        <div class="account__tabs">
+        <!-- LOGIN -->
+        <template v-if="mode === 'login'">
+          <input
+            v-model="email"
+            type="email"
+            class="account__input"
+            placeholder="E-mail"
+            autocomplete="email"
+          >
+          <input
+            v-model="password"
+            type="password"
+            class="account__input"
+            placeholder="Senha"
+            autocomplete="current-password"
+          >
           <button
-            type="button"
-            class="account__tab"
-            :class="{ 'account__tab--active': mode === 'login' }"
-            @click="mode = 'login'"
+            type="submit"
+            class="account__submit"
+            :disabled="!isValid || busy"
           >
             Entrar
           </button>
+          <div class="account__row">
+            <button
+              type="button"
+              class="account__link"
+              @click="mode = 'register'"
+            >
+              Criar conta
+            </button>
+            <button
+              type="button"
+              class="account__link"
+              @click="mode = 'forgot'"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
+        </template>
+
+        <!-- REGISTRO -->
+        <template v-else-if="mode === 'register'">
+          <input
+            v-model="displayName"
+            type="text"
+            class="account__input"
+            placeholder="Seu nome"
+            autocomplete="name"
+          >
+          <input
+            v-model="email"
+            type="email"
+            class="account__input"
+            placeholder="E-mail"
+            autocomplete="email"
+          >
+          <input
+            v-model="password"
+            type="password"
+            class="account__input"
+            placeholder="Senha (mín. 6)"
+            autocomplete="new-password"
+          >
           <button
-            type="button"
-            class="account__tab"
-            :class="{ 'account__tab--active': mode === 'register' }"
-            @click="mode = 'register'"
+            type="submit"
+            class="account__submit"
+            :disabled="!isValid || busy"
           >
             Criar conta
           </button>
-        </div>
-        <input
-          v-model="email"
-          type="email"
-          class="account__input"
-          placeholder="E-mail"
-          autocomplete="email"
-        >
-        <input
-          v-model="password"
-          type="password"
-          class="account__input"
-          placeholder="Senha (mín. 6)"
-          autocomplete="current-password"
-        >
-        <input
-          v-if="mode === 'register'"
-          v-model="displayName"
-          type="text"
-          class="account__input"
-          placeholder="Seu nome (exibido como autor)"
-        >
-        <button
-          type="submit"
-          class="account__btn account__btn--submit"
-          :disabled="!isValid || busy"
-        >
-          {{ busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar conta' }}
-        </button>
+          <div class="account__row">
+            <button
+              type="button"
+              class="account__link"
+              @click="mode = 'login'"
+            >
+              Já tenho conta
+            </button>
+          </div>
+        </template>
+
+        <!-- ESQUECI MINHA SENHA -->
+        <template v-else-if="mode === 'forgot'">
+          <p class="account__hint">
+            Informe seu e-mail. Sem e-mail automático: em produção o token de
+            reset é fornecido pelo suporte do projeto.
+          </p>
+          <input
+            v-model="email"
+            type="email"
+            class="account__input"
+            placeholder="E-mail da conta"
+            autocomplete="email"
+          >
+          <button
+            type="submit"
+            class="account__submit"
+            :disabled="!isValid || busy"
+          >
+            Gerar token de reset
+          </button>
+          <div class="account__row">
+            <button
+              type="button"
+              class="account__link"
+              @click="mode = 'login'"
+            >
+              Voltar
+            </button>
+          </div>
+        </template>
+
+        <!-- RESET (token + senha nova) -->
+        <template v-else>
+          <p class="account__hint">
+            Cole o token de reset e defina a senha nova (mín. 8 caracteres).
+          </p>
+          <input
+            v-model="resetToken"
+            type="text"
+            class="account__input"
+            placeholder="Token de reset"
+            autocomplete="one-time-code"
+          >
+          <input
+            v-model="password"
+            type="password"
+            class="account__input"
+            placeholder="Senha nova (mín. 8)"
+            autocomplete="new-password"
+          >
+          <button
+            type="submit"
+            class="account__submit"
+            :disabled="!isValid || busy"
+          >
+            Trocar senha
+          </button>
+          <div class="account__row">
+            <button
+              type="button"
+              class="account__link"
+              @click="mode = 'login'"
+            >
+              Voltar
+            </button>
+          </div>
+        </template>
       </form>
     </template>
   </div>
@@ -176,109 +305,84 @@ function toggleForm(): void {
 .account {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--v-theme-surface-variant, rgba(255, 255, 255, 0.08));
-  border-radius: 10px;
-  margin-bottom: 10px;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border-radius: var(--ds-radius-md, 8px);
+  background: var(--ds-color-surface-container, rgba(255, 255, 255, 0.05));
 }
 
-.account__logged,
-.account__row {
+.account__logged {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .account__name {
-  flex: 1;
-  font-size: 13px;
+  font-size: 0.85rem;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.account__hint {
-  flex: 1;
-  font-size: 11.5px;
-  opacity: 0.72;
-}
-
-.account__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--v-theme-surface-variant, rgba(255, 255, 255, 0.12));
-  background: transparent;
-  color: inherit;
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 12.5px;
-  cursor: pointer;
-}
-
-.account__btn--ghost {
+.account__link {
   border: none;
-  padding: 4px 6px;
-  opacity: 0.75;
+  background: none;
+  color: var(--ds-color-primary, #2196f3);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  text-align: left;
 }
 
-.account__btn--submit {
-  justify-content: center;
-  padding: 7px;
-}
-
-.account__btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.account__btn:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.07);
+.account__link:hover {
+  background: rgba(33, 150, 243, 0.12);
 }
 
 .account__form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.account__tabs {
-  display: flex;
-  gap: 4px;
-}
-
-.account__tab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: inherit;
-  opacity: 0.6;
-  font-size: 12px;
-  padding: 4px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.account__tab--active {
-  opacity: 1;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.08);
+  gap: 0.375rem;
 }
 
 .account__input {
   width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--v-theme-surface-variant, rgba(255, 255, 255, 0.12));
-  background: transparent;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
   color: inherit;
-  border-radius: 8px;
-  padding: 6px 9px;
-  font-size: 13px;
 }
 
-.account__input::placeholder {
+.account__submit {
+  padding: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--ds-color-primary, #2196f3);
+  border-radius: 6px;
+  background: var(--ds-color-primary, #2196f3);
+  color: #fff;
+  cursor: pointer;
+}
+
+.account__submit:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.account__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.account__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  opacity: 0.75;
+  line-height: 1.35;
 }
 </style>

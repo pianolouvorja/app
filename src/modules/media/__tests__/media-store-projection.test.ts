@@ -18,6 +18,7 @@ vi.mock('@shared/composables/useProjectionWindow', () => ({
   openProjectionModule: (...args: unknown[]) => openProjectionModule(...args),
   isProjectionModuleOpen: (...args: unknown[]) => isProjectionModuleOpen(...args),
   closeProjectionModule: (...args: unknown[]) => closeProjectionModule(...args),
+  hasSelectedExtendedProjectionTargets: vi.fn().mockResolvedValue(false),
 }))
 
 vi.mock('@modules/settings/services/palco-session', () => ({

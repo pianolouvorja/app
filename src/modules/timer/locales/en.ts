@@ -16,6 +16,9 @@ export default {
     close: 'Close',
     project: 'Project',
     clearProjection: 'Remove from projection',
+    inAppProjection: 'Stopwatch preview',
+    projectionHotkeyHint:
+      'ESC ends projection  ·  Ctrl+Alt+P toggles with the operator screen',
     projecting: 'Projecting',
     backToUtilities: 'Back to Timer',
     start: 'Start',

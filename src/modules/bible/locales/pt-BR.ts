@@ -25,6 +25,10 @@ export default {
     clearSelection: 'Limpar seleção',
     projectTvsOnly: 'Projetar só nas TVs',
     clearProjection: 'Retirar da projeção',
+    close: 'Fechar',
+    inAppProjection: 'Pré-visualização da Bíblia',
+    projectionHotkeyHint:
+      'ESC encerra a projeção  ·  Ctrl+Alt+P alterna com a tela do operador',
     emptyCatalog: 'Nenhum conteúdo bíblico disponível. Conclua a inicialização do app.',
     emptyChapter: 'Nenhum versículo encontrado neste capítulo.',
     loading: 'Carregando Bíblia...',

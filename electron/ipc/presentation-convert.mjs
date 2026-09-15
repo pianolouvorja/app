@@ -81,7 +81,7 @@ function getCacheDir() {
 /**
  * @param {string} filePath
  */
-function cacheKeyFor(filePath) {
+export function cacheKeyFor(filePath) {
   const stats = statSync(filePath)
   return createHash('sha1')
     .update(filePath)

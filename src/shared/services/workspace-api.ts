@@ -46,12 +46,16 @@ export function resolveMediaUrl(relativePath: string): string {
     return `local://media/${cleanPath}`
   }
 
-  const base = import.meta.env.VITE_URL_FILES ?? 'https://api.louvorja.com.br/file'
+  const base =
+    import.meta.env.VITE_URL_FILES ?? 'https://api.pianolouvorja.com.br/file'
   return `${base}/${cleanPath}`
 }
 
 export function resolveDatabaseUrl(relativePath: string): string {
-  const base = import.meta.env.VITE_URL_DATABASE ?? 'https://api.louvorja.com.br/json_db'
+  // Default da nossa API — .env é gitignored e o CI não injeta VITE_*:
+  // sem default aqui a build de release fica sem catálogo (hotfix 14/09).
+  const base =
+    import.meta.env.VITE_URL_DATABASE ?? 'https://api.pianolouvorja.com.br/json_db'
   const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`
   return `${base}${path}`
 }

@@ -22,6 +22,7 @@ vi.mock('@shared/services/projection-modules', () => ({
 vi.mock('@shared/composables/useProjectionWindow', () => ({
   openProjectionModule: vi.fn().mockResolvedValue(true),
   closeProjectionModule: vi.fn().mockResolvedValue(true),
+  hasSelectedExtendedProjectionTargets: vi.fn().mockResolvedValue(false),
 }))
 
 describe('timer handler → store real', () => {

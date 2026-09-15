@@ -104,6 +104,41 @@ export async function logout(): Promise<void> {
   saveSession(null)
 }
 
+/**
+ * Pede token de reset (POST /auth/forgot-password). A API responde 200
+ * sempre; quando RESET_TOKEN_EXPOSE=1 (self-host sem SMTP) o token vem no
+ * corpo e o fluxo segue direto na UI. Sem o flag, o token vai pelo suporte.
+ * Retorna o token (quando exposto) ou null.
+ */
+export async function requestPasswordReset(email: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${authBaseUrl()}/forgot-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    if (!response.ok) return null
+    const json = (await response.json()) as { ok?: boolean; token?: string }
+    return json?.token ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Troca a senha com token de reset (POST /auth/reset-password). */
+export async function resetPassword(token: string, password: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${authBaseUrl()}/reset-password`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 export { clearAuthSession as clearSession }
 
 function clearAuthSession(): void {

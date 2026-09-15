@@ -224,10 +224,13 @@ const effectiveConfig = computed(() => {
 <style scoped lang="scss">
 .timer-view {
   display: flex;
-  min-height: calc(100vh - var(--app-titlebar-height, 0px) - var(--ds-header-height, 5rem) - var(--ds-dock-height, 5.5rem));
+  box-sizing: border-box;
+  min-height: 0;
   flex-direction: column;
   padding: var(--ds-spacing-page, 1.5rem);
-  padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 5rem);
+  padding-bottom: 5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .timer-view__header {
@@ -437,7 +440,7 @@ const effectiveConfig = computed(() => {
 @media (max-width: 1280px) {
   .timer-view {
     padding: 1rem;
-    padding-bottom: calc(var(--ds-dock-height, 5.5rem) + 3.5rem);
+    padding-bottom: 3.5rem;
   }
 
   .timer-view__header {

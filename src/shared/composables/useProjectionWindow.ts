@@ -435,6 +435,19 @@ export async function syncProjectionAfterDisplayChange(): Promise<void> {
   await reapplyProjectionTargets(settings.targetDisplayIds)
 }
 
+/**
+ * Há monitores estendidos marcados para projeção cabeada?
+ * Sem isso (1 tela ou nada selecionado), a Bíblia usa preview in-app.
+ */
+export async function hasSelectedExtendedProjectionTargets(): Promise<boolean> {
+  const displays = await listSystemDisplays()
+  const extended = listExtendedDisplays(displays)
+  if (extended.length === 0) return false
+  const settings = loadProjectionSettings()
+  const extendedIds = new Set(extended.map((d) => d.id))
+  return settings.targetDisplayIds.some((id) => extendedIds.has(id))
+}
+
 export function useProjectionWindow() {
   return {
     open: openProjectionModule,
@@ -443,5 +456,6 @@ export function useProjectionWindow() {
     toggle: toggleProjectionModule,
     reapplyTargets: reapplyProjectionTargets,
     syncAfterDisplayChange: syncProjectionAfterDisplayChange,
+    hasSelectedExtendedProjectionTargets,
   }
 }

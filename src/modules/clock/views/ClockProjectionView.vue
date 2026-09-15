@@ -20,6 +20,13 @@ import {
 import type { ClockConfig } from '../types/clock'
 import { DEFAULT_CLOCK_CONFIG } from '../types/clock'
 
+withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
 const config = ref<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG })
 const stage = ref<StageSettings>(readEffectiveStageSettings('clock'))
 
@@ -86,6 +93,7 @@ const effectiveConfig = computed(() => {
 <template>
   <ProjectionBackground
     class="clock-projection"
+    :class="{ 'clock-projection--embedded': embedded }"
     :style="stageStyle"
   >
     <div
@@ -105,6 +113,12 @@ const effectiveConfig = computed(() => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  container-type: size;
+
+  &--embedded {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .clock-projection__stage {
