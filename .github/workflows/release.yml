@@ -227,7 +227,8 @@ jobs:
           set -euo pipefail
           gh release view "$TAG" --json assets --jq '.assets[].name' | tee /tmp/assets
           test "$(grep -cE '\.(AppImage|deb|rpm|pacman|tar\.gz)$' /tmp/assets)" -ge 10
-          test "$(grep -c 'SHA256SUMS-' /tmp/assets)" -eq 2
+          # Linux exige x64+arm64; Windows/macOS também sobem SHA256SUMS-* na mesma release.
+          test "$(grep -cE '^SHA256SUMS-(x64|arm64)$' /tmp/assets)" -eq 2
           test "$(grep -cE '^latest-linux\.yml$' /tmp/assets)" -eq 1
           test "$(grep -cE '^latest-linux-arm64\.yml$' /tmp/assets)" -eq 1
           echo "Release $TAG valid: x64 + arm64 Linux assets + updater YAML present."
