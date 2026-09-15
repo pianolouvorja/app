@@ -161,8 +161,12 @@
         cursor: pointer;
         font-size: 1rem;
       }
-      button:hover {
+      button:hover:not(:disabled) {
         background: rgba(255, 255, 255, 0.1);
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
       }
       button:disabled {
         opacity: 0.35;
@@ -366,6 +370,8 @@
         var displays = []
 
         function setProjectingUi(projecting) {
+          var canProject = selectedIds.length > 0
+          projectBtn.disabled = !projecting && !canProject
           if (projecting) {
             projectBtn.classList.add('is-active')
             projectBtn.title = 'Parar projeção do site'
@@ -374,8 +380,11 @@
             projectIcon.innerHTML = '<path d="' + STOP_PATH + '" />'
           } else {
             projectBtn.classList.remove('is-active')
-            projectBtn.title = 'Projetar site nas telas estendidas'
-            projectBtn.setAttribute('aria-label', 'Projetar site nas telas estendidas')
+            var label = canProject
+              ? 'Projetar site nas telas estendidas'
+              : 'Nenhuma tela disponível para projeção'
+            projectBtn.title = label
+            projectBtn.setAttribute('aria-label', label)
             projectBtn.setAttribute('aria-pressed', 'false')
             projectIcon.innerHTML = '<path d="' + ARROW_PATH + '" />'
           }
@@ -462,6 +471,7 @@
           })
           updateBadge()
           renderList()
+          await refreshNav()
         }
 
         async function setPanelOpen(open) {
@@ -498,6 +508,7 @@
           ) {
             await window.louvorja.projection.setSiteTargetMonitors(selectedIds.slice())
           }
+          await refreshNav()
         }
 
         async function refreshNav() {
@@ -528,6 +539,7 @@
         })
 
         projectBtn.addEventListener('click', async function () {
+          if (projectBtn.disabled) return
           if (!window.louvorja || !window.louvorja.projection) return
           await window.louvorja.projection.toggleSiteScreens()
           refreshNav()

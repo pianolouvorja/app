@@ -14,32 +14,66 @@ const hasApi = Boolean(bridge?.isElectron && bridge.externalPlayer?.get)
 
 const player = ref<ExternalPlayerPreference>('associated')
 const installed = ref<DetectedPlayer[]>([])
+const customPlayers = ref<string[]>([])
 const busy = ref(false)
+const detecting = ref(false)
+const scanned = ref(false)
 
-/** Rótulo do player atual (para o botão custom com caminho longo). */
-function labelFor(p: ExternalPlayerPreference): string {
-  if (p === 'associated') return t('settings.externalPlayer.player.associated')
-  if (p.startsWith('custom:')) {
-    const bin = p.slice('custom:'.length)
-    const name = bin.split(/[\\/]/).pop() || bin
-    return t('settings.externalPlayer.player.custom', { name })
-  }
-  const found = installed.value.find((d) => d.id === p)
-  return found?.label ?? p
+function fileName(bin: string): string {
+  return bin.split(/[\\/]/).pop() || bin
 }
 
-onMounted(async () => {
+function customId(bin: string): ExternalPlayerPreference {
+  return `custom:${bin}` as ExternalPlayerPreference
+}
+
+function customLabel(bin: string): string {
+  return t('settings.externalPlayer.player.custom', { name: fileName(bin) })
+}
+
+async function loadPreference() {
   if (!hasApi) return
   try {
     player.value = await bridge!.externalPlayer!.get!()
   } catch {
     player.value = 'associated'
   }
+}
+
+async function loadCustomPlayers() {
+  if (!hasApi) return
+  try {
+    const listed = (await bridge!.externalPlayer!.listCustom?.()) ?? []
+    customPlayers.value = listed.filter((item) => typeof item === 'string' && item.trim())
+    if (
+      customPlayers.value.length === 0 &&
+      player.value.startsWith('custom:')
+    ) {
+      customPlayers.value = [player.value.slice('custom:'.length)]
+    }
+  } catch {
+    if (player.value.startsWith('custom:')) {
+      customPlayers.value = [player.value.slice('custom:'.length)]
+    }
+  }
+}
+
+async function detectInstalled() {
+  if (!hasApi || detecting.value) return
+  detecting.value = true
   try {
     installed.value = (await bridge!.externalPlayer!.detect!()) ?? []
   } catch {
     installed.value = []
+  } finally {
+    detecting.value = false
+    scanned.value = true
   }
+}
+
+onMounted(async () => {
+  await loadPreference()
+  await Promise.all([loadCustomPlayers(), detectInstalled()])
 })
 
 async function setPlayer(next: ExternalPlayerPreference) {
@@ -50,8 +84,31 @@ async function setPlayer(next: ExternalPlayerPreference) {
   try {
     const ok = await bridge!.externalPlayer!.set!(next)
     if (!ok) player.value = previous
+    else await loadCustomPlayers()
   } catch {
     player.value = previous
+  } finally {
+    busy.value = false
+  }
+}
+
+async function removeCustom(bin: string) {
+  if (!hasApi || busy.value) return
+  busy.value = true
+  try {
+    const result = await bridge!.externalPlayer!.removeCustom?.(bin)
+    if (result) {
+      player.value = result.player
+      customPlayers.value = result.customPlayers ?? []
+      return
+    }
+    customPlayers.value = customPlayers.value.filter((item) => item !== bin)
+    if (player.value === customId(bin)) {
+      const ok = await bridge!.externalPlayer!.set!('associated')
+      if (ok) player.value = 'associated'
+    }
+  } catch {
+    /* mantém a lista */
   } finally {
     busy.value = false
   }
@@ -99,40 +156,99 @@ async function pickCustomPlayer() {
       </button>
 
       <button
-        v-for="option in installed"
-        :key="option.id"
         type="button"
-        role="radio"
-        :aria-checked="player === option.id"
-        :class="{ selected: player === option.id }"
-        :data-test="`external-player-${option.id}`"
-        :disabled="busy"
-        @click="setPlayer(option.id as ExternalPlayerPreference)"
+        class="detect"
+        data-test="external-player-detect"
+        :disabled="busy || detecting"
+        @click="detectInstalled"
       >
-        {{ option.label }}
-      </button>
-
-      <button
-        v-if="player.startsWith('custom:')"
-        type="button"
-        role="radio"
-        :aria-checked="true"
-        class="selected"
-        data-test="external-player-custom-active"
-        :disabled="busy"
-        @click="pickCustomPlayer()"
-      >
-        {{ labelFor(player) }}
+        {{
+          detecting
+            ? t('settings.externalPlayer.detecting')
+            : t('settings.externalPlayer.detect')
+        }}
       </button>
 
       <button
         type="button"
-        :data-test="`external-player-pick`"
+        data-test="external-player-pick"
         :disabled="busy"
         @click="pickCustomPlayer()"
       >
         {{ t('settings.externalPlayer.pickOther') }}
       </button>
+    </div>
+
+    <template v-if="hasApi && scanned">
+      <p
+        v-if="installed.length > 0"
+        class="hint"
+      >
+        {{ t('settings.externalPlayer.detectFound') }}
+      </p>
+      <p
+        v-else
+        class="hint"
+      >
+        {{ t('settings.externalPlayer.detectEmpty') }}
+      </p>
+
+      <div
+        v-if="installed.length > 0"
+        class="options"
+        role="radiogroup"
+        :aria-label="t('settings.externalPlayer.detectFound')"
+      >
+        <button
+          v-for="option in installed"
+          :key="option.id"
+          type="button"
+          role="radio"
+          :aria-checked="player === option.id"
+          :class="{ selected: player === option.id }"
+          :data-test="`external-player-${option.id}`"
+          :disabled="busy"
+          @click="setPlayer(option.id as ExternalPlayerPreference)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </template>
+
+    <div
+      v-if="hasApi && customPlayers.length > 0"
+      class="options custom-options"
+      role="radiogroup"
+      :aria-label="t('settings.externalPlayer.pickOther')"
+    >
+      <div
+        v-for="bin in customPlayers"
+        :key="bin"
+        class="player-chip"
+        :class="{ selected: player === customId(bin) }"
+        data-test="external-player-custom-chip"
+      >
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="player === customId(bin)"
+          :disabled="busy"
+          :data-test="`external-player-custom`"
+          @click="setPlayer(customId(bin))"
+        >
+          {{ customLabel(bin) }}
+        </button>
+        <button
+          type="button"
+          class="chip-remove"
+          :disabled="busy"
+          data-test="external-player-custom-remove"
+          :aria-label="t('settings.externalPlayer.removeCustom', { name: fileName(bin) })"
+          @click.stop="removeCustom(bin)"
+        >
+          ×
+        </button>
+      </div>
     </div>
 
     <p v-if="hasApi" class="hint">
@@ -181,9 +297,54 @@ h3 {
     font-weight: 600;
   }
 
+  &.detect {
+    border-color: color-mix(in srgb, var(--q-primary, #f2994a) 45%, transparent);
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+}
+
+.player-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+
+  &.selected {
+    border-color: var(--q-primary, #f2994a);
+    background: color-mix(in srgb, var(--q-primary, #f2994a) 18%, transparent);
+
+    button:not(.chip-remove) {
+      font-weight: 600;
+    }
+  }
+
+  button {
+    border: 0;
+    border-radius: 0;
+    padding: 0.4rem 0.75rem;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  .chip-remove {
+    padding: 0.35rem 0.55rem;
+    border-left: 1px solid rgb(255 255 255 / 0.15);
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.75;
+
+    &:hover:not(:disabled) {
+      opacity: 1;
+      background: rgb(255 255 255 / 0.08);
+    }
   }
 }
 </style>

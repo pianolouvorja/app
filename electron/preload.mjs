@@ -175,8 +175,11 @@ contextBridge.exposeInMainWorld('louvorja', {
   externalPlayer: {
     get: () => ipcRenderer.invoke('external-player:get'),
     detect: () => ipcRenderer.invoke('external-player:detect'),
+    listCustom: () => ipcRenderer.invoke('external-player:list-custom'),
     set: (player) => ipcRenderer.invoke('external-player:set', player),
-    play: (filePath) => ipcRenderer.invoke('external-player:play', filePath),
+    removeCustom: (binPath) => ipcRenderer.invoke('external-player:remove-custom', binPath),
+    play: (filePath, player) =>
+      ipcRenderer.invoke('external-player:play', filePath, player),
   },
 
   displays: {
@@ -191,6 +194,7 @@ contextBridge.exposeInMainWorld('louvorja', {
 
   presentation: {
       detectOffice: () => ipcRenderer.invoke('presentation:detect-office'),
+      detectEngines: () => ipcRenderer.invoke('presentation:detect-engines'),
       getEngine: () => ipcRenderer.invoke('presentation:get-engine'),
       setEngine: (engine) => ipcRenderer.invoke('presentation:set-engine', engine),
       openExternal: (filePath, engine) =>

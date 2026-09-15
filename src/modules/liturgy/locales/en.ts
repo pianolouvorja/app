@@ -175,8 +175,9 @@ export default {
     customAppTitle: 'Choose the presentation application (Keynote, OnlyOffice, WPS…)',
     playerSelect: 'Play in player',
     playerDefault: 'Settings default',
-    playerAssociated: 'In-app player (internal)',
-    playerSelectHint: 'Without an override, the player set in Settings → Media & Player applies. Projection screens keep using the app.',
+    playerDefaultNamed: '{name} (default)',
+    playerAssociated: 'Piano system player',
+    playerSelectHint: 'The default is the player chosen in Settings → Media & Player. This item only changes if you pick another one here.',
     engine: {
       auto: 'Automatic',
       powerpoint: 'PowerPoint',

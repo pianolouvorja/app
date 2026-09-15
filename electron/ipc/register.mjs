@@ -42,12 +42,16 @@ import { registerDisplayIpc } from './displays.mjs'
 import { registerDialogIpc, registerReadBinaryFileIpc } from './dialog.mjs'
 import { probeMediaDurationMsMain } from './media-probe.mjs'
 import {
+  detectInstalledPresentationEngines,
+  EXTERNAL_PRESENTATION_ENGINES,
   openPresentationExternal,
   setCustomPresentationApp,
 } from './presentation-external.mjs'
 import {
   getExternalPlayerPreference,
   setExternalPlayerPreference,
+  getCustomExternalPlayers,
+  removeCustomExternalPlayer,
   playInExternalPlayer,
   detectInstalledPlayers,
 } from '../external-player.mjs'
@@ -140,18 +144,25 @@ export function registerWorkspaceIpc() {
     }
   })
 
-  // Engine de apresentações: 'auto' (default), 'powerpoint' ou 'libreoffice'
+  ipcMain.handle('presentation:detect-engines', () => detectInstalledPresentationEngines())
+
+  // Engine de apresentações: 'auto' (padrão Piano) até o usuário escolher outro.
   ipcMain.handle('presentation:get-engine', () => {
     try {
       const rec = readWorkspaceRecord('ppt-engine')
-      return rec?.engine ?? 'auto'
+      const engine = rec?.engine
+      if (engine === 'auto' || EXTERNAL_PRESENTATION_ENGINES.includes(engine)) {
+        return engine
+      }
+      return 'auto'
     } catch {
       return 'auto'
     }
   })
   ipcMain.handle('presentation:set-engine', (_event, engine) => {
-    const valid = ['auto', 'powerpoint', 'libreoffice']
-    if (!valid.includes(engine)) return false
+    if (engine !== 'auto' && !EXTERNAL_PRESENTATION_ENGINES.includes(engine)) {
+      return false
+    }
     return writeWorkspaceRecord('ppt-engine', { engine })
   })
 
@@ -841,10 +852,14 @@ export function registerWorkspaceIpc() {
   // Player externo (app#177): preferência + play no player do usuário
   ipcMain.handle('external-player:get', () => getExternalPlayerPreference())
   ipcMain.handle('external-player:detect', () => detectInstalledPlayers())
+  ipcMain.handle('external-player:list-custom', () => getCustomExternalPlayers())
   ipcMain.handle('external-player:set', (_event, player) =>
     setExternalPlayerPreference(String(player ?? 'associated')),
   )
-  ipcMain.handle('external-player:play', async (_event, filePath) =>
-    playInExternalPlayer(String(filePath ?? '')),
+  ipcMain.handle('external-player:remove-custom', (_event, binPath) =>
+    removeCustomExternalPlayer(String(binPath ?? '')),
+  )
+  ipcMain.handle('external-player:play', async (_event, filePath, player) =>
+    playInExternalPlayer(String(filePath ?? ''), player),
   )
 }

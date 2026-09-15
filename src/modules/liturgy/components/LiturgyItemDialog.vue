@@ -3,7 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
-import type { FileDialogFilter } from '@shared/types/desktop-bridge'
+import type {
+  FileDialogFilter,
+  PresentationEngine,
+} from '@shared/types/desktop-bridge'
 
 import {
   DEFAULT_MOMENT_DURATION_MS,
@@ -18,6 +21,7 @@ import {
   type LiturgyMusicOption,
 } from '../types/liturgy'
 import { probeMediaDurationMs } from '../services/media-probe'
+import { useExternalPlayerChoices } from '../composables/useExternalPlayerChoices'
 import {
   formatMomentDuration,
   isLiturgyItemDraftValid,
@@ -412,30 +416,33 @@ function onCategoryChange(event: Event) {
   patch({ categoryId: value || null })
 }
 
-/** Players detectados na máquina (Configurações usa o mesmo backend). */
-const detectedPlayers = ref<Array<{ id: string; label: string }>>([])
-onMountedPlayerDetect()
+const {
+  globalPlayer,
+  playerOptions,
+  loadPlayerChoices,
+  selectedPlayerId: resolvePlayerId,
+  storedPlayerId,
+} = useExternalPlayerChoices()
 
-function onMountedPlayerDetect() {
-  const bridge = getDesktopBridge()
-  if (!bridge?.externalPlayer?.detect) return
-  bridge.externalPlayer
-    .detect()
-    .then((players) => {
-      detectedPlayers.value = players ?? []
-    })
-    .catch(() => {
-      detectedPlayers.value = []
-    })
-}
+const selectedPlayerId = computed(() => resolvePlayerId(props.draft.playerId))
 
 function onPlayerChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value
-  patch({ playerId: value || 'default' })
+  patch({ playerId: storedPlayerId(value) })
 }
 
+watch(
+  () => [props.open, props.draft.type] as const,
+  ([open, type]) => {
+    if (open && (type === 'audio' || type === 'video')) {
+      void loadPlayerChoices([props.draft.playerId])
+    }
+  },
+  { immediate: true },
+)
+
 /** Opções de motor PPTX: as 3 fixas + "Outro app…" (custom com executável). */
-const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'>>([
+const engineOptions = ref<PresentationEngine[]>([
   'auto',
   'powerpoint',
   'libreoffice',
@@ -446,9 +453,7 @@ const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'
  * Troca o motor do item. Escolhendo 'custom', abre o seletor de aplicativo
  * e só aplica se o usuário escolher um executável válido.
  */
-async function onEngineChange(
-  option: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
-) {
+async function onEngineChange(option: PresentationEngine) {
   if (option !== 'custom') {
     patch({ presentationEngine: option })
     return
@@ -1041,23 +1046,21 @@ function isLightDot(hex: string): boolean {
               </span>
               <select
                 class="moment-dialog__input moment-dialog__select"
-                :value="draft.playerId ?? 'default'"
+                :value="selectedPlayerId"
                 :aria-label="t('liturgy.fields.playerSelect')"
                 data-test="liturgy-player-options"
                 @change="onPlayerChange"
               >
-                <option value="default">
-                  {{ t('liturgy.fields.playerDefault') }}
-                </option>
-                <option value="associated">
-                  {{ t('liturgy.fields.playerAssociated') }}
-                </option>
                 <option
-                  v-for="p in detectedPlayers"
-                  :key="p.id"
-                  :value="p.id"
+                  v-for="player in playerOptions"
+                  :key="player.id"
+                  :value="player.id"
                 >
-                  {{ p.label }}
+                  {{
+                    player.id === globalPlayer
+                      ? t('liturgy.fields.playerDefaultNamed', { name: player.label })
+                      : player.label
+                  }}
                 </option>
               </select>
               <p class="moment-dialog__engine-hint">
