@@ -297,7 +297,7 @@ export type OpenUrlProjectionPayload = {
   mode?: 'video' | 'site' | 'image' | 'pdf' | 'presentation'
   withScreens?: boolean
   /** Engine de conversão para este item (sobrepõe o setting global). */
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
+  presentationEngine?: PresentationEngine
 }
 
 export type PlaybackSyncPayload = {

@@ -8,6 +8,7 @@ import {
   openProjectionModule,
 } from '@shared/composables/useProjectionWindow'
 import { getDesktopBridge } from '@shared/services/desktop-bridge'
+import type { PresentationEngine } from '@shared/types/desktop-bridge'
 import { palcoSession } from '../../settings/services/palco-session'
 
 import {
@@ -302,7 +303,7 @@ async function openLiturgyLocalPresentation(
   filePath: string,
   title = '',
   withScreens: boolean,
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
+  presentationEngine?: PresentationEngine,
 ): Promise<boolean> {
   const path = filePath.trim()
   if (!path) return false
@@ -346,7 +347,7 @@ async function openLiturgyLocalPresentation(
 export async function openLiturgyLocalPresentationControl(
   filePath: string,
   title = '',
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
+  presentationEngine?: PresentationEngine,
 ): Promise<boolean> {
   return openLiturgyLocalPresentation(filePath, title, false, presentationEngine)
 }
@@ -355,7 +356,7 @@ export async function openLiturgyLocalPresentationControl(
 export async function playLiturgyLocalPresentationOnScreens(
   filePath: string,
   title = '',
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
+  presentationEngine?: PresentationEngine,
 ): Promise<boolean> {
   return openLiturgyLocalPresentation(filePath, title, true, presentationEngine)
 }

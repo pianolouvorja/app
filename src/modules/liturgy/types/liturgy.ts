@@ -1,3 +1,5 @@
+import type { PresentationEngine } from '@shared/types/desktop-bridge'
+
 export const LITURGY_WEEKDAYS = [
   'sunday',
   'monday',
@@ -147,8 +149,8 @@ export interface LiturgyItem {
   filePath?: string
   /** Caminhos locais (galeria de imagens). */
   filePaths?: string[]
-  /** Engine do PPTX (itens presentation): auto|powerpoint|libreoffice|custom. */
-  presentationEngine?: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
+  /** Engine do PPTX (itens presentation): auto|powerpoint|libreoffice|onlyoffice|…|custom. */
+  presentationEngine?: PresentationEngine
   /**
    * Player de reprodução do item (vídeo/áudio): undefined = usa o global das
    * Configurações; senão associated|<known-id>|custom:<path>.
@@ -206,7 +208,7 @@ export interface LiturgyItemDraft {
   verseNumbers: string
   filePath: string
   filePaths: string[]
-  presentationEngine: 'auto' | 'powerpoint' | 'libreoffice' | 'custom'
+  presentationEngine: PresentationEngine
   /** Player do item; 'default' = herda o global das Configurações. */
   playerId: string
   url: string

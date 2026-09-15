@@ -3,7 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { getDesktopBridge, isDesktopApp } from '@shared/services/desktop-bridge'
-import type { FileDialogFilter } from '@shared/types/desktop-bridge'
+import type {
+  FileDialogFilter,
+  PresentationEngine,
+} from '@shared/types/desktop-bridge'
 
 import {
   DEFAULT_MOMENT_DURATION_MS,
@@ -439,7 +442,7 @@ watch(
 )
 
 /** Opções de motor PPTX: as 3 fixas + "Outro app…" (custom com executável). */
-const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'>>([
+const engineOptions = ref<PresentationEngine[]>([
   'auto',
   'powerpoint',
   'libreoffice',
@@ -450,9 +453,7 @@ const engineOptions = ref<Array<'auto' | 'powerpoint' | 'libreoffice' | 'custom'
  * Troca o motor do item. Escolhendo 'custom', abre o seletor de aplicativo
  * e só aplica se o usuário escolher um executável válido.
  */
-async function onEngineChange(
-  option: 'auto' | 'powerpoint' | 'libreoffice' | 'custom',
-) {
+async function onEngineChange(option: PresentationEngine) {
   if (option !== 'custom') {
     patch({ presentationEngine: option })
     return
