@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
-
 import { GlassCard } from "@design-system/index";
+import { useI18n } from "vue-i18n";
 import { markAllRead } from "../services/notifications";
 
 const props = defineProps<{
@@ -21,7 +19,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const isOpen = ref(props.notifications.length > 0);
 
 const iconByType: Record<string, string> = {
 	music_promoted: "ti-trophy",
@@ -35,23 +32,17 @@ function icon(type: string): string {
 	return iconByType[type] ?? "ti-bell";
 }
 
-onMounted(() => {
-	isOpen.value = props.notifications.length > 0;
-});
-
 function closeAndMark() {
 	if (props.notifications.length > 0) {
 		markAllRead();
 		emit("mark-read");
 	}
-	isOpen.value = false;
 	emit("close");
 }
 </script>
 
 <template>
 	<GlassCard
-		v-if="isOpen"
 		class="notifications-panel"
 		elevated
 	>
@@ -60,26 +51,13 @@ function closeAndMark() {
 				<i class="ti ti-bell-ringing" aria-hidden="true" />
 				{{ t("notifications.title") }}
 			</h2>
-			<div class="notifications-panel__head-actions">
-				<button
-					type="button"
-					class="notifications-panel__mark"
-					@click="
-						emit('mark-read');
-						closeAndMark();
-					"
-				>
-					{{ t("notifications.markRead") }}
-				</button>
-				<button
-					type="button"
-					class="notifications-panel__close"
-					:aria-label="t('community.back')"
-					@click="emit('close')"
-				>
-					<i class="ti ti-x" aria-hidden="true" />
-				</button>
-			</div>
+			<button
+				type="button"
+				class="notifications-panel__mark"
+				@click="closeAndMark"
+			>
+				{{ t("notifications.markRead") }}
+			</button>
 		</div>
 		<ul class="notifications-panel__list">
 			<li
@@ -121,11 +99,7 @@ function closeAndMark() {
 	font-size: 1rem;
 }
 
-.notifications-panel__head-actions {
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-}
+
 
 .notifications-panel__mark {
 	border: none;
@@ -137,18 +111,7 @@ function closeAndMark() {
 	text-decoration: underline;
 }
 
-.notifications-panel__close {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 1.6rem;
-	height: 1.6rem;
-	border: none;
-	border-radius: 50%;
-	background: transparent;
-	color: inherit;
-	cursor: pointer;
-}
+
 
 .notifications-panel__list {
 	display: flex;
