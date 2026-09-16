@@ -27,6 +27,6 @@ export default {
 		weeklyTasks: "Weekly tasks",
 		report: 'Report',
 		reportPrompt: 'Describe the reason for reporting (min. 3 characters):',
-		reportTooShort: \"Reason too short (min. {min} characters).\",
+		reportTooShort: "Reason too short (min. {min} characters).",
 	},
 };
