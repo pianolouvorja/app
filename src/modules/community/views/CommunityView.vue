@@ -298,11 +298,8 @@ onMounted(load);
 	   scroll container. Sem sub-containers com scroll interno. */
 	height: 100%;
 	overflow-y: auto;
-	scrollbar-width: none; /* Firefox: esconde a barra, o scroll funciona */
-
-	&::-webkit-scrollbar {
-		display: none; /* Chromium/Electron/webkit: idem */
-	}
+	/* Firefox: esconde a barra (funciona mesmo com a global) */
+	scrollbar-width: none;
 }
 
 .community-view__header {
@@ -500,5 +497,20 @@ onMounted(load);
 	to {
 		transform: rotate(360deg);
 	}
+}
+</style>
+
+<style>
+/* Scrollbar da Comunidade invisível — bloco global p/ vencer base.css.
+   O scroll continua funcionando (mouse, touch, teclado). */
+.community-view {
+	scrollbar-width: none !important;
+	scrollbar-color: transparent transparent !important;
+}
+
+.community-view::-webkit-scrollbar {
+	display: none !important;
+	width: 0 !important;
+	height: 0 !important;
 }
 </style>
