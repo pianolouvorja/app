@@ -37,5 +37,6 @@ export default {
 	notifications: {
 		title: "Notificaciones",
 		markRead: "Marcar todas como leídas",
+		empty: "Aún no hay notificaciones.",
 	},
 };
