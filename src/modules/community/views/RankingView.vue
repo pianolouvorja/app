@@ -12,8 +12,6 @@ import {
 	type RankingEntry,
 	type RankingWindow,
 } from "../services/ranking";
-import { getAuthSession } from "@modules/media/services/auth-client";
-
 const { t } = useI18n();
 const router = useRouter();
 
