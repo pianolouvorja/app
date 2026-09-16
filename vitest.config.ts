@@ -24,7 +24,7 @@ export default defineConfig({
   test: {
     exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'text-summary', 'lcov'],
       thresholds: {
         lines: 100,
@@ -33,9 +33,13 @@ export default defineConfig({
         branches: 100,
       },
       include: [
-        'src/shared/composables/useUpdateChecker.ts',
-        'src/shared/components/UpdateBanner.vue',
-        'src/plugins/i18n.ts',
+        'src/**/*.ts',
+        'src/**/*.vue',
+      ],
+      exclude: [
+        '**/__tests__/**',
+        'src/**/locales/*.ts',
+        'src/**/*.d.ts',
       ],
     },
   },
