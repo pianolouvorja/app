@@ -24,6 +24,7 @@ const copyingId = ref<number | null>(null);
 const savedId = ref<number | null>(null);
 const savedError = ref<number | null>(null);
 const weeklyTasks = ref<WeeklyTask[]>([]);
+const viewEl = ref<HTMLElement | null>(null);
 const page = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
@@ -46,7 +47,8 @@ async function load() {
 	if (tasks) weeklyTasks.value = tasks;
 	// serviços nunca lançam; falha = vazio/null.
 	isLoading.value = false;
-	window.scrollTo({ top: 0 });
+	// o scroll container é o próprio section (a página inteira rola)
+	viewEl.value?.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function goTo(p: number) {
@@ -285,13 +287,17 @@ onMounted(load);
 
 <style scoped>
 .community-view {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	padding: 1.5rem;
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	/* A página inteira rola (main do shell é overflow:hidden): o view é o
+	   scroll container. Sem sub-containers com scroll interno. */
+	height: 100%;
+	overflow-y: auto;
 }
 
 .community-view__header {
