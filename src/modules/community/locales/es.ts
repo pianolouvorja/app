@@ -29,6 +29,7 @@ export default {
 		empty: "Nadie ha puntuado todavía. ¡Publica una colección!",
 		loadError: "No se pudo guardar la copia.",
 		weeklyTasks: "Tareas de la semana",
+		loginToSeePosition: \"Inicia sesión para ver tu posición en el ranking.\",
 		report: 'Reportar',
 		reportPrompt: 'Describe el motivo del reporte (mín. 3 caracteres):',
 		reportTooShort: "Motivo demasiado corto (mín. {min} caracteres).",

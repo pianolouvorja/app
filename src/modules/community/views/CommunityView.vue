@@ -13,6 +13,10 @@ import {
 	saveCommunityCopy,
 } from "../services/community-catalog";
 import { registerUse, reportCollection } from "../services/ranking";
+import {
+	getSeasonalEvent,
+	type SeasonalEventBanner,
+} from "../services/seasonal-event";
 import { getWeeklyTasks, type WeeklyTask } from "../services/weekly-tasks";
 import {
 	type AppNotification,
@@ -50,13 +54,15 @@ const filteredCollections = computed(() => {
 const reportTarget = ref<CommunityCollectionSummary | null>(null);
 const notifications = ref<AppNotification[]>([]);
 const showNotifications = ref(false);
+const seasonalEvent = ref<SeasonalEventBanner | null>(null);
 
 async function load() {
 	isLoading.value = true;
-	const [result, tasks, notifs] = await Promise.all([
+	const [result, tasks, notifs, seasonal] = await Promise.all([
 		listCommunityCollectionsPage(page.value, PER_PAGE),
 		getWeeklyTasks(),
 		getNotifications(),
+		getSeasonalEvent(),
 	]);
 	collections.value = result.items;
 	page.value = result.page;
@@ -151,6 +157,23 @@ onMounted(load);
         </button>
       </div>
     </header>
+
+    <div
+      v-if="seasonalEvent"
+      class="community-view__event"
+      role="status"
+    >
+      <i class="ti ti-sparkles community-view__event-icon" aria-hidden="true" />
+      <div class="community-view__event-text">
+        <strong>{{ seasonalEvent.name }}</strong>
+        <span v-if="seasonalEvent.description">
+          {{ seasonalEvent.description }}
+        </span>
+      </div>
+      <span class="community-view__event-mult">
+        x{{ seasonalEvent.multiplier }}
+      </span>
+    </div>
 
     <p
       v-if="isLoading"
@@ -472,6 +495,34 @@ onMounted(load);
 .community-view__task-bonus {
 	font-weight: 600;
 	opacity: 0.8;
+}
+
+.community-view__event {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+	border: 1px solid color-mix(in srgb, var(--ds-color-primary, #e6b93c) 45%, transparent);
+	background: color-mix(in srgb, var(--ds-color-primary, #e6b93c) 12%, transparent);
+}
+
+.community-view__event-icon {
+	font-size: 1.3rem;
+	color: var(--ds-color-primary, #e6b93c);
+}
+
+.community-view__event-text {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	font-size: 0.9rem;
+}
+
+.community-view__event-mult {
+	font-weight: 800;
+	font-size: 1.05rem;
+	color: var(--ds-color-primary, #e6b93c);
 }
 
 .community-view__status {

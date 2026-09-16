@@ -12,6 +12,7 @@ import {
 	type RankingEntry,
 	type RankingWindow,
 } from "../services/ranking";
+import { getAuthSession } from "@modules/media/services/auth-client";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -19,6 +20,7 @@ const router = useRouter();
 const window = ref<RankingWindow>("all");
 const entries = ref<RankingEntry[]>([]);
 const me = ref<MyPosition | null>(null);
+const isLogged = ref(false);
 const isLoading = ref(true);
 
 async function load() {
@@ -82,18 +84,26 @@ onMounted(load);
 		</header>
 
 		<GlassCard
-			v-if="me && (me.position !== null || me.total !== null)"
+			v-if="isLogged"
 			class="ranking-view__me"
 			elevated
 		>
 			<i class="ti ti-user-star" aria-hidden="true" />
-			<template v-if="me.position !== null">
+			<template v-if="me && me.position !== null">
 				<span>{{ t("ranking.myPosition", { position: me.position }) }}</span>
 				<span class="ranking-view__me-points">
 					{{ t("ranking.points", { points: me.total ?? 0 }) }}
 				</span>
 			</template>
 			<span v-else>{{ t("ranking.notRankedYet") }}</span>
+		</GlassCard>
+		<GlassCard
+			v-else-if="!isLoading"
+			class="ranking-view__me"
+			elevated
+		>
+			<i class="ti ti-login-2" aria-hidden="true" />
+			<span>{{ t("ranking.loginToSeePosition") }}</span>
 		</GlassCard>
 
 		<p
