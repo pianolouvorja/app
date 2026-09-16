@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { GlassCard } from "@design-system/index";
+import { getAuthSession } from "@modules/media/services/auth-client";
 import { onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-
-import { GlassCard } from "@design-system/index";
-import { getAuthSession } from "@modules/media/services/auth-client";
 
 import {
 	getMyPosition,

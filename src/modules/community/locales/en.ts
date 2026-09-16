@@ -12,5 +12,18 @@ export default {
 		saveCopy: "Save copy",
 		copySaved: "Copy saved to My Collections",
 		copyFailed: "Could not save the copy.",
+		ranking: "View ranking",
+	},
+	ranking: {
+		title: "Ranking",
+		subtitle: "Community contributors",
+		week: "Week",
+		all: "All time",
+		myPosition: "Your position: #{position}",
+		points: "{points} pts",
+		notRankedYet: "You have not scored in this window yet.",
+		empty: "Nobody has scored yet. Publish a collection!",
+		loadError: "Failed to save copy.",
+		weeklyTasks: "Weekly tasks",
 	},
 };

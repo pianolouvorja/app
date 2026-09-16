@@ -12,5 +12,18 @@ export default {
 		saveCopy: "Guardar copia",
 		copySaved: "Copia guardada en Mis Colecciones",
 		copyFailed: "No se pudo guardar la copia.",
+		ranking: "Ver ranking",
+	},
+	ranking: {
+		title: "Ranking",
+		subtitle: "Colaboradores de la Comunidad",
+		week: "Semana",
+		all: "General",
+		myPosition: "Tu posición: #{position}",
+		points: "{points} pts",
+		notRankedYet: "Aún no has puntuado en esta ventana.",
+		empty: "Nadie ha puntuado todavía. ¡Publica una colección!",
+		loadError: "No se pudo guardar la copia.",
+		weeklyTasks: "Tareas de la semana",
 	},
 };

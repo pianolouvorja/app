@@ -11,6 +11,7 @@ import {
 	saveCommunityCopy,
 } from "../services/community-catalog";
 import { registerUse } from "../services/ranking";
+import { getWeeklyTasks, type WeeklyTask } from "../services/weekly-tasks";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -18,11 +19,17 @@ const router = useRouter();
 const collections = ref<CommunityCollectionSummary[]>([]);
 const isLoading = ref(true);
 const copyingId = ref<number | null>(null);
+const weeklyTasks = ref<WeeklyTask[]>([]);
 
 async function load() {
 	isLoading.value = true;
-	collections.value = await listCommunityCollections();
-	// listCommunityCollections nunca lança; falha de rede/API = lista vazia.
+	const [cols, tasks] = await Promise.all([
+		listCommunityCollections(),
+		getWeeklyTasks(),
+	]);
+	collections.value = cols;
+	if (tasks) weeklyTasks.value = tasks;
+	// listCommunityCollections/getWeeklyTasks nunca lançam; falha = vazio/null.
 	isLoading.value = false;
 }
 
@@ -184,6 +191,48 @@ onMounted(load);
 	color: inherit;
 	font-size: 0.9rem;
 	cursor: pointer;
+}
+
+.community-view__tasks {
+	padding: 0.75rem 1rem;
+}
+
+.community-view__tasks-title {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin: 0 0 0.5rem;
+	font-size: 1rem;
+}
+
+.community-view__tasks-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.community-view__task {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.9rem;
+}
+
+.community-view__task--done {
+	opacity: 0.55;
+	text-decoration: line-through;
+}
+
+.community-view__task-desc {
+	flex: 1;
+}
+
+.community-view__task-bonus {
+	font-weight: 600;
+	opacity: 0.8;
 }
 
 .community-view__status {

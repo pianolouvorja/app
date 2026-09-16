@@ -12,5 +12,18 @@ export default {
 		saveCopy: "Salvar cópia",
 		copySaved: "Cópia salva em Minhas Coletâneas",
 		copyFailed: "Não foi possível salvar a cópia.",
+		ranking: "Ver ranking",
+	},
+	ranking: {
+		title: "Ranking",
+		subtitle: "Contribuidores da Comunidade",
+		week: "Semana",
+		all: "Geral",
+		myPosition: "Sua posição: #{position}",
+		points: "{points} pts",
+		notRankedYet: "Você ainda não pontuou nesta janela.",
+		empty: "Ninguém pontuou ainda. Publique uma coletânea!",
+		loadError: "Falha ao salvar cópia.",
+		weeklyTasks: "Tarefas da semana",
 	},
 };
