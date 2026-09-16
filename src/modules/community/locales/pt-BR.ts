@@ -33,4 +33,8 @@ export default {
 		reportPrompt: 'Descreva o motivo do report (mín. 3 caracteres):',
 		reportTooShort: "Motivo muito curto (mín. {min} caracteres).",
 	},
+	notifications: {
+		title: "Notificações",
+		markRead: "Marcar todas como lidas",
+	},
 };

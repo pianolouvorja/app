@@ -14,6 +14,11 @@ import {
 } from "../services/community-catalog";
 import { registerUse, reportCollection } from "../services/ranking";
 import { getWeeklyTasks, type WeeklyTask } from "../services/weekly-tasks";
+import {
+	type AppNotification,
+	getNotifications,
+} from "../services/notifications";
+import NotificationsPanel from "../components/NotificationsPanel.vue";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -43,12 +48,15 @@ const filteredCollections = computed(() => {
 	);
 });
 const reportTarget = ref<CommunityCollectionSummary | null>(null);
+const notifications = ref<AppNotification[]>([]);
+const showNotifications = ref(false);
 
 async function load() {
 	isLoading.value = true;
-	const [result, tasks] = await Promise.all([
+	const [result, tasks, notifs] = await Promise.all([
 		listCommunityCollectionsPage(page.value, PER_PAGE),
 		getWeeklyTasks(),
+		getNotifications(),
 	]);
 	collections.value = result.items;
 	page.value = result.page;
@@ -360,6 +368,37 @@ onMounted(load);
 .community-view__subtitle {
   margin: 0;
   opacity: 0.7;
+}
+
+.community-view__bell {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.4rem;
+	height: 2.4rem;
+	border: 1px solid var(--ds-color-outline, rgba(255, 255, 255, 0.08));
+	border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+	background: color-mix(in srgb, var(--ds-color-surface-card, #201f1f) 70%, transparent);
+	color: var(--ds-color-on-surface);
+	cursor: pointer;
+}
+
+.community-view__bell-badge {
+	position: absolute;
+	top: -6px;
+	right: -6px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.1rem;
+	height: 1.1rem;
+	padding: 0 0.25rem;
+	border-radius: 999px;
+	background: #e5484d;
+	color: #fff;
+	font-size: 0.68rem;
+	font-weight: 700;
 }
 
 .community-view__ranking-link {

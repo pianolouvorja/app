@@ -33,4 +33,8 @@ export default {
 		reportPrompt: 'Describe the reason for reporting (min. 3 characters):',
 		reportTooShort: "Reason too short (min. {min} characters).",
 	},
+	notifications: {
+		title: "Notifications",
+		markRead: "Mark all as read",
+	},
 };
