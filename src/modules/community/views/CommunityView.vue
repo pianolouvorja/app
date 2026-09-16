@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { GlassCard } from "@design-system/index";
+import { getAuthSession } from "@modules/media/services/auth-client";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -9,6 +10,7 @@ import {
 	listCommunityCollections,
 	saveCommunityCopy,
 } from "../services/community-catalog";
+import { registerUse } from "../services/ranking";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -26,7 +28,9 @@ async function load() {
 
 async function saveCopy(collection: CommunityCollectionSummary) {
 	// F0.4: cópia LOCAL editável, SEM tocar na do autor.
+	// F1: registra o uso (1x/user na API; credita +5 ao dono).
 	copyingId.value = collection.id;
+	await registerUse(collection.id, getAuthSession()?.token ?? null);
 	const localId = await saveCommunityCopy(collection);
 	copyingId.value = null;
 	if (localId !== null) {
@@ -166,6 +170,20 @@ onMounted(load);
 .community-view__subtitle {
   margin: 0;
   opacity: 0.7;
+}
+
+.community-view__ranking-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin-top: 0.5rem;
+	padding: 0.4rem 0.8rem;
+	border-radius: 0.5rem;
+	border: 1px solid var(--ds-border, rgba(255, 255, 255, 0.2));
+	background: var(--ds-glass-fill, rgba(255, 255, 255, 0.08));
+	color: inherit;
+	font-size: 0.9rem;
+	cursor: pointer;
 }
 
 .community-view__status {
