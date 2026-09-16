@@ -22,7 +22,7 @@ import {
 	type AppNotification,
 	getNotifications,
 } from "../services/notifications";
-import NotificationsPanel from "../components/NotificationsPanel.vue";
+import NotificationsDropdown from "../components/NotificationsDropdown.vue";
 
 const { t } = useI18n();
 const router = useRouter();
