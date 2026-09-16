@@ -10,7 +10,7 @@ import {
 	listCommunityCollections,
 	saveCommunityCopy,
 } from "../services/community-catalog";
-import { registerUse } from "../services/ranking";
+import { registerUse, reportCollection } from "../services/ranking";
 import { getWeeklyTasks, type WeeklyTask } from "../services/weekly-tasks";
 
 const { t } = useI18n();
@@ -31,6 +31,19 @@ async function load() {
 	if (tasks) weeklyTasks.value = tasks;
 	// listCommunityCollections/getWeeklyTasks nunca lançam; falha = vazio/null.
 	isLoading.value = false;
+}
+
+async function report(collection: CommunityCollectionSummary) {
+	const reason = window.prompt(t("ranking.reportPrompt"));
+	if (!reason || reason.trim().length < 3) return;
+	const ok = await reportCollection(
+		collection.id,
+		reason.trim(),
+		getAuthSession()?.token ?? null,
+	);
+	if (ok) {
+		await load(); // some da lista (servidor esconde)
+	}
 }
 
 async function saveCopy(collection: CommunityCollectionSummary) {
@@ -307,6 +320,28 @@ onMounted(load);
   color: inherit;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+.community-view__actions {
+	display: flex;
+	gap: 0.4rem;
+	margin-top: 0.5rem;
+}
+
+.community-view__actions .community-view__copy-btn {
+	flex: 1;
+}
+
+.community-view__report-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.2rem;
+	border-radius: 0.5rem;
+	border: 1px solid var(--ds-border, rgba(255, 255, 255, 0.2));
+	background: var(--ds-glass-fill, rgba(255, 255, 255, 0.08));
+	color: inherit;
+	cursor: pointer;
 }
 
 .community-view__copy-btn:hover {

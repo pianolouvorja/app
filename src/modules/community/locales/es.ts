@@ -25,5 +25,7 @@ export default {
 		empty: "Nadie ha puntuado todavía. ¡Publica una colección!",
 		loadError: "No se pudo guardar la copia.",
 		weeklyTasks: "Tareas de la semana",
+		report: 'Reportar',
+		reportPrompt: 'Describe el motivo del reporte (mín. 3 caracteres):',
 	},
 };

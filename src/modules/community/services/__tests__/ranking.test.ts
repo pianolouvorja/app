@@ -95,4 +95,21 @@ describe("ranking service (F2 app)", () => {
 		expect(await registerUse(12, null)).toBe(false);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
+
+  it("reportCollection: POST com sessão e reason; sem sessão → false", async () => {
+    let capturedInit: RequestInit | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        capturedInit = init;
+        return jsonResponse({ ok: true });
+      }),
+    );
+    expect(await reportCollection(12, "Conteúdo inadequado", "tok")).toBe(true);
+    expect((capturedInit?.method as string) || "GET").toBe("POST");
+    const body = JSON.parse(String(capturedInit?.body));
+    expect(body.reason).toBe("Conteúdo inadequado");
+
+    expect(await reportCollection(12, "abc", null)).toBe(false);
+  });
 });

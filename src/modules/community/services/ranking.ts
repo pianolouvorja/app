@@ -85,3 +85,31 @@ export async function registerUse(
 		return false;
 	}
 }
+
+/**
+ * F5: reporta coletânea (esconde do catálogo público até revisão da curadoria).
+ * Exige sessão. Retorna true se o report foi registrado.
+ */
+export async function reportCollection(
+	collectionId: number,
+	reason: string,
+	sessionToken: string | null,
+): Promise<boolean> {
+	if (!sessionToken) return false;
+	try {
+		const response = await fetch(
+			`${communityBaseUrl()}/collections/${collectionId}/report`,
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					...authHeaders(sessionToken),
+				},
+				body: JSON.stringify({ reason }),
+			},
+		);
+		return response.ok;
+	} catch {
+		return false;
+	}
+}

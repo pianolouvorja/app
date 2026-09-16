@@ -25,5 +25,7 @@ export default {
 		empty: "Ninguém pontuou ainda. Publique uma coletânea!",
 		loadError: "Falha ao salvar cópia.",
 		weeklyTasks: "Tarefas da semana",
+		report: 'Reportar',
+		reportPrompt: 'Descreva o motivo do report (mín. 3 caracteres):',
 	},
 };

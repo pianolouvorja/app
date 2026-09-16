@@ -25,5 +25,7 @@ export default {
 		empty: "Nobody has scored yet. Publish a collection!",
 		loadError: "Failed to save copy.",
 		weeklyTasks: "Weekly tasks",
+		report: 'Report',
+		reportPrompt: 'Describe the reason for reporting (min. 3 characters):',
 	},
 };
