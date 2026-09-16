@@ -5,14 +5,20 @@
   "coverageAnalysis": "perTest",
   "mutate": [
     "src/plugins/i18n.ts",
-    "src/modules/sync/services/library-catalog.ts"
+    "src/modules/sync/services/library-catalog.ts",
+    "src/modules/community/services/notifications.ts",
+    "src/modules/community/components/NotificationsDropdown.vue"
   ],
   "thresholds": {
     "high": 80,
     "low": 60,
     "break": 50
   },
-  "reporters": ["html", "clear-text", "progress"],
+  "reporters": [
+    "html",
+    "clear-text",
+    "progress"
+  ],
   "htmlReporter": {
     "fileName": "reports/mutation/mutation.html"
   },
