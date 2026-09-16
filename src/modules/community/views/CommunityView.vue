@@ -19,6 +19,8 @@ const router = useRouter();
 const collections = ref<CommunityCollectionSummary[]>([]);
 const isLoading = ref(true);
 const copyingId = ref<number | null>(null);
+const savedId = ref<number | null>(null);
+const savedError = ref<number | null>(null);
 const weeklyTasks = ref<WeeklyTask[]>([]);
 
 async function load() {
@@ -54,11 +56,12 @@ async function saveCopy(collection: CommunityCollectionSummary) {
 	const localId = await saveCommunityCopy(collection);
 	copyingId.value = null;
 	if (localId !== null) {
-		// Abre a cópia no editor (fluxo existente de Minhas Coletâneas locais).
-		await router.push({
-			path: "/albums",
-			query: { customCollection: String(localId) },
-		});
+		// O editor de Minhas Coletâneas está oculto por feature flag
+		// (SHOW_CUSTOM_COLLECTIONS=false): dar feedback aqui, sem navegar.
+		savedId.value = collection.id;
+		await load();
+	} else {
+		savedError.value = collection.id;
 	}
 }
 
@@ -83,6 +86,14 @@ onMounted(load);
         <p class="community-view__subtitle">
           {{ t('community.subtitle') }}
         </p>
+        <button
+          type="button"
+          class="community-view__ranking-link"
+          @click="router.push('/community/ranking')"
+        >
+          <i class="ti ti-trophy" aria-hidden="true" />
+          {{ t('community.ranking') }}
+        </button>
       </div>
     </header>
 
@@ -93,8 +104,37 @@ onMounted(load);
       {{ t('community.loading') }}
     </p>
 
+    <GlassCard
+      v-if="!isLoading && weeklyTasks.length > 0"
+      class="community-view__tasks"
+      elevated
+    >
+      <h2 class="community-view__tasks-title">
+        <i class="ti ti-target" aria-hidden="true" />
+        {{ t('ranking.weeklyTasks') }}
+      </h2>
+      <ul class="community-view__tasks-list">
+        <li
+          v-for="task in weeklyTasks"
+          :key="task.id"
+          class="community-view__task"
+          :class="{ 'community-view__task--done': task.done }"
+        >
+          <i
+            class="ti"
+            :class="task.done ? 'ti-circle-check' : 'ti-circle'"
+            aria-hidden="true"
+          />
+          <span class="community-view__task-desc">{{ task.description }}</span>
+          <span class="community-view__task-bonus">
+            {{ t('ranking.points', { points: task.bonus }) }}
+          </span>
+        </li>
+      </ul>
+    </GlassCard>
+
     <div
-      v-else-if="collections.length > 0"
+      v-else-if="!isLoading && collections.length > 0"
       class="community-view__grid"
     >
       <GlassCard
@@ -131,14 +171,40 @@ onMounted(load);
             <i class="ti ti-disc" aria-hidden="true" />
             {{ t('community.trackCount', { count: collection.musicsCount }) }}
           </p>
-          <button
-            type="button"
-            class="community-view__copy-btn"
-            @click="saveCopy(collection)"
-          >
-            <i class="ti ti-copy" aria-hidden="true" />
-            {{ t('community.saveCopy') }}
-          </button>
+          <div class="community-view__actions">
+            <button
+              type="button"
+              class="community-view__copy-btn"
+              :disabled="copyingId === collection.id"
+              @click="saveCopy(collection)"
+            >
+              <i
+                class="ti"
+                :class="
+                  copyingId === collection.id
+                    ? 'ti-loader-2 ti-spin'
+                    : savedId === collection.id
+                      ? 'ti-check'
+                      : 'ti-copy'
+                "
+                aria-hidden="true"
+              />
+              {{
+                savedId === collection.id
+                  ? t('community.copySaved')
+                  : t('community.saveCopy')
+              }}
+            </button>
+            <button
+              type="button"
+              class="community-view__report-btn"
+              :aria-label="t('ranking.report')"
+              :title="t('ranking.report')"
+              @click="report(collection)"
+            >
+              <i class="ti ti-flag" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </GlassCard>
     </div>
@@ -346,5 +412,17 @@ onMounted(load);
 
 .community-view__copy-btn:hover {
   filter: brightness(1.15);
+}
+.ti-spin {
+	animation: community-spin 1s linear infinite;
+}
+
+@keyframes community-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 </style>
