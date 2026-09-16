@@ -1,5 +1,5 @@
 /**
  * Feature flag: Minhas Coletâneas + botão "Abrir editor de letras".
- * Desligado temporariamente — religar quando o recurso voltar à Central.
+ * Religado 16/09 (Rafael) junto com a aba Comunidade.
  */
-export const SHOW_CUSTOM_COLLECTIONS = false
+export const SHOW_CUSTOM_COLLECTIONS = true
