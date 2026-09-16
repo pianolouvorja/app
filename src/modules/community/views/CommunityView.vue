@@ -7,6 +7,7 @@ import { useRouter } from "vue-router";
 import {
 	type CommunityCollectionSummary,
 	listCommunityCollections,
+	saveCommunityCopy,
 } from "../services/community-catalog";
 
 const { t } = useI18n();
@@ -14,6 +15,7 @@ const router = useRouter();
 
 const collections = ref<CommunityCollectionSummary[]>([]);
 const isLoading = ref(true);
+const copyingId = ref<number | null>(null);
 
 async function load() {
 	isLoading.value = true;
@@ -23,13 +25,17 @@ async function load() {
 }
 
 async function saveCopy(collection: CommunityCollectionSummary) {
-	// F0.4: cópia local editável, SEM tocar na do autor.
-	// A cópia em si é criada pelo editor de Minhas Coletâneas (fluxo existente);
-	// aqui navegamos pra Central com a origem indicada via query.
-	await router.push({
-		path: "/albums",
-		query: { copyFromCommunity: String(collection.id) },
-	});
+	// F0.4: cópia LOCAL editável, SEM tocar na do autor.
+	copyingId.value = collection.id;
+	const localId = await saveCommunityCopy(collection);
+	copyingId.value = null;
+	if (localId !== null) {
+		// Abre a cópia no editor (fluxo existente de Minhas Coletâneas locais).
+		await router.push({
+			path: "/albums",
+			query: { customCollection: String(localId) },
+		});
+	}
 }
 
 onMounted(load);

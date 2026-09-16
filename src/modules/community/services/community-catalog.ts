@@ -1,3 +1,8 @@
+import {
+	createLocalCollection,
+	createLocalMusic,
+} from "@modules/media/services/local-custom-store";
+
 /**
  * Catálogo da Comunidade — coletâneas PÚBLICAS (read-only).
  * F0 do Ranking/Gamificação (SPEC validada 16/09).
@@ -41,6 +46,53 @@ export function sortByRecentFirst(
 		const tb = b.updatedAt ? Date.parse(b.updatedAt.replace(" ", "T")) : 0;
 		return tb - ta;
 	});
+}
+
+/**
+ * Salva uma cópia LOCAL e editável de uma coletânea da comunidade (F0.4).
+ * Cria coletânea local (ids negativos, só desta máquina) com as faixas da
+ * original (nome + link p/ hino oficial quando houver). NUNCA escreve na
+ * coletânea do autor — a original é apenas lida.
+ * Retorna o id local da cópia ou null se falhar.
+ */
+export async function saveCommunityCopy(
+	collection: CommunityCollectionSummary,
+): Promise<number | null> {
+	let musics: Array<{
+		name: string;
+		officialMusicId: number | null;
+	}> = [];
+	try {
+		const response = await fetch(
+			`${communityBaseUrl()}/collections/${collection.id}/musics`,
+		);
+		if (!response.ok) return null;
+		const json = (await response.json()) as { data?: unknown };
+		if (!Array.isArray(json.data)) return null;
+		musics = (json.data as Array<Record<string, unknown>>).map((row) => ({
+			name: asString(row.name) ?? "",
+			officialMusicId:
+				typeof row.official_music_id === "number" && row.official_music_id > 0
+					? row.official_music_id
+					: null,
+		}));
+	} catch {
+		return null;
+	}
+
+	const copy = createLocalCollection(
+		collection.name,
+		collection.description ?? undefined,
+	);
+	for (const music of musics) {
+		createLocalMusic(copy.id, {
+			name: music.name,
+			...(music.officialMusicId !== null
+				? { officialMusicId: music.officialMusicId }
+				: {}),
+		});
+	}
+	return copy.id;
 }
 
 /**
