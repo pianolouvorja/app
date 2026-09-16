@@ -298,6 +298,11 @@ onMounted(load);
 	   scroll container. Sem sub-containers com scroll interno. */
 	height: 100%;
 	overflow-y: auto;
+	scrollbar-width: none; /* Firefox: esconde a barra, o scroll funciona */
+
+	&::-webkit-scrollbar {
+		display: none; /* Chromium/Electron/webkit: idem */
+	}
 }
 
 .community-view__header {
