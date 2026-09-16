@@ -12,4 +12,12 @@ export const communityRoutes: RouteRecordRaw[] = [
 			navKey: "community",
 		},
 	},
+	{
+		path: "community/ranking",
+		name: "community-ranking",
+		component: RankingView,
+		meta: {
+			navKey: "community",
+		},
+	},
 ];
