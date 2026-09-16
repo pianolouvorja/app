@@ -5,6 +5,7 @@ import {
 	getRanking,
 	type RankingEntry,
 	registerUse,
+	reportCollection,
 } from "../ranking";
 
 function jsonResponse(body: unknown, ok = true): Response {
