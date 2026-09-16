@@ -54,6 +54,7 @@ const filteredCollections = computed(() => {
 const reportTarget = ref<CommunityCollectionSummary | null>(null);
 const notifications = ref<AppNotification[]>([]);
 const showNotifications = ref(false);
+const isLogged = ref(false);
 const seasonalEvent = ref<SeasonalEventBanner | null>(null);
 
 async function load() {
@@ -69,6 +70,9 @@ async function load() {
 	lastPage.value = result.lastPage;
 	total.value = result.total;
 	if (tasks) weeklyTasks.value = tasks;
+	notifications.value = notifs;
+	isLogged.value = Boolean(getAuthSession()?.token);
+	seasonalEvent.value = seasonal;
 	// serviços nunca lançam; falha = vazio/null.
 	isLoading.value = false;
 	// o scroll container é o próprio section (a página inteira rola)
@@ -138,14 +142,17 @@ onMounted(load);
           {{ t('community.subtitle') }}
         </p>
         <button
-          v-if="notifications.length > 0"
+          v-if="isLogged"
           type="button"
           class="community-view__bell"
           :aria-label="t('notifications.title')"
           @click="showNotifications = !showNotifications"
         >
           <i class="ti ti-bell-ringing" aria-hidden="true" />
-          <span class="community-view__bell-badge">{{ notifications.length }}</span>
+          <span
+            v-if="notifications.length > 0"
+            class="community-view__bell-badge"
+          >{{ notifications.length }}</span>
         </button>
         <button
           type="button"

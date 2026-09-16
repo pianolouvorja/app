@@ -59,7 +59,16 @@ function closeAndMark() {
 				{{ t("notifications.markRead") }}
 			</button>
 		</div>
-		<ul class="notifications-panel__list">
+		<p
+			v-if="notifications.length === 0"
+			class="notifications-panel__empty"
+		>
+			{{ t("notifications.empty") }}
+		</p>
+		<ul
+			v-else
+			class="notifications-panel__list"
+		>
 			<li
 				v-for="n in notifications"
 				:key="n.id"
@@ -82,6 +91,12 @@ function closeAndMark() {
 <style scoped>
 .notifications-panel {
 	padding: 0.75rem 1rem;
+}
+
+.notifications-panel__empty {
+	margin: 0.25rem 0 0;
+	font-size: 0.85rem;
+	opacity: 0.7;
 }
 
 .notifications-panel__head {
