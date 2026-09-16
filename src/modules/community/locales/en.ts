@@ -29,7 +29,7 @@ export default {
 		empty: "Nobody has scored yet. Publish a collection!",
 		loadError: "Failed to save copy.",
 		weeklyTasks: "Weekly tasks",
-		loginToSeePosition: \"Sign in to see your position on the ranking.\",
+		loginToSeePosition: "Sign in to see your position on the ranking.",
 		report: 'Report',
 		reportPrompt: 'Describe the reason for reporting (min. 3 characters):',
 		reportTooShort: "Reason too short (min. {min} characters).",

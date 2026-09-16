@@ -29,7 +29,7 @@ export default {
 		empty: "Ninguém pontuou ainda. Publique uma coletânea!",
 		loadError: "Falha ao salvar cópia.",
 		weeklyTasks: "Tarefas da semana",
-		loginToSeePosition: \"Entre com sua conta pra ver sua posição no ranking.\",
+		loginToSeePosition: "Entre com sua conta pra ver sua posição no ranking.",
 		report: 'Reportar',
 		reportPrompt: 'Descreva o motivo do report (mín. 3 caracteres):',
 		reportTooShort: "Motivo muito curto (mín. {min} caracteres).",
