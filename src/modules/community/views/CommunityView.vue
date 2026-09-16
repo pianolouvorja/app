@@ -132,6 +132,16 @@ onMounted(load);
           {{ t('community.subtitle') }}
         </p>
         <button
+          v-if="notifications.length > 0"
+          type="button"
+          class="community-view__bell"
+          :aria-label="t('notifications.title')"
+          @click="showNotifications = !showNotifications"
+        >
+          <i class="ti ti-bell-ringing" aria-hidden="true" />
+          <span class="community-view__bell-badge">{{ notifications.length }}</span>
+        </button>
+        <button
           type="button"
           class="community-view__ranking-link"
           @click="router.push('/community/ranking')"
@@ -314,6 +324,13 @@ onMounted(load);
     >
       {{ t('community.empty') }}
     </p>
+
+    <NotificationsPanel
+      v-if="showNotifications"
+      :notifications="notifications"
+      @close="showNotifications = false"
+      @mark-read="notifications = []"
+    />
 
     <ReportDialog
       :open="reportTarget !== null"
