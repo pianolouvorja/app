@@ -13,6 +13,7 @@ export default {
 		copySaved: "Cópia salva em Minhas Coletâneas",
 		copyFailed: "Não foi possível salvar a cópia.",
 		ranking: "Ver ranking",
+		pagination: "Paginação da Comunidade",
 	},
 	ranking: {
 		title: "Ranking",

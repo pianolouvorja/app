@@ -100,18 +100,38 @@ export async function saveCommunityCopy(
  * Requisição deliberadamente ANÔNIMA (usuário deslogado também vê — B7).
  * Qualquer falha → lista vazia (nunca lança).
  */
-export async function listCommunityCollections(): Promise<
-	CommunityCollectionSummary[]
-> {
+export type CommunityPage = {
+	items: CommunityCollectionSummary[];
+	page: number;
+	lastPage: number;
+	total: number;
+};
+
+export async function listCommunityCollectionsPage(
+	page: number,
+	perPage = 24,
+): Promise<CommunityPage> {
+	const empty: CommunityPage = { items: [], page, lastPage: 1, total: 0 };
 	let rows: Array<Record<string, unknown>> = [];
+	let meta = { page, last_page: 1, total: 0 };
 	try {
-		const response = await fetch(`${communityBaseUrl()}/collections`);
-		if (!response.ok) return [];
-		const json = (await response.json()) as { data?: unknown };
-		if (!Array.isArray(json.data)) return [];
+		const response = await fetch(
+			`${communityBaseUrl()}/collections?page=${page}&per_page=${perPage}`,
+		);
+		if (!response.ok) return empty;
+		const json = (await response.json()) as {
+			data?: unknown;
+			meta?: { total?: number; page?: number; last_page?: number };
+		};
+		if (!Array.isArray(json.data)) return empty;
 		rows = json.data as Array<Record<string, unknown>>;
+		meta = {
+			page: Number(json.meta?.page ?? page),
+			last_page: Number(json.meta?.last_page ?? 1),
+			total: Number(json.meta?.total ?? 0),
+		};
 	} catch {
-		return [];
+		return empty;
 	}
 
 	const collections = rows.map((row) => ({
@@ -126,5 +146,10 @@ export async function listCommunityCollections(): Promise<
 		updatedAt: asString(row.updated_at),
 	}));
 
-	return sortByRecentFirst(collections);
+	return {
+		items: sortByRecentFirst(collections),
+		page: meta.page,
+		lastPage: meta.last_page,
+		total: meta.total,
+	};
 }

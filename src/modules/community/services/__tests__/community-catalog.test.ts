@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	type CommunityCollectionSummary,
-	listCommunityCollections,
+	listCommunityCollectionsPage,
 } from "../community-catalog";
 
 const PUBLIC_ROW = {
@@ -32,7 +32,7 @@ describe("listCommunityCollections", () => {
 		const fetchMock = vi.fn(async () => jsonResponse({ data: [PUBLIC_ROW] }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 
 		expect(result).toHaveLength(1);
 		const item = result[0] as CommunityCollectionSummary;
@@ -61,7 +61,7 @@ describe("listCommunityCollections", () => {
 			vi.fn(async () => jsonResponse({ data: [rows[1], rows[0], rows[2]] })),
 		);
 
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result.map((c) => c.id)).toEqual([2, 3, 1]);
 	});
 
@@ -73,7 +73,7 @@ describe("listCommunityCollections", () => {
 		});
 		vi.stubGlobal("fetch", fetchMock);
 
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result).toEqual([]);
 		// Sem sessão: nenhum header de autorização é enviado
 		expect(
@@ -86,7 +86,7 @@ describe("listCommunityCollections", () => {
 			"fetch",
 			vi.fn(async () => jsonResponse({ error: "boom" }, false)),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result).toEqual([]);
 	});
 
@@ -97,7 +97,7 @@ describe("listCommunityCollections", () => {
 				throw new Error("network down");
 			}),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result).toEqual([]);
 	});
 
@@ -106,7 +106,7 @@ describe("listCommunityCollections", () => {
 			"fetch",
 			vi.fn(async () => jsonResponse({})),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result).toEqual([]);
 	});
 
@@ -129,7 +129,7 @@ describe("listCommunityCollections", () => {
 				}),
 			),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result[0]).toEqual({
 			id: 9,
 			name: "",
@@ -154,7 +154,7 @@ describe("listCommunityCollections", () => {
 				}),
 			),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result.map((c) => c.id)).toEqual([1, 2, 3]);
 	});
 
@@ -167,7 +167,7 @@ describe("listCommunityCollections", () => {
 				}),
 			),
 		);
-		const result = await listCommunityCollections();
+		const { items: result } = await listCommunityCollectionsPage(1);
 		expect(result[0]).toEqual({
 			id: 5,
 			name: "Só Nome",

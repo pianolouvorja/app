@@ -8,7 +8,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-	listCommunityCollections,
+	listCommunityCollectionsPage,
 	saveCommunityCopy,
 } from "../community-catalog";
 
@@ -98,7 +98,7 @@ describe("saveCommunityCopy (cópia local read-only → editável)", () => {
 			"fetch",
 			vi.fn(async () => jsonResponse({ data: [] })),
 		);
-		await listCommunityCollections();
+		await listCommunityCollectionsPage(1);
 		expect(listLocalCollections().length).toBe(1);
 	});
 

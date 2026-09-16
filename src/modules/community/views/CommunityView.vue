@@ -3,13 +3,13 @@ import { GlassCard } from "@design-system/index";
 import { getAuthSession } from "@modules/media/services/auth-client";
 
 import ReportDialog from "../components/ReportDialog.vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 
 import {
 	type CommunityCollectionSummary,
-	listCommunityCollections,
+	listCommunityCollectionsPage,
 	saveCommunityCopy,
 } from "../services/community-catalog";
 import { registerUse, reportCollection } from "../services/ranking";
@@ -24,18 +24,35 @@ const copyingId = ref<number | null>(null);
 const savedId = ref<number | null>(null);
 const savedError = ref<number | null>(null);
 const weeklyTasks = ref<WeeklyTask[]>([]);
+const page = ref(1);
+const lastPage = ref(1);
+const total = ref(0);
+
+const PER_PAGE = 24;
+const hasPrev = computed(() => page.value > 1);
+const hasNext = computed(() => page.value < lastPage.value);
 const reportTarget = ref<CommunityCollectionSummary | null>(null);
 
 async function load() {
 	isLoading.value = true;
-	const [cols, tasks] = await Promise.all([
-		listCommunityCollections(),
+	const [result, tasks] = await Promise.all([
+		listCommunityCollectionsPage(page.value, PER_PAGE),
 		getWeeklyTasks(),
 	]);
-	collections.value = cols;
+	collections.value = result.items;
+	page.value = result.page;
+	lastPage.value = result.lastPage;
+	total.value = result.total;
 	if (tasks) weeklyTasks.value = tasks;
-	// listCommunityCollections/getWeeklyTasks nunca lançam; falha = vazio/null.
+	// serviços nunca lançam; falha = vazio/null.
 	isLoading.value = false;
+	window.scrollTo({ top: 0 });
+}
+
+function goTo(p: number) {
+	if (p < 1 || p > lastPage.value || p === page.value) return;
+	page.value = p;
+	load();
 }
 
 function openReport(collection: CommunityCollectionSummary) {
@@ -217,8 +234,41 @@ onMounted(load);
       </GlassCard>
     </div>
 
+    <nav
+      v-if="!isLoading && lastPage > 1"
+      class="community-view__pagination"
+      :aria-label="t('community.pagination')"
+    >
+      <button
+        type="button"
+        class="community-view__page-btn"
+        :disabled="!hasPrev"
+        @click="goTo(page - 1)"
+      >
+        <i class="ti ti-chevron-left" aria-hidden="true" />
+      </button>
+      <button
+        v-for="p in lastPage"
+        :key="p"
+        type="button"
+        class="community-view__page-btn"
+        :class="{ 'community-view__page-btn--active': p === page }"
+        @click="goTo(p)"
+      >
+        {{ p }}
+      </button>
+      <button
+        type="button"
+        class="community-view__page-btn"
+        :disabled="!hasNext"
+        @click="goTo(page + 1)"
+      >
+        <i class="ti ti-chevron-right" aria-hidden="true" />
+      </button>
+    </nav>
+
     <p
-      v-else
+      v-if="!isLoading && collections.length === 0"
       class="community-view__status"
     >
       {{ t('community.empty') }}
