@@ -146,7 +146,7 @@ onMounted(load);
           type="button"
           class="community-view__bell"
           :aria-label="t('notifications.title')"
-          @click="showNotifications = !showNotifications"
+          @click.stop="showNotifications = !showNotifications"
         >
           <i class="ti ti-bell-ringing" aria-hidden="true" />
           <span
@@ -355,7 +355,7 @@ onMounted(load);
       {{ t('community.empty') }}
     </p>
 
-    <NotificationsPanel
+    <NotificationsDropdown
       v-if="showNotifications"
       :notifications="notifications"
       @close="showNotifications = false"

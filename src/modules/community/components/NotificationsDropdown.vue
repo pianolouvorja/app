@@ -34,15 +34,20 @@ function icon(type: string): string {
 	return iconByType[type] ?? "ti-bell";
 }
 
+let armed = false;
+
 function onDocClick(e: MouseEvent) {
-	// fecha só se o clique foi fora do dropdown
+	// só "arma" depois de um tick: o clique que ABRIU o dropdown não o fecha
+	if (!armed) return;
 	if (rootEl.value && !rootEl.value.contains(e.target as Node)) {
 		emit("close");
 	}
 }
 
-document.addEventListener("click", onDocClick);
-onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
+document.addEventListener("click", onDocClick, true);
+setTimeout(() => {
+	armed = true;
+}, 0);
 
 function markAndClose() {
 	if (props.notifications.length > 0) {
