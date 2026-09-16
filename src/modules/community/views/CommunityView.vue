@@ -192,7 +192,7 @@ onMounted(load);
     </div>
 
     <div
-      v-else-if="!isLoading && filteredCollections.length > 0"
+      v-if="!isLoading && filteredCollections.length > 0"
       class="community-view__grid"
     >
       <GlassCard
