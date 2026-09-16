@@ -14,9 +14,9 @@ export default {
 		copyFailed: "No se pudo guardar la copia.",
 		ranking: "Ver ranking",
 		pagination: "Paginación de la Comunidad",
-		searchPlaceholder: \"Buscar colección o autor...\",
-		clearSearch: \"Limpiar búsqueda\",
-		noResults: \"Nada encontrado para esta búsqueda.\",
+		searchPlaceholder: "Buscar colección o autor...",
+		clearSearch: "Limpiar búsqueda",
+		noResults: "Nada encontrado para esta búsqueda.",
 	},
 	ranking: {
 		title: "Ranking",
