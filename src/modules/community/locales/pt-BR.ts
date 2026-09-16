@@ -27,5 +27,6 @@ export default {
 		weeklyTasks: "Tarefas da semana",
 		report: 'Reportar',
 		reportPrompt: 'Descreva o motivo do report (mín. 3 caracteres):',
+		reportTooShort: \"Motivo muito curto (mín. {min} caracteres).\",
 	},
 };

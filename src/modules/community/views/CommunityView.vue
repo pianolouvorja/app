@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { GlassCard } from "@design-system/index";
 import { getAuthSession } from "@modules/media/services/auth-client";
+
+import ReportDialog from "../components/ReportDialog.vue";
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -22,6 +24,7 @@ const copyingId = ref<number | null>(null);
 const savedId = ref<number | null>(null);
 const savedError = ref<number | null>(null);
 const weeklyTasks = ref<WeeklyTask[]>([]);
+const reportTarget = ref<CommunityCollectionSummary | null>(null);
 
 async function load() {
 	isLoading.value = true;
@@ -35,14 +38,19 @@ async function load() {
 	isLoading.value = false;
 }
 
-async function report(collection: CommunityCollectionSummary) {
-	const reason = window.prompt(t("ranking.reportPrompt"));
-	if (!reason || reason.trim().length < 3) return;
+function openReport(collection: CommunityCollectionSummary) {
+	reportTarget.value = collection;
+}
+
+async function submitReport(reason: string) {
+	const target = reportTarget.value;
+	if (!target) return;
 	const ok = await reportCollection(
-		collection.id,
-		reason.trim(),
+		target.id,
+		reason,
 		getAuthSession()?.token ?? null,
 	);
+	reportTarget.value = null;
 	if (ok) {
 		await load(); // some da lista (servidor esconde)
 	}
@@ -200,7 +208,7 @@ onMounted(load);
               class="community-view__report-btn"
               :aria-label="t('ranking.report')"
               :title="t('ranking.report')"
-              @click="report(collection)"
+              @click="openReport(collection)"
             >
               <i class="ti ti-flag" aria-hidden="true" />
             </button>
@@ -215,6 +223,13 @@ onMounted(load);
     >
       {{ t('community.empty') }}
     </p>
+
+    <ReportDialog
+      :open="reportTarget !== null"
+      :collection-name="reportTarget?.name"
+      @close="reportTarget = null"
+      @submit="submitReport"
+    />
   </section>
 </template>
 
