@@ -14,6 +14,9 @@ export default {
 		copyFailed: "Could not save the copy.",
 		ranking: "View ranking",
 		pagination: "Community pagination",
+		searchPlaceholder: \"Search collection or author...\",
+		clearSearch: \"Clear search\",
+		noResults: \"Nothing found for this search.\",
 	},
 	ranking: {
 		title: "Ranking",

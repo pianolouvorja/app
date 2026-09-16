@@ -14,6 +14,9 @@ export default {
 		copyFailed: "Não foi possível salvar a cópia.",
 		ranking: "Ver ranking",
 		pagination: "Paginação da Comunidade",
+		searchPlaceholder: \"Buscar coletânea ou autor...\",
+		clearSearch: \"Limpar busca\",
+		noResults: \"Nada encontrado para essa busca.\",
 	},
 	ranking: {
 		title: "Ranking",

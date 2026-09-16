@@ -25,6 +25,7 @@ const savedId = ref<number | null>(null);
 const savedError = ref<number | null>(null);
 const weeklyTasks = ref<WeeklyTask[]>([]);
 const viewEl = ref<HTMLElement | null>(null);
+const searchQuery = ref("");
 const page = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
@@ -32,6 +33,15 @@ const total = ref(0);
 const PER_PAGE = 24;
 const hasPrev = computed(() => page.value > 1);
 const hasNext = computed(() => page.value < lastPage.value);
+const filteredCollections = computed(() => {
+	const q = searchQuery.value.trim().toLowerCase();
+	if (!q) return collections.value;
+	return collections.value.filter(
+		(c) =>
+			c.name.toLowerCase().includes(q) ||
+			(c.authorName ?? "").toLowerCase().includes(q),
+	);
+});
 const reportTarget = ref<CommunityCollectionSummary | null>(null);
 
 async function load() {
@@ -160,12 +170,33 @@ onMounted(load);
       </ul>
     </GlassCard>
 
+    <div class="community-view__toolbar">
+      <div class="community-view__search">
+        <i class="ti ti-search" aria-hidden="true" />
+        <input
+          v-model="searchQuery"
+          type="search"
+          class="community-view__search-input"
+          :placeholder="t('community.searchPlaceholder')"
+        />
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="community-view__search-clear"
+          :aria-label="t('community.clearSearch')"
+          @click="searchQuery = ''"
+        >
+          <i class="ti ti-x" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+
     <div
-      v-else-if="!isLoading && collections.length > 0"
+      v-else-if="!isLoading && filteredCollections.length > 0"
       class="community-view__grid"
     >
       <GlassCard
-        v-for="collection in collections"
+        v-for="collection in filteredCollections"
         :key="collection.id"
         class="community-view__card"
         elevated
@@ -486,6 +517,126 @@ onMounted(load);
 .community-view__copy-btn:hover {
   filter: brightness(1.15);
 }
+.community-view__toolbar {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.community-view__search {
+	position: relative;
+	display: flex;
+	align-items: center;
+	flex: 1;
+	max-width: 26rem;
+}
+
+.community-view__search > .ti-search {
+	position: absolute;
+	left: 0.75rem;
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.community-view__search-input {
+	width: 100%;
+	padding: 0.55rem 2.4rem 0.55rem 2.2rem;
+	border: 1px solid var(--ds-color-outline, rgba(255, 255, 255, 0.08));
+	border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+	background: color-mix(in srgb, var(--ds-color-surface-card, #201f1f) 70%, transparent);
+	color: var(--ds-color-on-surface);
+	font: inherit;
+	font-size: 0.9rem;
+}
+
+.community-view__search-input:focus {
+	outline: 2px solid var(--ds-color-primary, rgba(255, 255, 255, 0.3));
+	outline-offset: 1px;
+}
+
+.community-view__search-clear {
+	position: absolute;
+	right: 0.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.6rem;
+	height: 1.6rem;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--ds-color-on-surface);
+	opacity: 0.6;
+	cursor: pointer;
+}
+
+.community-view__search-clear:hover {
+	opacity: 1;
+}
+
+.community-view__pagination {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.4rem;
+	margin-top: 0.75rem;
+}
+
+.community-view__page-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.4rem;
+	height: 2.4rem;
+	padding: 0 0.5rem;
+	border: 1px solid var(--ds-color-outline, rgba(255, 255, 255, 0.08));
+	border-radius: var(--ds-radius-sm, 8px 0 8px 0);
+	background: color-mix(in srgb, var(--ds-color-surface-card, #201f1f) 70%, transparent);
+	color: var(--ds-color-on-surface);
+	font: inherit;
+	font-size: 0.88rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background 150ms ease,
+		border-color 150ms ease,
+		color 150ms ease,
+		transform 150ms ease;
+}
+
+.community-view__page-btn:hover:not(:disabled):not(.community-view__page-btn--active) {
+	background: color-mix(in srgb, var(--ds-color-surface-card, #201f1f) 45%, transparent);
+	border-color: var(--ds-color-outline-strong, rgba(255, 255, 255, 0.2));
+}
+
+.community-view__page-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* Página ativa: pill preenchida com a primária, escala e sublinhado curto. */
+.community-view__page-btn--active {
+	position: relative;
+	background: var(--ds-color-primary, #e6b93c);
+	border-color: var(--ds-color-primary, #e6b93c);
+	color: var(--ds-color-on-primary, #101010);
+	font-weight: 800;
+	transform: scale(1.12);
+	box-shadow: 0 2px 10px rgb(0 0 0 / 35%);
+	pointer-events: none;
+}
+
+.community-view__page-btn--active::after {
+	content: "";
+	position: absolute;
+	top: -6px;
+	left: 50%;
+	width: 1.4rem;
+	height: 3px;
+	border-radius: 2px;
+	background: var(--ds-color-primary, #e6b93c);
+	transform: translateX(-50%);
+}
+
 .ti-spin {
 	animation: community-spin 1s linear infinite;
 }
