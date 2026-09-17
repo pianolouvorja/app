@@ -313,6 +313,7 @@ describe('loadLiturgyMusicOptions', () => {
     catalogFiles.set('pt_hymnal', [
       { id_music: 5, name: 'Quinta', track: null }, // parseTrack(null) → early return
       { id_music: 10, name: 'Décima', track: 'abc' }, // parseTrack('abc') → NaN → false branch
+      { id_music: 11 }, // mapMusicOption: row.name nullish → ?? right side (L157)
     ])
     catalogFiles.set('pt_hymnal_1996', null)
     // albums não processados pq índice não-vazio
