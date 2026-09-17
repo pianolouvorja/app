@@ -142,3 +142,44 @@ describe("NotificationsDropdown — componente isolado", () => {
 		expect(true).toBe(true);
 	});
 });
+
+describe("NotificationsDropdown — defesa em profundidade", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		for (const w of live.splice(0)) w.unmount();
+		document.body.innerHTML = "";
+	});
+
+	it("markAndClose com lista vazia: NEM service NEM mark-read (guard do script independe do v-if)", async () => {
+		// mata if(length>0)→if(true) e →>=0: mesmo que alguém remova o v-if do
+		// template, o guard do script impede marcar lidas sem notificações
+		const wrapper = mountDropdown([]);
+		const vm = wrapper.vm as unknown as { markAndClose: () => void };
+		vm.markAndClose();
+		await wrapper.vm.$nextTick();
+		expect(mocks.markAllRead).not.toHaveBeenCalled();
+		expect(wrapper.emitted("mark-read")).toBeUndefined();
+		// close é emitido incondicionalmente (o dropdown sempre fecha)
+		expect(wrapper.emitted("close")).toHaveLength(1);
+	});
+
+	it("listener em capture phase: roda antes de stopImmediatePropagation em bubble no document", async () => {
+		// mata addEventListener capture true→false. Um handler de bubble no
+		// document registrado ANTES com stopImmediatePropagation mataria um
+		// listener de bubble posterior — mas NUNCA um de capture (fases distintas).
+		const blocker = (e: MouseEvent) => e.stopImmediatePropagation();
+		document.addEventListener("click", blocker, false);
+		const wrapper = mountDropdown([N(1)]);
+		await new Promise((r) => setTimeout(r, 10)); // armed
+
+		document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		await wrapper.vm.$nextTick();
+
+		// capture=true → onDocClick roda na fase de capture, imune ao blocker de
+		// bubble → close emitido. Com o mutante (capture=false) o onDocClick seria
+		// morto pelo stopImmediatePropagation → close NUNCA emitido.
+		expect(wrapper.emitted("close")).toHaveLength(1);
+		document.removeEventListener("click", blocker, false);
+		wrapper.unmount();
+	});
+});
