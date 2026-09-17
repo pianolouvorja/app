@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { _openLiturgyLocalVideo } from '../services/liturgy-web-projection'
 
 // Estado compartilhado dos mocks
 const mockState = vi.hoisted(() => ({
@@ -438,5 +439,31 @@ describe('apresentação local', () => {
     await expect(
       openLiturgyLocalVideoControl('/x.mp4', ''),
     ).resolves.toBe(true)
+  })
+
+  it('_openLiturgyLocalVideo: objectUrl omitted via overload (hits default-arg branch)', async () => {
+    const openUrl = vi.fn(async () => true)
+    mockState.bridge = makeBridge({ openUrl })
+    // chama overload de 3 args → runtime omite 4º parâmetro
+    await expect(
+      _openLiturgyLocalVideo('/x.mp4', '', false),
+    ).resolves.toBe(true)
+  })
+
+  it('local video browser path: without bridge, objectUrl provided → opens projection', async () => {
+    const publish = vi.fn()
+    const openModule = vi.fn()
+    vi.doMock('@modules/liturgy/services/liturgy-web-runtime', () => ({
+      publishLiturgyWebRuntime: publish,
+    }))
+    vi.doMock('@modules/liturgy/services/projection-orchestrator', () => ({
+      openProjectionModule: openModule,
+    }))
+    mockState.bridge = { projection: {} } // sem openUrl → browser path
+    await expect(
+      _openLiturgyLocalVideo('/x.mp4', '', false, 'blob:http://localhost/abc'),
+    ).resolves.toBe(true)
+    expect(publish).toHaveBeenCalled()
+    expect(openModule).toHaveBeenCalledWith('liturgy-web')
   })
 })

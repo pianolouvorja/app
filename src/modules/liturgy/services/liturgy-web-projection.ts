@@ -41,7 +41,7 @@ export async function openLiturgyWebOnConfiguredScreens(
   const target = parseLiturgyWebTarget(rawUrl)
   if (!target) return false
 
-  const label = title.trim() || rawUrl.trim() || target.url
+  const label = title.trim() || rawUrl.trim()
   const mode = target.kind === 'site' ? 'site' : 'video'
   const bridge = getDesktopBridge()
 
@@ -125,11 +125,23 @@ export async function playLiturgyWebOnConfiguredScreens(
   return bridge.projection.remotePlay()
 }
 
-async function openLiturgyLocalVideo(
+// internal (testable) — overload sem objectUrl para cobrir default-arg branch
+export async function _openLiturgyLocalVideo(
+  filePath: string,
+  title: string,
+  withScreens: boolean
+): Promise<boolean>
+export async function _openLiturgyLocalVideo(
+  filePath: string,
+  title: string,
+  withScreens: boolean,
+  objectUrl: string | undefined
+): Promise<boolean>
+export async function _openLiturgyLocalVideo(
   filePath: string,
   title = '',
   withScreens: boolean,
-  objectUrl?: string,
+  objectUrl?: string | undefined,
 ): Promise<boolean> {
   const path = filePath.trim()
   const label = title.trim() || path.split(/[\\/]/).pop() || path
@@ -182,7 +194,7 @@ export async function openLiturgyLocalVideoControl(
   title = '',
   objectUrl?: string,
 ): Promise<boolean> {
-  return openLiturgyLocalVideo(filePath, title, false, objectUrl)
+  return _openLiturgyLocalVideo(filePath, title, false, objectUrl)
 }
 
 /** Popup de vídeo local + espelho nas telas estendidas. */
@@ -191,7 +203,7 @@ export async function playLiturgyLocalVideoOnScreens(
   title = '',
   objectUrl?: string,
 ): Promise<boolean> {
-  return openLiturgyLocalVideo(filePath, title, true, objectUrl)
+  return _openLiturgyLocalVideo(filePath, title, true, objectUrl)
 }
 
 async function openLiturgyLocalImages(
