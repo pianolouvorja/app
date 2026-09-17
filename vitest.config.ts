@@ -23,6 +23,7 @@ export default defineConfig({
   },
   test: {
     exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
+    setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'text-summary', 'lcov'],

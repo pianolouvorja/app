@@ -273,7 +273,7 @@ async function loadCollectionOptions(
   }
 }
 
-function sortMusicOptions(options: LiturgyMusicOption[]): LiturgyMusicOption[] {
+export function sortMusicOptions(options: LiturgyMusicOption[]): LiturgyMusicOption[] {
   return [...options].sort((a, b) => {
     const trackA = a.hymnalTrack ?? Number.POSITIVE_INFINITY
     const trackB = b.hymnalTrack ?? Number.POSITIVE_INFINITY
