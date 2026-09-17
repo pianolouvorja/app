@@ -81,7 +81,7 @@ export async function saveCommunityCopy(
 		for (const music of musics) {
 			createLocalMusic(copy.id, {
 				name: music.name,
-				officialMusicId: music.officialMusicId,
+				officialMusicId: music.officialMusicId ?? undefined,
 			});
 		}
 		return copy.id;
