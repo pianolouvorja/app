@@ -6,6 +6,7 @@ import {
 	type RankingEntry,
 	registerUse,
 	reportCollection,
+	authHeaders,
 } from "../ranking";
 
 function jsonResponse(body: unknown, ok = true): Response {
@@ -371,10 +372,28 @@ describe("ranking service — mata mutantes de guardas (dado não pode vazar de 
 	});
 
 	it("reportCollection: !ok → false (mesmo com body)", async () => {
-		vi.stubGlobal(
-			"fetch",
-			vi.fn(async () => jsonResponse({ ok: true }, false)),
-		);
-		expect(await reportCollection(12, "m", "tok")).toBe(false);
+			vi.stubGlobal(
+				"fetch",
+				vi.fn(async () => jsonResponse({ ok: true }, false)),
+			);
+			expect(await reportCollection(12, "m", "tok")).toBe(false);
+		});
 	});
-});
+
+	describe("ranking service — authHeaders unit (branch null/else)", () => {
+		beforeEach(() => {
+			vi.unstubAllGlobals();
+		});
+
+		it("authHeaders com token → Bearer", () => {
+			expect(authHeaders("tok-abc")).toEqual({ Authorization: "Bearer tok-abc" });
+		});
+
+		it("authHeaders sem token (null) → objeto vazio — branch else", () => {
+			expect(authHeaders(null)).toEqual({});
+		});
+
+		it("authHeaders com string vazia → objeto vazio (falsy)", () => {
+				expect(authHeaders("")).toEqual({});
+			});
+	});
