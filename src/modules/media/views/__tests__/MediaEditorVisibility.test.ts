@@ -88,13 +88,7 @@ vi.mock('../../services/custom-catalog', async (importOriginal) => {
 })
 
 async function mountEditor() {
-	const wrapper = mount(MediaEditorView, {
-		global: {
-			stubs: {
-				teleport: true,
-			},
-		},
-	})
+	const wrapper = mount(MediaEditorView)
 	await flushPromises()
 	await flushPromises()
 	return wrapper
@@ -119,13 +113,14 @@ describe('MediaEditorView — toggle de visibilidade (t_35e4d3ea)', () => {
 		expect(btns[1]!.classes()).not.toContain('editor__visibility-btn--active')
 	})
 
-	it('criação: escolher público mostra o PublicationRulesCard', async () => {
+	it('criação: escolher público NÃO polui a sidebar com o card (redesenho anti-poluição)', async () => {
 		const wrapper = await mountEditor()
 		const createGroup = wrapper.findAll('.editor__visibility')[0]!
 		await createGroup.findAll('.editor__visibility-btn')[1]!.trigger('click')
 		await flushPromises()
+		// card fixo removido da criação (regras agora em modal sob demanda)
 		expect(wrapper.findComponent({ name: 'PublicationRulesCard' }).exists()).toBe(
-			true,
+			false,
 		)
 	})
 
@@ -158,6 +153,7 @@ describe('MediaEditorView — toggle de visibilidade (t_35e4d3ea)', () => {
 
 describe('MediaEditorView — troca de visibilidade da coletânea selecionada', () => {
 	it('coletânea da API: trocar pra público chama updateCustomCollection e mostra regras', async () => {
+		localStorage.setItem('louvorja.publishRulesSeen', '1') // já viu as regras
 		mocks.listCustomCollections.mockResolvedValue([
 			{
 				id: 9,
@@ -196,15 +192,81 @@ describe('MediaEditorView — troca de visibilidade da coletânea selecionada', 
 		expect(mocks.updateCustomCollection).toHaveBeenCalledWith(9, {
 			visibility: 'public',
 		})
-		// card de regras aparece pra coletânea pública
+		// card fixo não existe mais na sidebar; virou botão "Ver regras"
 		expect(
 			wrapper.findAllComponents({ name: 'PublicationRulesCard' }).length,
-		).toBeGreaterThanOrEqual(1)
+		).toBe(0)
+		expect(wrapper.text()).toContain('media.publishRules.showRules')
 		// hint de público visível
 		expect(wrapper.text()).toContain('media.visibility.publicHint')
 	})
 
+	it('botão "Ver regras" abre o modal com o card e "Entendi" fecha', async () => {
+		mocks.listCustomCollections.mockResolvedValue([
+			{
+				id: 9,
+				name: 'API',
+				description: null,
+				ownerId: 4,
+				visibility: 'public',
+				musicsCount: 0,
+			},
+		])
+		const wrapper = await mountEditor()
+		await flushPromises()
+		await wrapper.find('.editor__list-item').trigger('click')
+		await flushPromises()
+		// abrir pelo botão
+		await wrapper.find('.editor__btn--rules').trigger('click')
+		await flushPromises()
+		// modal teleportado pro body
+		const dlg = document.body.querySelector('.rules-dialog')
+		expect(dlg).not.toBeNull()
+		expect(dlg?.querySelector('.pub-rules')).not.toBeNull()
+		// fechar pelo "Entendi"
+		const ok = document.body.querySelector(
+			'.rules-dialog__ok',
+		) as HTMLButtonElement
+		ok.click()
+		await flushPromises()
+		expect(document.body.querySelector('.rules-dialog')).toBeNull()
+	})
+
+	it('1ª vez tornando pública: modal abre ANTES de persistir; fechar NÃO troca', async () => {
+		localStorage.setItem('louvorja.publishRulesSeen', '')
+		mocks.listCustomCollections.mockResolvedValue([
+			{
+				id: 9,
+				name: 'API',
+				description: null,
+				ownerId: 4,
+				visibility: 'private',
+				musicsCount: 0,
+			},
+		])
+		const wrapper = await mountEditor()
+		await flushPromises()
+		await wrapper.find('.editor__list-item').trigger('click')
+		await flushPromises()
+		// localStorage.getItem com valor '' retorna '' !== '1' -> primeira vez
+		const selectedGroup = () => wrapper.findAll('.editor__visibility')[1]!
+		await selectedGroup()
+			.findAll('.editor__visibility-btn')[1]!
+			.trigger('click')
+		await flushPromises()
+		// modal aberto e PUT ainda NAO chamado
+		expect(document.body.querySelector('.rules-dialog')).not.toBeNull()
+		expect(mocks.updateCustomCollection).not.toHaveBeenCalled()
+		// fechar modal sem "confirmar" troca: regra é só informativa;
+		// o fechamento marca seen. A troca em si o usuário refaz no toggle.
+		const ok = document.body.querySelector('.rules-dialog__ok') as HTMLButtonElement
+		ok.click()
+		await flushPromises()
+		expect(localStorage.getItem('louvorja.publishRulesSeen')).toBe('1')
+	})
+
 	it('troca falha na API: estado da UI NÃO muda', async () => {
+		localStorage.setItem('louvorja.publishRulesSeen', '1') // já viu as regras
 		mocks.listCustomCollections.mockResolvedValue([
 			{
 				id: 9,

@@ -7,6 +7,8 @@ export default {
       readOnlyCopy: 'Outros usuários podem salvar uma cópia; sua original não é alterada.',
       moderation: 'Conteúdo inadequado pode ser reportado e removido pela curadoria.',
       ranking: 'Coletâneas públicas entram no ranking da comunidade (+10 pts ao publicar).',
+      showRules: 'Ver regras da comunidade',
+      gotIt: 'Entendi',
     },
     visibility: {
       label: 'Privacidade',

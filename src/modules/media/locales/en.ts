@@ -7,6 +7,8 @@ export default {
       readOnlyCopy: 'Other users can save a copy; your original is never changed.',
       moderation: 'Inappropriate content can be reported and removed by curation.',
       ranking: 'Public collections join the community ranking (+10 pts when publishing).',
+      showRules: 'View community rules',
+      gotIt: 'Got it',
     },
     visibility: {
       label: 'Privacy',

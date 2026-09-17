@@ -313,6 +313,33 @@ const selectedCollection = computed(
 /* ---------- Privacidade da coletânea selecionada (t_35e4d3ea) ---------- */
 
 const visibilityBusy = ref(false)
+// Modal de regras: abre sob demanda e automaticamente na 1a vez que publica
+const rulesOpen = ref(false)
+const RULES_SEEN_KEY = 'louvorja.publishRulesSeen'
+function onRulesModalClose(): void {
+  rulesOpen.value = false
+  try {
+    localStorage.setItem(RULES_SEEN_KEY, '1')
+  } catch {
+    /* storage cheio/indisponivel: modal só abre de novo na proxima vez */
+  }
+}
+
+function onChangeVisibilityWithRules(next: CollectionVisibility): Promise<void> {
+  const alreadySeen = (() => {
+    try {
+      return localStorage.getItem(RULES_SEEN_KEY) === '1'
+    } catch {
+      return false
+    }
+  })()
+  // 1a vez tornando publica: modal com as regras antes de persistir
+  if (next === 'public' && !alreadySeen) {
+    rulesOpen.value = true
+    return Promise.resolve()
+  }
+  return onChangeVisibility(next)
+}
 
 async function onChangeVisibility(next: CollectionVisibility): Promise<void> {
   const current = selectedCollection.value
@@ -1195,7 +1222,6 @@ onMounted(async () => {
             {{ t('media.visibility.public') }}
           </button>
         </div>
-        <PublicationRulesCard v-if="newCollectionVisibility === 'public'" />
         <ul class="editor__list">
           <li
             v-for="collection in collections"
@@ -1224,7 +1250,7 @@ onMounted(async () => {
               :class="{ 'editor__visibility-btn--active': (selectedCollection.visibility ?? 'public') === 'private' }"
               :aria-pressed="(selectedCollection.visibility ?? 'public') === 'private'"
               :disabled="saving || visibilityBusy"
-              @click="onChangeVisibility('private')"
+              @click="onChangeVisibilityWithRules('private')"
             >
               <i
                 class="ti ti-lock"
@@ -1238,7 +1264,7 @@ onMounted(async () => {
               :class="{ 'editor__visibility-btn--active': (selectedCollection.visibility ?? 'public') === 'public' }"
               :aria-pressed="(selectedCollection.visibility ?? 'public') === 'public'"
               :disabled="saving || visibilityBusy"
-              @click="onChangeVisibility('public')"
+              @click="onChangeVisibilityWithRules('public')"
             >
               <i
                 class="ti ti-broadcast"
@@ -1252,7 +1278,19 @@ onMounted(async () => {
               ? t('media.visibility.publicHint')
               : t('media.visibility.privateHint') }}
           </p>
-          <PublicationRulesCard v-if="(selectedCollection.visibility ?? 'public') === 'public'" />
+          <button
+            v-if="(selectedCollection.visibility ?? 'public') === 'public'"
+            type="button"
+            class="editor__btn editor__btn--rules"
+            :title="t('media.publishRules.title')"
+            @click="rulesOpen = true"
+          >
+            <i
+              class="ti ti-info-circle"
+              aria-hidden="true"
+            />
+            {{ t('media.publishRules.showRules') }}
+          </button>
         </template>
         <button
           v-if="selectedCollectionId != null"
@@ -1723,6 +1761,36 @@ onMounted(async () => {
       @confirm="onConfirmDelete"
       @cancel="confirmOpen = false"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="rulesOpen"
+        class="rules-dialog"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('media.publishRules.title')"
+      >
+        <div
+          class="rules-dialog__backdrop"
+          aria-hidden="true"
+          @click="onRulesModalClose"
+        />
+        <div class="rules-dialog__panel">
+          <PublicationRulesCard />
+          <button
+            type="button"
+            class="editor__btn editor__btn--save rules-dialog__ok"
+            @click="onRulesModalClose"
+          >
+            <i
+              class="ti ti-check"
+              aria-hidden="true"
+            />
+            {{ t('media.publishRules.gotIt') }}
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -1758,6 +1826,50 @@ onMounted(async () => {
 .editor__visibility-btn:disabled {
   opacity: 0.4;
   cursor: wait;
+}
+
+.editor__btn--rules {
+  margin-top: 0.25rem;
+}
+
+.rules-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.rules-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+}
+
+.rules-dialog__panel {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: auto;
+  border-radius: 14px;
+  background: var(--surface-1, #1c1c24);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+
+.rules-dialog__panel .pub-rules {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rules-dialog__ok {
+  margin: 0.75rem;
 }
 /*
  * Tokens do design system (docs/stitch/home/DESIGN.md · docs/prd/DESIGN_SYSTEM.md)
