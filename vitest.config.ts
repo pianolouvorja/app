@@ -42,5 +42,7 @@ export default defineConfig({
         'src/**/*.d.ts',
       ],
     },
+    // Force esbuild transform instead of Oxc
+    transform: 'esbuild',
   },
 })
