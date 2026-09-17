@@ -72,6 +72,22 @@ describe('parseJaLiturgy', () => {
     expect(map.saturday).toHaveLength(3)
   })
 
+  it('linha de conteúdo fora de seção e KV sem valor são ignorados/tolerados', () => {
+    // "órfã" antes de qualquer [seção] → ignorada; "semvalor=" → valor ''
+    const text = [
+      'orfa=antes-de-tudo', // sem current → continue
+      '[geral]',
+      '7=item_x', // sábado
+      'titulo=Livro',
+      'semvalor=',
+      '[item_x]',
+      'tipo=musica',
+      'musica=1',
+    ].join('\n')
+    const map = parseJaLiturgy(text)
+    expect(map.saturday).toHaveLength(1)
+  })
+
   it('sem [Geral] lança', () => {
     expect(() => parseJaLiturgy('[item_x]\ntipo=musica\nitem=A\n')).toThrow()
   })

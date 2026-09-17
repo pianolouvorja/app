@@ -297,4 +297,72 @@ describe('loadLiturgyMusicOptions', () => {
     catalogFiles.set('pt_hymnal_1996', null)
     expect(await loadLiturgyMusicOptions()).toEqual([])
   })
+
+  it('edge cases: row sem name/track inválido, album sem nome, dedup sem durationMs, rows inválidas em album', async () => {
+    catalogFiles.set('pt_musics', [
+      // row sem name (row.name ?? '') e sem track
+      { id_music: 5, track: null, albums: [{ id_album: 13 }, { name: '   ' }] },
+      // row válida para casar dedup SEM duration → option.durationMs usado no merge
+      { id_music: 6, name: 'Sexta', albums_names: 'X, Y · Z' },
+      { id_music: 6, name: 'Sexta' }, // duplicada sem duration
+      // trim de albumNames com nome só de espaços → branch L110
+      { id_music: 7, name: 'Sétima', albums_names: '  ' },
+      // row com id finito mas name OMITIDO (undefined) → L157 branch false
+      { id_music: 9 },
+    ])
+    catalogFiles.set('pt_hymnal', [
+      { id_music: 5, name: 'Quinta', track: null }, // parseTrack(null) → early return
+      { id_music: 10, name: 'Décima', track: 'abc' }, // parseTrack('abc') → NaN → false branch
+    ])
+    catalogFiles.set('pt_hymnal_1996', null)
+    // albums não processados pq índice não-vazio
+    catalogFiles.set('pt_categories', [
+      { albums: [{ id_album: 13, name: 'Treze' }] },
+    ])
+    catalogFiles.set('album_13', {
+      name: null,
+      musics: [
+        { id_music: 8, name: 'Oito' },
+        { name: 'sem id' }, // mapped null → if (mapped) false
+      ],
+    })
+
+    const result = await loadLiturgyMusicOptions()
+    // id 5: sem name no índice... mas veio do hinário com track null
+    const q = result.find((o) => o.id === 5)
+    expect(q).toBeTruthy()
+    expect(q!.hymnalTrack).toBeNull()
+    // id 6: dedup sem duration → existing durationMs (null) ?? option (null) — sem crash
+    const sexta = result.find((o) => o.id === 6)
+    expect(sexta).toBeTruthy()
+    expect(sexta!.albumNames).toContain('X')
+    expect(sexta!.albumNames).toContain('Y')
+    expect(sexta!.albumNames).toContain('Z')
+    // id 7: albumNames só espaços → 'Música'
+    const setima = result.find((o) => o.id === 7)
+    expect(setima).toBeTruthy()
+    expect(setima!.albumNames).toBe('Música')
+  })
+
+  it('índice vazio → processa álbuns e hinário (cobertura álbum fallback)', async () => {
+    catalogFiles.set('pt_musics', []) // índice vazio → carrega tudo via loadCollectionOptions
+    catalogFiles.set('pt_hymnal', null)
+    catalogFiles.set('pt_hymnal_1996', null)
+    catalogFiles.set('pt_categories', [
+      { albums: [{ id_album: 13, name: 'Treze' }] },
+    ])
+    catalogFiles.set('album_13', {
+      name: null, // fallback albumName
+      musics: [
+        { id_music: 8, name: 'Oito' },
+        { name: 'sem id' }, // mapped null
+      ],
+    })
+
+    const result = await loadLiturgyMusicOptions()
+    const oito = result.find((o) => o.id === 8)
+    expect(oito).toBeTruthy()
+    expect(oito!.albumNames).toBe('Treze')
+    expect(result).toHaveLength(1)
+  })
 })

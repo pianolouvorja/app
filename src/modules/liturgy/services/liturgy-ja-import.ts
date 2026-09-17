@@ -113,8 +113,8 @@ export function parseJaLiturgy(raw: string): JaLiturgy {
       continue
     }
     if (!current) continue
-    const kv = KV_RE.exec(line)
-    if (kv) sections.get(current)!.set(kv[1]!.trim().toLowerCase(), kv[2] ?? '')
+        const kv = KV_RE.exec(line)
+        if (kv) sections.get(current)!.set(kv[1]!.trim().toLowerCase(), kv[2]!)
   }
 
   const geral = sections.get('geral')

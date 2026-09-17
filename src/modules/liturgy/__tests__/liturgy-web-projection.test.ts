@@ -441,29 +441,30 @@ describe('apresentação local', () => {
     ).resolves.toBe(true)
   })
 
-  it('_openLiturgyLocalVideo: objectUrl omitted via overload (hits default-arg branch)', async () => {
-    const openUrl = vi.fn(async () => true)
-    mockState.bridge = makeBridge({ openUrl })
-    // chama overload de 3 args → runtime omite 4º parâmetro
+  it('local video browser path: sem bridge.openUrl, com objectUrl → publica runtime e abre popup', async () => {
+    mockState.bridge = { projection: {} } // sem openUrl → browser path
+    mockState.openProjectionModuleResult = true
     await expect(
-      _openLiturgyLocalVideo('/x.mp4', '', false),
+      _openLiturgyLocalVideo('/x.mp4', 'Meu vídeo', false, 'blob:http://localhost/abc'),
     ).resolves.toBe(true)
+    expect(mockState.published).toHaveLength(1)
+    expect(openProjectionModule).toHaveBeenCalledWith('liturgy-web')
   })
 
-  it('local video browser path: without bridge, objectUrl provided → opens projection', async () => {
-    const publish = vi.fn()
-    const openModule = vi.fn()
-    vi.doMock('@modules/liturgy/services/liturgy-web-runtime', () => ({
-      publishLiturgyWebRuntime: publish,
-    }))
-    vi.doMock('@modules/liturgy/services/projection-orchestrator', () => ({
-      openProjectionModule: openModule,
-    }))
-    mockState.bridge = { projection: {} } // sem openUrl → browser path
+  it('local video browser path: sem objectUrl → false (nada para projetar)', async () => {
+    mockState.bridge = { projection: {} }
     await expect(
-      _openLiturgyLocalVideo('/x.mp4', '', false, 'blob:http://localhost/abc'),
-    ).resolves.toBe(true)
-    expect(publish).toHaveBeenCalled()
-    expect(openModule).toHaveBeenCalledWith('liturgy-web')
+      _openLiturgyLocalVideo('/x.mp4', '', false, undefined),
+    ).resolves.toBe(false)
+    expect(mockState.published).toHaveLength(0)
+  })
+
+  it('_openLiturgyLocalVideo: title default (omitido) cai em fallback do path', async () => {
+    mockState.bridge = { projection: {} }
+    await expect(
+      // omitindo title e objectUrl → title default '' + browser path sem objectUrl
+      (_openLiturgyLocalVideo as (...a: unknown[]) => Promise<boolean>)('/x.mp4'),
+    ).resolves.toBe(false)
+    expect(mockState.published).toHaveLength(0)
   })
 })
