@@ -179,3 +179,89 @@ describe("listCommunityCollections", () => {
 		});
 	});
 });
+
+describe("community-catalog — URL base (branch 30)", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+	});
+
+	it("default de produção quando VITE_PALCO_API_URL ausente", async () => {
+		vi.stubEnv("VITE_PALCO_API_URL", undefined as unknown as string);
+		let calledUrl = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				calledUrl = url;
+				return jsonResponse({ data: [] });
+			}),
+		);
+		await listCommunityCollectionsPage(1, 24);
+		expect(calledUrl).toContain("https://api.pianolouvorja.com.br/v1/custom");
+	});
+
+	it("env com trailing slash é normalizado", async () => {
+		vi.stubEnv("VITE_PALCO_API_URL", "https://api.test.local/");
+		let calledUrl = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				calledUrl = url;
+				return jsonResponse({ data: [] });
+			}),
+		);
+		await listCommunityCollectionsPage(1, 24);
+		expect(calledUrl).toContain("https://api.test.local/v1/custom");
+	});
+});
+
+describe("community-catalog — mata mutantes de !ok/meta/description", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+	});
+
+	it("!ok na listagem: body válido NÃO vira página (dado de erro não entra)", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () =>
+				jsonResponse(
+					{
+						data: [PUBLIC_ROW],
+						meta: { page: 1, last_page: 5, total: 100 },
+					},
+					false,
+				),
+			),
+		);
+		const result = await listCommunityCollectionsPage(1, 24);
+		expect(result).toEqual({ items: [], page: 1, lastPage: 1, total: 0 });
+	});
+
+	it("meta presente: page/lastPage/total vêm da API (mutante meta={} quebra)", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () =>
+				jsonResponse({
+					data: [PUBLIC_ROW],
+					meta: { page: 2, last_page: 7, total: 130 },
+				}),
+			),
+		);
+		const result = await listCommunityCollectionsPage(2, 24);
+		expect(result.page).toBe(2);
+		expect(result.lastPage).toBe(7);
+		expect(result.total).toBe(130);
+	});
+
+	it("meta ausente: fallback para page pedida / lastPage 1 / total 0", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => jsonResponse({ data: [PUBLIC_ROW] })),
+		);
+		const result = await listCommunityCollectionsPage(3, 24);
+		expect(result.page).toBe(3);
+		expect(result.lastPage).toBe(1);
+		expect(result.total).toBe(0);
+	});
+});

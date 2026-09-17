@@ -148,3 +148,77 @@ describe("saveCommunityCopy (cópia local read-only → editável)", () => {
 		expect(listLocalMusics(localId as number)).toHaveLength(2);
 	});
 });
+
+describe("saveCommunityCopy — fechamento de mutantes (mapeamento de faixa)", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		localStorage.clear();
+	});
+
+	it("official_music_id: número >0 é preservado; 0/negativo/string → null (branches exatas)", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				if (String(url).endsWith("/collections/12/musics")) {
+					return jsonResponse({
+						data: [
+							{ id_music: 1, name: "Link", official_music_id: 42 },
+							{ id_music: 2, name: "Zero", official_music_id: 0 },
+							{ id_music: 3, name: "Neg", official_music_id: -1 },
+							{ id_music: 4, name: "Str", official_music_id: "42" },
+							{ id_music: 5, name: "Ausente" },
+						],
+					});
+				}
+				return jsonResponse({ data: [] });
+			}),
+		);
+		const localId = await saveCommunityCopy(COLLECTION);
+		expect(localId).not.toBeNull();
+		const musics = listLocalMusics(localId as number);
+		expect(musics).toHaveLength(5);
+		const byName = new Map(musics.map((m) => [m.name, m]));
+		// 42: único caso em que officialMusicId !== null
+		expect(byName.get("Link")?.officialMusicId).toBe(42);
+		// 0 e -1: falham no > 0
+		expect(byName.get("Zero")?.officialMusicId ?? null).toBeNull();
+		expect(byName.get("Neg")?.officialMusicId ?? null).toBeNull();
+		// string "42": falha no typeof === "number"
+		expect(byName.get("Str")?.officialMusicId ?? null).toBeNull();
+		// ausente: null
+		expect(byName.get("Ausente")?.officialMusicId ?? null).toBeNull();
+	});
+
+	it("payload de faixas SEM array → null e NENHUMA cópia criada (mesmo com musics lixo)", async () => {
+		const before = listLocalCollections().length;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				if (String(url).endsWith("/collections/12/musics")) {
+					return jsonResponse({ data: { not: "array" } });
+				}
+				return jsonResponse({ data: [] });
+			}),
+		);
+		expect(await saveCommunityCopy(COLLECTION)).toBeNull();
+		expect(listLocalCollections().length).toBe(before);
+	});
+
+	it("faixa mapeada tem name default '' quando name ausente (asString ?? '')", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				if (String(url).endsWith("/collections/12/musics")) {
+					return jsonResponse({
+						data: [{ id_music: 1, official_music_id: 7 }],
+					});
+				}
+				return jsonResponse({ data: [] });
+			}),
+		);
+		const localId = await saveCommunityCopy(COLLECTION);
+		const musics = listLocalMusics(localId as number);
+		expect(musics[0]?.name).toBe("");
+		expect(musics[0]?.officialMusicId).toBe(7);
+	});
+});

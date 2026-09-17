@@ -23,7 +23,9 @@ const isLoading = ref(true);
 
 async function load() {
 	isLoading.value = true;
-	const token = getAuthSession()?.token ?? null;
+	const session = getAuthSession();
+	isLogged.value = session !== null;
+	const token = session?.token ?? null;
 	const [ranking, position] = await Promise.all([
 		getRanking(window.value),
 		getMyPosition(window.value, token),

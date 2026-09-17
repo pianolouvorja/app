@@ -97,3 +97,184 @@ describe("weekly-tasks service (F4 app)", () => {
 		expect(m).not.toHaveBeenCalled();
 	});
 });
+
+describe("weekly-tasks — fechamento de cobertura (catch/branch)", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		login();
+	});
+
+	it("getWeeklyTasks: fetch lança (rede) → null", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new Error("offline");
+			}),
+		);
+		expect(await getWeeklyTasks()).toBeNull();
+	});
+
+	it("getWeeklyTasks: ok mas data não-array → null", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ data: 42 })));
+		expect(await getWeeklyTasks()).toBeNull();
+	});
+
+	it("getWeeklyTasks: ok mas sem data → null", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({})));
+		expect(await getWeeklyTasks()).toBeNull();
+	});
+
+	it("completeWeeklyTask: fetch lança → false", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new Error("offline");
+			}),
+		);
+		expect(await completeWeeklyTask("t1")).toBe(false);
+	});
+
+	it("completeWeeklyTask: ok mas credited !== true → false", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ credited: false })));
+		expect(await completeWeeklyTask("t1")).toBe(false);
+	});
+});
+
+describe("weekly-tasks — URL base e default", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		login();
+	});
+
+	it("getWeeklyTasks: default de produção quando env ausente", async () => {
+		vi.stubEnv("VITE_PALCO_API_URL", undefined as unknown as string);
+		let calledUrl = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				calledUrl = url;
+				return jsonResponse({ data: TASKS });
+			}),
+		);
+		await getWeeklyTasks();
+		expect(calledUrl).toBe("https://api.pianolouvorja.com.br/v1/custom/weekly-tasks");
+	});
+
+	it("completeWeeklyTask: default de produção quando env ausente", async () => {
+		vi.stubEnv("VITE_PALCO_API_URL", undefined as unknown as string);
+		let calledUrl = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				calledUrl = url;
+				return jsonResponse({ credited: true });
+			}),
+		);
+		await completeWeeklyTask("publish_theme");
+		expect(calledUrl).toBe(
+			"https://api.pianolouvorja.com.br/v1/custom/weekly-tasks/publish_theme/complete",
+		);
+	});
+});
+
+describe("weekly-tasks — branch !ok no complete", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		login();
+	});
+
+	it("completeWeeklyTask: resposta !ok → false", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({}, false)));
+		expect(await completeWeeklyTask("t1")).toBe(false);
+	});
+});
+
+describe("weekly-tasks — contrato de rede (mata mutantes de headers/method)", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		login();
+	});
+
+	it("getWeeklyTasks: headers com Authorization Bearer exato", async () => {
+		let captured: RequestInit | undefined;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (_url: string, init?: RequestInit) => {
+				captured = init;
+				return jsonResponse({ data: TASKS });
+			}),
+		);
+		await getWeeklyTasks();
+		const headers = captured?.headers as Record<string, string>;
+		expect(headers["Authorization"]).toBe("Bearer tok");
+	});
+
+	it("completeWeeklyTask: method POST + Authorization Bearer exato", async () => {
+		let captured: RequestInit | undefined;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (_url: string, init?: RequestInit) => {
+				captured = init;
+				return jsonResponse({ credited: true });
+			}),
+		);
+		await completeWeeklyTask("t1");
+		expect(captured?.method).toBe("POST");
+		const headers = captured?.headers as Record<string, string>;
+		expect(headers["Authorization"]).toBe("Bearer tok");
+	});
+});
+
+describe("weekly-tasks — mata mutantes de guarda e replace", () => {
+	beforeEach(() => {
+		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
+		login();
+	});
+
+	it("getWeeklyTasks: !ok com data válido → null (dado de erro não entra)", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => jsonResponse({ data: TASKS }, false)),
+		);
+		expect(await getWeeklyTasks()).toBeNull();
+	});
+
+	it("completeWeeklyTask: !ok com credited:true → false", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => jsonResponse({ credited: true }, false)),
+		);
+		expect(await completeWeeklyTask("t1")).toBe(false);
+	});
+
+	it("base URL com trailing slash: replace(/\\/$/) remove (mutante do replace quebra a URL)", async () => {
+		vi.stubEnv("VITE_PALCO_API_URL", "https://api.test.local////");
+		let calledUrl = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				calledUrl = url;
+				return jsonResponse({ data: TASKS });
+			}),
+		);
+		await getWeeklyTasks();
+		// replace remove UM slash final (regex \/$): base vira 'local///'
+		// e a URL montada fica com 4 slashes ('///' + '/v1') — comportamento real
+		expect(calledUrl).toBe("https://api.test.local////v1/custom/weekly-tasks");
+		// e o caso SEM slash (mutante do replace não altera nada aqui):
+		vi.stubEnv("VITE_PALCO_API_URL", "https://api.test.local");
+		let called2 = "";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async (url: string) => {
+				called2 = url;
+				return jsonResponse({ data: TASKS });
+			}),
+		);
+		await getWeeklyTasks();
+		expect(called2).toBe("https://api.test.local/v1/custom/weekly-tasks");
+	});
+});
