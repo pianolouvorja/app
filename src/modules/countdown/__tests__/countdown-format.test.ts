@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   clampDurationPart,
+  computeCountdownRemainingMs,
   computeElapsedMs,
   computeRemainingMs,
   durationMsFromParts,
   durationPartsFromMs,
   formatElapsedMs,
+  wallClockUntilRemainingMs,
 } from '../services/countdown-format'
 
 describe('countdown-format — formatElapsedMs', () => {
@@ -118,4 +120,49 @@ describe('countdown-format — clampDurationPart', () => {
     expect(clampDurationPart(null)).toBe(0)
     expect(clampDurationPart(undefined)).toBe(0)
   })
+
+describe('countdown-format — computeCountdownRemainingMs (mode until)', () => {
+  const base = {
+    mode: 'until' as const,
+    untilHour: 23,
+    untilMinute: 30,
+    pausedRemainingMs: null,
+    durationMs: 65_000,
+    accumulatedMs: 0,
+    segmentStartedAt: null,
+    status: 'idle' as const,
+  }
+
+  it('sem pausedRemainingMs: usa relógio de parede', () => {
+    const now = new Date('2026-09-16T10:00:00')
+    const remaining = computeCountdownRemainingMs(base, now.getTime())
+    expect(remaining).toBe(new Date('2026-09-16T23:30:00').getTime() - now.getTime())
+  })
+
+  it('pausado com pausedRemainingMs: usa o valor salvo', () => {
+    const remaining = computeCountdownRemainingMs(
+      { ...base, status: 'paused', pausedRemainingMs: 42_000 },
+      0,
+    )
+    expect(remaining).toBe(42_000)
+  })
+
+  it('wallClockUntilRemainingMs clampa hora/minuto e trata valores inválidos', () => {
+    const now = new Date('2026-09-16T10:00:00').getTime()
+    // NaN/undefined -> fallback 0 -> meia-noite do dia
+    const r0 = wallClockUntilRemainingMs(NaN, undefined as unknown as number, now)
+    expect(r0).toBe(new Date('2026-09-16T00:00:00').getTime() - now)
+    // clamp de hora > 23 e minuto > 59
+    const rC = wallClockUntilRemainingMs(30, 120, now)
+    expect(rC).toBe(new Date('2026-09-16T23:59:00').getTime() - now)
+  })
+
+  it('mode duration: delega para computeRemainingMs', () => {
+    const remaining = computeCountdownRemainingMs(
+      { ...base, mode: 'duration', durationMs: 60_000, accumulatedMs: 10_000 },
+      0,
+    )
+    expect(remaining).toBe(50_000)
+  })
+})
 })

@@ -420,4 +420,16 @@ describe('useCountdownStore', () => {
     store.closeConfig()
     expect(store.configOpen).toBe(false)
   })
+
+describe('useCountdownDisplay — sem fontes (store)', () => {
+  it('usa defaults do composable (tick ativo por padrão)', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const { useCountdownDisplay } = await import('../composables/useCountdown')
+    const display = useCountdownDisplay()
+    expect(display.formattedTime.value).toBeDefined()
+    expect(display.isUrgent.value).toBe(false)
+    expect(display.isFinished.value).toBe(false)
+  })
+})
 })
