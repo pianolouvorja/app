@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import MediaSlideStage from '../components/MediaSlideStage.vue'
 import MediaAccountBar from '../components/MediaAccountBar.vue'
@@ -36,7 +37,12 @@ import {
   updateCustomMusic,
   uploadCustomFile,
 } from '../services/custom-catalog'
-import type { CustomCollectionSummary, CustomMusicSummary } from '../services/custom-catalog'
+import type {
+  CollectionVisibility,
+  CustomCollectionSummary,
+  CustomMusicSummary,
+} from '../services/custom-catalog'
+import PublicationRulesCard from '../components/PublicationRulesCard.vue'
 import { customApiUrl } from '../services/custom-catalog'
 import { buildSlja, parseSljaFile } from '../../../shared/services/slja'
 
@@ -64,7 +70,10 @@ type EditorMusic = {
 const router = useRouter()
 const route = useRoute()
 
+const { t } = useI18n()
 const collections = ref<CustomCollectionSummary[]>([])
+// Privacidade da NOVA coletânea (default PRIVADO — opt-in pra publicar).
+const newCollectionVisibility = ref<CollectionVisibility>('private')
 const selectedCollectionId = ref<number | null>(null)
 const musics = ref<CustomMusicSummary[]>([])
 const selectedMusicId = ref<number | null>(null)
@@ -149,13 +158,23 @@ async function onCreateCollection(): Promise<void> {
     // produto 12/09. Com auth sobe pra API. O roteamento é interno do
     // custom-catalog (createCustomCollection decide pelo getAuthSession).
     const localOnly = !getAuthSession()
-    const result = await createCustomCollection(name)
+    const result = await createCustomCollection(
+      name,
+      undefined,
+      undefined,
+      newCollectionVisibility.value,
+    )
     if (result) {
       newCollectionName.value = ''
       await refreshCollections()
       selectedCollectionId.value = result.id
       await onCollectionChange()
-      notify(localOnly ? 'Coletânea criada localmente (entre com sua conta para publicar)' : 'Coletânea criada')
+      notify(
+        localOnly
+          ? 'Coletânea criada localmente (entre com sua conta para publicar)'
+          : `Coletânea criada como ${newCollectionVisibility.value === 'public' ? 'pública' : 'privada'}`,
+      )
+      newCollectionVisibility.value = 'private'
     } else {
       notify('Falha ao criar coletânea (API indisponível?)', true)
     }
@@ -290,6 +309,38 @@ const coverInput = ref<HTMLInputElement | null>(null)
 const selectedCollection = computed(
   () => collections.value.find((c) => c.id === selectedCollectionId.value) ?? null,
 )
+
+/* ---------- Privacidade da coletânea selecionada (t_35e4d3ea) ---------- */
+
+const visibilityBusy = ref(false)
+
+async function onChangeVisibility(next: CollectionVisibility): Promise<void> {
+  const current = selectedCollection.value
+  if (!current || visibilityBusy.value) return
+  if ((current.visibility ?? 'public') === next) return
+  if (isLocalId(current.id)) {
+    // Local (sem auth): só alterna o estado da UI (nada sobe pra rede).
+    current.visibility = next
+    notify(next === 'public'
+      ? 'Coletânea local marcada como pública — entre com sua conta para publicar na rede'
+      : 'Coletânea local marcada como privada')
+    return
+  }
+  visibilityBusy.value = true
+  try {
+    const updated = await updateCustomCollection(current.id, { visibility: next })
+    if (updated) {
+      current.visibility = next
+      notify(next === 'public'
+        ? 'Coletânea pública — visível para toda a rede PIANO'
+        : 'Coletânea privada — só você vê')
+    } else {
+      notify('Falha ao alterar privacidade (API indisponível?)', true)
+    }
+  } finally {
+    visibilityBusy.value = false
+  }
+}
 
 async function onCoverFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
@@ -1110,6 +1161,41 @@ onMounted(async () => {
             />
           </button>
         </div>
+        <div
+          class="editor__visibility"
+          role="radiogroup"
+          :aria-label="t('media.visibility.label')"
+        >
+          <button
+            type="button"
+            class="editor__visibility-btn"
+            :class="{ 'editor__visibility-btn--active': newCollectionVisibility === 'private' }"
+            :aria-pressed="newCollectionVisibility === 'private'"
+            :disabled="saving"
+            @click="newCollectionVisibility = 'private'"
+          >
+            <i
+              class="ti ti-lock"
+              aria-hidden="true"
+            />
+            {{ t('media.visibility.private') }}
+          </button>
+          <button
+            type="button"
+            class="editor__visibility-btn"
+            :class="{ 'editor__visibility-btn--active': newCollectionVisibility === 'public' }"
+            :aria-pressed="newCollectionVisibility === 'public'"
+            :disabled="saving"
+            @click="newCollectionVisibility = 'public'"
+          >
+            <i
+              class="ti ti-broadcast"
+              aria-hidden="true"
+            />
+            {{ t('media.visibility.public') }}
+          </button>
+        </div>
+        <PublicationRulesCard v-if="newCollectionVisibility === 'public'" />
         <ul class="editor__list">
           <li
             v-for="collection in collections"
@@ -1126,6 +1212,48 @@ onMounted(async () => {
             </button>
           </li>
         </ul>
+        <template v-if="selectedCollection">
+          <div
+            class="editor__visibility"
+            role="radiogroup"
+            :aria-label="t('media.visibility.label')"
+          >
+            <button
+              type="button"
+              class="editor__visibility-btn"
+              :class="{ 'editor__visibility-btn--active': (selectedCollection.visibility ?? 'public') === 'private' }"
+              :aria-pressed="(selectedCollection.visibility ?? 'public') === 'private'"
+              :disabled="saving || visibilityBusy"
+              @click="onChangeVisibility('private')"
+            >
+              <i
+                class="ti ti-lock"
+                aria-hidden="true"
+              />
+              {{ t('media.visibility.private') }}
+            </button>
+            <button
+              type="button"
+              class="editor__visibility-btn"
+              :class="{ 'editor__visibility-btn--active': (selectedCollection.visibility ?? 'public') === 'public' }"
+              :aria-pressed="(selectedCollection.visibility ?? 'public') === 'public'"
+              :disabled="saving || visibilityBusy"
+              @click="onChangeVisibility('public')"
+            >
+              <i
+                class="ti ti-broadcast"
+                aria-hidden="true"
+              />
+              {{ t('media.visibility.public') }}
+            </button>
+          </div>
+          <p class="editor__hint">
+            {{ (selectedCollection.visibility ?? 'public') === 'public'
+              ? t('media.visibility.publicHint')
+              : t('media.visibility.privateHint') }}
+          </p>
+          <PublicationRulesCard v-if="(selectedCollection.visibility ?? 'public') === 'public'" />
+        </template>
         <button
           v-if="selectedCollectionId != null"
           type="button"
@@ -1599,6 +1727,38 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+
+.editor__visibility {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.4rem 0;
+}
+
+.editor__visibility-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.25));
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.editor__visibility-btn--active {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--glass-border-strong, rgba(255, 255, 255, 0.55));
+  opacity: 1;
+  font-weight: 600;
+}
+
+.editor__visibility-btn:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
 /*
  * Tokens do design system (docs/stitch/home/DESIGN.md · docs/prd/DESIGN_SYSTEM.md)
  * Vars injetadas pelo useThemeManager: --ds-color-*, --ds-radius-*, --ds-blur-*, --ds-motion-*.

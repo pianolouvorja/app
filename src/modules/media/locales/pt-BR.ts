@@ -1,5 +1,20 @@
 export default {
   media: {
+    publishRules: {
+      title: 'Regras da Comunidade',
+      visibleToAll: 'Coletâneas públicas aparecem para toda a rede PIANO.',
+      displayName: 'Seu nome de exibição aparece como autor — seu email nunca é exposto.',
+      readOnlyCopy: 'Outros usuários podem salvar uma cópia; sua original não é alterada.',
+      moderation: 'Conteúdo inadequado pode ser reportado e removido pela curadoria.',
+      ranking: 'Coletâneas públicas entram no ranking da comunidade (+10 pts ao publicar).',
+    },
+    visibility: {
+      label: 'Privacidade',
+      private: 'Privada',
+      public: 'Pública',
+      privateHint: 'Somente você vê esta coletânea.',
+      publicHint: 'Visível para toda a rede PIANO.',
+    },
     title: 'Player',
     empty: 'Nenhuma música em reprodução. Abra uma faixa pelos álbuns ou pela liturgia.',
     play: 'Reproduzir',
