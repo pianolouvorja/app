@@ -112,7 +112,7 @@ export async function playLiturgyWebOnConfiguredScreens(
 
   const opened = await openLiturgyWebOnConfiguredScreens(rawUrl, title, true)
   if (!opened) return false
-
+  console.log("BEFORE BRIDGE")
   const bridge = getDesktopBridge()
   if (!bridge?.projection?.remotePlay) return opened
 

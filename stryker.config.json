@@ -15,9 +15,13 @@
   },
   "reporters": [
     "html",
+    "json",
     "clear-text",
     "progress"
   ],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
   "htmlReporter": {
     "fileName": "reports/mutation/mutation.html"
   },
