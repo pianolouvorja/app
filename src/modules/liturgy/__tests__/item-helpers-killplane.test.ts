@@ -369,6 +369,10 @@ describe('isValidLiturgyUrl mata #255 (âncora ^ removida)', () => {
 })
 
 describe('build/draft mata #321 (1º operando music -> true), #407, #502, #508-510, #552, #554, #581, #608', () => {
+  it('music com musicId é válida (#321 2º operando)', () => {
+    expect(isLiturgyItemDraftValid(draft())).toBe(true)
+  })
+
   it('draft não-music com musicId null continua válido (#321)', () => {
     expect(isLiturgyItemDraftValid(draft({ type: 'video', filePath: '/v.mp4', musicId: null }))).toBe(true)
   })
