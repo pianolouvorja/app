@@ -19,16 +19,16 @@ afterEach(() => {
 })
 
 describe('probeMediaDurationMs', () => {
-  it('retorna 0 com warn quando API do electron não existe', async () => {
-    setLouvorja(undefined)
-    expect(await probeMediaDurationMs('/x.mp4')).toBe(0)
-    expect(warnSpy).toHaveBeenCalledOnce()
-  })
-  it('retorna 0 quando media.probeDuration está ausente', async () => {
-    setLouvorja({ media: {} })
-    expect(await probeMediaDurationMs('/x.mp4')).toBe(0)
-    expect(warnSpy).toHaveBeenCalledOnce()
-  })
+  it('retorna 0 com warn EXATO quando API do electron não existe', async () => {
+      setLouvorja(undefined)
+      expect(await probeMediaDurationMs('/x.mp4')).toBe(0)
+      expect(warnSpy).toHaveBeenCalledWith('[media-probe] electronAPI.media.probeDuration não disponível — duração 0')
+    })
+    it('retorna 0 com warn EXATO quando media.probeDuration está ausente', async () => {
+      setLouvorja({ media: {} })
+      expect(await probeMediaDurationMs('/x.mp4')).toBe(0)
+      expect(warnSpy).toHaveBeenCalledWith('[media-probe] electronAPI.media.probeDuration não disponível — duração 0')
+    })
   it('delega para window.louvorja.media.probeDuration', async () => {
     const probeDuration = vi.fn().mockResolvedValue(42_000)
     setLouvorja({ media: { probeDuration } })

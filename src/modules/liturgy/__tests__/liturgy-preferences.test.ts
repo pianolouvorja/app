@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -163,12 +164,142 @@ describe('liturgy-preferences', () => {
     })
 
     it('deletionLocks: só chave truthy com valor === true', () => {
-      const locks = normalizeLiturgyState(seedState()).deletionLocks
-      expect(locks).toEqual({ a: true })
-    })
-  })
+          const locks = normalizeLiturgyState(seedState()).deletionLocks
+          expect(locks).toEqual({ a: true })
+        })
+      })
 
-  describe('save/load', () => {
+        // --- mata-mutantes guards !raw || typeof raw !== 'object' (8 funções via API pública) ---
+        describe('guards de normalização via normalizeLiturgyState (mata mutantes ||→&& e if→false)', () => {
+          // L49 normalizeItem: raw não-objeto no item -> null (item ignorado)
+          it('normalizeItem (L49): item não-objeto em weekdays é ignorado', () => {
+            const state = normalizeLiturgyState({ weekdays: { sunday: [null, 42, 'x', [], { type: 'music', name: 'Ok' }] } })
+            expect(state.weekdays.sunday).toHaveLength(1)
+            expect(state.weekdays.sunday[0]!.name).toBe('Ok')
+          })
+          // L115 normalizeWeekdays: raw não-objeto -> base
+          it('normalizeWeekdays (L115): raw não-objeto retorna base vazia', () => {
+            const state = normalizeLiturgyState('x')
+            for (const day of LITURGY_WEEKDAYS) expect(state.weekdays[day]).toEqual([])
+          })
+          // L129 normalizeSessionTimes: raw não-objeto -> createEmptySessionTimes
+              it('normalizeSessionTimes (L129): raw não-objeto retorna createEmptySessionTimes()', () => {
+                const state = normalizeLiturgyState(null)
+                for (const day of LITURGY_WEEKDAYS) expect(state.daySessionTimes[day]).toEqual({ startTime: null, endTime: null })
+              })
+              // L139 normalizeWeekdaySessionTimes: raw não-objeto -> base
+              it('normalizeWeekdaySessionTimes (L139): raw não-objeto retorna base vazia', () => {
+                const state = normalizeLiturgyState({ daySessionTimes: 'x' })
+                for (const day of LITURGY_WEEKDAYS) expect(state.daySessionTimes[day]).toEqual({ startTime: null, endTime: null })
+              })
+          // L149 normalizeNotes: raw não-objeto -> base
+          it('normalizeNotes (L149): raw não-objeto retorna base vazia', () => {
+            const state = normalizeLiturgyState({ dayNotes: 'x' })
+            for (const day of LITURGY_WEEKDAYS) expect(state.dayNotes[day]).toBe('')
+          })
+          // L163 normalizeCustomLiturgies: entry não-objeto -> continue (ignora)
+          it('normalizeCustomLiturgies (L163): entry não-objeto é ignorada', () => {
+            const state = normalizeLiturgyState({ customLiturgies: [null, 42, 'x', { name: 'Ok' }] })
+            expect(state.customLiturgies).toHaveLength(1)
+            expect(state.customLiturgies[0]!.name).toBe('Ok')
+          })
+          // L180 normalizeDeletionLocks: raw não-objeto -> {}
+          it('normalizeDeletionLocks (L180): raw não-objeto retorna {}', () => {
+            const state = normalizeLiturgyState({ deletionLocks: null })
+            expect(state.deletionLocks).toEqual({})
+            const state2 = normalizeLiturgyState({ deletionLocks: 42 })
+            expect(state2.deletionLocks).toEqual({})
+          })
+          // L192 normalizeLiturgyState: raw não-objeto -> estado vazio completo
+          it('normalizeLiturgyState (L192): raw não-objeto retorna estado vazio completo', () => {
+            const empty = normalizeLiturgyState(null)
+            for (const day of LITURGY_WEEKDAYS) expect(empty.weekdays[day]).toEqual([])
+            expect(Object.values(empty.dayNotes)).toHaveLength(LITURGY_WEEKDAYS.length)
+            expect(Object.keys(empty.daySessionTimes)).toHaveLength(LITURGY_WEEKDAYS.length)
+            expect(empty.customLiturgies).toEqual([])
+            expect(empty.deletionLocks).toEqual({})
+          })
+        })
+
+        // --- asNumberOrNull L40/L41 ---
+          describe('asNumberOrNull mata-mutantes', () => {
+            it('L40: number finito retorna value; number não-finito retorna null', () => {
+              // testar internamente via item com durationMs
+              const state = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'A', durationMs: 1500 }] } }) // 1500 -> clamp 2000
+              expect(state.weekdays.sunday[0]!.durationMs).toBe(2000)
+              const state2 = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'B', durationMs: Infinity }] } })
+              expect(state2.weekdays.sunday[0]!.durationMs).toBe(0)
+            })
+            it('L41: string numérica válida parseia; string vazia/whitespace retorna null', () => {
+              const state = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'A', durationMs: '1500' }] } })
+              expect(state.weekdays.sunday[0]!.durationMs).toBe(2000)
+              const state2 = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'B', durationMs: '' }] } })
+              expect(state2.weekdays.sunday[0]!.durationMs).toBe(0)
+              const state3 = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'C', durationMs: '   ' }] } })
+              expect(state3.weekdays.sunday[0]!.durationMs).toBe(0)
+              // mutante StringLiteral: value.trim() !== '' -> 'Stryker was here!'
+              const state4 = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'D', durationMs: 'Stryker was here!' }] } })
+              expect(state4.weekdays.sunday[0]!.durationMs).toBe(0)
+            })
+            it('L40/L41: number não-finito E string não-numérica ambos -> null', () => {
+              const state = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'A', durationMs: NaN }] } })
+              expect(state.weekdays.sunday[0]!.durationMs).toBe(0)
+            })
+          })
+
+        // --- ternário type === 'music' L61 ---
+          describe('ternário type===music (L61) mata-mutantes', () => {
+            it('category NUNCA recebe durationMs (mesmo com durationRaw); music/prayer com duration -> clamp', () => {
+              const music = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'M', durationMs: 1500 }] } }).weekdays.sunday[0]!
+              expect(music.durationMs).toBe(2000)
+              // mata o swap do ternário: category com durationRaw tem que ser 0, não clamp
+              const cat = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'category', name: 'C', durationMs: 1500 }] } }).weekdays.sunday[0]!
+              expect(cat.durationMs).toBe(0)
+              const prayer = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'prayer', name: 'P', durationMs: 1500 }] } }).weekdays.sunday[0]!
+              expect(prayer.durationMs).toBe(2000)
+            })
+          })
+
+        // --- durationRaw != null && durationRaw > 0 L62 ---
+        describe('durationRaw guarda (L62) mata-mutantes', () => {
+          it('durationRaw null -> 0; durationRaw 0 -> 0; durationRaw negativo -> 0; durationRaw positivo -> clamp', () => {
+            const a = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'A', durationMs: null }] } }).weekdays.sunday[0]!
+            expect(a.durationMs).toBe(0)
+            const b = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'B', durationMs: 0 }] } }).weekdays.sunday[0]!
+            expect(b.durationMs).toBe(0)
+            const c = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'C', durationMs: -1 }] } }).weekdays.sunday[0]!
+            expect(c.durationMs).toBe(0)
+            const d = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'D', durationMs: 5000 }] } }).weekdays.sunday[0]!
+            expect(d.durationMs).toBeGreaterThan(0)
+          })
+        })
+
+        // --- asString(x) || createLiturgyItemId() L68/L168 ---
+        describe('asString fallback (L68/L168) mata-mutantes', () => {
+          it('id ausente/undefined/nao-string -> createLiturgyItemId chamado; id string válida -> usa ela', () => {
+            const withId = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'M', id: 'meu-id' }] } }).weekdays.sunday[0]!
+            expect(withId.id).toBe('meu-id')
+            const noId = normalizeLiturgyState({ weekdays: { sunday: [{ type: 'music', name: 'M' }] } }).weekdays.sunday[0]!
+            expect(noId.id).toBeTruthy()
+            expect(noId.id).not.toBe('meu-id')
+          })
+          it('customLiturgy id igual', () => {
+            const withId = normalizeLiturgyState({ customLiturgies: [{ name: 'X', id: 'custom-1' }] }).customLiturgies[0]!
+            expect(withId.id).toBe('custom-1')
+            const noId = normalizeLiturgyState({ customLiturgies: [{ name: 'Y' }] }).customLiturgies[0]!
+            expect(noId.id).toBeTruthy()
+          })
+        })
+
+        // --- deletionLocks key && value === true L184 ---
+          describe('deletionLocks key/value (L184) mata-mutantes', () => {
+            it('chave vazia é rejeitada; chave 0/string entram; valor não-===true rejeitado', () => {
+              const state = normalizeLiturgyState({ deletionLocks: { '': true, '0': true, a: true, b: false, c: 'true', d: 1 } })
+              expect(state.deletionLocks).toEqual({ '0': true, a: true })
+            })
+          })
+
+        describe('save/load', () => {
     it('save persiste e load devolve o mesmo estado', () => {
       const state = normalizeLiturgyState(seedState())
       saveLiturgyState(state)
