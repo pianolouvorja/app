@@ -50,6 +50,18 @@ const { getObjUrl } = vi.hoisted(() => ({
 vi.mock('../services/liturgy-local-video', () => ({
   getLiturgyVideoObjectUrl: (id: string) => getObjUrl(id),
 }))
+vi.mock('../../media/stores/useMediaStore', () => ({
+  useMediaStore: vi.fn(() => ({
+    open: vi.fn().mockResolvedValue({ ok: true }),
+    maximize: vi.fn(),
+    close: vi.fn(),
+    pause: vi.fn(),
+    play: vi.fn(),
+    seek: vi.fn(),
+    setVolume: vi.fn(),
+    setMode: vi.fn(),
+  })),
+}))
 
 vi.mock('@modules/bible/stores/useBibleStore', () => ({
   useBibleStore: () => ({
@@ -317,6 +329,74 @@ describe('kill plane 3 — executeLiturgyItem: bridge OptionalChaining + fallbac
       const { executeLiturgyItem } = await import('../services/liturgy-actions')
       const r = await executeLiturgyItem({ type: 'music' } as any, okRouter() as any)
       expect(r.ok).toBe(false)
+    })
+    // segundo teste: music com musicId válido -> push
+    await withBridge(baseMock(), async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const router = { push: vi.fn() }
+      const r = await executeLiturgyItem({ type: 'music', musicId: 123 } as any, router as any)
+      expect(r.ok).toBe(true)
+      expect(router.push).toHaveBeenCalledWith({ name: 'media' })
+    })
+  })
+
+  it('audio com bridge externalPlayer vazio (sem get/play): cai no interno sem quebrar (#150/#160-162)', async () => {
+    await withBridge({ externalPlayer: {} }, async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const r = await executeLiturgyItem({ type: 'audio', filePath: ' /a/X.mp3 ' } as any, okRouter() as any)
+      // sem pref, sem player externo -> interno com label = filePath
+      expect(r.ok).toBe(true)
+      expect(openLocalVideo).toHaveBeenCalledWith('/a/X.mp3', '/a/X.mp3', undefined)
+    })
+  })
+
+  it('presentation com bridge.presentation vazio: auto interno ok (#265-291)', async () => {
+    await withBridge({ presentation: {} }, async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const r = await executeLiturgyItem({ type: 'presentation', filePath: ' /p/Y.pptx ', name: ' Y ' } as any, okRouter() as any)
+      expect(r.ok).toBe(true)
+      expect(openLocalPresentation).toHaveBeenCalledWith('/p/Y.pptx', 'Y', undefined)
+    })
+  })
+
+  it('presentation com getEngine retornando "" vira engine falsy -> interno (#268/#455)', async () => {
+    await withBridge(baseMock(), async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const bridge = baseMock()
+      bridge.presentation.getEngine.mockResolvedValue('')
+      await withBridge(bridge, async () => {
+        const { executeLiturgyItem: ex } = await import('../services/liturgy-actions')
+        const r = await ex({ type: 'presentation', filePath: ' /p/Z.pptx ' } as any, okRouter() as any)
+        expect(r.ok).toBe(true)
+        expect(openLocalPresentation).toHaveBeenCalledWith('/p/Z.pptx', '/p/Z.pptx', undefined)
+      })
+    })
+  })
+
+  it('presentation openExternal retorna undefined -> projectionFailed (#469)', async () => {
+    await withBridge(baseMock(), async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const bridge = baseMock()
+      bridge.presentation.getEngine.mockResolvedValue('powerpoint')
+      bridge.presentation.openExternal.mockResolvedValue(undefined)
+      await withBridge(bridge, async () => {
+        const { executeLiturgyItem: ex } = await import('../services/liturgy-actions')
+        const r = await ex({ type: 'presentation', filePath: '/p/W.pptx' } as any, okRouter() as any)
+        expect(r).toMatchObject({ ok: false, messageKey: 'liturgy.messages.projectionFailed' })
+      })
+    })
+  })
+
+  it('audio pref whitespace ("  ") não é default nem associated -> play externo com "  " (#150 trim)', async () => {
+    await withBridge(baseMock(), async () => {
+      const { executeLiturgyItem } = await import('../services/liturgy-actions')
+      const bridge = baseMock()
+      bridge.externalPlayer.get.mockResolvedValue('  ')
+      await withBridge(bridge, async () => {
+        const { executeLiturgyItem: ex } = await import('../services/liturgy-actions')
+        await ex({ type: 'audio', filePath: ' /a/Y.mp3 ' } as any, okRouter() as any)
+        expect(bridge.externalPlayer.play).toHaveBeenCalledWith('/a/Y.mp3', '  ')
+      })
     })
   })
 })
