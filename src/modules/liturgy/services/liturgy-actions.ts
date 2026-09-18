@@ -219,21 +219,25 @@ export async function executeLiturgyItem(
       // modo slideshow (fidelidade total). 'auto' = conversão interna do app
       // (projeção multi-tela).
       let engine = item.presentationEngine
-      if (!engine) {
-        engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+      if (!engine && bridge && bridge.presentation && bridge.presentation.getEngine) {
+        engine = await bridge.presentation.getEngine()
       }
-      if (engine && engine !== 'auto') {
-        const result = await bridge?.presentation?.openExternal?.(
-          filePath,
-          engine,
-        )
+      engine ||= 'auto'
+      if (engine !== 'auto') {
+        const result =
+          bridge && bridge.presentation && bridge.presentation.openExternal
+            ? await bridge.presentation.openExternal(filePath, engine)
+            : undefined
         if (!result?.ok) {
           return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
         }
         return { ok: true }
       }
 
-      const hasOffice = await bridge?.presentation?.detectOffice?.()
+      const hasOffice =
+        bridge && bridge.presentation && bridge.presentation.detectOffice
+          ? await bridge.presentation.detectOffice()
+          : undefined
       if (hasOffice === false) {
         return {
           ok: false,
@@ -337,21 +341,25 @@ export async function playLiturgyItemOnScreens(
 
     // Engine efetivo: override do item > global (ver executeLiturgyItem).
     let engine = item.presentationEngine
-    if (!engine) {
-      engine = (await bridge?.presentation?.getEngine?.()) ?? 'auto'
+    if (!engine && bridge && bridge.presentation && bridge.presentation.getEngine) {
+      engine = await bridge.presentation.getEngine()
     }
-    if (engine && engine !== 'auto') {
-      const result = await bridge?.presentation?.openExternal?.(
-        filePath,
-        engine,
-      )
+    engine ||= 'auto'
+    if (engine !== 'auto') {
+      const result =
+        bridge && bridge.presentation && bridge.presentation.openExternal
+          ? await bridge.presentation.openExternal(filePath, engine)
+          : undefined
       if (!result?.ok) {
         return { ok: false, messageKey: 'liturgy.messages.projectionFailed' }
       }
       return { ok: true }
     }
 
-    const hasOffice = await bridge?.presentation?.detectOffice?.()
+    const hasOffice =
+      bridge && bridge.presentation && bridge.presentation.detectOffice
+        ? await bridge.presentation.detectOffice()
+        : undefined
     if (hasOffice === false) {
       return {
         ok: false,
