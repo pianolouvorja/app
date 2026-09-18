@@ -32,7 +32,7 @@ vi.mock('@shared/services/desktop-bridge', () => ({
   getDesktopBridge: mocks.mockGetDesktopBridge,
 }))
 
-vi.mock('./liturgy-web-runtime', () => ({
+vi.mock('../services/liturgy-web-runtime', () => ({
   parseLiturgyWebTarget: mocks.mockParseTarget,
   publishLiturgyWebRuntime: mocks.mockPublishRuntime,
 }))
@@ -68,8 +68,12 @@ describe('liturgy-web-projection — mata survivors', () => {
     mocks.mockCloseProjectionModule.mockResolvedValue(undefined)
     mocks.mockResolveTargetMonitors.mockResolvedValue([1, 2])
     mocks.mockLoadProjectionSettings.mockReturnValue({ targetDisplayIds: [1] })
-    mocks.mockListSystemDisplays.mockResolvedValue([])
-    mocks.mockListExtendedDisplays.mockReturnValue([])
+    mocks.mockListSystemDisplays.mockResolvedValue([
+      { id: 1, label: 'A' }, { id: 2, label: 'B' },
+    ])
+    mocks.mockListExtendedDisplays.mockReturnValue([
+      { id: 1, label: 'A' }, { id: 2, label: 'B' },
+    ])
     mocks.mockPalcoSession.mockResolvedValue(undefined)
   })
 
@@ -99,7 +103,7 @@ describe('liturgy-web-projection — mata survivors', () => {
       mocks.mockParseTarget.mockReturnValue({ kind: 'site', url: 'https://x.com', videoId: undefined })
       expect(await openLiturgyWebOnConfiguredScreens('https://x.com', 'Meu Site')).toBe(true)
       expect(b.projection.openUrl).toHaveBeenCalledWith(expect.objectContaining({
-        url: 'https://x.com', title: 'Meu Site', mode: 'site', monitorIds: [1, 2], withScreens: true,
+        url: 'https://x.com', title: 'Meu Site', mode: 'site', monitorIds: [1], withScreens: true,
       }))
       expect(mocks.mockCloseProjectionModule).toHaveBeenCalled()
       expect(mocks.mockPublishRuntime).not.toHaveBeenCalled()
@@ -207,7 +211,7 @@ describe('liturgy-web-projection — mata survivors', () => {
   describe('_openLiturgyLocalVideo via wrappers — bridge?.projection?.openUrl + remotePlay', () => {
     it('bridge SEM openUrl + objectUrl → fallback web', async () => {
       mocks.mockGetDesktopBridge.mockReturnValue({ projection: {} })
-      expect(await openLiturgyLocalVideoControl('/video.mp4', 'Vídeo', undefined, 'blob:url')).toBe(true)
+      expect(await openLiturgyLocalVideoControl('/video.mp4', 'Vídeo', 'blob:url')).toBe(true)
       expect(mocks.mockPublishRuntime).toHaveBeenCalledWith(expect.objectContaining({ kind: 'local-video', url: 'blob:url' }))
     })
 
@@ -225,9 +229,9 @@ describe('liturgy-web-projection — mata survivors', () => {
     it('bridge COM openUrl → chama bridge + palcoSession', async () => {
       const b = bridgeWith()
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      expect(await openLiturgyLocalVideoControl('/video.mp4', 'Vídeo', true)).toBe(true)
+      expect(await openLiturgyLocalVideoControl('/video.mp4', 'Vídeo')).toBe(true)
       expect(b.projection.openUrl).toHaveBeenCalledWith(expect.objectContaining({
-        filePath: '/video.mp4', title: 'Vídeo', mode: 'video', monitorIds: [1, 2], withScreens: true,
+        filePath: '/video.mp4', title: 'Vídeo', mode: 'video', monitorIds: [1], withScreens: false,
       }))
       expect(mocks.mockPalcoSession).toHaveBeenCalledWith({ url: '/video.mp4', title: 'Vídeo' })
     })
@@ -337,25 +341,25 @@ describe('liturgy-web-projection — mata survivors', () => {
     it('detectOffice false + SEM engine powerpoint/custom → false', async () => {
       const b = bridgeWith({ detectOffice: vi.fn().mockResolvedValue(false) })
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', true, undefined)).toBe(false)
+      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres')).toBe(false)
     })
 
     it('detectOffice false + engine=powerpoint → prossegue', async () => {
       const b = bridgeWith({ detectOffice: vi.fn().mockResolvedValue(false) })
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', true, 'powerpoint')).toBe(true)
+      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', 'powerpoint')).toBe(true)
     })
 
     it('detectOffice false + engine=custom → prossegue', async () => {
       const b = bridgeWith({ detectOffice: vi.fn().mockResolvedValue(false) })
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', true, 'custom')).toBe(true)
+      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', 'custom')).toBe(true)
     })
 
     it('detectOffice true → prossegue', async () => {
       const b = bridgeWith({ detectOffice: vi.fn().mockResolvedValue(true) })
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres', true, undefined)).toBe(true)
+      expect(await openLiturgyLocalPresentationControl('/file.pptx', 'Apres')).toBe(true)
     })
 
     it('bridge COM openUrl → chama bridge + palcoSession', async () => {
@@ -363,7 +367,7 @@ describe('liturgy-web-projection — mata survivors', () => {
       mocks.mockGetDesktopBridge.mockReturnValue(b)
       expect(await playLiturgyLocalPresentationOnScreens('/file.pptx', 'Apres')).toBe(true)
       expect(b.projection.openUrl).toHaveBeenCalledWith(expect.objectContaining({
-        filePath: '/file.pptx', mode: 'presentation', monitorIds: [1, 2], withScreens: true,
+        filePath: '/file.pptx', mode: 'presentation', monitorIds: [1], withScreens: true,
       }))
       expect(mocks.mockPalcoSession).toHaveBeenCalledWith('liturgy', 'liturgy', { text: 'Apres' })
     })
@@ -371,7 +375,7 @@ describe('liturgy-web-projection — mata survivors', () => {
     it('presentationEngine passado → spread no openUrl', async () => {
       const b = bridgeWith()
       mocks.mockGetDesktopBridge.mockReturnValue(b)
-      await playLiturgyLocalPresentationOnScreens('/file.pptx', 'Apres', true, 'custom')
+      await playLiturgyLocalPresentationOnScreens('/file.pptx', 'Apres', 'custom')
       expect(b.projection.openUrl).toHaveBeenCalledWith(expect.objectContaining({ presentationEngine: 'custom' }))
     })
 
