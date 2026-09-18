@@ -24,6 +24,9 @@ export default defineConfig({
   test: {
     exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
     setupFiles: ['./vitest.setup.ts'],
+    // Runs completos com coverage (istanbul) estouram 5s em testes que
+    // mockam bridge/processamento pesado — transform 125s no run global.
+    testTimeout: 30_000,
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'text-summary', 'lcov'],
