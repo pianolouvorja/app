@@ -79,9 +79,24 @@ vi.mock('@modules/settings/services/projection-preferences', () => ({
   loadProjectionSettings: () => loadProjectionSettings(),
 }))
 
+const bridgeMock = vi.hoisted(() => ({
+  isDesktop: false,
+  bridge: null as Record<string, unknown> | null,
+}))
 vi.mock('@shared/services/desktop-bridge', () => ({
-  getDesktopBridge: () => null,
-  isDesktopApp: () => false,
+  getDesktopBridge: () => bridgeMock.bridge,
+  isDesktopApp: () => bridgeMock.isDesktop,
+}))
+const trackMediaMock = vi.hoisted(() => ({
+  isDownloaded: vi.fn().mockResolvedValue(false),
+  download: vi.fn().mockResolvedValue({ status: 'downloaded' }),
+}))
+vi.mock('@shared/services/track-media', () => ({
+  isTrackMediaDownloaded: (...a: unknown[]) => trackMediaMock.isDownloaded(...(a as [number])),
+  downloadTrackMedia: (...a: unknown[]) => trackMediaMock.download(...(a as [number])),
+}))
+vi.mock('@modules/sync/stores/useLocalLibraryStore', () => ({
+  useLocalLibraryStore: () => ({ reconcileAlbumsForMusic: vi.fn() }),
 }))
 
 const closeProjectionModule = vi.fn()
@@ -118,6 +133,10 @@ beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
   resetSharedAudio()
+  bridgeMock.isDesktop = false
+  bridgeMock.bridge = null
+  trackMediaMock.isDownloaded.mockResolvedValue(false)
+  trackMediaMock.download.mockResolvedValue({ status: 'downloaded' })
   vi.clearAllMocks()
   loadMediaTrack.mockResolvedValue(trackStub())
   mediaAudio.playMediaAudio.mockResolvedValue(true)
@@ -398,5 +417,87 @@ describe('syncProjectionFlag e hasLivePalcoTvs', () => {
     expect(ok).toBe(true)
     expect(store.isProjecting).toBe(true)
     expect(openProjectionModule).not.toHaveBeenCalled()
+  })
+})
+
+describe('ondemand download (desktop)', () => {
+  it('open desktop: já baixada -> sem download novo; notice sumiu', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(true)
+    const { store } = await openTrack({})
+    expect(trackMediaMock.download).not.toHaveBeenCalled()
+    expect(store.ondemandDownloadPercent).toBeNull()
+  })
+
+  it('open desktop: não baixada -> baixa com progresso 100 e done', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.download.mockImplementation(async (_id: number, opts?: { onProgress?: (p: number) => void }) => {
+      opts?.onProgress?.(50)
+      opts?.onProgress?.(100)
+      return { status: 'downloaded' as const }
+    })
+    const { store } = await openTrack({})
+    await vi.waitFor(() => expect(store.ondemandDownloadDone).toBe(true))
+    expect(store.ondemandDownloadPercent).toBe(100)
+  })
+
+  it('open desktop: download falha -> estado limpo', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.download.mockResolvedValue({ status: 'error', reason: 'server' })
+    const { store } = await openTrack({})
+    await vi.waitFor(() => expect(store.ondemandNoticeVisible).toBe(false))
+    expect(store.ondemandDownloadPercent).toBeNull()
+  })
+
+  it('close durante download pós-open: cancela (gen++) e limpa estado', async () => {
+    bridgeMock.isDesktop = true
+    // pré-play resolvido na hora; o download PÓS-open (ondemand) fica pendente
+    let resolveOndemand!: (v: unknown) => void
+    trackMediaMock.download
+      .mockResolvedValueOnce({ status: 'downloaded' }) // pré-play
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOndemand = resolve
+          }),
+      )
+    const { store } = await openTrack({})
+    await new Promise((r) => setTimeout(r, 0))
+    store.close() // cancelOndemandDownload -> gen++ e estado limpo
+    resolveOndemand({ status: 'downloaded' })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(store.ondemandNoticeVisible).toBe(false)
+    expect(store.ondemandDownloadPercent).toBeNull()
+  })
+
+  it('ensureTrackDownloaded web: true sem tocar no disco', async () => {
+    const { store } = await openTrack({})
+    // web: ensure sempre true; open não seta preplayDownloadMusicId
+    expect(store.preplayDownloadMusicId).toBeNull()
+  })
+
+  it('open desktop: pré-play baixa antes de tocar', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(false)
+    trackMediaMock.download.mockResolvedValue({ status: 'downloaded' })
+    const { store } = await openTrack({})
+    await vi.waitFor(() => expect(store.ondemandDownloadDone).toBe(true))
+    expect(store.preplayDownloadMusicId).toBeNull()
+  })
+
+  it('open desktop: download pré-play cancelado -> segue stream (true)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(false)
+    trackMediaMock.download.mockResolvedValue({ status: 'idle', reason: 'cancelled' })
+    const { store, r } = await openTrack({})
+    expect(r.ok).toBe(true)
+    expect(store.preplayDownloadMusicId).toBeNull()
+  })
+
+  it('desktop: isDownloaded lança -> ensure retorna true (segue stream)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockRejectedValue(new Error('boom'))
+    const { store, r } = await openTrack({})
+    expect(r.ok).toBe(true)
   })
 })
