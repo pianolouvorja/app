@@ -114,6 +114,29 @@ describe('readVideoDuration', () => {
     if (video) video.onerror?.(new Event('error'))
     await expect(p).resolves.toBe(0)
   })
+  it('onerror resolve imediatamente — NÃO depende do timeout de segurança de 5s (mutante L49)', async () => {
+    vi.useFakeTimers()
+    try {
+      const created: Record<string, HTMLElement[]> = { video: [] }
+      const orig = document.createElement.bind(document)
+      const spy = vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
+        const el = orig(tag)
+        ;(created[tag] ??= []).push(el)
+        return el
+      }) as typeof document.createElement)
+      const p = readVideoDuration(mkFile())
+      await Promise.resolve()
+      spy.mockRestore()
+      const video = created.video.at(-1) as HTMLVideoElement | undefined
+      if (video) video.onerror?.(new Event('error'))
+      // avança MENOS que 5000ms: se o handler de onerror estiver quebrado,
+      // a promise só resolveria via timeout de 5s → teste pendura → mutante morre por timeout
+      await vi.advanceTimersByTimeAsync(4999)
+      await expect(p).resolves.toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
   it('resolve 0 quando duração não é finita', async () => {
     const created: Record<string, HTMLElement[]> = { video: [] }
     const orig = document.createElement.bind(document)
@@ -180,6 +203,29 @@ describe('readAudioDuration', () => {
     const audio = created.audio.at(-1) as HTMLAudioElement | undefined
     if (audio) audio.onerror?.(new Event('error'))
     await expect(p).resolves.toBe(0)
+  })
+  it('onerror resolve imediatamente — NÃO depende do timeout de segurança de 5s (mutante L67)', async () => {
+    vi.useFakeTimers()
+    try {
+      const created: Record<string, HTMLElement[]> = { audio: [] }
+      const orig = document.createElement.bind(document)
+      const spy = vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
+        const el = orig(tag)
+        ;(created[tag] ??= []).push(el)
+        return el
+      }) as typeof document.createElement)
+      const p = readAudioDuration(new File(['x'], 'a.mp3'))
+      await Promise.resolve()
+      spy.mockRestore()
+      const audio = created.audio.at(-1) as HTMLAudioElement | undefined
+      if (audio) audio.onerror?.(new Event('error'))
+      // avança MENOS que 5000ms: se o handler de onerror estiver quebrado,
+      // a promise só resolveria via timeout de 5s → teste pendura → mutante morre por timeout
+      await vi.advanceTimersByTimeAsync(4999)
+      await expect(p).resolves.toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
   })
   it('resolve 0 quando duração não é finita', async () => {
     const created: Record<string, HTMLElement[]> = { audio: [] }

@@ -199,6 +199,19 @@ describe('playLiturgyWebOnConfiguredScreens', () => {
     expect(remotePlay).toHaveBeenCalledTimes(1)
   })
 
+  it('vídeo: play abre popup com withScreens TRUE (mutante L113 true→false pula remotePlay interno)', async () => {
+    const openUrl = vi.fn(async () => true)
+    const remotePlay = vi.fn(async () => true)
+    mockState.bridge = makeBridge({ openUrl, remotePlay })
+    const promise = playLiturgyWebOnConfiguredScreens('https://youtu.be/abc')
+    await vi.advanceTimersByTimeAsync(700)
+    await expect(promise).resolves.toBe(true)
+    // popup aberto pelo play TEM que ser com telas (withScreens: true)
+    expect(openUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ withScreens: true, mode: 'video' }),
+    )
+  })
+
   it('vídeo: remotePlay falha 1ª, sucede na 2ª (retry após sleep)', async () => {
     let calls = 0
     const remotePlay = vi.fn(async () => {
@@ -389,6 +402,14 @@ describe('apresentação local', () => {
   it('detectOffice ausente no bridge → segue sem checar', async () => {
     mockState.bridge = {
       projection: { openUrl: vi.fn(async () => true) as ReturnType<typeof vi.fn> },
+    }
+    await expect(playLiturgyLocalPresentationOnScreens('/x.pptx')).resolves.toBe(true)
+  })
+
+  it('presentation existe mas detectOffice ausente → segue sem checar (mutante L310 remove ?. do método)', async () => {
+    mockState.bridge = {
+      projection: { openUrl: vi.fn(async () => true) as ReturnType<typeof vi.fn> },
+      presentation: {},
     }
     await expect(playLiturgyLocalPresentationOnScreens('/x.pptx')).resolves.toBe(true)
   })
