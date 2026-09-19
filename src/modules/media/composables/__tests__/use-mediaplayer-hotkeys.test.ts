@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Hotkeys ←/→ do player — via mount real. Valida comportamento observável:
@@ -58,7 +58,14 @@ vi.mock('@shared/services/desktop-bridge', () => ({
         bridge.onMediaNavigate = cb
       },
     },
+    workspace: {
+      getRecord: vi.fn().mockResolvedValue(null),
+      setRecord: vi.fn().mockResolvedValue(undefined),
+    },
   }),
+  isDesktopApp: () => true,
+  isElectronShell: () => true,
+  isWindowsDesktop: () => true,
 }))
 
 import { useMediaPlayerHotkeys } from '../useMediaPlayerHotkeys'
@@ -87,8 +94,12 @@ function fireKey(target: HTMLElement | null, key: string) {
 }
 
 beforeEach(() => {
+  Object.defineProperty(document, 'activeElement', { configurable: true, value: null, writable: true })
   window.focus = () => {}
   setActivePinia(createPinia())
+})
+
+afterEach(() => {
 })
 
 describe('useMediaPlayerHotkeys', () => {

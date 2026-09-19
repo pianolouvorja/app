@@ -25,6 +25,7 @@ import { notifyStageSettingsChanged } from '../../services/stage-settings-runtim
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
+  vi.mocked(loadStageSettingsOptional).mockReturnValue(null)
 })
 
 describe('useStageSettingsStore — settings de projeção/palco por escopo', () => {
@@ -83,10 +84,11 @@ describe('useStageSettingsStore — settings de projeção/palco por escopo', ()
     const store = useStageSettingsStore()
     store.setActiveScope('lyrics')
     store.patch({ fontSize: 22 })
+    const callsBeforeReset = saveStageSettings.mock.calls.length
     store.resetScope()
     expect(store.effective('lyrics')).toEqual({ backgroundColor: '#0A0E1A', backgroundImage: null, fontSize: 16 })
     expect(clearStageSettings).toHaveBeenCalledWith('lyrics')
-    expect(saveStageSettings).not.toHaveBeenCalled()
+    expect(saveStageSettings).toHaveBeenCalledTimes(callsBeforeReset)
   })
 
   it('effective retorna override do módulo, fallback global, fallback default', () => {

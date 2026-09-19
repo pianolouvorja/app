@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 
@@ -11,6 +11,11 @@ import type { CountdownDisplayConfig, CountdownRuntimeState } from '../types/cou
 import CountdownPreview from '../components/CountdownPreview.vue'
 
 const NOW = 1_700_000_000_000
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(NOW)
+})
 
 afterEach(() => {
   vi.useRealTimers()
@@ -54,15 +59,13 @@ describe('CountdownPreview', () => {
   })
 
   it('urgente: aplica classe e textShadow de urgência', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig(),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 60_000, durationMs: 65_000 }),
-      },
-    })
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig(),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 60_000, durationMs: 65_000 }),
+        },
+      })
     expect(wrapper.classes()).toContain('countdown-preview--urgent')
     expect(wrapper.find('.countdown-preview__digital').attributes('style')).toContain('rgba(0,0,0,0.45)')
   })
@@ -134,29 +137,26 @@ describe('CountdownPreview', () => {
   })
 
   it('com stage + textBox + shadow: aplica fundo, borda e sombra', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig(),
-        runtime: makeRuntime(),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
-        stage: {
-          fontSize: 96,
-          fontWeight: 700,
-          textColor: '#ffffff',
-          textAlign: 'center',
-          textVerticalAlign: 'center',
-          textShadow: true,
-          shadowBlur: 2,
-          shadowIntensity: 0.5,
-          textBox: true,
-          boxBorder: true,
-          boxOpacity: 0.4,
-        } as never,
-      },
-    })
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig(),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
+          stage: {
+            fontSize: 96,
+            fontWeight: 700,
+            textColor: '#ffffff',
+            textAlign: 'center',
+            textVerticalAlign: 'center',
+            textShadow: true,
+            shadowBlur: 2,
+            shadowIntensity: 0.5,
+            textBox: true,
+            boxBorder: true,
+            boxOpacity: 0.4,
+          } as never,
+        },
+      })
     const digital = wrapper.find('.countdown-preview__digital').attributes('style')
     expect(digital).toContain('rgba(0,0,0,0.5)')
     expect(digital).toContain('rgba(0, 0, 0, 0.4)')
@@ -175,29 +175,27 @@ describe('CountdownPreview', () => {
   })
 
   it('com stage e container medido: fontSize proporcional ao palco', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 960 })
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 540 })
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig(),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
-        stage: {
-          fontSize: 192,
-          fontWeight: 600,
-          textColor: '#123456',
-          textAlign: 'left',
-          textVerticalAlign: 'top',
-          textShadow: true,
-          shadowBlur: 3,
-          shadowIntensity: 0.6,
-          textBox: false,
-        } as never,
-      },
-    })
-    await vi.advanceTimersByTimeAsync(0)
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, value: 960 })
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, value: 540 })
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig(),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
+          stage: {
+            fontSize: 192,
+            fontWeight: 600,
+            textColor: '#123456',
+            textAlign: 'left',
+            textVerticalAlign: 'top',
+            textShadow: true,
+            shadowBlur: 3,
+            shadowIntensity: 0.6,
+            textBox: false,
+          } as never,
+        },
+      })
+      await vi.advanceTimersByTimeAsync(0)
     const digital = wrapper.find('.countdown-preview__digital').attributes('style')
     expect(digital).toContain('font-size: 96px') // (192/1920)*960
     expect(digital).toContain('font-weight: 600')
@@ -213,16 +211,14 @@ describe('CountdownPreview', () => {
   })
 
   it('formato com ms altera proporção da fonte; retry de medição quando container vazio', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig({ timeFormat: 'mm:ss.ms' }),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
-      },
-    })
-    await vi.advanceTimersByTimeAsync(150)
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig({ timeFormat: 'mm:ss.ms' }),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
+        },
+      })
+      await vi.advanceTimersByTimeAsync(150)
     const digital = wrapper.find('.countdown-preview__digital').attributes('style')
     expect(digital).toContain('font-size: 20px') // max(0*0.28, 20)
     vi.useRealTimers()
@@ -230,26 +226,24 @@ describe('CountdownPreview', () => {
   })
 
   it('stage com sombra ativa sem urgência e alinhamento right/bottom', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig(),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
-        stage: {
-          fontSize: 96,
-          fontWeight: 400,
-          textColor: '#abcdef',
-          textAlign: 'right',
-          textVerticalAlign: 'bottom',
-          textShadow: true,
-          shadowBlur: 2,
-          shadowIntensity: 0.3,
-          textBox: false,
-        } as never,
-      },
-    })
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig(),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
+          stage: {
+            fontSize: 96,
+            fontWeight: 400,
+            textColor: '#abcdef',
+            textAlign: 'right',
+            textVerticalAlign: 'bottom',
+            textShadow: true,
+            shadowBlur: 2,
+            shadowIntensity: 0.3,
+            textBox: false,
+          } as never,
+        },
+      })
     const digital = wrapper.find('.countdown-preview__digital').attributes('style')
     expect(digital).toContain('color: rgb(171, 205, 239)') // branch stage de baseTextColor
     expect(digital).toContain('rgba(0,0,0,0.3)') // sombra do palco (não urgência)
@@ -277,26 +271,24 @@ describe('CountdownPreview', () => {
   })
 
   it('stage com textShadow desligada: sombra none', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(NOW)
-    const wrapper = mount(CountdownPreview, {
-      global: { plugins: [createPinia()] },
-      props: {
-        config: makeConfig(),
-        runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
-        stage: {
-          fontSize: 96,
-          fontWeight: 400,
-          textColor: '#ffffff',
-          textAlign: 'center',
-          textVerticalAlign: 'center',
-          textShadow: false,
-          shadowBlur: 1,
-          shadowIntensity: 0.4,
-          textBox: false,
-        } as never,
-      },
-    })
+      const wrapper = mount(CountdownPreview, {
+        global: { plugins: [createPinia()] },
+        props: {
+          config: makeConfig(),
+          runtime: makeRuntime({ status: 'running', segmentStartedAt: NOW, accumulatedMs: 0, durationMs: 65_000 }),
+          stage: {
+            fontSize: 96,
+            fontWeight: 400,
+            textColor: '#ffffff',
+            textAlign: 'center',
+            textVerticalAlign: 'center',
+            textShadow: false,
+            shadowBlur: 1,
+            shadowIntensity: 0.4,
+            textBox: false,
+          } as never,
+        },
+      })
     expect(wrapper.find('.countdown-preview__digital').attributes('style')).toContain(
       'text-shadow: none',
     )
