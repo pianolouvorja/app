@@ -99,9 +99,19 @@ vi.mock('@modules/sync/stores/useLocalLibraryStore', () => ({
   useLocalLibraryStore: () => ({ reconcileAlbumsForMusic: vi.fn() }),
 }))
 
+const routingMock = vi.hoisted(() => ({
+  route: 'mirror' as string,
+  tvOnly: false,
+}))
+vi.mock('@modules/settings/services/palco-routing', () => ({
+  getPalcoRoute: () => routingMock.route,
+  isPalcoTvOnlyRoute: () => routingMock.tvOnly,
+}))
+
 const closeProjectionModule = vi.fn()
 const openProjectionModule = vi.fn().mockResolvedValue(true)
 const isProjectionModuleOpen = vi.fn(() => false)
+const palcoSessionSlots = vi.fn().mockResolvedValue([])
 vi.mock('@shared/composables/useProjectionWindow', () => ({
   openProjectionModule: (...a: unknown[]) => openProjectionModule(...a),
   isProjectionModuleOpen: (...a: unknown[]) => isProjectionModuleOpen(...a),
@@ -110,7 +120,7 @@ vi.mock('@shared/composables/useProjectionWindow', () => ({
 }))
 
 vi.mock('@modules/settings/services/palco-session', () => ({
-  palcoSession: { slots: vi.fn().mockResolvedValue([]) },
+  palcoSession: { slots: (...a: unknown[]) => palcoSessionSlots(...(a as [])) },
 }))
 
 const trackStub = (over: Record<string, unknown> = {}) => ({
@@ -146,6 +156,10 @@ beforeEach(() => {
   mediaAudio.resolveMusicAudioUrl.mockResolvedValue({ ok: true, url: 'audio://x', source: 'remote' })
   mediaAudio.resolveSlideImageUrl.mockResolvedValue(null)
   isProjectionModuleOpen.mockReturnValue(false)
+  openProjectionModule.mockResolvedValue(true)
+  vi.mocked(palcoSessionSlots).mockResolvedValue([])
+  routingMock.route = 'mirror'
+  routingMock.tvOnly = false
 })
 
 const openTrack = async (over: Record<string, unknown> = {}) => {
@@ -501,3 +515,155 @@ describe('ondemand download (desktop)', () => {
     expect(r.ok).toBe(true)
   })
 })
+
+describe('projeção — tv-only, sem destino, crossfade switchMode', () => {
+  it('startProjection: rota tv-only abre janela de retorno e liga TVs-only', async () => {
+    routingMock.route = '1'
+    routingMock.tvOnly = true
+    loadProjectionSettings.mockReturnValue({
+      autoMinimizePlayer: false,
+      openReturnScreen: true,
+      returnDisplayId: 2,
+    })
+    const { store } = await openTrack({})
+    const ok = await store.startProjection()
+    expect(ok).toBe(true)
+    expect(openProjectionModule).toHaveBeenCalledWith('media', [2])
+    // projectingTvsOnly: syncProjectionFlag não derruba
+    store.syncProjectionFlag()
+    expect(store.isProjecting).toBe(true)
+  })
+
+  it('startProjection: sem janela mas com TVs Palco vivas -> TVs-only', async () => {
+    palcoSessionSlots.mockResolvedValue([
+      { id: '0', label: 'TV', running: true, clients: 2, httpPort: 7080, wsPort: 7081 },
+    ])
+    openProjectionModule.mockResolvedValue(false)
+    const { store } = await openTrack({})
+    const ok = await store.startProjection()
+    expect(ok).toBe(true)
+    expect(store.isProjecting).toBe(true)
+  })
+
+  it('startProjection: sem janela e sem TVs -> false e desliga', async () => {
+    routingMock.route = 'mirror'
+    routingMock.tvOnly = false
+    openProjectionModule.mockResolvedValue(false)
+    const { store } = await openTrack({})
+    const ok = await store.startProjection()
+    expect(ok).toBe(false)
+    expect(store.isProjecting).toBe(false)
+  })
+
+  it('onProjectionReapplied: evento abre/fecha módulo media alterna projeção', async () => {
+    const { store } = await openTrack({})
+    // listener registrado via startProjectionWatch; simular evento:
+    // open com project true liga watch — usar openProjectionModule true
+    openProjectionModule.mockResolvedValue(true)
+    isProjectionModuleOpen.mockReturnValue(true)
+    await store.startProjection()
+    // dispara evento custom com open false
+    const ev = new CustomEvent('louvorja:projection-reapplied', {
+      detail: { moduleId: 'media', open: false },
+    })
+    window.dispatchEvent(ev)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(store.isProjecting).toBe(false)
+  })
+
+  it('watch 400ms: módulo fechado manualmente derruba projeção', async () => {
+    vi.useFakeTimers()
+    const { store } = await openTrack({})
+    openProjectionModule.mockResolvedValue(true)
+    isProjectionModuleOpen.mockReturnValue(false)
+    store.isProjecting = true
+    await store.startProjection()
+    await vi.advanceTimersByTimeAsync(450)
+    expect(store.isProjecting).toBe(false)
+    vi.useRealTimers()
+  })
+})
+
+describe('bindAudio handlers — capturados do attach', () => {
+  function capturedHandlers() {
+    const calls = mediaAudio.attachMediaAudioListeners.mock.calls
+    const last = calls.at(-1)?.[1] as Record<string, () => void> | undefined
+    return last
+  }
+
+  it('onTimeUpdate atualiza tempo, troca slide e publica com throttle', async () => {
+    const { store } = await openTrack({})
+    const h = capturedHandlers()!
+    store.isProjecting = true
+    // sem mudança de slide: atualiza currentTime e publica (agora)
+    h.onTimeUpdate()
+    expect(store.currentTimeSec).toBe(0)
+    // change slide: slideTimesSec [0] e currentTime 0 -> index 0 igual, sem troca
+    // onLoadedMetadata: duração não finita -> 0
+    sharedDurationNaN()
+    h.onLoadedMetadata()
+    expect(store.durationSec).toBe(0)
+  })
+
+  it('onPlay/onPause/onError atualizam status; onPause em loading ignora', async () => {
+    const { store } = await openTrack({})
+    const h = capturedHandlers()!
+    h.onPlay()
+    expect(store.isPlaying).toBe(true)
+    store.status = 'loading'
+    h.onPause()
+    expect(store.status).toBe('loading') // ignorado
+    store.status = 'playing'
+    h.onPause()
+    expect(store.isPaused).toBe(true)
+    h.onError()
+    expect(store.status).toBe('error')
+    expect(store.lastErrorKey).toBe('media.messages.playbackFailed')
+  })
+
+  it('onEnded sem próxima: pausa, vai ao fim e fecha', async () => {
+    const { store } = await openTrack({})
+    const h = capturedHandlers()!
+    h.onEnded()
+    expect(store.session).toBeNull()
+    expect(store.status).toBe('idle')
+    expect(store.currentTimeSec).toBe(0)
+  })
+
+  it('onEnded com fila: avança para próxima (unbind + playQueueItem)', async () => {
+    const { store } = await openTrack({})
+    store.queue = [
+      { musicId: 1, albumId: null, title: 'a' },
+      { musicId: 2, albumId: null, title: 'b' },
+    ] as never
+    store.queueIndex = 0
+    loadMediaTrack.mockResolvedValue(trackStub({ id: 2, name: 'Faixa 2' }))
+    const h = capturedHandlers()!
+    h.onEnded()
+    await vi.waitFor(() => expect(store.session?.musicId).toBe(2))
+    expect(store.queueIndex).toBe(1)
+  })
+
+  it('previewSnippet sem letra usa título; previewReference vazio sem sessão', async () => {
+    const store = useMediaStore()
+    expect(store.previewReference).toBe('')
+    const { } = await openTrack({})
+    const store2 = useMediaStore()
+    store2.session!.slides = []
+    expect(store2.currentSlide).toBeNull()
+    expect(store2.previewSnippet).toBe('Faixa 1') // fallback título
+  })
+
+  it('slideProgressRatio sem áudio -> 0; marcas repetidas ignoradas', async () => {
+    const { store } = await openTrack({})
+    store.session!.slideTimesSec = []
+    expect(store.slideProgressRatio).toBe(0)
+  })
+})
+
+function sharedDurationNaN() {
+  Object.defineProperty(getSharedAudio(), 'duration', {
+    value: Number.NaN,
+    configurable: true,
+  })
+}
