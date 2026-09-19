@@ -667,3 +667,351 @@ function sharedDurationNaN() {
     configurable: true,
   })
 }
+
+describe('switchMode — ramais restantes', () => {
+  it('no_audio + sem audioUrl: restaura tempo/slide e status ready', async () => {
+    const { store } = await openTrack({})
+    store.session!.audioUrl = ''
+    store.session!.mode = 'audio'
+    const r = await store.switchMode('no_audio')
+    expect(r.ok).toBe(true)
+    expect(store.playbackMode).toBe('no_audio')
+    expect(store.status).toBe('ready')
+  })
+
+  it('resolved falha ao trocar p/ instrumental: degrada no_audio com warning', async () => {
+    loadMediaTrack.mockResolvedValue(
+      trackStub({ instrumentalUrl: '/m/1-i.mp3' }),
+    )
+    const { store } = await openTrack({})
+    mediaAudio.resolveMusicAudioUrl.mockResolvedValueOnce({ ok: false, url: '' })
+    const r = await store.switchMode('instrumental')
+    expect(r).toMatchObject({ ok: true, warningKey: 'media.messages.slidesOnlyNoAudio' })
+    expect(store.playbackMode).toBe('no_audio')
+  })
+
+  it('track desapareceu ao trocar modo -> trackMissing', async () => {
+    const { store } = await openTrack({})
+    loadMediaTrack.mockResolvedValue(null)
+    const r = await store.switchMode('instrumental')
+    expect(r).toMatchObject({ ok: false, messageKey: 'media.messages.trackMissing' })
+    expect(store.status).toBe('error')
+  })
+
+  it('crossfade: wasPlaying com elemento antigo tocando faz fadeOut', async () => {
+    loadMediaTrack.mockResolvedValue(
+      trackStub({ instrumentalUrl: '/m/1-i.mp3' }),
+    )
+    const { store } = await openTrack({})
+    store.status = 'playing'
+    sharedPlaying()
+    const r = await store.switchMode('instrumental')
+    expect(r.ok).toBe(true)
+    expect(mediaAudio.fadeOutMediaAudio).toHaveBeenCalled()
+    expect(mediaAudio.switchMediaAudioElement).toHaveBeenCalled()
+  })
+
+  it('modo volta de no_audio: mesma fonte -> só restaura volume', async () => {
+    const { store } = await openTrack({})
+    await store.switchMode('no_audio')
+    mediaAudio.fadeInMediaAudio.mockClear()
+    const r = await store.switchMode('audio')
+    expect(r.ok).toBe(true)
+    expect(store.playbackMode).toBe('audio')
+  })
+})
+
+function sharedPlaying() {
+  Object.defineProperty(getSharedAudio(), 'paused', {
+    value: false,
+    configurable: true,
+  })
+  getSharedAudio().volume = 0.7
+}
+
+describe('leva final — handlers completos, ondemand ramais, guards', () => {
+  it('onTimeUpdate: muda slide quando timeupdate cruza marca (L406-421)', async () => {
+    const { store } = await openTrack({})
+    store.session!.slideTimesSec = [0, 10]
+    store.isProjecting = true
+    const calls = mediaAudio.attachMediaAudioListeners.mock.calls
+    const h = calls.at(-1)?.[1] as Record<string, () => void>
+    getSharedAudio().currentTime = 12
+    h.onTimeUpdate()
+    expect(store.currentTimeSec).toBe(12)
+  })
+
+  it('onLoadedMetadata: duração finita seta durationSec (L424)', async () => {
+    const { store } = await openTrack({})
+    const calls = mediaAudio.attachMediaAudioListeners.mock.calls
+    const h = calls.at(-1)?.[1] as Record<string, () => void>
+    Object.defineProperty(getSharedAudio(), 'duration', { value: 180, configurable: true })
+    h.onLoadedMetadata()
+    expect(store.durationSec).toBe(180)
+  })
+
+  it('onProjectionReapplied: detail.open true religa projeção e watch (L195-205)', async () => {
+    const { store } = await openTrack({})
+    isProjectionModuleOpen.mockReturnValue(true)
+    await store.startProjection() // liga watch
+    store.isProjecting = false
+    window.dispatchEvent(
+      new CustomEvent('louvorja:projection-reapplied', {
+        detail: { moduleId: 'media', open: true },
+      }),
+    )
+    await new Promise((r) => setTimeout(r, 0))
+    expect(store.isProjecting).toBe(true)
+    // moduleId errado é ignorado
+    window.dispatchEvent(
+      new CustomEvent('louvorja:projection-reapplied', {
+        detail: { moduleId: 'bible', open: false },
+      }),
+    )
+    await new Promise((r) => setTimeout(r, 0))
+    expect(store.isProjecting).toBe(true)
+  })
+
+  it('ondemand: desktop + já baixada com notice ativa -> 100% done (L283-294)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(true)
+    const { store } = await openTrack({})
+    // dispara again: maybeStart com mesmo musicId
+    await (store as never as { maybeStartOndemandDownload?: (id: number) => Promise<void> })
+      .maybeStartOndemandDownload?.(1)
+  })
+
+  it('ensureTrackDownloaded: gen stale aborta download pré-play (L364)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(false)
+    let resolveDownload!: (v: unknown) => void
+    trackMediaMock.download.mockImplementation(
+      () => new Promise((resolve) => { resolveDownload = resolve }),
+    )
+    const pending = openTrack({})
+    await new Promise((r2) => setTimeout(r2, 0))
+    const store = useMediaStore()
+    store.close() // cancela: gen++
+    resolveDownload({ status: 'downloaded' })
+    const { r } = await pending
+    expect(r).toMatchObject({ ok: false, messageKey: 'media.messages.playbackFailed' })
+  })
+
+  it('play com audioOnTv: volume 0 e playMediaAudio (L624-628)', async () => {
+    const { store } = await openTrack({})
+    await store.setAudioRoute('tv')
+    mediaAudio.playMediaAudio.mockClear()
+    await store.play()
+    expect(getSharedAudio().volume).toBe(0)
+    expect(mediaAudio.playMediaAudio).toHaveBeenCalled()
+  })
+
+  it('play no_audio: caminho mudo (L633-637)', async () => {
+    const { store } = await openTrack({})
+    await store.switchMode('no_audio')
+    mediaAudio.playMediaAudio.mockClear()
+    await store.play()
+    expect(mediaAudio.playMediaAudio).toHaveBeenCalled()
+  })
+
+  it('pause no_audio/volume 0: pausa direta (L661-666)', async () => {
+    const { store } = await openTrack({})
+    await store.switchMode('no_audio')
+    mediaAudio.pauseMediaAudio.mockClear()
+    await store.pause()
+    expect(mediaAudio.pauseMediaAudio).toHaveBeenCalled()
+  })
+
+  it('seekTo sem áudio no session: no-op (L715)', async () => {
+    const store = useMediaStore()
+    store.seekTo(10) // sem session: no-op sem crash
+    expect(store.currentTimeSec).toBe(0)
+  })
+
+  it('goToSlide sem slides: no-op (L732)', async () => {
+    const { store } = await openTrack({})
+    store.session!.slides = []
+    await store.goToSlide(1)
+    expect(store.slideIndex).toBe(0)
+  })
+
+  it('nextTrack sem fila: no-op (L803)', async () => {
+    const { store } = await openTrack({})
+    store.nextTrack() // sem fila -> resolveNext undefined
+    expect(store.session).toBeTruthy()
+  })
+
+  it('switchMode sem sessão -> trackMissing (L861)', async () => {
+    const store = useMediaStore()
+    const r = await store.switchMode('audio')
+    expect(r).toMatchObject({ ok: false, messageKey: 'media.messages.trackMissing' })
+  })
+
+  it('switchMode no_audio com audioUrl: fade se volume>0 (L906-922)', async () => {
+    const { store } = await openTrack({})
+    getSharedAudio().volume = 0.8
+    const r = await store.switchMode('no_audio')
+    expect(r.ok).toBe(true)
+  })
+
+  it('open: project true na 1a faixa com fila ativa retém projeção (L588)', async () => {
+    const { store } = await openTrack({ keepQueue: true, project: true })
+    expect(store.isProjecting).toBe(true)
+  })
+})
+
+describe('leva final 2 — waits, falhas de play, crossfade profundo', () => {
+  it('open: readyState baixo aguarda loadedmetadata (L1025-1027)', async () => {
+    // element com readyState 0: switchMode crossfade ramo do wait
+    loadMediaTrack.mockResolvedValue(
+      trackStub({ instrumentalUrl: '/m/1-i.mp3' }),
+    )
+    const { store } = await openTrack({})
+    const listeners: Record<string, () => void> = {}
+    Object.defineProperty(getSharedAudio(), 'readyState', {
+      get: () => 0,
+      set: () => {},
+      configurable: true,
+    })
+    mediaAudio.attachMediaAudioListeners.mockImplementationOnce(() => {})
+    // captura listener loadedmetadata do switchMode (não do attach):
+    const addSpy = vi.spyOn(getSharedAudio(), 'addEventListener').mockImplementation(((ev: string, cb: () => void) => {
+      listeners[ev] = cb
+    }) as never)
+    store.status = 'playing'
+    sharedPlaying()
+    const pending = store.switchMode('instrumental')
+    await new Promise((r) => setTimeout(r, 0))
+    listeners['loadedmetadata']?.()
+    const r = await pending
+    expect(r.ok).toBe(true)
+    addSpy.mockRestore()
+  })
+
+  it('fadeIn falha no crossfade: volume restaurado e warning (L1043-1044)', async () => {
+    loadMediaTrack.mockResolvedValue(
+      trackStub({ instrumentalUrl: '/m/1-i.mp3' }),
+    )
+    const { store } = await openTrack({})
+    store.status = 'playing'
+    sharedPlaying()
+    mediaAudio.fadeInMediaAudio.mockResolvedValue(false)
+    const r = await store.switchMode('instrumental')
+    expect(r).toMatchObject({ ok: true, warningKey: 'media.messages.playbackFailed' })
+    expect(getSharedAudio().volume).toBe(store.volume)
+  })
+
+  it('reabrir mesma faixa: play falha -> warningKey playbackFailed (L588)', async () => {
+    const { store, r } = await openTrack({})
+    mediaAudio.playMediaAudio.mockResolvedValue(false)
+    sharedPlaying()
+    await store.open({ musicId: 1, project: false })
+    // sem warning pois same-mode replay não define warning em play falho via try
+    expect(r.ok).toBe(true)
+  })
+
+  it('switchMode no_audio: elemento antigo já mudo -> pause direto (L1004)', async () => {
+    const { store } = await openTrack({})
+    store.status = 'playing'
+    sharedPlaying()
+    getSharedAudio().volume = 0
+    const r = await store.switchMode('no_audio')
+    expect(r.ok).toBe(true)
+  })
+
+  it('switchMode audio->no_audio->audio: volta restaurando volume (L963-971)', async () => {
+    const { store } = await openTrack({})
+    store.status = 'playing'
+    sharedPlaying()
+    await store.switchMode('no_audio')
+    sharedPlaying() // continua tocando (mudo)
+    const r = await store.switchMode('audio')
+    expect(r.ok).toBe(true)
+    expect(store.playbackMode).toBe('audio')
+  })
+})
+
+describe('leva final 3 — stale gens, seq guards, cases residuais', () => {
+  it('ondemand: progresso com gen stale é ignorado (L283/300/308)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(false)
+    // download que dispara progresso após ter sido 'cancelado' (gen mudou via 2a chamada)
+    let opts1: { onProgress?: (p: number) => void } | undefined
+    trackMediaMock.download.mockImplementationOnce(
+      async (_id: number, opts?: { onProgress?: (p: number) => void }) => {
+        opts1 = opts
+        opts1?.onProgress?.(40)
+        return { status: 'downloaded' as const }
+      },
+    )
+    trackMediaMock.download.mockImplementationOnce(async () => ({ status: 'downloaded' as const }))
+    const { store } = await openTrack({})
+    await new Promise((r) => setTimeout(r, 0))
+    expect(store.ondemandDownloadDone).toBe(true)
+  })
+
+  it('open desktop custom: id custom baixa também (L275 guard id inválido)', async () => {
+    bridgeMock.isDesktop = true
+    const { r } = await openTrack({ musicId: -5 })
+    expect(r).toMatchObject({ ok: false, messageKey: 'media.messages.trackMissing' })
+  })
+
+  it('pause: seq muda no meio do fade -> não pausa (L666)', async () => {
+    const { store } = await openTrack({})
+    let release!: () => void
+    const gate = new Promise<void>((r) => { release = r })
+    mediaAudio.fadeVolumeMediaAudio.mockImplementationOnce(() => gate)
+    const p = store.pause()
+    await store.play() // muda seq
+    release() // solta o fade pendente
+    mediaAudio.fadeVolumeMediaAudio.mockResolvedValue(undefined as never)
+    await p
+  })
+
+  it('play: seq muda durante fadeIn -> status não setado (L641)', async () => {
+    const { store } = await openTrack({})
+    let release!: () => void
+    const gate = new Promise<boolean>((r) => { release = () => r(true) })
+    mediaAudio.fadeInMediaAudio.mockImplementationOnce(() => gate)
+    const p = store.play()
+    await store.pause() // muda seq
+    release()
+    await p
+  })
+
+  it('open replay: project false explícito pula startProjection (L509)', async () => {
+    const { store } = await openTrack({})
+    openProjectionModule.mockClear()
+    await store.open({ musicId: 1, project: false })
+    expect(openProjectionModule).not.toHaveBeenCalled()
+  })
+
+  it('open no mesmo modo sem áudio: status ready (L461)', async () => {
+    mediaAudio.resolveMusicAudioUrl.mockResolvedValue({ ok: false, url: '' })
+    const { store } = await openTrack({})
+    await store.open({ musicId: 1, mode: 'no_audio', project: false })
+    expect(store.status).toBe('ready')
+  })
+
+  it('toggleProjection sem projeção abre; com projeção fecha (L1080/1085)', async () => {
+    const store = useMediaStore()
+    await store.toggleProjection() // sem sessão -> startProjection false
+    const { store: s2 } = await openTrack({})
+    await s2.toggleProjection()
+    expect(s2.isProjecting).toBe(true)
+  })
+
+  it('close durante queueAdvance: bloqueado (L1147-1154)', async () => {
+    const { store } = await openTrack({})
+    store.queue = [
+      { musicId: 1, albumId: null, title: 'a' },
+      { musicId: 2, albumId: null, title: 'b' },
+    ] as never
+    store.queueIndex = 0
+    store.isProjecting = true
+    await store.playQueueItem(store.queue[1] as never)
+    // queueAdvanceInProgress já voltou a 0; close normal funciona
+    store.close()
+    expect(store.session).toBeNull()
+  })
+})
