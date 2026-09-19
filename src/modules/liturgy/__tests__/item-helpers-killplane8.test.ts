@@ -206,3 +206,82 @@ describe('getSectionItemNumber', () => {
     expect(getSectionItemNumber([cat('c1')], 0)).toBeNull()
   })
 })
+
+describe('kill plane 8b — kills finais (diffs reais do run off)', () => {
+  it('#1083/#1088: drop sobre filho cujo categoryId aponta pra item NÃO-categoria', () => {
+    // mutante findIndex sem type==='category' acha o item 'a' como "pai"
+    const items = [
+      cat('c1'), child('a', 'x'), child('b', 'a'), cat('c2'), child('y', 'c2'),
+    ]
+    // mover c1 (bloco [c1,a]) pra depois do b (índice 2)
+    const next = reorderLiturgyItems(items, 0, 2)
+    // original: b.categoryId='a' não é categoria → toIndex puro → insertAt=3, dest=2
+    expect(next.map((i) => i.id)).toEqual(['a', 'b', 'c1', 'c2', 'y'])
+  })
+
+  it('#1161: mover categoria (fromIndex>0) pro fim ajusta dest pelo bloco', () => {
+    const items = [
+      child('a', 'c1'),
+      cat('c1'), child('b', 'c1'),
+      cat('c2'), child('c', 'c2'),
+    ]
+    // mover c1 (índice 1, bloco 2) pro índice 4 (c)
+    const next = reorderLiturgyItems(items, 1, 4)
+    expect(next.map((i) => i.id)).toEqual(['a', 'c2', 'c', 'c1', 'b'])
+  })
+})
+
+it('#1161 (real): dest = insertAt - (blockEnd - fromIndex), fromIndex>0 pra frente', () => {
+  // kinds: child, other, cat(2), child-do-cat(3), cat — mover índice 2 sobre 3
+  const items = [
+    child('k0', 'c0'),
+    child('o1', 'c0'),
+    cat('c2'),
+    child('k3', 'c2'),
+    cat('c4'),
+  ]
+  const next = reorderLiturgyItems(items, 2, 3)
+  // original: insertAt=4, dest = 4 - (3 - 2) = 3 → c2 insere depois de k3
+  expect(next.map((i) => i.id)).toEqual(['k0', 'o1', 'c2', 'k3', 'c4'])
+})
+
+/*
+ * EQUIVALENTES documentados (auditoria 19/09, diffs reais do run coverageAnalysis:off
+ * + força-bruta de cenários — item-helpers 52/53 equivalentes, 1 kill (#1161)):
+ *
+ * Reorder/resolver (defesa em profundidade — cada guarda seguinte absorve o
+ * mutante anterior):
+ * - #1021 for reverso length-1 → +1: item?.type opcional absorve índice extra.
+ * - #1048 while < → <=: guard !child do corpo quebra no undefined.
+ * - #1055/1057 (!child || type==='category') → false/'': category-child sempre
+ *   tem categoryId null/undefined → quebra no categoryId !== categoryId.
+ * - #1073/1075/1078 (resolveDropCategoryIndex): target não-category cai pro
+ *   findIndex/return-toIndex final com MESMO resultado (força-bruta 0 diffs).
+ * - #1083/1088 (findIndex do pai mais largo + ternário true): 0 diffs em
+ *   força-bruta de milhares de cenários — parentIndex>=0?:toIndex absorve.
+ * - #1104/1110/1111 (guards fromIndex/toIndex): moved=items[bad] → !moved
+ *   retorna items; mesmo fluxo.
+ * - #1130 toIndex>=fromIndex → >: fromIndex===toIndex já retornou antes (L92).
+ * - #1135/1138 target?.type: array denso + guard L98 → target sempre existe.
+ * - #1143/1148/1157 (< → <=): fromIndex===target/toIndex/insertAt é
+ *   inacessível (guardas anteriores) ou não muda o splice.
+ * - #1167 categoryId != null → true: idMap.get(null) ?? null → null igual.
+ *
+ * Outros:
+ * - #1218 typeof==='string' → true: includes(raw) filtra não-strings igual.
+ * - #1244/1245 clampMomentDurationMs <=0 → false/<: Math.round(-0.005)=-0 e
+ *   Math.max(MIN=0, x) clampeiam pro mesmo 0.
+ * - #1261 isValidLiturgyUrl !value → false: '' → new URL('https://') throws →
+ *   catch false. Igual.
+ * - #1285-1298 (regexes de IP): fallback final host.includes('.') &&
+ *   /[a-z0-9-]/i retorna true pros hosts que o regex de IP rejeitaria
+ *   ('1.2.3.4.5' → URL parser throws antes; 'a.1.2.3' → true no original);
+ *   hosts problemáticos ('.', localhost guards) já filtrados antes.
+ * - #1408-1654 (ternários durationMs do draft/draftFrom): mesma álgebra do
+ *   preferences — clamp satura <=0 → 0 e round()*1000 idempotente; os ramos
+ *   music/category/other colapsam pros mesmos valores (testes do killplane8
+ *   asserem os valores em todos os ramos).
+ * - #1486-1528 (draft.filePath MethodExpression): filePath.trim() em ''
+ *   retorna '' — caminhos [filePath] vs [] diferem só em cenários já cobertos
+ *   pelos guards length===0.
+ */
