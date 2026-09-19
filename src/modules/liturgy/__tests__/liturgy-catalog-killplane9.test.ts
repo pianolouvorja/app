@@ -213,3 +213,109 @@ describe('joinAlbumNames via merge de índice duplicado (#670/#671/#858)', () =>
     })
   })
 })
+
+describe('kill plane 9b — kills finais', () => {
+  function albumRow(over: Record<string, unknown>) {
+    return { id_music: 1, name: 'M', duration: null, ...over }
+  }
+
+  it('#761/#763/#839/#840: índice vazio cai no fallback COM coleções', async () => {
+    catalogFiles.set('pt_musics', [])
+    catalogFiles.set('pt_hymnal', [hymnalRow()])
+    catalogFiles.set('pt_categories', [{ albums: [{ id_album: 9, name: 'Col' }] }])
+    catalogFiles.set('album_9', { musics: [albumRow({ id_music: 41, name: 'M41' })] })
+    const opts = await loadLiturgyMusicOptions()
+    // mutante retorna cedo sem loadCollectionOptions → faltaria M41
+    expect(opts.map((o) => o.id).sort((a, b) => a - b)).toEqual([1, 41])
+  })
+
+  it('#821: coleção com musics válidas entra no catálogo', async () => {
+    catalogFiles.set('pt_categories', [{ albums: [{ id_album: 12, name: 'Col' }] }])
+    catalogFiles.set('album_12', { musics: [albumRow({ id_music: 42, name: 'M42' })] })
+    const opts = await loadLiturgyMusicOptions()
+    expect(opts.map((o) => o.id)).toContain(42)
+  })
+
+  it('#588: EXCLUDED_ALBUM_IDS filtra 712/629', async () => {
+    catalogFiles.set('pt_categories', [
+      { albums: [{ id_album: 712, name: 'Excluída' }, { id_album: 13, name: 'Ok' }] },
+    ])
+    catalogFiles.set('album_712', { musics: [albumRow({ id_music: 43, name: 'M43' })] })
+    catalogFiles.set('album_13', { musics: [albumRow({ id_music: 44, name: 'M44' })] })
+    const opts = await loadLiturgyMusicOptions()
+    expect(opts.map((o) => o.id)).toEqual([44])
+  })
+
+  it('#933/#942: score de hinário só com track===numQuery', () => {
+    const options: LiturgyMusicOption[] = [
+      { id: 1, name: 'A5 track5 Outro', hymnalTrack: 5, albumNames: 'Outro', displayLabel: 'x', durationMs: null, hasInstrumental: false },
+      { id: 2, name: 'B5 Hinário', hymnalTrack: 7, albumNames: 'Hinário Adventista', displayLabel: 'x', durationMs: null, hasInstrumental: false },
+      { id: 3, name: 'C5 H1996', hymnalTrack: 9, albumNames: 'Hinário Adventista 1996', displayLabel: 'x', durationMs: null, hasInstrumental: false },
+    ]
+    // Original: todos score 0 (tracks ≠ 5 no B5/C5) → estável [1,2,3].
+    // Mutante #933 (true &&): B5=2 → [2,1,3]. Mutante #942 (true && 1996):
+    // C5=1 → [3,1,2]. Ambos mudam a ordem → matam.
+    const r = filterLiturgyMusicOptions(options, '5', null)
+    expect(r.map((o) => o.id)).toEqual([1, 2, 3])
+  })
+})
+
+/*
+ * EQUIVALENTES documentados (auditoria 19/09, diffs reais do run off —
+ * catalog 37/40 equivalentes, kills: #588, #933, #942):
+ * - #603 typeof number → true: Number.isFinite NÃO coage → 'abc' cai no
+ *   fluxo string igual.
+ * - #615 raw.trim() → raw: Number() coage espaços (' 2 ' → 2 sem trim).
+ * - #618 !trimmed → false: '' → Number('')=0 → <=0 → null igual.
+ * - #626/627/628 some(!isFinite) → false/every/undefined: NaN propaga →
+ *   seconds>0 false → null igual.
+ * - #644 Boolean(...) → {}: {} é truthy, consumers só checam truthiness.
+ * - #654/655 asNumber <=0 → false/<: '0' → mutante Math.round(0*1000)=0...
+ *   MAS original null vs mutante 0 — killável? teste '0' passou no mutante:
+ *   parseCatalogDurationMs('0') — asNumber=0 — mutante <0 → 0 não < 0 →
+ *   retorna Math.round(0*1000)=0 ≠ null... teste #655 NO killplane9 esperava
+ *   null e passou no Stryker?? Verificado: teste falha com sed — falsos
+ *   sobrevivente perTest remanescente; o run off cobriu (placar -7).
+ * - #710 buildDisplayLabel !=null → true: track null → 'null - name'?? Não:
+ *   mapMusicOption só passa hymnalTrack não-null quando useTrackInLabel e
+ *   parseTrack ok; null → buildDisplayLabel(name, null) → mutante 'null - x'
+ *   é observável... killplane9 asser displayLabel sem 'null' — coberto no
+ *   run off (parte dos -7).
+ * - #723 options?. → options.: todas as call-sites passam options — inócuo.
+ * - #731 '1996' → 'Stryker': 1ª cláusula includes('Hinário Adventista') já
+ *   casa 'Hinário Adventista 1996' (prefixo) → isHymnalAlbum igual.
+ * - #743 || → &&: corrigido por killplane9 (hinário puro) — morto no run off.
+ * - #753/770/782 || → &&: !rows falsy-absorve — rows=42 → false && ... =
+ *   false → for over 42 → TypeError?? readCatalogRecord mock retorna ?? null;
+ *   42 não-array → mutante: false && !Array.isArray → NÃO retorna → crash...
+ *   MAS loadFromMusicIndex: `!rows || !Array.isArray || length===0`: mutante
+ *   753 é L208 loadFromMusicIndex: rows=42 → false && ... false → !Array...
+ *   espera: L208 tem TRÊS cláusulas: `!rows || !Array.isArray(rows) ||
+ *   rows.length===0` — mutante só a 1ª vira &&: `!rows && !Array.isArray(rows)
+ *   || length===0` — rows=42: false && ... = false || 42.length===0 undefined
+ *   ===0 false → false → NÃO retorna → continua → mapMusicIndexRow(42.id_music)
+ *   → Number(undefined)=NaN → !isFinite → null → skip → byId vazio → null.
+ *   IGUAL ✓ equivalente (mapMusicIndexRow filtra lixo).
+ * - #756 length===0 → false: [] → byId vazio → size>0 false → null igual.
+ * - #761/763/839/840: guard rows.length===0 (L208) bloqueia index vazio
+ *   ANTES — size/length checks inacessíveis com vazio; com não-vazio ambos
+ *   os lados são true. Equivalentes.
+ * - #787 albums ?? ["Stryker"]: iterar string dá chars sem id_album → NaN →
+ *   skip. Igual ao [].
+ * - #790 !categories → false: `false && !Array.isArray`... não: 790 é
+ *   ConditionalExpression false = NUNCA return → categories null → 782
+ *   `!categories || !Array.isArray` (original) pega → return igual. Protegido.
+ * - #791 || → &&: id NaN entra no albums map mas album_NaN nunca existe →
+ *   nunca vira option. Igual.
+ * - #793/795/798 name ausente/vazio: entra no map mas album_X sem record →
+ *   return antes de virar option. Igual.
+ * - #801 < → <=: slice extra vazio → Promise.all([]) → inócuo.
+ * - #805 batch = albumEntries inteiro: upsert idempotente (Set/?? mantém) →
+ *   mesmo resultado (reprocessa, mas determinístico).
+ * - #821 !record?.musics → !{}: 2ª cláusula Array.isArray decide igual.
+ * - #891-#921 isNum sempre-true/NaN: NaN != null é true, mas track===NaN é
+ *   false → filtro e score idênticos; sort com scores 0 é estável.
+ * - #904/920 && → ||: numQuery != null ⟺ isNum (numQuery = isNum ? N : null)
+ *   → truth table idêntica.
+ * - #918 if → true: sorta sempre com scores 0 → estável → igual.
+ */
