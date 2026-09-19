@@ -18,3 +18,10 @@ if (typeof g.localStorage === 'undefined') {
 if (typeof g.sessionStorage === 'undefined') {
   Object.defineProperty(global, 'sessionStorage', { value: makeStorageMock(), writable: true, configurable: true })
 }
+
+// Mock window.louvorja para simular browser (não Electron) — só em ambientes com window (jsdom)
+if (typeof globalThis.window !== 'undefined') {
+  Object.assign(globalThis.window, {
+    louvorja: { isElectron: false, platform: 'linux', version: '0.0.0-test' }
+  })
+}
