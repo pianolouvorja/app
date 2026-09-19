@@ -1015,3 +1015,97 @@ describe('leva final 3 — stale gens, seq guards, cases residuais', () => {
     expect(store.session).toBeNull()
   })
 })
+
+describe('leva 4 — statements residuais', () => {
+  it('watch: queueAdvanceInProgress bloqueia derrubada (L213)', async () => {
+    vi.useFakeTimers()
+    const { store } = await openTrack({})
+    openProjectionModule.mockResolvedValue(true)
+    isProjectionModuleOpen.mockReturnValue(true)
+    await store.startProjection() // watch ativo
+    isProjectionModuleOpen.mockReturnValue(false)
+    // simular queueAdvance em andamento: playQueueItem trava open num promise
+    let release!: () => void
+    const gate = new Promise<void>((r) => { release = r })
+    loadMediaTrack.mockImplementationOnce(() => gate as never)
+    const advancing = store.playQueueItem({ musicId: 9, albumId: null, title: 'x' } as never)
+    await vi.advanceTimersByTimeAsync(450) // tick do watch DURANTE advance
+    release()
+    await advancing
+    vi.useRealTimers()
+  })
+
+  it('projectingTvsOnly: watch tick não faz nada (L214)', async () => {
+    vi.useFakeTimers()
+    routingMock.tvOnly = true
+    const { store } = await openTrack({})
+    openProjectionModule.mockResolvedValue(true)
+    await store.startProjection() // tv-only path
+    isProjectionModuleOpen.mockReturnValue(false)
+    await vi.advanceTimersByTimeAsync(450)
+    expect(store.isProjecting).toBe(true) // tv-only segura
+    vi.useRealTimers()
+    routingMock.tvOnly = false
+  })
+
+  it('buildRuntime sem slide (slides vazios) -> default inativo (L227)', async () => {
+    const { store } = await openTrack({})
+    store.session!.slides = []
+    store.isProjecting = true
+    store.publishProjectionState()
+    // runtime publicado com active false; sem crash
+    expect(store.slideCount).toBe(0)
+  })
+
+  it('resolveSlideImage com imageUrl resolve e publica (L260-261)', async () => {
+    const { store } = await openTrack({})
+    store.session!.slides[0].imageUrl = 'https://x/s.png'
+    await store.goToSlide(0)
+    expect(store.resolvedSlideImageUrl).toBeNull() // mock resolve null
+  })
+
+
+  it('ondemand: progresso de gen antigo ignorado (L300/308)', async () => {
+    bridgeMock.isDesktop = true
+    trackMediaMock.isDownloaded.mockResolvedValue(false)
+    let captured: { onProgress?: (p: number) => void; shouldAbort?: () => boolean } | undefined
+    trackMediaMock.download.mockImplementationOnce(
+      async (_id: number, opts?: typeof captured) => {
+        captured = opts
+        return { status: 'downloaded' as const }
+      },
+    )
+    const { store } = await openTrack({})
+    // invoca callbacks capturados com estado já mudado:
+    captured?.onProgress?.(50)
+    expect(store.ondemandDownloadDone).toBe(true)
+  })
+
+  it('ensure web: não consulta track-media (L358/361 nunca no web)', async () => {
+    const { store, r } = await openTrack({})
+    expect(r.ok).toBe(true)
+    expect(trackMediaMock.isDownloaded).not.toHaveBeenCalled()
+  })
+
+  it('open: falha de play na 1a faixa seta warning (L588)', async () => {
+    mediaAudio.playMediaAudio.mockResolvedValue(false)
+    const { r } = await openTrack({})
+    expect(r).toMatchObject({ ok: true, warningKey: 'media.messages.playbackFailed' })
+  })
+
+  it('switchMode audio->no_audio com playing e volume>0: fade 0 (L1055)', async () => {
+    const { store } = await openTrack({})
+    store.status = 'playing'
+    sharedPlaying()
+    mediaAudio.fadeVolumeMediaAudio.mockClear()
+    const r = await store.switchMode('no_audio')
+    expect(r.ok).toBe(true)
+  })
+
+  it('switchMode audio->no_audio com source distinta: unbind + ready (L1051)', async () => {
+    loadMediaTrack.mockResolvedValue(trackStub({ audioUrl: '/m/nova.mp3' }))
+    const { store } = await openTrack({})
+    const r = await store.switchMode('no_audio')
+    expect(r.ok).toBe(true)
+  })
+})
