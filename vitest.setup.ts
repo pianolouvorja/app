@@ -25,3 +25,13 @@ if (typeof globalThis.window !== 'undefined') {
     louvorja: { isElectron: false, platform: 'linux', version: '0.0.0-test' }
   })
 }
+
+// JSDOM não implementa HTMLMediaElement.prototype.load/pause — mock global
+if (typeof globalThis.HTMLMediaElement !== 'undefined') {
+  if (!HTMLMediaElement.prototype.load) {
+    HTMLMediaElement.prototype.load = () => {}
+  }
+  if (!HTMLMediaElement.prototype.pause) {
+    HTMLMediaElement.prototype.pause = () => {}
+  }
+}
