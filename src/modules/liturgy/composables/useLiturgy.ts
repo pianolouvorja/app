@@ -91,10 +91,8 @@ export function useLiturgy() {
   })
 
   onUnmounted(() => {
-    if (syncTimer != null) {
-      window.clearInterval(syncTimer)
-      syncTimer = null
-    }
+    window.clearInterval(syncTimer)
+    syncTimer = null
   })
 
   function worshipLabel(): string {
