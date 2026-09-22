@@ -46,8 +46,7 @@ const routes = [
 		name: "settings-remote",
 		component: { template: "<div />" },
 	},
-}
-)
+];
 
 function makeRouter(currentName: string) {
 	const router = createRouter({
@@ -86,6 +85,8 @@ describe("SettingsTabs", () => {
 		const items = wrapper.findAll(".settings-tabs__item");
 		const target = items.find((i) => i.text().includes("Aparência"));
 		await target?.trigger("click");
+		await router.isReady();
+		await new Promise((r) => setTimeout(r, 0));
 		expect(router.currentRoute.value.name).toBe("settings-appearance");
 	});
 
