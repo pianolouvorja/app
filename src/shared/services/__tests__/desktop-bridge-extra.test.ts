@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * desktop-bridge — deteção de ambiente: bridge do preload, userAgent
  * Electron, Windows via UA/Client Hints/platform.
+ *
+ * NUNCA substituir o global `window` inteiro (vi.stubGlobal("window", ...)):
+ * o Vitest usa o window real internamente e quebra com
+ * "process is not defined". Mutar as propriedades direto no window real.
  */
 import {
 	getDesktopBridge,
@@ -14,10 +18,6 @@ import {
 
 type Win = Record<string, unknown>;
 
-function setWindow(partial: Win) {
-	vi.stubGlobal("window", { ...globalThis.window, ...partial });
-}
-
 function setUA(ua: string) {
 	Object.defineProperty(window.navigator, "userAgent", {
 		value: ua,
@@ -25,18 +25,30 @@ function setUA(ua: string) {
 	});
 }
 
-afterEach(() => {
-	vi.unstubAllGlobals();
+function setBridge(bridge: unknown) {
+	if (bridge == null) {
+		delete (window as unknown as Win).louvorja;
+	} else {
+		(window as unknown as Win).louvorja = bridge;
+	}
+}
+
+beforeEach(() => {
 	setUA("Mozilla/5.0 (X11; Linux x86_64) Chrome/120");
-	delete (window as unknown as Win).louvorja;
-	delete (window as unknown as Win).process;
+	setBridge(null);
+	Reflect.deleteProperty(window.navigator, "userAgentData");
+});
+
+afterEach(() => {
+	setUA("Mozilla/5.0 (X11; Linux x86_64) Chrome/120");
+	setBridge(null);
 	Reflect.deleteProperty(window.navigator, "userAgentData");
 });
 
 describe("getDesktopBridge", () => {
 	it("window.louvorja presente -> bridge", () => {
 		const bridge = { isElectron: true };
-		setWindow({ louvorja: bridge });
+		setBridge(bridge);
 		expect(getDesktopBridge()).toBe(bridge);
 	});
 
@@ -47,7 +59,7 @@ describe("getDesktopBridge", () => {
 
 describe("isElectronShell", () => {
 	it("bridge com isElectron -> true", () => {
-		setWindow({ louvorja: { isElectron: true } });
+		setBridge({ isElectron: true });
 		expect(isElectronShell()).toBe(true);
 	});
 
@@ -64,14 +76,14 @@ describe("isElectronShell", () => {
 describe("isDesktopApp", () => {
 	it("bridge isElectron -> true; sem -> false", () => {
 		expect(isDesktopApp()).toBe(false);
-		setWindow({ louvorja: { isElectron: true } });
+		setBridge({ isElectron: true });
 		expect(isDesktopApp()).toBe(true);
 	});
 });
 
 describe("isWindowsDesktop", () => {
 	it("bridge platform win32 -> true", () => {
-		setWindow({ louvorja: { platform: "win32" } });
+		setBridge({ platform: "win32" });
 		expect(isWindowsDesktop()).toBe(true);
 	});
 
@@ -87,6 +99,15 @@ describe("isWindowsDesktop", () => {
 			configurable: true,
 		});
 		expect(isWindowsDesktop()).toBe(true);
+	});
+
+	it("Client Hints platform macOS -> false", () => {
+		setUA("Mozilla/5.0 Chrome/120");
+		Object.defineProperty(window.navigator, "userAgentData", {
+			value: { platform: "macOS" },
+			configurable: true,
+		});
+		expect(isWindowsDesktop()).toBe(false);
 	});
 
 	it("Linux sem nada -> false", () => {
