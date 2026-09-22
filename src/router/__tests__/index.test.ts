@@ -1,37 +1,116 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/**
- * router/index — instância única criada no import. Em jsdom (http://localhost)
- * com isElectronShell false: history mode web, 3 rotas de topo (popup, shell
- * com children, catch-all redirect).
- */
+// router/index: mockamos cada routes module com rotas leves para testar
+// somente a montagem do router sem carregar todas as views.
+
+vi.mock("@modules/home/routes", () => ({
+	homeRoutes: [
+		{ path: "/home", name: "x-home", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@modules/albums/routes", () => ({
+	albumsRoutes: [
+		{ path: "/albuns", name: "x-albuns", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@modules/liturgy/routes", () => ({
+	liturgyRoutes: [
+		{
+			path: "/liturgia",
+			name: "x-liturgia",
+			component: { template: "<div />" },
+		},
+	],
+}));
+vi.mock("@modules/media/routes", () => ({
+	mediaRoutes: [
+		{ path: "/midia", name: "x-midia", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@modules/bible/routes", () => ({
+	bibleRoutes: [
+		{ path: "/biblia", name: "x-biblia", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@modules/clock/routes", () => ({
+	utilitiesRoutes: [
+		{
+			path: "/utilitarios",
+			name: "x-util",
+			component: { template: "<div />" },
+		},
+	],
+}));
+vi.mock("@modules/timer/routes", () => ({
+	timerRoutes: [
+		{ path: "/timer", name: "x-timer", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@modules/countdown/routes", () => ({
+	countdownRoutes: [
+		{
+			path: "/countdown",
+			name: "x-countdown",
+			component: { template: "<div />" },
+		},
+	],
+}));
+vi.mock("@modules/random/routes", () => ({
+	randomRoutes: [
+		{
+			path: "/sorteios",
+			name: "x-sorteios",
+			component: { template: "<div />" },
+		},
+	],
+}));
+vi.mock("@modules/settings/routes", () => ({
+	settingsRoutes: [
+		{ path: "/config", name: "x-config", component: { template: "<div />" } },
+	],
+}));
+vi.mock("@layouts/AppShell.vue", () => ({
+	default: { template: "<div><router-view /></div>" },
+}));
+vi.mock("@shared/components/ProjectionHost.vue", () => ({
+	default: { template: "<div />" },
+}));
+
+import router from "../index";
+
+beforeEach(async () => {
+	await router.push("/");
+	await router.isReady();
+});
 
 describe("router", () => {
-	it("exporta router com rotas de topo esperadas", async () => {
-		const router = (await import("../index")).default;
-		expect(router.getRoutes().length).toBeGreaterThan(3);
+	it("exporta router com rotas de topo esperadas", () => {
 		const paths = router.getRoutes().map((r) => r.path);
 		expect(paths).toContain("/popup");
 		expect(paths).toContain("/");
 		expect(paths).toContain("/:pathMatch(.*)*");
+		expect(router.getRoutes().length).toBeGreaterThan(3);
 	});
 
-	it("rota popup tem meta projection", async () => {
-		const router = (await import("../index")).default;
+	it("rota popup tem meta projection", () => {
 		const popup = router.getRoutes().find((r) => r.name === "projection-popup");
 		expect(popup?.meta.projection).toBe(true);
 	});
 
-	it("resolve rota inexistente → redireciona para /", async () => {
-		const router = (await import("../index")).default;
+	it("resolve rota inexistente -> redireciona para /", async () => {
 		await router.push("/rota-inexistente-xyz");
 		expect(router.currentRoute.value.path).toBe("/");
 	});
 
 	it("resolve rota home", async () => {
-		const router = (await import("../index")).default;
-		await router.push("/");
+		await router.push("/home");
 		expect(router.currentRoute.value.matched.length).toBeGreaterThan(0);
+		expect(router.currentRoute.value.path).toBe("/home");
+	});
+
+	it("resolve rota de modulo registrado", async () => {
+		await router.push("/midia");
+		expect(router.currentRoute.value.path).toBe("/midia");
 	});
 });
