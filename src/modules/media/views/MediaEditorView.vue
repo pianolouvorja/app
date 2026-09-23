@@ -6,6 +6,7 @@ import MediaSlideStage from '../components/MediaSlideStage.vue'
 import MediaAccountBar from '../components/MediaAccountBar.vue'
 import AppConfirm from '@shared/components/AppConfirm.vue'
 import { getAuthSession } from '../services/auth-client'
+import { startOutboxLoop } from '../services/outbox-loop'
 import {
   getLocalMusic as getLocalMusicById,
   isLocalId,
@@ -929,6 +930,8 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 onMounted(async () => {
+  // Outbox: sincroniza operações offline pendentes (login/boot) e liga o loop.
+  startOutboxLoop()
   // Query params vindos da Central de Mídia (?collection=ID&new=1|import=1)
   const collectionParam = route.query.collection
   if (collectionParam) {
