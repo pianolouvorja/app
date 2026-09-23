@@ -1,5 +1,22 @@
 export default {
   media: {
+    publishRules: {
+      title: 'Community rules',
+      visibleToAll: 'Public collections appear to the whole PIANO network.',
+      displayName: 'Your display name shows as author — your email is never exposed.',
+      readOnlyCopy: 'Other users can save a copy; your original is never changed.',
+      moderation: 'Inappropriate content can be reported and removed by curation.',
+      ranking: 'Public collections join the community ranking (+10 pts when publishing).',
+      showRules: 'View community rules',
+      gotIt: 'Got it',
+    },
+    visibility: {
+      label: 'Privacy',
+      private: 'Private',
+      public: 'Public',
+      privateHint: 'Only you can see this collection.',
+      publicHint: 'Visible to the whole PIANO network.',
+    },
     title: 'Player',
     empty: 'No song playing. Open a track from albums or liturgy.',
     play: 'Play',
