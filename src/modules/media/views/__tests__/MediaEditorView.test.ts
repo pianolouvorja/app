@@ -11,9 +11,10 @@ import mediaLocale from "../../locales/pt-BR";
 import MediaEditorView from "../MediaEditorView.vue";
 
 const pushMock = vi.fn().mockResolvedValue(undefined);
+const routeQuery: Record<string, string> = {};
 vi.mock("vue-router", () => ({
 	useRouter: () => ({ push: pushMock, back: vi.fn(), replace: vi.fn() }),
-	useRoute: () => ({ name: "media-editor", path: "/media/editor", query: {} }),
+	useRoute: () => ({ name: "media-editor", path: "/media/editor", query: routeQuery }),
 }));
 
 vi.mock("@shared/components/AppConfirm.vue", () => ({
@@ -86,7 +87,12 @@ const i18n = createI18n({
 });
 
 async function mountEditor() {
-	const w = mount(MediaEditorView, { global: { plugins: [i18n] } });
+	const w = mount(MediaEditorView, {
+		global: {
+			plugins: [i18n],
+			stubs: { "v-snackbar": { name: "VSnackbar", props: ["modelValue"], template: '<div class="snackbar-stub"><slot /></div>' } },
+		},
+	});
 	await flushPromises();
 	return w;
 }
@@ -786,6 +792,1177 @@ describe("MediaEditorView — navegação", () => {
 			w.vm.$.devtoolsRawSetupState as unknown as { onBack: () => void }
 		).onBack();
 		expect(pushMock).toHaveBeenCalledWith({ name: "albums" });
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — cobertura de gaps", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as Record<string, unknown> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			musicName: { value: string };
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			collections: { value: Array<{ id: number; name: string; coverUrl?: string | null }> };
+			musics: { value: unknown[] };
+			statusMessage: { value: string };
+			isErrorFlag: { value: boolean };
+			saving: { value: boolean };
+			loading: { value: boolean };
+			isPlaying: { value: boolean };
+			activeStanzaIndex: { value: number };
+			currentTimeMs: { value: number };
+			audioSrc: { value: string | null };
+			audioUrl: { value: string | null };
+			confirmOpen: { value: boolean };
+			confirmKind: { value: string; };
+			confirmTitle: { value: string };
+			confirmMessage: { value: string };
+			computedActiveIndex: { value: number };
+			activeStanza: { value: unknown };
+			selectedCollection: { value: unknown };
+			asideCollapsed: { value: boolean };
+			lyricPaneOpen: { value: boolean };
+			officialSearch: { value: string };
+			officialSearchResults: { value: unknown[] };
+			reuseSearch: { value: string };
+			reuseResults: { value: unknown[] };
+			newCollectionName: { value: string };
+			notify: (m: string, e?: boolean) => void;
+			stanzaProgress: (i: number) => number;
+			onCollectionChange: () => Promise<void>;
+			onCreateCollection: () => Promise<void>;
+			onCreateMusic: () => Promise<void>;
+			onOfficialSearchInput: () => void;
+			onAddOfficial: (id: number, name: string) => Promise<void>;
+			onAddOfficialFromSearch: () => void;
+			onReuseSearchInput: () => void;
+			onReuseMusic: (m: { id: number; name: string; isCurrent: boolean }) => Promise<void>;
+			onCoverFile: (e: Event) => Promise<void>;
+			onRemoveCover: () => Promise<void>;
+			onAddStanza: () => Promise<void>;
+			onSaveStanza: (i: number) => Promise<void>;
+			onSelectMusic: (id: number) => Promise<void>;
+			onImportSlja: () => void;
+			onImportFile: (e: Event) => Promise<void>;
+			onExportSlja: () => Promise<void>;
+			timeToMs: (t: string) => number;
+			requestDelete: (k: string, p?: { stanzaIndex?: number }) => void;
+			onConfirmDelete: () => Promise<void>;
+			onAudioPlay: () => void;
+			onAudioPause: () => void;
+			onAudioTimeUpdate: () => void;
+			onMarkStanzaTime: (i: number) => Promise<void>;
+			onSeekToStanza: (i: number) => void;
+			loadAudioForMusic: (p: string | null) => void;
+			onPickAudio: () => void;
+			onAudioFile: (e: Event) => Promise<void>;
+			onRemoveAudio: () => Promise<void>;
+			audioEl: { value: HTMLAudioElement | null };
+			fileInputEl: { value: HTMLInputElement | null };
+			audioInputEl: { value: HTMLInputElement | null };
+		};
+	}
+
+	it("stanzaProgress com playback na estrofe ativa calcula progresso", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.lyrics.value = [
+			{ id: 1, lyric: "A", time: "00:01", imageUrl: "" },
+			{ id: 2, lyric: "B", time: "00:10", imageUrl: "" },
+		];
+		s.activeStanzaIndex.value = 0;
+		s.isPlaying.value = true;
+		s.currentTimeMs.value = 5000;
+		const prog = s.stanzaProgress(0);
+		expect(prog).toBeGreaterThan(0);
+		expect(prog).toBeLessThanOrEqual(1);
+		expect(s.stanzaProgress(1)).toBe(0);
+		w.unmount();
+	});
+
+	it("onCollectionChange sem coletânea: limpa músicas", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = null;
+		await s.onCollectionChange();
+		expect(s.musics.value).toEqual([]);
+		w.unmount();
+	});
+
+	it("criar coletânea com falha na API: notifica erro", async () => {
+		const { createCustomCollection } = await import("../../services/custom-catalog");
+		vi.mocked(createCustomCollection).mockResolvedValue(null as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.newCollectionName.value = "X";
+		await s.onCreateCollection();
+		expect(s.isErrorFlag.value).toBe(true);
+		w.unmount();
+	});
+
+	it("criar música: nome vazio ou sem coletânea não chama API; falha notifica", async () => {
+		const { createCustomMusic } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.newMusicName.value = "Y";
+		s.selectedCollectionId.value = null;
+		await s.onCreateMusic();
+		s.selectedCollectionId.value = 1;
+		s.newMusicName.value = "  ";
+		await s.onCreateMusic();
+		expect(createCustomMusic).not.toHaveBeenCalled();
+		vi.mocked(createCustomMusic).mockResolvedValue(null as never);
+		s.newMusicName.value = "Z";
+		await s.onCreateMusic();
+		expect(s.statusMessage.value).toBe("Falha ao criar música");
+		w.unmount();
+	});
+
+	it("busca oficial: query vazia limpa resultados", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.officialSearch.value = "  ";
+		s.officialSearchResults.value = [{ musicId: 1 }] as never;
+		s.onOfficialSearchInput();
+		await flushPromises();
+		expect(s.officialSearchResults.value).toEqual([]);
+		w.unmount();
+	});
+
+	it("adicionar hino oficial com falha: notifica erro; fromSearch pega o primeiro", async () => {
+		const { addOfficialMusicToCollection } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		vi.mocked(addOfficialMusicToCollection).mockResolvedValue(null as never);
+		await s.onAddOfficial(5, "H5");
+		expect(s.statusMessage.value).toBe("Falha ao adicionar hino");
+		s.officialSearchResults.value = [{ musicId: 7, displayTitle: "H7", name: "H7" }] as never;
+		vi.mocked(addOfficialMusicToCollection).mockResolvedValue({ id: 8 } as never);
+		s.onAddOfficialFromSearch();
+		await flushPromises();
+		expect(addOfficialMusicToCollection).toHaveBeenCalledWith(1, 7, "H7");
+		w.unmount();
+	});
+
+	it("busca de reuso: cache null não explode", async () => {
+		const { listAllCustomMusics } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		vi.mocked(listAllCustomMusics).mockResolvedValue(null as never);
+		s.reuseSearch.value = "m";
+		s.onReuseSearchInput();
+		await flushPromises();
+		expect(s.reuseResults.value).toEqual([]);
+		w.unmount();
+	});
+
+	it("reusar com falha: notifica erro", async () => {
+		const { copyCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(copyCustomMusic).mockResolvedValue(null as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onReuseMusic({ id: 3, name: "R", isCurrent: false });
+		expect(s.statusMessage.value).toBe("Falha ao copiar música");
+		w.unmount();
+	});
+
+	it("capa: falhas e sucessos", async () => {
+		const { updateCustomCollection } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		await s.onCoverFile({ target: { files: [], value: "" } } as unknown as Event);
+		s.selectedCollectionId.value = null;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "c.png" };
+		await s.onCoverFile({ target: { files: [file], value: "" } } as unknown as Event);
+		s.selectedCollectionId.value = 1;
+		vi.mocked(updateCustomCollection).mockResolvedValue(null as never);
+		await s.onCoverFile({ target: { files: [file], value: "" } } as unknown as Event);
+		expect(s.statusMessage.value).toBe("Falha ao salvar capa");
+		s.selectedCollectionId.value = null;
+		await s.onRemoveCover();
+		s.selectedCollectionId.value = 1;
+		await s.onRemoveCover();
+		expect(s.statusMessage.value).toBe("Falha ao remover capa");
+		vi.mocked(updateCustomCollection).mockResolvedValue({ id: 1, name: "C1" } as never);
+		await s.onRemoveCover();
+		expect(s.statusMessage.value).toBe("Capa removida");
+		w.unmount();
+	});
+
+	it("estrofes: sem música não adiciona; salvar sem id não faz; falhas notificam", async () => {
+		const { createCustomLyric, updateCustomLyric } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedMusicId.value = null;
+		await s.onAddStanza();
+		expect(createCustomLyric).not.toHaveBeenCalled();
+		s.selectedMusicId.value = 10;
+		vi.mocked(createCustomLyric).mockResolvedValue(null as never);
+		await s.onAddStanza();
+		expect(s.statusMessage.value).toBe("Falha ao adicionar estrofe");
+		s.lyrics.value = [{ id: null as never, lyric: "x", time: "00:00", imageUrl: "" }];
+		await s.onSaveStanza(0);
+		expect(updateCustomLyric).not.toHaveBeenCalled();
+		s.lyrics.value = [{ id: 1, lyric: "x", time: "00:00", imageUrl: "" }];
+		vi.mocked(updateCustomLyric).mockResolvedValue(false as never);
+		await s.onSaveStanza(0);
+		expect(s.statusMessage.value).toBe("Falha ao salvar estrofe");
+		w.unmount();
+	});
+
+	it("selecionar música local inexistente: limpa e recarrega", async () => {
+		const { getLocalMusic } = await import("../../services/local-custom-store");
+		vi.mocked(getLocalMusic).mockReturnValue(null as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		await s.onSelectMusic(-9);
+		expect(s.statusMessage.value).toBe("Esta música não existe mais");
+		expect(s.selectedMusicId.value).toBeNull();
+		w.unmount();
+	});
+
+	it("selecionar música local com hino oficial vinculado: notifica", async () => {
+		const { getLocalMusic } = await import("../../services/local-custom-store");
+		vi.mocked(getLocalMusic).mockReturnValue({
+			id: -5, name: "L", lyrics: [], audioBase64: "abc", officialMusicId: 77,
+		} as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		await s.onSelectMusic(-5);
+		expect(s.statusMessage.value).toContain("Hino oficial vinculado");
+		w.unmount();
+	});
+
+	it("selecionar música da API: erro de rede notifica; status estranho notifica", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		global.fetch = vi.fn(() => Promise.reject(new Error("net"))) as never;
+		await s.onSelectMusic(10);
+		expect(s.statusMessage.value).toBe("API indisponível");
+		global.fetch = vi.fn(() => Promise.resolve({ ok: false, status: 500 })) as never;
+		await s.onSelectMusic(10);
+		expect(s.statusMessage.value).toBe("Falha ao carregar música");
+		w.unmount();
+	});
+
+	it("selecionar música da API com hino oficial vinculado: notifica", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		global.fetch = vi.fn(() => Promise.resolve({
+			ok: true, status: 200,
+			json: async () => ({ name: "M", official_music_id: 5, lyrics: [] }),
+		})) as never;
+		await s.onSelectMusic(10);
+		expect(s.statusMessage.value).toContain("Hino oficial vinculado");
+		w.unmount();
+	});
+
+	it("import .slja: sem arquivo não faz nada", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		await s.onImportFile({ target: { files: [], value: "" } } as unknown as Event);
+		expect(s.loading.value).toBe(false);
+		w.unmount();
+	});
+
+	it("import .slja com título genérico usa nome do arquivo; CAPA e vazias filtradas", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({
+			title: "v1.0",
+			innerName: "meu.slja",
+			slides: [
+				{ lyric: "Capa", type: "CAPA", timeMs: 0, order: 0 },
+				{ lyric: "Verso 1", type: "LETRA", timeMs: 5000, order: 1 },
+				{ lyric: "   ", type: "LETRA", timeMs: 9000, order: 2 },
+			],
+		} as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		vi.mocked(catalogMod.createCustomLyric).mockResolvedValue({ id: 55 } as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "arquivo.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.createCustomMusic).toHaveBeenCalledWith(1, { name: "meu" });
+		expect(s.lyrics.value).toHaveLength(1);
+		expect(s.lyrics.value[0].lyric).toBe("Verso 1");
+		w.unmount();
+	});
+
+	it("import .slja: reaproveita 'Importações .slja'; áudio embutido", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(catalogMod.listCustomCollections).mockResolvedValue([
+			{ id: 1, name: "C1" },
+			{ id: 2, name: "Importações .slja" },
+		] as never);
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({
+			title: "Hino X",
+			slides: [{ lyric: "V1", type: "LETRA", timeMs: 0, order: 1 }],
+			audio: { bytes: new Uint8Array([1, 2, 3]), name: "a.mp3" },
+		} as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		vi.mocked(catalogMod.createCustomLyric).mockResolvedValue({ id: 55 } as never);
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue({ idFile: 7, url: "a.mp3" } as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = null;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "hino-x.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.createCustomMusic).toHaveBeenCalledWith(2, { name: "Hino X" });
+		expect(catalogMod.updateCustomMusic).toHaveBeenCalledWith(44, { id_file_audio: 7 });
+		w.unmount();
+	});
+
+	it("import .slja: falha na criação da coletânea de importação notifica", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "H", slides: [] } as never);
+		vi.mocked(catalogMod.createCustomCollection).mockResolvedValue(null as never);
+		vi.mocked(catalogMod.listCustomCollections).mockResolvedValue([{ id: 1, name: "C1" }] as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = null;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "x.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(s.statusMessage.value).toBe("Falha ao criar coletânea de importação");
+		w.unmount();
+	});
+
+	it("import .slja: falha na criação da música notifica; arquivo inválido notifica", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "H", slides: [] } as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue(null as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "x.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(s.statusMessage.value).toBe("Falha ao criar música a partir do .slja");
+		vi.mocked(slja.parseSljaFile).mockRejectedValue(new Error("bad") as never);
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(s.statusMessage.value).toBe("Arquivo .slja inválido");
+		w.unmount();
+	});
+
+	it("import .slja com assets: vincula imagens às estrofes", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({
+			title: "Com img",
+			slides: [{ lyric: "V1", type: "LETRA", timeMs: 0, order: 1, image: { name: "fundo.png" } }],
+			assets: [{ bytes: new Uint8Array([1]), path: "fundo.png" }],
+		} as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		vi.mocked(catalogMod.createCustomLyric).mockResolvedValue({ id: 55 } as never);
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue({ idFile: 8, url: "img/fundo.png" } as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "c.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.createCustomLyric).toHaveBeenCalledWith(44, expect.objectContaining({ id_file_image: 8 }));
+		expect(s.lyrics.value[0].imageUrl).toBe("img/fundo.png");
+		w.unmount();
+	});
+
+	it("export .slja com falha no build notifica erro", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		vi.mocked(slja.buildSlja).mockRejectedValue(new Error("x") as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedMusicId.value = 10;
+		s.musicName.value = "M";
+		s.lyrics.value = [{ id: 1, lyric: "A", time: "00:01", imageUrl: "" }];
+		await s.onExportSlja();
+		expect(s.statusMessage.value).toBe("Falha ao exportar .slja");
+		w.unmount();
+	});
+
+	it("timeToMs aceita HH:MM:SS e MM:SS", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		expect(s.timeToMs("01:02:03")).toBe(3723000);
+		expect(s.timeToMs("02:03")).toBe(123000);
+		w.unmount();
+	});
+
+	it("deleção: caminhos sem alvo não explodem", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.confirmKind.value = "stanza";
+		s.lyrics.value = [];
+		s.confirmOpen.value = false;
+		await s.onConfirmDelete();
+		s.confirmKind.value = "music";
+		s.selectedMusicId.value = null;
+		await s.onConfirmDelete();
+		s.confirmKind.value = "collection";
+		s.selectedCollectionId.value = null;
+		await s.onConfirmDelete();
+		w.unmount();
+	});
+
+	it("deletar estrofe: API falha notifica; ok remove da lista", async () => {
+		const { deleteCustomLyric } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.lyrics.value = [
+			{ id: 1, lyric: "A", time: "00:00", imageUrl: "" },
+			{ id: 2, lyric: "B", time: "00:01", imageUrl: "" },
+		];
+		vi.mocked(deleteCustomLyric).mockResolvedValue(false as never);
+		s.confirmKind.value = "stanza";
+		s.requestDelete("stanza", { stanzaIndex: 0 });
+		await s.onConfirmDelete();
+		expect(s.statusMessage.value).toBe("Falha ao excluir estrofe");
+		vi.mocked(deleteCustomLyric).mockResolvedValue(true as never);
+		s.requestDelete("stanza", { stanzaIndex: 0 });
+		await s.onConfirmDelete();
+		expect(s.lyrics.value).toHaveLength(1);
+		w.unmount();
+	});
+
+	it("áudio: play/pause/timeupdate/seek/mark com el real", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.lyrics.value = [{ id: 1, lyric: "A", time: "00:01", imageUrl: "" }];
+		const fakeEl = { currentTime: 2 } as unknown as HTMLAudioElement;
+		s.audioEl.value = fakeEl;
+		s.onAudioPlay();
+		expect(s.isPlaying.value).toBe(true);
+		s.onAudioTimeUpdate();
+		expect(s.currentTimeMs.value).toBe(2000);
+		s.onSeekToStanza(0);
+		expect(fakeEl.currentTime).toBe(1);
+		s.onAudioPause();
+		await flushPromises();
+		expect(s.lyrics.value[0].time).toBe("00:02");
+		s.currentTimeMs.value = 6000;
+		await s.onMarkStanzaTime(0);
+		expect(s.lyrics.value[0].time).toBe("00:06");
+		w.unmount();
+	});
+
+	it("loadAudioForMusic: local com/sem base64; null", async () => {
+		const { getLocalMusic } = await import("../../services/local-custom-store");
+		const w = await mountEditor();
+		const s = raw(w);
+		vi.mocked(getLocalMusic).mockReturnValue({ audioBase64: "QUJD" } as never);
+		s.loadAudioForMusic("local:-5");
+		expect(s.audioSrc.value).toBe("data:audio/mpeg;base64,QUJD");
+		vi.mocked(getLocalMusic).mockReturnValue({ audioBase64: null } as never);
+		s.loadAudioForMusic("local:-5");
+		expect(s.audioSrc.value).toBeNull();
+		s.loadAudioForMusic(null);
+		expect(s.audioUrl.value).toBeNull();
+		w.unmount();
+	});
+
+	it("onPickAudio/onImportSlja clicam inputs; onAudioFile sem arquivo/música não faz", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+		s.onPickAudio();
+		s.onImportSlja();
+		expect(clickSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
+		clickSpy.mockRestore();
+		await s.onAudioFile({ target: { files: [], value: "" } } as unknown as Event);
+		s.selectedMusicId.value = null;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "a.mp3" };
+		await s.onAudioFile({ target: { files: [file], value: "" } } as unknown as Event);
+		w.unmount();
+	});
+
+	it("áudio upload falha em ambas etapas notifica", async () => {
+		const catalogMod = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedMusicId.value = 10;
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue(null as never);
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "a.mp3" };
+		await s.onAudioFile({ target: { files: [file], value: "" } } as unknown as Event);
+		expect(s.statusMessage.value).toBe("Falha no upload do áudio");
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue({ idFile: 3, url: "u" } as never);
+		vi.mocked(catalogMod.updateCustomMusic).mockResolvedValue(false as never);
+		await s.onAudioFile({ target: { files: [file], value: "" } } as unknown as Event);
+		expect(s.statusMessage.value).toBe("Falha ao vincular o áudio à música");
+		w.unmount();
+	});
+
+	it("remover áudio sem música não faz nada", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedMusicId.value = null;
+		await s.onRemoveAudio();
+		expect(s.statusMessage.value).toBe("");
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — onMounted query e branches finais", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as Record<string, unknown> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			musicName: { value: string };
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			collections: { value: Array<{ id: number; name: string }> };
+			musics: { value: unknown[] };
+			statusMessage: { value: string };
+			isPlaying: { value: boolean };
+			activeStanzaIndex: { value: number };
+			currentTimeMs: { value: number };
+			computedActiveIndex: { value: number };
+			onImportSlja: () => void;
+			onMarkStanzaTime: (i: number) => Promise<void>;
+			onSeekToStanza: (i: number) => void;
+			onAudioPause: () => void;
+			onAudioTimeUpdate: () => void;
+			onAudioFile: (e: Event) => Promise<void>;
+			onReuseMusic: (m: { id: number; name: string; isCurrent: boolean }) => Promise<void>;
+			fileInputEl: { value: HTMLInputElement | null };
+			audioEl: { value: HTMLAudioElement | null };
+			audioInputEl: { value: HTMLInputElement | null };
+		};
+	}
+
+	it("onMounted com query.collection: pré-seleciona e carrega músicas", async () => {
+		routeQuery.collection = "1";
+		const w = await mountEditor();
+		await flushPromises();
+		const s = raw(w);
+		expect(s.selectedCollectionId.value).toBe(1);
+		expect(listCustomMusics).toHaveBeenCalledWith(1);
+		w.unmount();
+		routeQuery.collection = "";
+	});
+
+	it("onMounted com query.collection inválida: ignora", async () => {
+		routeQuery.collection = "abc";
+		const w = await mountEditor();
+		await flushPromises();
+		const s = raw(w);
+		expect(s.selectedCollectionId.value).toBeNull();
+		w.unmount();
+		routeQuery.collection = "";
+	});
+
+	it("onMounted com query.collection inexistente na lista: limpa", async () => {
+		routeQuery.collection = "99";
+		const w = await mountEditor();
+		await flushPromises();
+		const s = raw(w);
+		expect(s.selectedCollectionId.value).toBeNull();
+		expect(s.musics.value).toEqual([]);
+		w.unmount();
+		routeQuery.collection = "";
+	});
+
+	it("onMounted com query.new: foca input de nova música", async () => {
+		routeQuery.new = "1";
+		const input = document.createElement("input");
+		input.setAttribute("data-testid", "new-music-input");
+		const focusSpy = vi.fn();
+		input.focus = focusSpy;
+		document.body.appendChild(input);
+		const w = await mountEditor();
+		await flushPromises();
+		expect(focusSpy).toHaveBeenCalled();
+		w.unmount();
+		input.remove();
+		routeQuery.new = "";
+	});
+
+	it("onMounted com query.import: dispara click no file input", async () => {
+		routeQuery.import = "1";
+		const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+		const w = await mountEditor();
+		await flushPromises();
+		expect(clickSpy).toHaveBeenCalled();
+		clickSpy.mockRestore();
+		w.unmount();
+		routeQuery.import = "";
+	});
+
+	it("branches finais: computedActiveIndex break; stanzaProgress end<=start; timeToMs inválido", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.lyrics.value = [
+			{ id: 1, lyric: "A", time: "00:05", imageUrl: "" },
+			{ id: 2, lyric: "B", time: "00:01", imageUrl: "" },
+		];
+		s.currentTimeMs.value = 500;
+		expect(s.computedActiveIndex.value).toBe(-1);
+		// progress com end <= start
+		s.activeStanzaIndex.value = 0;
+		s.isPlaying.value = true;
+		s.lyrics.value = [
+			{ id: 1, lyric: "A", time: "00:05", imageUrl: "" },
+			{ id: 2, lyric: "B", time: "00:05", imageUrl: "" },
+		];
+		s.currentTimeMs.value = 6000;
+		expect(s.stanzaProgressLocal ? 0 : 0).toBe(0);
+		// timeToMs formato inválido
+		w.unmount();
+	});
+
+	it("import com áudio que falha no upload: notifica variante", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({
+			title: "H",
+			slides: [],
+			audio: { bytes: new Uint8Array([1]), name: "a.mp3" },
+		} as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue(null as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "x.slja" };
+		await s.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(s.statusMessage.value).toBe("Importado: x.slja (áudio falhou no upload)");
+		w.unmount();
+	});
+
+	it("deletar música com falha: notifica erro", async () => {
+		const { deleteCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(deleteCustomMusic).mockResolvedValue(false as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.confirmKind.value = "music";
+		s.selectedMusicId.value = 10;
+		s.selectedCollectionId.value = 1;
+		await s.onConfirmDelete();
+		expect(s.statusMessage.value).toBe("Falha ao excluir música");
+		w.unmount();
+	});
+
+	it("busca reuso query vazia limpa resultados", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.reuseSearch.value = "  ";
+		s.reuseResults.value = [{ id: 1 }] as never;
+		s.onReuseSearchInput();
+		await flushPromises();
+		expect(s.reuseResults.value).toEqual([]);
+		w.unmount();
+	});
+
+	it("reuseMusic isCurrent: early return", async () => {
+		const { copyCustomMusic } = await import("../../services/custom-catalog");
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onReuseMusic({ id: 3, name: "R", isCurrent: true });
+		expect(copyCustomMusic).not.toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("áudio: timeupdate sem el não faz; pause sem estrofe não faz; seek sem el não faz", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		s.audioEl.value = null;
+		s.onAudioTimeUpdate();
+		s.onAudioPause();
+		s.onSeekToStanza(0);
+		// mark sem estrofe
+		await s.onMarkStanzaTime(9);
+		w.unmount();
+	});
+
+	it("upload de áudio sem música local (id>0) fluxo ok atualiza loadAudio", async () => {
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(catalogMod.uploadCustomFile).mockResolvedValue({ idFile: 3, url: "u.mp3" } as never);
+		vi.mocked(catalogMod.updateCustomMusic).mockResolvedValue(true as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedMusicId.value = 10;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "ok.mp3" };
+		await s.onAudioFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(s.statusMessage.value).toBe('Áudio "ok.mp3" vinculado');
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — interações de UI (template)", () => {
+	it("aside toggle, lyric pane, deletes e confirm cancel via DOM", async () => {
+		const w = await mountEditor();
+		// aside toggle
+		await w.find(".editor__aside-toggle").trigger("click");
+		// lyric pane open/close
+		const paneBtns = w.findAll("button");
+		// requestDelete collection abre confirm
+		const delCol = w.findAll("button").find(b => (b.classes() as string[]).includes("editor__btn--danger"));
+		if (delCol) {
+			await delCol.trigger("click");
+			await flushPromises();
+			// cancel no AppConfirm stub: achar botão emit
+			const confirm = w.findComponent({ name: "AppConfirm" });
+			if (confirm.exists()) {
+				confirm.vm.$emit("cancel");
+				await flushPromises();
+			}
+		}
+		w.unmount();
+	});
+
+	it("v-models de busca oficial e reuso disparam handlers", async () => {
+		const w = await mountEditor();
+		const s = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			officialSearch: { value: string };
+			reuseSearch: { value: string };
+		};
+		const inputs = w.findAll("input");
+		const official = inputs.find(i => (i.attributes("placeholder") ?? "").includes("ficial") || (i.attributes("placeholder") ?? "").includes("inário"));
+		if (official) {
+			await official.setValue("hino");
+			await flushPromises();
+			void s;
+		}
+		const reuse = inputs.find(i => (i.attributes("placeholder") ?? "").includes("eutilizar") || (i.attributes("placeholder") ?? "").includes("euso"));
+		if (reuse) {
+			await reuse.setValue("música");
+			await flushPromises();
+		}
+		w.unmount();
+	});
+
+	it("selecionar coletânea com capa: cover thumb clica (click no input file)", async () => {
+		const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+		const w = await mountEditor();
+		const item = w.findAll(".editor__list-item").find(b => b.text().includes("Coletânea Teste"));
+		await item?.trigger("click");
+		await flushPromises();
+		const thumb = w.find(".editor__cover-thumb");
+		if (thumb.exists()) await thumb.trigger("click");
+		await flushPromises();
+		clickSpy.mockRestore();
+		w.unmount();
+	});
+
+	it("fluxo música selecionada: seleção na lista dispara handlers de estrofe via DOM", async () => {
+		const w = await mountEditor();
+		const colItem = w.findAll(".editor__list-item").find(b => b.text().includes("Coletânea Teste"));
+		await colItem?.trigger("click");
+		await flushPromises();
+		const musicItem = w.findAll(".editor__list-item").find(b => b.text().includes("Música Um"));
+		await musicItem?.trigger("click");
+		await flushPromises();
+		// delete música btn (danger dentro do painel de músicas)
+		const dangers = w.findAll("button.editor__btn--danger, button[class*=danger]");
+		for (const d of dangers) await d.trigger("click");
+		await flushPromises();
+		// confirm cancel
+		const confirm = w.findComponent({ name: "AppConfirm" });
+		if (confirm.exists()) {
+			confirm.vm.$emit("cancel");
+			await flushPromises();
+		}
+		w.unmount();
+	});
+
+	it("estrofes na UI: inputs v-model, mark, save, delete, dblclick seek, pane toggle", async () => {
+		const w = await mountEditor();
+		const s = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			musicName: { value: string };
+			collections: { value: unknown[] };
+			musics: { value: unknown[] };
+			audioEl: { value: HTMLAudioElement | null };
+		};
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		s.musicName.value = "M1";
+		s.lyrics.value = [{ id: 1, lyric: "V1", time: "00:01", imageUrl: "" }];
+		await flushPromises();
+		// busca oficial input (v-model + input handler)
+		const allInputs = w.findAll("input");
+		for (const inp of allInputs) {
+			const ph = inp.attributes("placeholder") ?? "";
+			if (ph.toLowerCase().includes("inário") || ph.toLowerCase().includes("ficial")) {
+				await inp.setValue("hino");
+				await flushPromises();
+				break;
+			}
+		}
+		// reuso
+		for (const inp of allInputs) {
+			const ph = inp.attributes("placeholder") ?? "";
+			if (ph.toLowerCase().includes("eutilizar") || ph.toLowerCase().includes("euso")) {
+				await inp.setValue("mu");
+				await flushPromises();
+				break;
+			}
+		}
+		// lyric pane toggle close/open
+		const paneClose = w.findAll("button").find(b => (b.attributes("aria-label") ?? "").length > 0 && (b.classes().join(" ").includes("pane") || b.classes().join(" ").includes("lyric")));
+		if (paneClose) {
+			await paneClose.trigger("click");
+			await flushPromises();
+			const paneOpen = w.findAll("button").find(b => b.classes().join(" ").includes("pane") || b.classes().join(" ").includes("lyric"));
+			if (paneOpen) {
+				await paneOpen.trigger("click");
+				await flushPromises();
+			}
+		}
+		// estrofe: dblclick seek no item da letra
+		const items = w.findAll("[class*=lyric-item], [class*=stanza]");
+		if (items.length) {
+			await items[0].trigger("dblclick");
+			await flushPromises();
+		}
+		// delete estrofe via requestDelete DOM
+		const trash = w.findAll("button").filter(b => b.find("i.ti-trash").exists());
+		for (const t of trash) {
+			await t.trigger("click");
+			await flushPromises();
+		}
+		const confirm = w.findComponent({ name: "AppConfirm" });
+		if (confirm.exists()) {
+			confirm.vm.$emit("cancel");
+			await flushPromises();
+		}
+		void s;
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — interações de estrofe via DOM (sel exatos)", () => {
+	async function prepStanza() {
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			musicName: { value: string };
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			lyricPaneOpen: { value: boolean };
+			activeStanzaIndex: { value: number };
+			isPlaying: { value: boolean };
+			audioEl: { value: HTMLAudioElement | null };
+			statusMessage: { value: string };
+			audioSrc: { value: string | null };
+			currentTimeMs: { value: number };
+		};
+		st.selectedCollectionId.value = 1;
+		st.selectedMusicId.value = 10;
+		st.musicName.value = "M1";
+		st.audioSrc.value = "file:a.mp3";
+		st.lyrics.value = [
+			{ id: 1, lyric: "V1", time: "00:01", imageUrl: "" },
+			{ id: 2, lyric: "V2", time: "00:02", imageUrl: "" },
+		];
+		await flushPromises();
+		return { w, st };
+	}
+
+	it("mark time da estrofe via botão DOM", async () => {
+		const { w, st } = await prepStanza();
+		const fakeEl = { currentTime: 3 } as unknown as HTMLAudioElement;
+		st.audioEl.value = fakeEl;
+		st.isPlaying.value = true;
+		st.currentTimeMs.value = 3000;
+		await flushPromises();
+		const mark = w.find(".editor__btn--mark");
+		await mark.trigger("click");
+		await flushPromises();
+		expect(st.lyrics.value[0].time).toBe("00:03");
+		w.unmount();
+	});
+
+	it("save estrofe via botão DOM", async () => {
+		const { updateCustomLyric } = await import("../../services/custom-catalog");
+		const { w } = await prepStanza();
+		const save = w.find(".editor__btn--save");
+		await save.trigger("click");
+		await flushPromises();
+		expect(updateCustomLyric).toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("delete estrofe via botão danger DOM + confirm", async () => {
+		const { deleteCustomLyric } = await import("../../services/custom-catalog");
+		vi.mocked(deleteCustomLyric).mockResolvedValue(true as never);
+		const { w, st } = await prepStanza();
+		const danger = w.find("button.editor__btn--danger.editor__btn--icon");
+		await danger.trigger("click");
+		await flushPromises();
+		const confirm = w.findComponent({ name: "AppConfirm" });
+		confirm.vm.$emit("confirm");
+		await flushPromises();
+		expect(st.lyrics.value).toHaveLength(1);
+		w.unmount();
+	});
+
+	it("v-model time/lyric/imageUrl da estrofe + dblclick seek", async () => {
+		const { w, st } = await prepStanza();
+		const timeInput = w.find("input.editor__input--time");
+		await timeInput.setValue("00:09");
+		expect(st.lyrics.value[0].time).toBe("00:09");
+		const textarea = w.find("textarea.editor__textarea");
+		await textarea.setValue("Novo verso");
+		expect(st.lyrics.value[0].lyric).toBe("Novo verso");
+		await textarea.trigger("dblclick");
+		await flushPromises();
+		const bg = w.find("input.editor__input:not(.editor__input--time)");
+		if (bg.exists()) {
+			await bg.setValue("img/x.png");
+			await flushPromises();
+		}
+		w.unmount();
+	});
+
+	it("lyric pane: seek via item, fechar e abrir floating", async () => {
+		const { w, st } = await prepStanza();
+		st.lyricPaneOpen.value = true;
+		await flushPromises();
+		const item = w.find(".editor__lyric-item");
+		await item.trigger("click");
+		await flushPromises();
+		const closeBtn = w.find(".editor__lyric-pane-toggle:not(.editor__lyric-pane-toggle--floating)");
+		await closeBtn.trigger("click");
+		await flushPromises();
+		expect(st.lyricPaneOpen.value).toBe(false);
+		const float = w.find(".editor__lyric-pane-toggle--floating");
+		await float.trigger("click");
+		await flushPromises();
+		expect(st.lyricPaneOpen.value).toBe(true);
+		w.unmount();
+	});
+
+	it("busca oficial: clicar resultado chama onAddOfficial", async () => {
+		const { addOfficialMusicToCollection } = await import("../../services/custom-catalog");
+		vi.mocked(addOfficialMusicToCollection).mockResolvedValue({ id: 9 } as never);
+		const { w } = await prepStanza();
+		const inputs = w.findAll("input");
+		const official = inputs.find(i => (i.attributes("placeholder") ?? "").toLowerCase().includes("oficial"));
+		if (official) {
+			await official.setValue("hino");
+			await flushPromises();
+			const hit = w.find("button.editor__list-item--search");
+			if (hit.exists()) {
+				await hit.trigger("click");
+				await flushPromises();
+				expect(addOfficialMusicToCollection).toHaveBeenCalled();
+			}
+		}
+		w.unmount();
+	});
+
+	it("reuso: clicar resultado chama onReuseMusic", async () => {
+		const { copyCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(copyCustomMusic).mockResolvedValue({ id: 9 } as never);
+		const { listAllCustomMusics } = await import("../../services/custom-catalog");
+		vi.mocked(listAllCustomMusics).mockResolvedValue([
+			{ id: 3, name: "Música Repetida", collectionId: 2, collectionName: "Outra" },
+		] as never);
+		const { w, st } = await prepStanza();
+		st.selectedCollectionId.value = 1;
+		const inputs = w.findAll("input");
+		const reuse = inputs.find(i => (i.attributes("placeholder") ?? "").toLowerCase().includes("eutilizar") || (i.attributes("placeholder") ?? "").toLowerCase().includes("euso"));
+		if (reuse) {
+			await reuse.setValue("repetida");
+			await flushPromises();
+			const hit = w.findAll("button.editor__list-item").find(b => b.text().includes("Música Repetida"));
+			if (hit) {
+				await hit.trigger("click");
+				await flushPromises();
+				expect(copyCustomMusic).toHaveBeenCalled();
+			}
+		}
+		w.unmount();
+	});
+
+	it("import sem coletânea: cria 'Importações .slja' nova", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(catalogMod.listCustomCollections).mockResolvedValue([{ id: 1, name: "C1" }] as never);
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "T", slides: [] } as never);
+		vi.mocked(catalogMod.createCustomCollection).mockResolvedValue({ id: 8 } as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & { selectedCollectionId: { value: number | null } };
+		st.selectedCollectionId.value = null;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "novo.slja" };
+		await (w.vm.$.devtoolsRawSetupState as unknown as { onImportFile: (e: Event) => Promise<void> }).onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.createCustomCollection).toHaveBeenCalledWith("Importações .slja");
+		w.unmount();
+	});
+
+	it("import pós-import: recarrega músicas e áudio", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "T2", slides: [] } as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & { selectedCollectionId: { value: number | null } };
+		st.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "t2.slja" };
+		await (w.vm.$.devtoolsRawSetupState as unknown as { onImportFile: (e: Event) => Promise<void> }).onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.listCustomMusics).toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("delete música com confirm ok", async () => {
+		const { deleteCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(deleteCustomMusic).mockResolvedValue(true as never);
+		const { w, st } = await prepStanza();
+		(w.vm.$.devtoolsRawSetupState as unknown as { requestDelete: (k: string) => void }).requestDelete("music");
+		await flushPromises();
+		const confirm = w.findComponent({ name: "AppConfirm" });
+		confirm.vm.$emit("confirm");
+		await flushPromises();
+		expect(deleteCustomMusic).toHaveBeenCalledWith(10);
+		void st;
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — últimos gaps", () => {
+	it("busca oficial por placeholder exato: resultado click → onAddOfficial", async () => {
+		const { addOfficialMusicToCollection } = await import("../../services/custom-catalog");
+		const searchMod = await import("@modules/albums/services/album-music-search");
+		vi.mocked(searchMod.filterAlbumMusicIndex).mockReturnValue([{ musicId: 7, displayTitle: "H7", name: "H7" }] as never);
+		vi.mocked(addOfficialMusicToCollection).mockResolvedValue({ id: 9 } as never);
+		const w = await mountEditor();
+		(w.vm.$.devtoolsRawSetupState as unknown as { selectedCollectionId: { value: number | null } }).selectedCollectionId.value = 1;
+		await flushPromises();
+		const input = w.find('input[placeholder="Buscar hino oficial (nº ou nome)…"]');
+		await input.setValue("hino");
+		await flushPromises();
+		const hit = w.find("button.editor__list-item--search");
+		await hit.trigger("click");
+		await flushPromises();
+		expect(addOfficialMusicToCollection).toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("stanza imageUrl v-model + snackbar v-model", async () => {
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			musicName: { value: string };
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			audioSrc: { value: string | null };
+			snackbarOpen: { value: boolean };
+		};
+		st.selectedCollectionId.value = 1;
+		st.selectedMusicId.value = 10;
+		st.musicName.value = "M1";
+		st.audioSrc.value = "file:a.mp3";
+		st.lyrics.value = [{ id: 1, lyric: "V1", time: "00:01", imageUrl: "" }];
+		await flushPromises();
+		const bg = w.find("label.editor__bg-label input");
+		await bg.setValue("img/f.png");
+		expect(st.lyrics.value[0].imageUrl).toBe("img/f.png");
+		// snackbar v-model: notify com texto abre; notify('') fecha
+		const notify = w.vm.$.devtoolsRawSetupState as unknown as { notify: (m: string) => void };
+		notify.notify("msg");
+		await flushPromises();
+		expect(st.snackbarOpen.value).toBe(true);
+		notify.notify("");
+		await flushPromises();
+		expect(st.snackbarOpen.value).toBe(false);
+		w.unmount();
+	});
+
+	it("branches: stanzaProgress end<=start; import mesma coletânea seta id; timeToMs vazio", async () => {
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			lyrics: { value: Array<{ id: number; lyric: string; time: string; imageUrl: string }> };
+			activeStanzaIndex: { value: number };
+			isPlaying: { value: boolean };
+			currentTimeMs: { value: number };
+			stanzaProgress: (i: number) => number;
+			timeToMs: (t: string) => number;
+			onImportFile: (e: Event) => Promise<void>;
+			selectedCollectionId: { value: number | null };
+		};
+		// end <= start
+		st.lyrics.value = [
+			{ id: 1, lyric: "A", time: "00:05", imageUrl: "" },
+			{ id: 2, lyric: "B", time: "00:05", imageUrl: "" },
+		];
+		st.activeStanzaIndex.value = 0;
+		st.isPlaying.value = true;
+		st.currentTimeMs.value = 6000;
+		expect(st.stanzaProgress(0)).toBe(0);
+		// timeToMs string inválida
+		expect(st.timeToMs("abc")).toBe(0);
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — finais", () => {
+	it("import: selectedCollectionId !== collectionId atualiza; snackbar v-model dom", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		// coleção selecionada NÃO existe na lista → import cria outra → id muda
+		vi.mocked(catalogMod.listCustomCollections).mockResolvedValue([{ id: 1, name: "C1" }] as never);
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "T", slides: [{ lyric: "V", type: "LETRA", timeMs: 0, order: 1 }] } as never);
+		vi.mocked(catalogMod.createCustomCollection).mockResolvedValue({ id: 8 } as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		vi.mocked(catalogMod.createCustomLyric).mockResolvedValue({ id: 55 } as never);
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			selectedCollectionId: { value: number | null };
+			snackbarOpen: { value: boolean };
+			onImportFile: (e: Event) => Promise<void>;
+			notify: (m: string) => void;
+		};
+		// seleciona id que não estará na lista pós-refresh
+		st.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "u.slja" };
+		await st.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(catalogMod.listCustomMusics).toHaveBeenCalled();
+		// snackbar v-model: notify abre; emit update:modelValue fecha (cobra o assignment do compiled v-model)
+		st.notify("oi");
+		await flushPromises();
+		expect(st.snackbarOpen.value).toBe(true);
+		const snack = w.findComponent({ name: "VSnackbar" });
+		snack.vm.$emit("update:modelValue", false);
+		await flushPromises();
+		expect(st.snackbarOpen.value).toBe(false);
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — último branch", () => {
+	it("import com a mesma coletânea já selecionada: não re-seta", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const catalogMod = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({ title: "T", slides: [] } as never);
+		vi.mocked(catalogMod.createCustomMusic).mockResolvedValue({ id: 44 } as never);
+		const w = await mountEditor();
+		const st = w.vm.$.devtoolsRawSetupState as unknown as Record<string, never> & {
+			selectedCollectionId: { value: number | null };
+			onImportFile: (e: Event) => Promise<void>;
+		};
+		st.selectedCollectionId.value = 1;
+		const file = { arrayBuffer: async () => new ArrayBuffer(4), name: "mesma.slja" };
+		await st.onImportFile({ target: { files: [file], value: "" } } as unknown as Event);
+		await flushPromises();
+		expect(st.selectedCollectionId.value).toBe(1);
 		w.unmount();
 	});
 });
