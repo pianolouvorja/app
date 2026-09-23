@@ -335,6 +335,45 @@ describe("MediaEditorView — export .slja", () => {
 	});
 });
 
+describe("MediaEditorView — import .slja", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			onImportFile: (ev: Event) => Promise<void>;
+		};
+	}
+
+	function fakeFileEvent(name: string, buffer: ArrayBuffer): Event {
+		const file = new File([buffer], name);
+		Object.defineProperty(file, "arrayBuffer", {
+			value: async () => buffer,
+		});
+		const input = document.createElement("input");
+		Object.defineProperty(input, "files", { value: [file] });
+		const ev = new Event("change");
+		Object.defineProperty(ev, "target", { value: input });
+		return ev;
+	}
+
+	it("importa .slja com título válido: cria música e seleciona", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const { createCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(slja.parseSljaFile).mockResolvedValue({
+			title: "Hino Importado",
+			audio: null,
+			images: [],
+		} as never);
+		vi.mocked(createCustomMusic).mockResolvedValue({ id: 77 });
+		const w = await mountEditor();
+		await raw(w).onImportFile(fakeFileEvent("hino.slja", new ArrayBuffer(8)));
+		expect(slja.parseSljaFile).toHaveBeenCalled();
+		expect(createCustomMusic).toHaveBeenCalled();
+		expect(raw(w).selectedMusicId.value).toBe(77);
+		w.unmount();
+	});
+});
+
 describe("MediaEditorView — deleção", () => {
 	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
 		return w.vm.$.devtoolsRawSetupState as unknown as Record<
