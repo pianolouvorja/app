@@ -28,6 +28,7 @@ vi.mock("../../settings/components/StagePaletteButton.vue", () => ({
 
 vi.mock("../services/media-aside-scroll", () => ({
 	revealItemInAside: vi.fn(),
+	revealItemScrollTop: vi.fn(() => 0),
 }));
 
 const sessionRef = ref<null | {
@@ -76,8 +77,8 @@ const storeState = {
 	isPaused: ref(false),
 	currentTimeSec: ref(0),
 	durationSec: ref(0),
-	playlist: ref([]),
-	queue: ref([]),
+	playlist: ref<{ index: number; label: string; isCover: boolean }[]>([]),
+	queue: ref<{ musicId: number; title?: string; name?: string }[]>([]),
 	maximize: vi.fn(),
 	minimize: vi.fn(),
 	close: vi.fn(),
@@ -94,6 +95,7 @@ const storeState = {
 	audioOnTvToggle: vi.fn(),
 	onToggleAudioOnTv: vi.fn().mockResolvedValue(undefined),
 	togglePlaylist: vi.fn(),
+	jumpToQueue: vi.fn(),
 	syncProjectionFlag: vi.fn(),
 	setPlaylistOpen: vi.fn(),
 	switchMode: vi.fn().mockResolvedValue(undefined),
@@ -216,6 +218,82 @@ describe("MediaView — toolbar e fechamento", () => {
 			.find((b) => b.text().includes(mediaLocale.media.closeConfirmYes));
 		await yes?.trigger("click");
 		expect(storeState.close).toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("ESC com foco em input de texto: ignora; com input button: processa", async () => {
+		const w = await mountView();
+		storeState.requestClose.mockClear();
+		// textarea → ignora (target é o próprio elemento)
+		const ta = document.createElement("textarea");
+		document.body.appendChild(ta);
+		const ev1 = new KeyboardEvent("keydown", { key: "Escape" });
+		Object.defineProperty(ev1, "target", { value: ta });
+		window.dispatchEvent(ev1);
+		await w.vm.$nextTick();
+		expect(storeState.requestClose).not.toHaveBeenCalled();
+		// input text → ignora
+		const inp = document.createElement("input");
+		inp.type = "text";
+		document.body.appendChild(inp);
+		const ev2 = new KeyboardEvent("keydown", { key: "Escape" });
+		Object.defineProperty(ev2, "target", { value: inp });
+		window.dispatchEvent(ev2);
+		await w.vm.$nextTick();
+		expect(storeState.requestClose).not.toHaveBeenCalled();
+		// button → processa
+		const btn = document.createElement("button");
+		document.body.appendChild(btn);
+		const ev3 = new KeyboardEvent("keydown", { key: "Escape" });
+		Object.defineProperty(ev3, "target", { value: btn });
+		window.dispatchEvent(ev3);
+		await w.vm.$nextTick();
+		expect(storeState.requestClose).toHaveBeenCalled();
+		ta.remove();
+		inp.remove();
+		btn.remove();
+		w.unmount();
+		storeState.requestClose.mockClear();
+	});
+
+	it("alerta de erro: mostra lastErrorKey e dismiss chama clearError", async () => {
+		storeState.lastErrorKey.value = "media.errors.network";
+		const w = await mountView();
+		expect(w.text()).toContain("media.errors.network");
+		const dismiss = w
+			.findAll("button")
+			.find((b) => b.text().includes(mediaLocale.media.dismiss));
+		await dismiss?.trigger("click");
+		expect(storeState.clearError).toHaveBeenCalled();
+		storeState.lastErrorKey.value = null;
+		w.unmount();
+	});
+
+	it("fila com mais de 1 item: renderiza e jumpToQueue no clique", async () => {
+		storeState.queue.value = [
+			{ musicId: 1, title: "Hino A" },
+			{ musicId: 2, title: "Hino B" },
+		];
+		storeState.queueIndex.value = 1;
+		const w = await mountView();
+		expect(w.text()).toContain("Fila de reprodução");
+		const item = w
+			.findAll(".media-window__playlist-item")
+			.find((b) => (b.text() ?? "").includes("Hino A"));
+		await item?.trigger("click");
+		expect(storeState.jumpToQueue).toHaveBeenCalledWith(0);
+		storeState.queue.value = [];
+		w.unmount();
+	});
+
+	it("playlist: clique num slide chama goToSlide", async () => {
+		storeState.hasAudio.value = true;
+		const w = await mountView();
+		const slideItem = w
+			.findAll("button")
+			.find((b) => (b.text() ?? "").includes("Segundo slide da música"));
+		await slideItem?.trigger("click");
+		expect(storeState.goToSlide).toHaveBeenCalledWith(1);
 		w.unmount();
 	});
 });
