@@ -43,6 +43,7 @@ vi.mock("../../services/custom-catalog", () => ({
 	deleteCustomMusic: vi.fn(),
 	deleteCustomLyric: vi.fn(),
 	uploadCustomFile: vi.fn(),
+	customApiUrl: vi.fn((p: string) => `https://api.test/v1/custom${p}`),
 	customFileUrl: vi.fn((p: string) => `/files/${p}`),
 	addOfficialMusicToCollection: vi.fn(),
 	copyCustomMusic: vi.fn(),
@@ -201,6 +202,93 @@ describe("MediaEditorView — estrofes", () => {
 			lyric: "Nova estrofe",
 			time: "00:00",
 		});
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — seleção de música", () => {
+	function setupOf(w: Awaited<ReturnType<typeof mountEditor>>) {
+		// refs crus do interno do componente (setupState unwrappa)
+		const internal = (w.vm.$.devtoolsRawSetupState ??
+			w.vm.$) as unknown as Record<string, { value: unknown }>;
+		return {
+			collectionId: internal.selectedCollectionId as unknown as {
+				value: number | null;
+			},
+			musicId: internal.selectedMusicId as unknown as { value: number | null },
+		};
+	}
+
+	it("música local (id negativo): carrega do local-custom-store", async () => {
+		const { getLocalMusic, isLocalId } = await import(
+			"../../services/local-custom-store"
+		);
+		vi.mocked(isLocalId).mockReturnValue(true);
+		vi.mocked(getLocalMusic).mockReturnValue({
+			id: -5,
+			name: "Localzinha",
+			lyrics: [{ id: 1, lyric: "Verso local", time: "00:01", image_url: null }],
+			audioBase64: null,
+			officialMusicId: null,
+		} as never);
+		const w = await mountEditor();
+		setupOf(w).collectionId.value = 2;
+		await (
+			w.vm.$.devtoolsRawSetupState as unknown as {
+				onSelectMusic: (id: number) => Promise<void>;
+			}
+		).onSelectMusic(-5);
+		expect(getLocalMusic).toHaveBeenCalledWith(-5);
+		expect(w.text()).toContain("Localzinha");
+		w.unmount();
+	});
+
+	it("música da API (fetch ok): carrega nome e letras", async () => {
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			json: () =>
+				Promise.resolve({
+					name: "Hino da API",
+					audio_url: null,
+					lyrics: [{ id_lyric: 7, lyric: "Verso API", time: "00:02" }],
+				}),
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const w = await mountEditor();
+		setupOf(w).collectionId.value = 1;
+		await (
+			w.vm.$.devtoolsRawSetupState as unknown as {
+				onSelectMusic: (id: number) => Promise<void>;
+			}
+		).onSelectMusic(10);
+		expect(w.text()).toContain("Hino da API");
+		vi.unstubAllGlobals();
+		w.unmount();
+	});
+
+	it("música 404 na API: limpa seleção e recarrega coletâneas", async () => {
+		const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+		vi.stubGlobal("fetch", fetchMock);
+		const w = await mountEditor();
+		setupOf(w).collectionId.value = 1;
+		await (
+			w.vm.$.devtoolsRawSetupState as unknown as {
+				onSelectMusic: (id: number) => Promise<void>;
+			}
+		).onSelectMusic(10);
+		expect(setupOf(w).musicId.value).toBeNull();
+		vi.unstubAllGlobals();
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — navegação", () => {
+	it("botão voltar navega pra albums", async () => {
+		const w = await mountEditor();
+		(
+			w.vm.$.devtoolsRawSetupState as unknown as { onBack: () => void }
+		).onBack();
+		expect(pushMock).toHaveBeenCalledWith({ name: "albums" });
 		w.unmount();
 	});
 });
