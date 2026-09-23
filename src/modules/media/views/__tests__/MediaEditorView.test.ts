@@ -442,6 +442,87 @@ describe("MediaEditorView — busca oficial e reuso", () => {
 	});
 });
 
+describe("MediaEditorView — player de áudio e estrofes", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			lyrics: {
+				value: { id: number; lyric: string; time: string; imageUrl: string }[];
+			};
+			currentTimeMs: { value: number };
+			onMarkStanzaTime: (index: number) => Promise<void>;
+			onSeekToStanza: (index: number) => void;
+			onAudioPlay: () => void;
+			onAudioPause: () => void;
+			onAudioTimeUpdate: () => void;
+			stanzaProgress: (index: number) => number;
+			formatMsAsTime: (ms: number) => string;
+		};
+	}
+
+	function withStanza(w: Awaited<ReturnType<typeof mountEditor>>) {
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		s.lyrics.value = [
+			{ id: 1, lyric: "Estrofe A", time: "00:10", imageUrl: "" },
+			{ id: 2, lyric: "Estrofe B", time: "00:30", imageUrl: "" },
+		];
+		return s;
+	}
+
+	it("onMarkStanzaTime grava o instante atual na estrofe e salva", async () => {
+		const { updateCustomLyric } = await import("../../services/custom-catalog");
+		vi.mocked(updateCustomLyric).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = withStanza(w);
+		s.currentTimeMs.value = 65000; // 01:05 → timeLabelOf = "01:05"
+		await s.onMarkStanzaTime(1);
+		expect(updateCustomLyric).toHaveBeenCalledWith(2, {
+			lyric: "Estrofe B",
+			time: "01:05",
+		});
+		w.unmount();
+	});
+
+	it("formatMsAsTime sempre em 3 partes HH:MM:SS", async () => {
+		const w = await mountEditor();
+		const s = raw(w);
+		expect(s.formatMsAsTime(17000)).toBe("00:00:17");
+		expect(s.formatMsAsTime(3723000)).toBe("01:02:03");
+		w.unmount();
+	});
+
+	it("stanzaProgress sem playback ativo: retorna 0", async () => {
+		const w = await mountEditor();
+		const s = withStanza(w);
+		s.currentTimeMs.value = 20000;
+		// isPlaying false → progresso 0 (só anima durante o play)
+		expect(s.stanzaProgress(0)).toBe(0);
+		w.unmount();
+	});
+
+	it("onAudioPause com estrofe ativa: auto-fill do timing e salva", async () => {
+		const { updateCustomLyric } = await import("../../services/custom-catalog");
+		vi.mocked(updateCustomLyric).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = withStanza(w);
+		s.currentTimeMs.value = 35000; // cai na estrofe B (00:30)
+		s.onAudioPlay();
+		s.onAudioPause();
+		expect(s.lyrics.value[1].time).toBe("00:35");
+		w.unmount();
+	});
+
+	it("onSeekToStanza sem elemento de áudio: não explode", async () => {
+		const w = await mountEditor();
+		const s = withStanza(w);
+		expect(() => s.onSeekToStanza(0)).not.toThrow();
+		w.unmount();
+	});
+});
+
 describe("MediaEditorView — deleção", () => {
 	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
 		return w.vm.$.devtoolsRawSetupState as unknown as Record<
