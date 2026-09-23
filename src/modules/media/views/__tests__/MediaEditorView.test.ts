@@ -523,6 +523,99 @@ describe("MediaEditorView — player de áudio e estrofes", () => {
 	});
 });
 
+describe("MediaEditorView — capa e reuso", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as {
+			selectedCollectionId: { value: number | null };
+			onReuseMusic: (music: unknown) => Promise<void>;
+			onCoverFile: (ev: Event) => Promise<void>;
+			onRemoveCover: () => Promise<void>;
+		};
+	}
+
+	function fakeFileEvent(name: string): Event {
+		const file = new File([new ArrayBuffer(4)], name);
+		Object.defineProperty(file, "arrayBuffer", {
+			value: async () => new ArrayBuffer(4),
+		});
+		const input = document.createElement("input");
+		Object.defineProperty(input, "files", { value: [file] });
+		const ev = new Event("change");
+		Object.defineProperty(ev, "target", { value: input });
+		return ev;
+	}
+
+	it("reusar música de outra coletânea: copia e seleciona", async () => {
+		const { copyCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(copyCustomMusic).mockResolvedValue({ id: 99 });
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onReuseMusic({
+			id: 31,
+			name: "Santa Ceia",
+			collectionName: "Outra",
+			isCurrent: false,
+		});
+		expect(copyCustomMusic).toHaveBeenCalledWith(1, 31);
+		w.unmount();
+	});
+
+	it("reusar música da coletânea atual (isCurrent): ignora", async () => {
+		const { copyCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(copyCustomMusic).mockClear();
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onReuseMusic({
+			id: 30,
+			name: "x",
+			collectionName: "y",
+			isCurrent: true,
+		});
+		expect(copyCustomMusic).not.toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("upload de capa: uploadCustomFile + updateCustomCollection", async () => {
+		const { uploadCustomFile, updateCustomCollection } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(uploadCustomFile).mockResolvedValue({
+			idFile: 5,
+			url: "/capa.png",
+		});
+		vi.mocked(updateCustomCollection).mockResolvedValue({
+			id: 1,
+			name: "Coletânea Teste",
+			description: "",
+			musicsCount: 2,
+			coverUrl: "/capa.png",
+		} as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onCoverFile(fakeFileEvent("capa.png"));
+		expect(uploadCustomFile).toHaveBeenCalled();
+		expect(updateCustomCollection).toHaveBeenCalledWith(1, {
+			cover_url: "/capa.png",
+		});
+		w.unmount();
+	});
+
+	it("upload de capa com falha no upload: notifica erro", async () => {
+		const { uploadCustomFile } = await import("../../services/custom-catalog");
+		vi.mocked(uploadCustomFile).mockResolvedValue(null);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await expect(
+			s.onCoverFile(fakeFileEvent("capa.png")),
+		).resolves.toBeUndefined();
+		w.unmount();
+	});
+});
+
 describe("MediaEditorView — deleção", () => {
 	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
 		return w.vm.$.devtoolsRawSetupState as unknown as Record<
