@@ -7,7 +7,7 @@ import { useMediaStore } from '@modules/media/stores/useMediaStore'
 import { GlassCard } from '@design-system/index'
 import PalcoRouteSelect from '@modules/settings/components/PalcoRouteSelect.vue'
 import type { LibraryAlbum } from '@modules/sync/types/library'
-import { getShowCustomCollections, setShowCustomCollections } from './visibility'
+import { getShowCustomCollections, setShowCustomCollections } from '../visibility'
 import AlbumCollectionCard from '../components/AlbumCollectionCard.vue'
 import {
   createCustomCollection,
