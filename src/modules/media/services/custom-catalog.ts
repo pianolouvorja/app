@@ -605,7 +605,7 @@ export async function createCustomCollection(
       action: 'upsert',
       payload: { name, description: description ?? null, author_name: authorName ?? null, updated_at: Date.now() },
       updated_at: Date.now(),
-      owner_email: getAuthSession()?.user.email ?? null,
+      owner_email: getAuthSession()?.user?.email ?? null,
     })
     return { id: 0 }
   }
