@@ -61,7 +61,7 @@ vi.mock("@modules/albums/services/album-music-search", () => ({
 	filterAlbumMusicIndex: vi.fn(() => []),
 }));
 
-vi.mock("../../../shared/services/slja", () => ({
+vi.mock("../../../../shared/services/slja", () => ({
 	buildSlja: vi.fn(() => new Blob()),
 	parseSljaFile: vi.fn(),
 }));
@@ -278,6 +278,59 @@ describe("MediaEditorView — seleção de música", () => {
 		).onSelectMusic(10);
 		expect(setupOf(w).musicId.value).toBeNull();
 		vi.unstubAllGlobals();
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — export .slja", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as Record<
+			string,
+			unknown
+		> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			musicName: { value: string };
+			lyrics: { value: unknown[] };
+		};
+	}
+
+	it("exporta com música e letras: gera blob e notifica sucesso", async () => {
+		const slja = await import("../../../../shared/services/slja");
+		const buildSlja = vi.mocked(slja.buildSlja);
+		buildSlja.mockResolvedValue(new Uint8Array([1, 2, 3]) as never);
+		const createObjectURL = vi.fn(() => "blob:fake");
+		const revokeObjectURL = vi.fn();
+		vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		(s.musicName as { value: string }).value = "Hino Export";
+		(s.lyrics as { value: unknown[] }).value = [
+			{ id: 1, lyric: "Verso um", time: "00:10", imageUrl: "" },
+		];
+		await (
+			w.vm.$.devtoolsRawSetupState as unknown as {
+				onExportSlja: () => Promise<void>;
+			}
+		).onExportSlja();
+		expect(buildSlja).toHaveBeenCalled();
+		expect(createObjectURL).toHaveBeenCalled();
+		w.unmount();
+		vi.unstubAllGlobals();
+	});
+
+	it("exporta sem música selecionada: não faz nada", async () => {
+		const { buildSlja } = await import("../../../../shared/services/slja");
+		vi.mocked(buildSlja).mockClear();
+		const w = await mountEditor();
+		await (
+			w.vm.$.devtoolsRawSetupState as unknown as {
+				onExportSlja: () => Promise<void>;
+			}
+		).onExportSlja();
+		expect(buildSlja).not.toHaveBeenCalled();
 		w.unmount();
 	});
 });
