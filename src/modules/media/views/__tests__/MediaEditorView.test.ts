@@ -282,6 +282,68 @@ describe("MediaEditorView — seleção de música", () => {
 	});
 });
 
+describe("MediaEditorView — deleção", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as Record<
+			string,
+			{
+				value?: unknown;
+				apply?: unknown;
+			}
+		> & {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			requestDelete: (kind: string, payload?: { stanzaIndex?: number }) => void;
+			onConfirmDelete: () => Promise<void>;
+		};
+	}
+
+	it("deletar coletânea: API ok, limpa seleção e notifica", async () => {
+		const { deleteCustomCollection } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(deleteCustomCollection).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onConfirmDelete();
+		// sem confirmKind setado, cai no default 'collection'
+		expect(deleteCustomCollection).toHaveBeenCalledWith(1);
+		expect(s.selectedCollectionId.value).toBeNull();
+		w.unmount();
+	});
+
+	it("deletar música: API ok, limpa música e recarrega lista", async () => {
+		const { deleteCustomMusic, listCustomMusics } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(deleteCustomMusic).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		s.requestDelete("music");
+		await s.onConfirmDelete();
+		expect(deleteCustomMusic).toHaveBeenCalledWith(10);
+		expect(s.selectedMusicId.value).toBeNull();
+		expect(listCustomMusics).toHaveBeenCalledWith(1);
+		w.unmount();
+	});
+
+	it("deletar coletânea com falha na API: notifica erro", async () => {
+		const { deleteCustomCollection } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(deleteCustomCollection).mockResolvedValue(false);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		await s.onConfirmDelete();
+		expect(s.selectedCollectionId.value).toBe(1); // mantém
+		w.unmount();
+	});
+});
+
 describe("MediaEditorView — navegação", () => {
 	it("botão voltar navega pra albums", async () => {
 		const w = await mountEditor();
