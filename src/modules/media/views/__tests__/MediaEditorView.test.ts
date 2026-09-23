@@ -374,6 +374,74 @@ describe("MediaEditorView — import .slja", () => {
 	});
 });
 
+describe("MediaEditorView — busca oficial e reuso", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as {
+			selectedCollectionId: { value: number | null };
+			officialSearch: { value: string };
+			officialSearchResults: { value: unknown[] };
+			onAddOfficial: (id: number, name: string) => Promise<void>;
+			reuseSearch: { value: string };
+			reuseResults: { value: unknown[] };
+			onReuseSearchInput: () => void;
+			onAddOfficialFromSearch: () => void;
+		};
+	}
+
+	it("adicionar hino oficial: chama API e limpa busca", async () => {
+		const { addOfficialMusicToCollection } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(addOfficialMusicToCollection).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.officialSearch.value = "202";
+		await s.onAddOfficial(202, "Hino 202");
+		expect(addOfficialMusicToCollection).toHaveBeenCalledWith(
+			1,
+			202,
+			"Hino 202",
+		);
+		expect(s.officialSearch.value).toBe("");
+		expect(s.officialSearchResults.value.length).toBe(0);
+		w.unmount();
+	});
+
+	it("adicionar hino oficial sem coletânea: não chama API", async () => {
+		const { addOfficialMusicToCollection } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(addOfficialMusicToCollection).mockClear();
+		const w = await mountEditor();
+		await raw(w).onAddOfficial(202, "Hino 202");
+		expect(addOfficialMusicToCollection).not.toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("busca de reuso filtra por nome e marca isCurrent", async () => {
+		const { listAllCustomMusics } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(listAllCustomMusics).mockResolvedValue([
+			{
+				id: 30,
+				name: "Santo É o Senhor",
+				collectionId: 1,
+				collectionName: "Coletânea Teste",
+			},
+			{ id: 31, name: "Santa Ceia", collectionId: 9, collectionName: "Outra" },
+		] as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.reuseSearch.value = "sant";
+		s.onReuseSearchInput();
+		await vi.waitFor(() => expect(s.reuseResults.value.length).toBe(2));
+		w.unmount();
+	});
+});
+
 describe("MediaEditorView — deleção", () => {
 	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
 		return w.vm.$.devtoolsRawSetupState as unknown as Record<
