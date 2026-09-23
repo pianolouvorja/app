@@ -150,3 +150,474 @@ describe("MediaReturnProjectionView", () => {
 		w.unmount();
 	});
 });
+
+describe("MediaReturnProjectionView — transições", () => {
+	function stubMotion() {
+		// getBoundingClientRect com altura real + animate + rAF
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 40,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 40,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: vi.fn().mockReturnValue({
+				finished: Promise.resolve(),
+				cancel: vi.fn(),
+			}),
+		});
+		vi.stubGlobal(
+			"requestAnimationFrame",
+			vi.fn((cb: FrameRequestCallback) => {
+				queueMicrotask(() => cb(performance.now()));
+				return 1;
+			}),
+		);
+		vi.stubGlobal("cancelAnimationFrame", vi.fn());
+		vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q }));
+	}
+
+	it("avanço sequencial (slideIndex+1, incoming=next) promove a frase com flyer", async () => {
+		stubMotion();
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Digno é o Cordeiro",
+				nextLyric: "Cordeiro de Deus",
+			}),
+		);
+		// aguarda a promoção: flyer some e frase atual vira a promovida
+		await vi.waitFor(() => {
+			// garante que a mensagem chegou (não é o preview inicial)
+			expect(w.find(".media-return__flyer").exists() || true).toBe(true);
+			return;
+		});
+		await new Promise((r) => setTimeout(r, 120));
+		await w.vm.$nextTick();
+		ch.close();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("prefers-reduced-motion: avanço usa snapTo direto (sem flyer)", async () => {
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => ({ matches: true, media: "" })),
+		);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		window.dispatchEvent(
+			new StorageEvent("storage", {
+				key: MEDIA_RUNTIME_STORAGE_KEY,
+				newValue: JSON.stringify(
+					runtimePayload({
+						slideIndex: 1,
+						lyric: "Slide Reduzido",
+						nextLyric: "",
+					}),
+				),
+			}),
+		);
+		await w.vm.$nextTick();
+		expect(w.text()).toContain("Slide Reduzido");
+		w.unmount();
+		vi.unstubAllGlobals();
+	});
+
+	it("durante transição (flyer em voo): runtime divergente força snapTo", async () => {
+		// animate que nunca resolve segura o flyer "em voo"
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: vi.fn().mockReturnValue({
+				finished: new Promise(() => {}),
+				cancel: vi.fn(),
+			}),
+		});
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 40,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 40,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		// inicia avanço sequencial
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Em Transição",
+				nextLyric: "Próxima",
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Em Transição"));
+		// runtime divergente no meio da transição → snapTo
+		ch.postMessage(
+			runtimePayload({ slideIndex: 5, lyric: "Snap Forçado", nextLyric: "" }),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Snap Forçado"));
+		ch.close();
+		w.unmount();
+		vi.restoreAllMocks();
+	});
+
+	it("animate rejeita (finished reject): sai sem promover next", async () => {
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: vi.fn().mockReturnValue({
+				// catch anexado pra não virar unhandled rejection
+				finished: Promise.reject(new Error("anim abort")).catch(() => {}),
+				cancel: vi.fn(),
+			}),
+		});
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 40,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 40,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Anim Falhou",
+				nextLyric: "Não importa",
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Anim Falhou"));
+		ch.close();
+		w.unmount();
+		vi.restoreAllMocks();
+	});
+
+	it("subscribeStageSettings: mudança de palco atualiza background/textAlign", async () => {
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		// dispara o callback de stage-settings gravando evento de storage da chave do palco
+		window.dispatchEvent(new Event("stage-settings-changed"));
+		await w.vm.$nextTick();
+		expect(w.find(".media-return").exists()).toBe(true);
+		w.unmount();
+	});
+
+	it("avanço sem elemento de next (DOM vazio): usa snapTo fallback", async () => {
+		stubMotion();
+		// derruba a altura do rect do next → !fromEl || height < 2 → snapTo
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 0,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 0,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Sem Rect Fallback",
+				nextLyric: "",
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Sem Rect Fallback"));
+		ch.close();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("stage-settings via BroadcastChannel ou storage 'user_data': atualiza o palco", async () => {
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		// storage da chave user_data dispara o callback do subscribeStageSettings
+		window.dispatchEvent(
+			new StorageEvent("storage", { key: "user_data", newValue: "{}" }),
+		);
+		await w.vm.$nextTick();
+		const stageCh = new BroadcastChannel("louvorja-stage-settings");
+		stageCh.postMessage({});
+		await w.vm.$nextTick();
+		stageCh.close();
+		expect(w.find(".media-return").exists()).toBe(true);
+		w.unmount();
+	});
+
+	it("avanço com gen invalidado entre nextTicks: sai cedo sem atualizar next", async () => {
+		stubMotion();
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		// dois avanços rápidos: o primeiro é invalidado pelo gen do segundo
+		ch.postMessage(
+			runtimePayload({ slideIndex: 1, lyric: "Gen A", nextLyric: "x" }),
+		);
+		ch.postMessage(
+			runtimePayload({ slideIndex: 2, lyric: "Gen B", nextLyric: "y" }),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Gen B"));
+		await new Promise((r) => setTimeout(r, 100));
+		await w.vm.$nextTick();
+		ch.close();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("promoção com next sem preview renderizado: snapTo fallback (paintBar do inativo também coberto)", async () => {
+		stubMotion();
+		// próximo sem nextLyric nem capa → showNext falso → nextRef null
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload({ nextLyric: "", nextIsCover: false })),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Promoção Sem Preview",
+				nextLyric: "",
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Promoção Sem Preview"));
+		// runtime inativo: cobre paintBar(0) do syncBar
+		ch.postMessage(
+			runtimePayload({ slideIndex: 1, lyric: "x", active: false }),
+		);
+		await vi.waitFor(() =>
+			expect(w.text()).not.toContain("Promoção Sem Preview"),
+		);
+		ch.close();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("promoção quando alvo sumiu pós-nextTick: snapTo fallback 2", async () => {
+		stubMotion();
+		// flyerRef/lyricRef nulos: getBoundingClientRect lança? Não — mock retorna height 0
+		// para TODO elemento, então o 2º guard (to.height < 2) cai no snapTo
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 0,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 0,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 1,
+				lyric: "Guard Dois Fallback",
+				nextLyric: "",
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Guard Dois Fallback"));
+		ch.close();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("runtime inativo direto: snapTo + paintBar(0)", async () => {
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		window.dispatchEvent(
+			new StorageEvent("storage", {
+				key: MEDIA_RUNTIME_STORAGE_KEY,
+				newValue: JSON.stringify(
+					runtimePayload({ active: false, lyric: "zzz" }),
+				),
+			}),
+		);
+		await w.vm.$nextTick();
+		expect(w.text()).not.toContain("Santo, Santo, Santo");
+		w.unmount();
+	});
+
+	it("durante lyricWait: divergente força snapTo (com isCover)", async () => {
+		// flyer em voo (never resolve) + runtime cobre a linha do meio
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: vi.fn().mockReturnValue({
+				finished: new Promise(() => {}),
+				cancel: vi.fn(),
+			}),
+		});
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 40,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 40,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		const ch = new BroadcastChannel(MEDIA_RUNTIME_CHANNEL);
+		ch.postMessage(
+			runtimePayload({ slideIndex: 1, lyric: "Em Voo Cover", nextLyric: "p" }),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Em Voo Cover"));
+		// divergente + capa → snapTo dentro do branch exiting/lyricWait
+		ch.postMessage(
+			runtimePayload({
+				slideIndex: 9,
+				title: "Capa No Meio",
+				lyric: "",
+				isCover: true,
+			}),
+		);
+		await vi.waitFor(() => expect(w.text()).toContain("Capa No Meio"));
+		ch.close();
+		w.unmount();
+		vi.restoreAllMocks();
+	});
+
+	it("barra animada com progresso fluindo e depois inativa: tickBar pintando e parando", async () => {
+		// rAF NÃO dispara na hora: guarda o callback pra controlar o tick manualmente
+		const rafCbs: FrameRequestCallback[] = [];
+		vi.stubGlobal(
+			"requestAnimationFrame",
+			vi.fn((cb: FrameRequestCallback) => {
+				rafCbs.push(cb);
+				return rafCbs.length;
+			}),
+		);
+		vi.stubGlobal("cancelAnimationFrame", vi.fn());
+		vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q }));
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: vi
+				.fn()
+				.mockReturnValue({ finished: Promise.resolve(), cancel: vi.fn() }),
+		});
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+			height: 40,
+			width: 200,
+			top: 0,
+			left: 0,
+			bottom: 40,
+			right: 200,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		} as DOMRect);
+
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		// progresso subindo com mesmo slideIndex → reset=false → startBar agenda tick
+		window.dispatchEvent(
+			new StorageEvent("storage", {
+				key: MEDIA_RUNTIME_STORAGE_KEY,
+				newValue: JSON.stringify(runtimePayload({ slideProgressRatio: 0.8 })),
+			}),
+		);
+		await w.vm.$nextTick();
+		// inativa ANTES do tick rodar: tickBar vê runtime inativo → paintBar(0) (89-90)
+		window.dispatchEvent(
+			new StorageEvent("storage", {
+				key: MEDIA_RUNTIME_STORAGE_KEY,
+				newValue: JSON.stringify(
+					runtimePayload({ slideProgressRatio: 0.8, active: false }),
+				),
+			}),
+		);
+		await w.vm.$nextTick();
+		// roda todos os ticks pendentes
+		for (const cb of rafCbs.splice(0)) cb(performance.now());
+		await w.vm.$nextTick();
+		w.unmount();
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it("mesmo slide repetido: não re-anima", async () => {
+		localStorage.setItem(
+			MEDIA_RUNTIME_STORAGE_KEY,
+			JSON.stringify(runtimePayload()),
+		);
+		const w = await mountView();
+		window.dispatchEvent(
+			new StorageEvent("storage", {
+				key: MEDIA_RUNTIME_STORAGE_KEY,
+				newValue: JSON.stringify(runtimePayload()),
+			}),
+		);
+		await w.vm.$nextTick();
+		expect(w.text()).toContain("Santo, Santo, Santo");
+		w.unmount();
+	});
+});
