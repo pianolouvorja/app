@@ -91,8 +91,11 @@ async function mountEditor() {
 	return w;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
 	vi.clearAllMocks();
+	// restaura defaults dos mocks que os testes mudam (isLocalId etc.)
+	const localStore = await import("../../services/local-custom-store");
+	vi.mocked(localStore.isLocalId).mockReturnValue(false);
 	vi.mocked(listCustomCollections).mockResolvedValue([
 		{ id: 1, name: "Coletânea Teste", description: "", musicsCount: 2 },
 		{ id: 2, name: "Hinos Locais", description: "", musicsCount: 0 },
@@ -612,6 +615,104 @@ describe("MediaEditorView — capa e reuso", () => {
 		await expect(
 			s.onCoverFile(fakeFileEvent("capa.png")),
 		).resolves.toBeUndefined();
+		w.unmount();
+	});
+});
+
+describe("MediaEditorView — áudio da música", () => {
+	function raw(w: Awaited<ReturnType<typeof mountEditor>>) {
+		return w.vm.$.devtoolsRawSetupState as unknown as {
+			selectedCollectionId: { value: number | null };
+			selectedMusicId: { value: number | null };
+			onAudioFile: (ev: Event) => Promise<void>;
+			onRemoveAudio: () => Promise<void>;
+		};
+	}
+
+	function fakeFileEvent(name: string): Event {
+		const file = new File([new Uint8Array([1, 2, 3, 4])], name);
+		Object.defineProperty(file, "arrayBuffer", {
+			value: async () => new ArrayBuffer(4),
+		});
+		const input = document.createElement("input");
+		Object.defineProperty(input, "files", { value: [file] });
+		const ev = new Event("change");
+		Object.defineProperty(ev, "target", { value: input });
+		return ev;
+	}
+
+	it("áudio da API: upload + vincula id_file_audio", async () => {
+		const { uploadCustomFile, updateCustomMusic } = await import(
+			"../../services/custom-catalog"
+		);
+		vi.mocked(uploadCustomFile).mockResolvedValue({
+			idFile: 9,
+			url: "/audio/x.mp3",
+		});
+		vi.mocked(updateCustomMusic).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		await s.onAudioFile(fakeFileEvent("musica.mp3"));
+		expect(uploadCustomFile).toHaveBeenCalled();
+		expect(updateCustomMusic).toHaveBeenCalledWith(10, { id_file_audio: 9 });
+		w.unmount();
+	});
+
+	it("áudio local (id negativo): guarda base64 no store local", async () => {
+		const { isLocalId, updateLocalMusic } = await import(
+			"../../services/local-custom-store"
+		);
+		vi.mocked(isLocalId).mockReturnValue(true);
+		vi.mocked(updateLocalMusic).mockResolvedValue(undefined as never);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = -5;
+		await s.onAudioFile(fakeFileEvent("local.mp3"));
+		expect(updateLocalMusic).toHaveBeenCalled();
+		w.unmount();
+	});
+
+	it("remover áudio da música da API: id_file_audio null", async () => {
+		const { updateCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(updateCustomMusic).mockResolvedValue(true);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		await s.onRemoveAudio();
+		expect(updateCustomMusic).toHaveBeenCalledWith(10, { id_file_audio: null });
+		w.unmount();
+	});
+
+	it("remover áudio de música local: updateLocalMusic com nulls", async () => {
+		const { isLocalId, updateLocalMusic } = await import(
+			"../../services/local-custom-store"
+		);
+		vi.mocked(isLocalId).mockReturnValue(true);
+		vi.mocked(updateLocalMusic).mockClear();
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = -5;
+		await s.onRemoveAudio();
+		expect(updateLocalMusic).toHaveBeenCalledWith(-5, {
+			audioBase64: null,
+			audioName: null,
+		});
+		w.unmount();
+	});
+
+	it("remover áudio com falha na API: notifica erro", async () => {
+		const { updateCustomMusic } = await import("../../services/custom-catalog");
+		vi.mocked(updateCustomMusic).mockResolvedValue(false);
+		const w = await mountEditor();
+		const s = raw(w);
+		s.selectedCollectionId.value = 1;
+		s.selectedMusicId.value = 10;
+		await expect(s.onRemoveAudio()).resolves.toBeUndefined();
 		w.unmount();
 	});
 });
