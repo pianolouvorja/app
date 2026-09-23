@@ -122,6 +122,8 @@ async function mountView() {
 beforeEach(() => {
 	vi.clearAllMocks();
 	document.documentElement.classList.remove("media-player-open");
+	// jsdom não implementa scrollTo — stub no prototype (usado por revealItemInAside)
+	HTMLElement.prototype.scrollTo = vi.fn();
 	sessionRef.value = {
 		title: "Santíssimo",
 		slides: [
