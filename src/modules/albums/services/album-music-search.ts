@@ -1,6 +1,7 @@
 import { fetchRemoteCatalogJson } from '@shared/services/remote-catalog'
 import { readCatalogRecord } from '@shared/services/workspace-api'
 import { getCurrentApiPrefix } from '@modules/sync/services/library-catalog'
+import { matchesAllTerms } from "@shared/services/search-terms"
 
 import type { AlbumSearchHit } from '../types/albums'
 import { formatCatalogDuration } from './album-tracks'
@@ -156,17 +157,49 @@ function mergeHits(a: AlbumSearchHit, b: AlbumSearchHit): AlbumSearchHit {
 export async function loadAlbumMusicIndex(): Promise<AlbumSearchHit[]> {
   const langPrefix = getCurrentApiPrefix()
   const rows = await readOrFetchCatalog<CatalogMusicIndexRow[]>(`${langPrefix}_musics`)
-  if (!Array.isArray(rows) || rows.length === 0) return []
 
   const byId = new Map<number, AlbumSearchHit>()
-  for (const row of rows) {
-    const mapped = mapMusicIndexRow(row)
-    if (!mapped) continue
-    const existing = byId.get(mapped.musicId)
-    byId.set(
-      mapped.musicId,
-      existing ? mergeHits(existing, mapped) : mapped,
-    )
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      const mapped = mapMusicIndexRow(row)
+      if (!mapped) continue
+      const existing = byId.get(mapped.musicId)
+      byId.set(
+        mapped.musicId,
+        existing ? mergeHits(existing, mapped) : mapped,
+      )
+    }
+  }
+
+  // Busca por letra (03/10): músicas custom LOCAIS entram no índice com
+  // `lyricsText` — a letra está no localStorage (offline-first), então a
+  // busca por trecho funciona sem rede. Hinário/álbuns oficiais continuam
+  // sem letra no índice (letra vem sob demanda da API) — issue do índice.
+  try {
+    const { listAllLocalMusicsWithLyrics } =
+      await import('@modules/media/services/local-custom-store')
+    for (const local of await listAllLocalMusicsWithLyrics()) {
+      const lyricsText = local.lyrics
+        .map((l) => l.lyric ?? '')
+        .join(' ')
+        .toLowerCase()
+      const hit: AlbumSearchHit = {
+        musicId: local.id,
+        name: local.name,
+        track: null,
+        durationLabel: '0:00',
+        hasInstrumental: false,
+        albumNames: 'Minhas Coletâneas',
+        displayTitle: local.name,
+        isHymnal: false,
+        hymnalTracks: [],
+        lyricsText,
+      }
+      const existing = byId.get(local.id)
+      byId.set(local.id, existing ? { ...existing, lyricsText } : hit)
+    }
+  } catch {
+    // storage indisponível — índice segue só com o catálogo
   }
 
   return [...byId.values()]
@@ -187,17 +220,20 @@ export function filterAlbumMusicIndex(
   const numQuery = isNum ? Number(trimmed) : null
 
   let results = index.filter((entry) => {
-    const title = entry.name.toLowerCase()
-    const album = entry.albumNames.toLowerCase()
+    const title = entry.name
+    const album = entry.albumNames
+    const lyrics = entry.lyricsText ?? ''
     if (isNum && numQuery != null) {
       return (
         entry.track === numQuery ||
         (entry.hymnalTracks ?? []).includes(numQuery) ||
-        title.includes(trimmed) ||
-        album.includes(trimmed)
+        matchesAllTerms(title, album, trimmed, lyrics)
       )
     }
-    return title.includes(trimmed) || album.includes(trimmed)
+    // Busca por termos (03/10): "jesus adoradores 5" acha a música "Jesus"
+    // do álbum "Adoradores 5" — substring contígua não existe em campo nenhum.
+    // Busca por letra (03/10): `lyricsText` (quando presente) casa trecho/termos.
+    return matchesAllTerms(title, album, trimmed, lyrics)
   })
 
   if (isNum && numQuery != null) {
